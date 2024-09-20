@@ -49,4 +49,6 @@ class Readyz(Resource):
     def get():
         """Return a JSON object that identifies if the service is setupAnd ready to work."""
         # TODO: add a poll to the DB when called
-        return {'message': 'api is ready'}, 200
+        app_name = current_app.config["APP_NAME"]
+        print('----app_name--', app_name)
+        return {'message': app_name}, 200
