@@ -30,7 +30,6 @@ fi
 
 # Sleep to allow manual inspection of environment variables before starting gunicorn
 # You can exec into the pod and inspect environment variables
-sleep 10000  # You can remove this sleep later after verifying the environment
 
 # Start the application
 echo 'starting application'
