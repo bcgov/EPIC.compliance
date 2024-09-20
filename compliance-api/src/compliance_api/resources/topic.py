@@ -16,6 +16,7 @@
 from http import HTTPStatus
 
 from flask_restx import Namespace, Resource
+from flask import current_app, g
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
@@ -44,9 +45,11 @@ class Topics(Resource):
     @staticmethod
     @API.response(code=200, description="Success", model=[topic_list_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all topics")
-    @auth.require
     def get():
         """Fetch all topics."""
+        app_name = current_app.config["APP_NAME"]
+        print('----app_name--', app_name)
+
         topics = TopicService.get_all()
         topic_list_schema = TopicSchema(many=True)
         return topic_list_schema.dump(topics), HTTPStatus.OK

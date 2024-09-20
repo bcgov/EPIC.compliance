@@ -90,6 +90,10 @@ class _Config:  # pylint: disable=too-few-public-methods
     JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER")
     JWT_OIDC_AUDIENCE = os.getenv("JWT_OIDC_AUDIENCE", "account")
     JWT_OIDC_CACHING_ENABLED = os.getenv("JWT_OIDC_CACHING_ENABLED", "True")
+    JWT_OIDC_CACHING_ENABLED = os.getenv("JWT_OIDC_CACHING_ENABLED", "True")
+    APP_NAME = os.getenv("app_name", "")
+    SECRET_KEY = os.getenv("secret_key", "")
+    
     JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
 
 

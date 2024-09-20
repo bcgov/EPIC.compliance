@@ -45,6 +45,11 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     # Flask app initialize
     app = Flask(__name__)
 
+    print(f"create_app:App Name: {os.getenv('app-name', 'Not Set')}")
+    print(f"create_app:App Secret: {os.getenv('app-secret', 'Not Set')}")
+
+
+
     # All configuration are in config file
     app.config.from_object(get_named_config(run_mode))
     CORS(
