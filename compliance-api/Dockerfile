@@ -20,5 +20,4 @@ USER 1001
 
 # Set Python path
 ENV PYTHONPATH=/opt/app-root/src
-
 ENTRYPOINT ["bash", "docker-entrypoint.sh"]
