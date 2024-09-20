@@ -8,7 +8,7 @@ if [ -d "${VAULT_SECRETS_DIR}" ]; then
   echo "[entrypoint] Vault secrets directory found. Sourcing all files for environment variables."
 
   set -a  # Automatically export all variables
-  for i in ${VAULT_SECRETS_DIR}/*; do
+  for i in ${VAULT_SECRETS_DIR}/*.env; do
     if [ -f "${i}" ]; then
       echo "[entrypoint] Adding environment variables from ${i}"
       . "${i}"  # Source each file
