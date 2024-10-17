@@ -15,7 +15,7 @@
 
 from http import HTTPStatus
 
-from flask import current_app
+from flask import current_app, request
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
@@ -127,11 +127,24 @@ class Inspections(Resource):
 
     @staticmethod
     @API.response(code=200, description="Success", model=[inspection_list_model])
+    @API.doc(
+        params={
+            "case_file_id": {
+                "description": "The unique identifier of the case file",
+                "type": "integer",
+                "required": False,
+            }
+        }
+    )
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all inspections")
     @auth.require
     def get():
         """Fetch all inspections."""
-        inspections = InspectionService.get_all()
+        case_file_id = request.args.get("case_file_id")
+        if case_file_id:
+            inspections = InspectionService.get_by_case_file_id(case_file_id)
+        else:
+            inspections = InspectionService.get_all()
         inspection_list_schema = InspectionSchema(many=True)
         return inspection_list_schema.dump(inspections), HTTPStatus.OK
 
