@@ -226,21 +226,3 @@ class InspectionByIRNumber(Resource):
         inspection = InspectionService.get_by_ir_number(ir_number)
         inspection_list_schema = InspectionSchema()
         return inspection_list_schema.dump(inspection), HTTPStatus.OK
-
-
-# @cors_preflight("GET, OPTIONS")
-# @API.route("/<int:inspection_id>/officers", methods=["GET", "OPTIONS"])
-# class InspectionOfficers(Resource):
-#     """Inspection resource."""
-
-#     @staticmethod
-#     @API.response(code=200, description="Success", model=[inspection_list_model])
-#     @ApiHelper.swagger_decorators(
-#         API, endpoint_description="Fetch officers of inspection by id"
-#     )
-#     @auth.require
-#     def get(inspection_id):
-#         """Fetch all inspections."""
-#         officers = InspectionService.get_other_officers(inspection_id)
-#         staff_list_schema = StaffUserSchema(many=True)
-#         return staff_list_schema.dump(officers), HTTPStatus.OK

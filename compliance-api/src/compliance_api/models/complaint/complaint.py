@@ -69,7 +69,9 @@ class Complaint(BaseModelVersioned):
     )
     primary_officer_id = Column(
         Integer,
-        ForeignKey("staff_users.id", name="inspection_primary_officer_id_staff_id_fkey"),
+        ForeignKey(
+            "staff_users.id", name="inspection_primary_officer_id_staff_id_fkey"
+        ),
         nullable=True,
         comment="The primary officer who created the inspection",
     )
@@ -114,7 +116,9 @@ class Complaint(BaseModelVersioned):
     requirement_source = relationship(
         "RequirementSource", foreign_keys=[requirement_source_id], lazy="joined"
     )
-    source_type = relationship("ComplaintSource", foreign_keys=[source_type_id], lazy="joined")
+    source_type = relationship(
+        "ComplaintSource", foreign_keys=[source_type_id], lazy="joined"
+    )
     agency = relationship("Agency", foreign_keys=[source_agency_id], lazy="joined")
     primary_officer = relationship(
         "StaffUser", foreign_keys=[primary_officer_id], lazy="joined"
@@ -126,7 +130,7 @@ class Complaint(BaseModelVersioned):
         back_populates="complaint",
         lazy="joined",
         uselist=False,
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     @classmethod
@@ -156,3 +160,10 @@ class Complaint(BaseModelVersioned):
         else:
             complaint.save()
         return complaint
+
+    @classmethod
+    def get_by_complaint_number(cls, complaint_number):
+        """Retrieve complaint by number."""
+        return cls.query.filter_by(
+            complaint_number=complaint_number, is_deleted=False
+        ).first()

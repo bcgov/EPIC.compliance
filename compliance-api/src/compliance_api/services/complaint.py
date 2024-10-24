@@ -31,6 +31,22 @@ class ComplaintService:
         return ComplaintModel.get_all(default_filters=False)
 
     @classmethod
+    def get_by_id(cls, complaint_id):
+        """Get complaint by id."""
+        complaint = ComplaintModel.find_by_id(complaint_id)
+        if not complaint:
+            return None
+        return _set_project_parameters(complaint)
+
+    @classmethod
+    def get_by_complaint_no(cls, complaint_no):
+        """Get complaint details by complaint number."""
+        complaint = ComplaintModel.get_by_complaint_number(complaint_no)
+        if not complaint:
+            return None
+        return _set_project_parameters(complaint)
+
+    @classmethod
     def get_by_case_file_id(cls, case_file_id):
         """Get all complaints by case file id."""
         return ComplaintModel.get_by_params({"case_file_id": case_file_id})
@@ -74,6 +90,24 @@ class ComplaintService:
         if not complaint:
             return False
         return complaint.primary_officer.auth_user_guid == auth_user_guid
+
+
+def _set_project_parameters(complaint):
+    """Set complaint project parameters."""
+    project_id = complaint.project_id
+    if project_id:
+        project = TrackService.get_project_by_id(project_id)
+        setattr(complaint, "authorization", project.get("ea_certificate", None))
+        setattr(complaint, "type", project.get("type").get("name"))
+        setattr(complaint, "sub_type", project.get("sub_type").get("name"))
+        setattr(complaint, "regulated_party", project.get("proponent").get("name"))
+    if not project_id:
+        project = ComplaintUnapprovedProjectModel.get_by_complaint_id(complaint.id)
+        setattr(complaint, "authorization", project.authorization)
+        setattr(complaint, "type", project.type)
+        setattr(complaint, "sub_type", project.sub_type)
+        setattr(complaint, "regulated_party", project.regulated_party)
+    return complaint
 
 
 def _has_project(complaint_data):
