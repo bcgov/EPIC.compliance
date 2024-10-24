@@ -47,3 +47,10 @@ class ComplaintUnapprovedProject(BaseModelVersioned):
         else:
             unapproved_project.save()
         return unapproved_project
+
+    @classmethod
+    def get_by_complaint_id(cls, complaint_id):
+        """Find unapproved project info based on complaint_id."""
+        return cls.query.filter_by(
+            complaint_id=complaint_id, is_deleted=False
+        ).first()
