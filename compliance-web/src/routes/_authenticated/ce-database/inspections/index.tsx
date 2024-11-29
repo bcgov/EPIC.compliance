@@ -1,15 +1,10 @@
-import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
 import TableFilter from "@/components/Shared/FilterSelect/TableFilter";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
 import { searchFilter } from "@/components/Shared/MasterDataTable/utils";
 import PageLink from "@/components/Shared/PageLink";
-import { useIsRolesAllowed, KC_USER_GROUPS } from "@/hooks/useAuthorization";
 import { useInspectionsData } from "@/hooks/useInspections";
 import { Inspection } from "@/models/Inspection";
-import { useDrawer } from "@/store/drawerStore";
-import { notify } from "@/store/snackbarStore";
 import { Chip } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MRT_ColumnDef } from "material-react-table";
 import { useMemo, useCallback } from "react";
@@ -19,12 +14,7 @@ export const Route = createFileRoute(
 )({ component: Inspections });
 
 export function Inspections() {
-  const queryClient = useQueryClient();
-  const { setOpen, setClose } = useDrawer();
   const { data: inspectionsList, isLoading } = useInspectionsData();
-  const showCreateInspectionButton = useIsRolesAllowed([
-    KC_USER_GROUPS.SUPERUSER,
-  ]);
 
   const createUniqueFilterList = useCallback(
     (key: keyof Inspection, subKey?: string): string[] => {
@@ -49,8 +39,13 @@ export function Inspections() {
   );
 
   const projectList = useMemo(
-    () => createUniqueFilterList("project", "name"),
-    [createUniqueFilterList]
+    () =>
+      [
+        ...new Set(
+          inspectionsList?.map((ins) => ins.case_file?.project?.name ?? "")
+        ),
+      ].filter(Boolean),
+    [inspectionsList]
   );
   const initiationList = useMemo(
     () => createUniqueFilterList("initiation", "name"),
@@ -88,7 +83,7 @@ export function Inspections() {
         ),
       },
       {
-        accessorKey: "project.name",
+        accessorFn: (row) => row.case_file?.project?.name,
         header: "Project",
         filterVariant: "multi-select",
         filterSelectOptions: projectList,
@@ -227,22 +222,6 @@ export function Inspections() {
     ]
   );
 
-  const handleOnSubmit = useCallback(
-    (submitMsg: string) => {
-      queryClient.invalidateQueries({ queryKey: ["inspections"] });
-      setClose();
-      notify.success(submitMsg);
-    },
-    [queryClient, setClose]
-  );
-
-  const handleOpenDrawer = useCallback(() => {
-    setOpen({
-      content: <InspectionDrawer onSubmit={handleOnSubmit} />,
-      width: "1118px",
-    });
-  }, [setOpen, handleOnSubmit]);
-
   return (
     <MasterDataTable
       columns={columns}
@@ -256,9 +235,6 @@ export function Inspections() {
       }}
       titleToolbarProps={{
         tableTitle: "Inspections",
-        tableAddRecordButtonText: "Inspection",
-        tableAddRecordFunction: handleOpenDrawer,
-        tableAddRecordButtonVisibility: showCreateInspectionButton,
       }}
     />
   );

@@ -2,14 +2,12 @@ import { Agency } from "@/models/Agency";
 import { ComplaintAPIData } from "@/models/Complaint";
 import { ComplaintSource } from "@/models/ComplaintSource";
 import { FirstNation } from "@/models/FirstNation";
-import { Project } from "@/models/Project";
 import { RequirementSource } from "@/models/RequirementSource";
 import { StaffUser } from "@/models/Staff";
 import { Topic } from "@/models/Topic";
 import {
   REGEX_EMAIL,
   REGEX_PHONE_NUMBER,
-  UNAPPROVED_PROJECT_ID,
 } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { Dayjs } from "dayjs";
@@ -33,12 +31,6 @@ export enum RequirementSourceEnum {
 }
 
 export const ComplaintFormSchema = yup.object().shape({
-  project: yup.object<Project>().nullable().required("Project is required"),
-  authorization: yup.string().nullable(),
-  regulatedParty: yup.string().nullable(),
-  projectDescription: yup.string().nullable(),
-  projectType: yup.string().nullable(),
-  projectSubType: yup.string().nullable(),
   concernDescription: yup
     .string()
     .nullable()
@@ -127,22 +119,15 @@ export const ComplaintFormSchema = yup.object().shape({
 
 export type ComplaintSchemaType = yup.InferType<typeof ComplaintFormSchema>;
 
-export const getProjectId = (formData: ComplaintSchemaType) => {
-  const projectId = (formData.project as Project)?.id ?? "";
-  return projectId === UNAPPROVED_PROJECT_ID ? undefined : projectId;
-};
-
 // Formatting inspection form data for API
 export const formatComplaintData = (
   formData: ComplaintSchemaType,
   caseFileId?: number // as a flag for create new record
 ) => {
-  const projectId = getProjectId(formData);
   const sourceId = (formData.complaintSource as ComplaintSource)?.id;
   const reqSourceId = (formData.requirementSource as RequirementSource)?.id;
 
-  let complaintData: ComplaintAPIData = {
-    project_description: formData.projectDescription ?? "",
+  const complaintData: ComplaintAPIData = {
     primary_officer_id: (formData.primaryOfficer as StaffUser).id,
     location_description: formData.locationDescription ?? "",
     concern_description: formData.concernDescription ?? "",
@@ -203,19 +188,6 @@ export const formatComplaintData = (
         break;
     }
   }
-  if (caseFileId) { // map the fields only for create new record, and case file id is available
-    complaintData.project_id = projectId;
-    complaintData.case_file_id = caseFileId;
-
-    if (!projectId) { // map the unapproved fields only during create mode
-      complaintData = {
-        ...complaintData,
-        unapproved_project_authorization: formData.authorization ?? "",
-        unapproved_project_regulated_party: formData.regulatedParty ?? "",
-        unapproved_project_type: formData.projectType ?? "",
-        unapproved_project_sub_type: formData.projectSubType ?? "",
-      };
-    }
-  }
+  complaintData.case_file_id = caseFileId ?? undefined; // map the fields only for create new record, and case file id is available
   return complaintData;
 };

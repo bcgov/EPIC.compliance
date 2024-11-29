@@ -68,9 +68,9 @@ const NoDataComponent = ({ ...props }) => {
 
 interface MRT_EAO_TitleToolbarProps {
   tableTitle: string;
-  tableAddRecordButtonText: string;
+  tableAddRecordButtonText?: string;
   tableAddRecordButtonVisibility?: boolean;
-  tableAddRecordFunction: () => void;
+  tableAddRecordFunction?: () => void;
 }
 
 export interface MaterialReactTableProps<TData extends MRT_RowData>
@@ -263,7 +263,7 @@ const MasterDataTable = <TData extends MRT_RowData>({
                 >
                   {titleToolbarProps?.tableTitle}
                 </Typography>
-                {titleToolbarProps.tableAddRecordButtonVisibility && (
+                {titleToolbarProps?.tableAddRecordButtonVisibility && (
                   <Button
                     id="addActionButton"
                     startIcon={<AddRounded />}

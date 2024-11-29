@@ -7,6 +7,7 @@ import { Project } from "@/models/Project";
 import { Initiation } from "@/models/Initiation";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
+import ProjectDetailsForm from "@/components/App/ProjectDetailsForm";
 
 type CaseFileFormProps = {
   projectList: Project[];
@@ -37,65 +38,66 @@ const CaseFileForm: React.FC<CaseFileFormProps> = ({
           General Information
         </Typography>
         <Stack direction={"row"} gap={2}>
-          <ControlledAutoComplete
-            name="project"
-            label="Project"
-            options={projectList}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            fullWidth
-            disabled={isEditMode}
+          <ProjectDetailsForm
+            projectList={projectList}
+            isEditMode={isEditMode}
           />
-          <ControlledAutoComplete
-            name="initiation"
-            label="Initiation"
-            options={initiationList}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            fullWidth
-            disabled={isEditMode}
-          />
-        </Stack>
-        <Stack direction={"row"} gap={2}>
-          <ControlledAutoComplete
-            name="primaryOfficer"
-            label="Primary"
-            options={staffUsersList}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            fullWidth
-          />
-          <ControlledAutoComplete
-            name="officers"
-            label="Other Assigned Officers (optional)"
-            options={staffUsersList}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            multiple
-            fullWidth
-          />
-        </Stack>
-        {isSuperUser && (
-          <Stack direction={"row"} gap={2}>
-            <ControlledDateField
-              name="dateCreated"
-              label="Date Created (optional)"
-              sx={{ width: "100%" }}
-              disabled={isEditMode}
-            />
-            <ControlledTextField
-              label="Manual Case File Number (optional)"
-              name="caseFileNumber"
-              placeholder="Enter Case File Number"
+          <Stack flex={1}>
+            <ControlledAutoComplete
+              name="initiation"
+              label="Initiation"
+              options={initiationList}
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
               fullWidth
               disabled={isEditMode}
             />
+            <ControlledAutoComplete
+              name="primaryOfficer"
+              label="Primary"
+              options={staffUsersList}
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              fullWidth
+            />
+            <ControlledAutoComplete
+              name="officers"
+              label="Other Assigned Officers (optional)"
+              options={staffUsersList}
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              multiple
+              fullWidth
+            />
+            {isSuperUser && (
+              <>
+                <ControlledDateField
+                  name="dateCreated"
+                  label="Date Created (optional)"
+                  sx={{ width: "100%" }}
+                  disabled={isEditMode}
+                />
+                <ControlledTextField
+                  label="Manual Case File Number (optional)"
+                  name="caseFileNumber"
+                  placeholder="Enter Case File Number"
+                  fullWidth
+                  disabled={isEditMode}
+                />
+              </>
+            )}
           </Stack>
-        )}
+        </Stack>
+        <ControlledTextField
+          name="projectDescription"
+          label="Project Description"
+          multiline
+          fullWidth
+          minRows={5}
+        />
       </Box>
     </>
   );

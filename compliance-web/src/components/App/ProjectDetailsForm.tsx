@@ -14,7 +14,10 @@ type ProjectDetailsFormProps = {
   isEditMode?: boolean;
 };
 
-const ProjectDetailsForm: FC<ProjectDetailsFormProps> = ({ projectList, isEditMode }) => {
+const ProjectDetailsForm: FC<ProjectDetailsFormProps> = ({
+  projectList,
+  isEditMode,
+}) => {
   const { isOpen } = useDrawer();
   const { setValue, resetField } = useFormContext();
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(
@@ -50,66 +53,56 @@ const ProjectDetailsForm: FC<ProjectDetailsFormProps> = ({ projectList, isEditMo
   }, [isOpen]);
 
   return (
-    <>
-      <Stack direction={"row"} gap={2}>
-        <ControlledAutoComplete
-          name="project"
-          label="Project"
-          options={projectList}
-          getOptionLabel={(option) => option.name}
-          getOptionKey={(option) => option.id}
-          isOptionEqualToValue={(option, value) => option.id.toString() === value.id.toString()}
-          fullWidth
-          onChange={(_, value) => {
-            const projId = (value as Project)?.id;
-            if (projId === UNAPPROVED_PROJECT_ID) {
-              setSelectedProjectId(null);
-            } else {
-              setSelectedProjectId(projId);
-            }
-          }}
-          disabled={isEditMode}
-        />
-        <ControlledTextField
-          name="authorization"
-          label="Authorization"
-          placeholder="Authorization"
-          disabled={!!selectedProjectId || isEditMode}
-          sx={{ width: "70%" }}
-        />
-        <ControlledTextField
-          name="regulatedParty"
-          label="Regulated Party"
-          placeholder="Regulated Party"
-          disabled={!!selectedProjectId || isEditMode}
-          fullWidth
-        />
-      </Stack>
-      <ControlledTextField
-        name="projectDescription"
-        label="Project Description"
-        multiline
-        disabled={!!selectedProjectId}
+    <Stack flex={1}>
+      <ControlledAutoComplete
+        name="project"
+        label="Project"
+        options={projectList}
+        getOptionLabel={(option) => option.name}
+        getOptionKey={(option) => option.id}
+        isOptionEqualToValue={(option, value) =>
+          option.id.toString() === value.id.toString()
+        }
         fullWidth
-        minRows={2}
+        onChange={(_, value) => {
+          const projId = (value as Project)?.id;
+          if (projId === UNAPPROVED_PROJECT_ID) {
+            setSelectedProjectId(null);
+          } else {
+            setSelectedProjectId(projId);
+          }
+        }}
+        disabled={isEditMode}
       />
-      <Stack direction={"row"} gap={2}>
-        <ControlledTextField
-          name="projectType"
-          label="Project Type"
-          placeholder="Project Type"
-          disabled={!!selectedProjectId || isEditMode}
-          fullWidth
-        />
-        <ControlledTextField
-          name="projectSubType"
-          label="Project Subtype"
-          placeholder="Project Subtype"
-          disabled={!!selectedProjectId || isEditMode}
-          fullWidth
-        />
-      </Stack>
-    </>
+      <ControlledTextField
+        name="authorization"
+        label="Authorization"
+        placeholder="Authorization"
+        disabled={!!selectedProjectId || isEditMode}
+        fullWidth
+      />
+      <ControlledTextField
+        name="regulatedParty"
+        label="Regulated Party"
+        placeholder="Regulated Party"
+        disabled={!!selectedProjectId || isEditMode}
+        fullWidth
+      />
+      <ControlledTextField
+        name="projectType"
+        label="Project Type"
+        placeholder="Project Type"
+        disabled={!!selectedProjectId || isEditMode}
+        fullWidth
+      />
+      <ControlledTextField
+        name="projectSubType"
+        label="Project Subtype"
+        placeholder="Project Subtype"
+        disabled={!!selectedProjectId || isEditMode}
+        fullWidth
+      />
+    </Stack>
   );
 };
 

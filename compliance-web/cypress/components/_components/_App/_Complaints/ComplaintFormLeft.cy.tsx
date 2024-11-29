@@ -6,12 +6,6 @@ import { FormProvider, useForm } from "react-hook-form";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"; // Adjust to your date adapter
 
-// Mock data for projects and staff users
-const mockProjects = [
-  { id: 1, name: "Project Alpha" },
-  { id: 2, name: "Project Beta" },
-];
-
 const mockStaffUsers = [
   { id: 1, name: "John Doe" },
   { id: 2, name: "Jane Smith" },
@@ -46,7 +40,7 @@ describe("ComplaintFormLeft Component", () => {
 
     mount(
       <Wrapper>
-        <ComplaintFormLeft projectList={mockProjects} staffUsersList={mockStaffUsers} />
+        <ComplaintFormLeft staffUsersList={mockStaffUsers} />
       </Wrapper>
     );
   };
@@ -61,12 +55,6 @@ describe("ComplaintFormLeft Component", () => {
     cy.contains("Location Description (optional)").should("exist");
     cy.contains("Primary").should("exist");
     cy.contains("Date Received").should("exist");
-  });
-
-  it("allows selecting a project in ProjectDetailsForm", () => {
-    cy.get('input[name="project"]').click();
-    cy.get("li").contains("Project Alpha").click();
-    cy.get('input[name="project"]').should("have.value", "Project Alpha");
   });
 
   it("allows entering a concern description", () => {

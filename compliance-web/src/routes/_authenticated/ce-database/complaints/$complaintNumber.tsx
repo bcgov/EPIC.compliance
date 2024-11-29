@@ -5,7 +5,9 @@ import FileProfileHeader from "@/components/App/FileProfileHeader";
 import ErrorPage from "@/components/Shared/ErrorPage";
 import LoadingPage from "@/components/Shared/LoadingPage";
 import { useIsRolesAllowed, KC_USER_GROUPS } from "@/hooks/useAuthorization";
+import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { useComplaintByNumber } from "@/hooks/useComplaints";
+import { CaseFile } from "@/models/CaseFile";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
 import { CR_CONTEXT_TYPE } from "@/utils/constants";
@@ -34,6 +36,10 @@ function ComplaintProfilePage() {
     isLoading,
   } = useComplaintByNumber(complaintNumber!);
 
+  const { data: caseFileData } = useCaseFileByNumber(
+    complaintData?.case_file.case_file_number ?? ""
+  );
+
   const showEditComplaintButton = useIsRolesAllowed(
     [KC_USER_GROUPS.SUPERUSER],
     complaintData?.primary_officer ? [complaintData.primary_officer] : []
@@ -46,7 +52,11 @@ function ComplaintProfilePage() {
   const handleOpenEditModal = () => {
     setOpen({
       content: (
-        <ComplaintDrawer onSubmit={handleOnSubmit} complaint={complaintData} />
+        <ComplaintDrawer
+          onSubmit={handleOnSubmit}
+          complaint={complaintData}
+          caseFile={caseFileData as CaseFile}
+        />
       ),
       width: "1118px",
     });

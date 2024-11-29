@@ -8,15 +8,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useModal } from "@/store/modalStore";
 
 // Mock data for the test
-const mockIRStatusList = [
-  { id: "1", name: "IR Status Alpha" },
-  { id: "2", name: "IR Status Beta" },
-];
-
-const mockProjectStatusList = [
-  { id: "1", name: "Project Status Alpha" },
-  { id: "2", name: "Project Status Beta" },
-];
 
 const mockAttendanceList = [
   { id: "1", name: "Agency" },
@@ -72,8 +63,6 @@ describe("InspectionFormRight Component", () => {
     mount(
       <Wrapper>
         <InspectionFormRight
-          irStatusList={mockIRStatusList}
-          projectStatusList={mockProjectStatusList}
           attendanceList={mockAttendanceList}
           agenciesList={mockAgenciesList}
           firstNationsList={mockFirstNationsList}
@@ -93,24 +82,7 @@ describe("InspectionFormRight Component", () => {
   });
 
   it("renders the form with all fields", () => {
-    cy.contains("IR Status (optional)").should("exist");
-    cy.contains("Project Status (optional)").should("exist");
     cy.contains("In Attendance (optional)").should("exist");
-  });
-
-  it("allows selecting IR Status", () => {
-    cy.get('input[name="irStatus"]').click();
-    cy.get("li").contains("IR Status Alpha").click();
-    cy.get('input[name="irStatus"]').should("have.value", "IR Status Alpha");
-  });
-
-  it("allows selecting Project Status", () => {
-    cy.get('input[name="projectStatus"]').click();
-    cy.get("li").contains("Project Status Beta").click();
-    cy.get('input[name="projectStatus"]').should(
-      "have.value",
-      "Project Status Beta"
-    );
   });
 
   it("allows selecting multiple attendees in the 'In Attendance' field", () => {

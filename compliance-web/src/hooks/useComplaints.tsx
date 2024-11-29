@@ -1,12 +1,11 @@
 import { Complaint, ComplaintAPIData } from "@/models/Complaint";
 import { ComplaintSource } from "@/models/ComplaintSource";
 import { Contact } from "@/models/Contact";
-import { RequirementDetails, RequirementSource } from "@/models/RequirementSource";
-import { OnSuccessType, request } from "@/utils/axiosUtils";
 import {
-  UNAPPROVED_PROJECT_ABBREVIATION,
-  UNAPPROVED_PROJECT_ID,
-} from "@/utils/constants";
+  RequirementDetails,
+  RequirementSource,
+} from "@/models/RequirementSource";
+import { OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 const fetchRequirementSources = (): Promise<RequirementSource[]> => {
@@ -29,7 +28,9 @@ const fetchSourceContact = (complaintId: number): Promise<Contact> => {
   return request({ url: `/complaints/${complaintId}/source-contacts` });
 };
 
-const fetchRequirementDetails = (complaintId: number): Promise<RequirementDetails> => {
+const fetchRequirementDetails = (
+  complaintId: number
+): Promise<RequirementDetails> => {
   return request({ url: `/complaints/${complaintId}/requirement-details` });
 };
 
@@ -44,7 +45,11 @@ const updateComplaint = ({
   id: number;
   complaint: ComplaintAPIData;
 }) => {
-  return request({ url: `/complaints/${id}`, method: "patch", data: complaint });
+  return request({
+    url: `/complaints/${id}`,
+    method: "patch",
+    data: complaint,
+  });
 };
 
 export const useRequirementSourcesData = () => {
@@ -83,10 +88,6 @@ export const useComplaintByNumber = (complaintNumber: string) => {
       const complaint = await fetchComplaint(complaintNumber);
       const source_contact = await fetchSourceContact(complaint?.id);
       const requirement_detail = await fetchRequirementDetails(complaint?.id);
-      if (complaint.project.abbreviation === UNAPPROVED_PROJECT_ABBREVIATION) {
-        complaint.project.id = UNAPPROVED_PROJECT_ID;
-        delete complaint.project.abbreviation;
-      }
       return { ...complaint, source_contact, requirement_detail };
     },
     enabled: !!complaintNumber,

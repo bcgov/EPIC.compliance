@@ -1,7 +1,5 @@
 import { Box, Stack } from "@mui/material";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
-import { IRStatus } from "@/models/IRStatus";
-import { ProjectStatus } from "@/models/ProjectStatus";
 import { FC, useEffect } from "react";
 import { Attendance } from "@/models/Attendance";
 import { BCDesignTokens } from "epic.theme";
@@ -18,8 +16,6 @@ import DynamicInputField, {
 import { StaffUser } from "@/models/Staff";
 
 type InspectionFormRightProps = {
-  irStatusList: IRStatus[];
-  projectStatusList: ProjectStatus[];
   attendanceList: Attendance[];
   agenciesList: Agency[];
   firstNationsList: FirstNation[];
@@ -29,8 +25,6 @@ type InspectionFormRightProps = {
 const sectionPadding = "1rem 2rem 0rem 1rem";
 
 const InspectionFormRight: FC<InspectionFormRightProps> = ({
-  irStatusList,
-  projectStatusList,
   attendanceList,
   agenciesList,
   firstNationsList,
@@ -137,26 +131,9 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
         <Stack>
           <Box p={sectionPadding}>
             <ControlledAutoComplete
-              name="irStatus"
-              label="IR Status (optional)"
-              options={irStatusList}
-              getOptionLabel={(option) => option.name}
-              getOptionKey={(option) => option.id}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              fullWidth
-            />
-            <ControlledAutoComplete
-              name="projectStatus"
-              label="Project Status (optional)"
-              options={projectStatusList}
-              getOptionLabel={(option) => option.name}
-              getOptionKey={(option) => option.id}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              fullWidth
-            />
-            <ControlledAutoComplete
               name="inAttendance"
               label="In Attendance (optional)"
+              placeholder="Select groups that attended inspection"
               options={attendanceList}
               getOptionLabel={(option) => option.name}
               getOptionKey={(option) => option.id}

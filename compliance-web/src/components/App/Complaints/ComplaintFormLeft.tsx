@@ -3,22 +3,14 @@ import { Box, Stack } from "@mui/material";
 import { StaffUser } from "@/models/Staff";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { BCDesignTokens } from "epic.theme";
-import { Project } from "@/models/Project";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
-import ProjectDetailsForm from "@/components/App/ProjectDetailsForm";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
 
 type ComplaintFormLeftProps = {
-  projectList: Project[];
   staffUsersList: StaffUser[];
-  isEditMode?: boolean;
 };
 
-const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
-  projectList,
-  staffUsersList,
-  isEditMode,
-}) => {
+const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({ staffUsersList }) => {
   return (
     <>
       <Box
@@ -30,7 +22,6 @@ const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
           boxSizing: "border-box",
         }}
       >
-        <ProjectDetailsForm projectList={projectList} isEditMode={isEditMode} />
         <ControlledTextField
           name="concernDescription"
           label="Concern Description"

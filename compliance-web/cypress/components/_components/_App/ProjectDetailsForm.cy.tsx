@@ -61,7 +61,6 @@ describe("ProjectDetailsForm Component", () => {
     cy.contains("Project").should("exist");
     cy.contains("Authorization").should("exist");
     cy.contains("Regulated Party").should("exist");
-    cy.contains("Project Description").should("exist");
     cy.contains("Project Type").should("exist");
     cy.contains("Project Subtype").should("exist");
   });
@@ -74,10 +73,6 @@ describe("ProjectDetailsForm Component", () => {
     // Verify fields are updated based on the project data
     cy.get('input[name="authorization"]').should("have.value", "EAC# 12345");
     cy.get('input[name="regulatedParty"]').should("have.value", "Proponent Name");
-    cy.get('textarea[name="projectDescription"]').should(
-      "have.value",
-      "Description of Project Alpha"
-    );
     cy.get('input[name="projectType"]').should("have.value", "Type A");
     cy.get('input[name="projectSubType"]').should("have.value", "Subtype A");
   });
@@ -102,7 +97,6 @@ describe("ProjectDetailsForm Component", () => {
     // Verify fields are enabled
     cy.get('input[name="authorization"]').should("not.be.disabled");
     cy.get('input[name="regulatedParty"]').should("not.be.disabled");
-    cy.get('textarea[name="projectDescription"]').should("not.be.disabled");
     cy.get('input[name="projectType"]').should("not.be.disabled");
     cy.get('input[name="projectSubType"]').should("not.be.disabled");
   });

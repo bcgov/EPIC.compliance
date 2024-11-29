@@ -1,16 +1,11 @@
-import ComplaintDrawer from "@/components/App/Complaints/ComplaintDrawer";
 import TableFilter from "@/components/Shared/FilterSelect/TableFilter";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
 import { searchFilter } from "@/components/Shared/MasterDataTable/utils";
 import PageLink from "@/components/Shared/PageLink";
-import { useIsRolesAllowed, KC_USER_GROUPS } from "@/hooks/useAuthorization";
 import { useComplaintsData } from "@/hooks/useComplaints";
 import { Complaint } from "@/models/Complaint";
-import { useDrawer } from "@/store/drawerStore";
-import { notify } from "@/store/snackbarStore";
 import dateUtils from "@/utils/dateUtils";
 import { Chip } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MRT_ColumnDef } from "material-react-table";
 import { useState, useEffect, useMemo } from "react";
@@ -22,12 +17,7 @@ export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
 );
 
 export function Complaints() {
-  const queryClient = useQueryClient();
-  const { setOpen, setClose } = useDrawer();
   const { data: complaintsList, isLoading } = useComplaintsData();
-  const showCreateComplaintButton = useIsRolesAllowed([
-    KC_USER_GROUPS.SUPERUSER,
-  ]);
 
   const [projectList, setProjectList] = useState<string[]>([]);
   const [topicList, setTopicList] = useState<string[]>([]);
@@ -38,7 +28,7 @@ export function Complaints() {
   useEffect(() => {
     setProjectList(
       [
-        ...new Set(complaintsList?.map((comp) => comp.project?.name ?? "")),
+        ...new Set(complaintsList?.map((comp) => comp.case_file?.project?.name ?? "")),
       ].filter(Boolean)
     );
     setTopicList(
@@ -84,7 +74,7 @@ export function Complaints() {
         ),
       },
       {
-        accessorKey: "project.name",
+        accessorFn: (row) => row.case_file?.project?.name,
         header: "Project",
         filterVariant: "multi-select",
         filterSelectOptions: projectList,
@@ -215,19 +205,6 @@ export function Complaints() {
     [projectList, topicList, complaintSourceList, officerList, statusList]
   );
 
-  const handleOnSubmit = (submitMsg: string) => {
-    queryClient.invalidateQueries({ queryKey: ["complaints"] });
-    setClose();
-    notify.success(submitMsg);
-  };
-
-  const handleOpenDrawer = () => {
-    setOpen({
-      content: <ComplaintDrawer onSubmit={handleOnSubmit} />,
-      width: "1118px",
-    });
-  };
-
   return (
     <MasterDataTable
       columns={columns}
@@ -246,9 +223,6 @@ export function Complaints() {
       }}
       titleToolbarProps={{
         tableTitle: "Complaints",
-        tableAddRecordButtonText: "Complaint",
-        tableAddRecordFunction: () => handleOpenDrawer(),
-        tableAddRecordButtonVisibility: showCreateComplaintButton,
       }}
     />
   );

@@ -4,7 +4,6 @@ import { Box, Button, Typography } from "@mui/material";
 import FileProfileProperty from "@/components/App/FileProfileProperty";
 import { Inspection } from "@/models/Inspection";
 import dateUtils from "@/utils/dateUtils";
-import { formatAuthorization } from "@/utils/appUtils";
 import { useMenuStore } from "@/store/menuStore";
 
 interface InspectionGeneralInformationProps {
@@ -35,15 +34,8 @@ const InspectionGeneralInformation: React.FC<
   }, [inspectionData.inspectionAttendances]);
 
   const properties = [
-    { name: "Project", value: inspectionData.project.name },
-    {
-      name: "Authorization",
-      value: formatAuthorization(inspectionData.authorization),
-    },
-    { name: "Regulated Party", value: inspectionData.regulated_party },
+    { name: "Project", value: inspectionData.case_file?.project?.name },
     { name: "Project Description", value: inspectionData.project_description },
-    { name: "Project Type", value: inspectionData.type },
-    { name: "Project Subtype", value: inspectionData.sub_type },
     {
       name: "Location Description",
       value: inspectionData.location_description,

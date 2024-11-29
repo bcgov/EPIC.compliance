@@ -5,10 +5,30 @@ import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
 import { Inspection } from "@/models/Inspection";
 import dayjs from "dayjs";
 import { AttendanceEnum } from "@/components/App/Inspections/InspectionFormUtils";
+import { CaseFile } from "@/models/CaseFile";
+import { AuthProvider } from "react-oidc-context";
+import { OidcConfig } from "@/utils/config";
 
 describe("InspectionDrawer Component", () => {
   let mockOnSubmit: sinon.SinonStub;
   let queryClient: QueryClient;
+
+  const mockCaseFile: CaseFile = {
+    id: 1,
+    project: { id: 1, name: "Test Project" },
+    date_created: "2023-04-15T12:00:00Z",
+    initiation: { id: "1", name: "Test Initiation" },
+    primary_officer: { id: 1, name: "John Doe", auth_user_guid: "123" },
+    officers: [
+      { id: 2, name: "Jane Smith", auth_user_guid: "124" },
+      { id: 3, name: "Bob Johnson", auth_user_guid: "125" },
+    ],
+    project_id: 0,
+    primary_officer_id: 0,
+    case_file_number: "",
+    case_file_status: "",
+    is_active: false,
+  };
 
   const mockInspection: Inspection = {
     id: 1,
@@ -71,6 +91,18 @@ describe("InspectionDrawer Component", () => {
     ],
   };
 
+  // Create a wrapper component that provides the mock auth context
+  const TestWrapper = ({ children }: { children: React.ReactNode }) => {
+    
+    return (
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider {...OidcConfig}>
+          {children}
+        </AuthProvider>
+      </QueryClientProvider>
+    );
+  };
+
   beforeEach(() => {
     mockOnSubmit = cy.stub().as("onSubmit");
     queryClient = new QueryClient({
@@ -81,13 +113,17 @@ describe("InspectionDrawer Component", () => {
       },
     });
 
-    // Set up the mock data for the query
     queryClient.setQueryData(["someQueryKey"], mockQueryData);
 
+    // Use the TestWrapper component instead
     mount(
-      <QueryClientProvider client={queryClient}>
-        <InspectionDrawer onSubmit={mockOnSubmit} inspection={mockInspection} />
-      </QueryClientProvider>
+      <TestWrapper>
+        <InspectionDrawer
+          onSubmit={mockOnSubmit}
+          inspection={mockInspection}
+          caseFile={mockCaseFile}
+        />
+      </TestWrapper>
     );
   });
 
@@ -99,9 +135,9 @@ describe("InspectionDrawer Component", () => {
 
   it("should show the button disabled when creating a new inspection", () => {
     mount(
-      <QueryClientProvider client={queryClient}>
-        <InspectionDrawer onSubmit={mockOnSubmit} />
-      </QueryClientProvider>
+      <TestWrapper>
+        <InspectionDrawer onSubmit={mockOnSubmit} caseFile={mockCaseFile} />
+      </TestWrapper>
     );
     cy.get("button").contains("Create").should("be.disabled");
   });

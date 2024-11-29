@@ -3,7 +3,6 @@ import { EditRounded } from "@mui/icons-material";
 import { Box, Button, Typography } from "@mui/material";
 import FileProfileProperty from "@/components/App/FileProfileProperty";
 import dateUtils from "@/utils/dateUtils";
-import { formatAuthorization } from "@/utils/appUtils";
 import { Complaint } from "@/models/Complaint";
 import { useMenuStore } from "@/store/menuStore";
 import {
@@ -23,15 +22,7 @@ const ComplaintGeneralInformation: React.FC<
   const { appHeaderHeight } = useMenuStore();
 
   const generalProperties = [
-    { name: "Project Name", value: complaintData.project.name },
-    {
-      name: "Authorization",
-      value: formatAuthorization(complaintData.authorization),
-    },
-    { name: "Regulated Party", value: complaintData.regulated_party },
-    { name: "Project Description", value: complaintData.project_description },
-    { name: "Type", value: complaintData.type },
-    { name: "Subtype", value: complaintData.sub_type },
+    { name: "Project Name", value: complaintData.case_file?.project?.name },
     {
       name: "Concern Description",
       value: complaintData.concern_description,
@@ -58,7 +49,7 @@ const ComplaintGeneralInformation: React.FC<
           name: "Condition #",
           value:
             complaintData.requirement_detail?.additional_details
-              ?.condition_number,
+              ?.condition_number ?? "",
         });
         break;
       case RequirementSourceEnum.EAC:
@@ -66,17 +57,17 @@ const ComplaintGeneralInformation: React.FC<
           name: "Amendment #",
           value:
             complaintData.requirement_detail?.additional_details
-              ?.amendment_number,
+              ?.amendment_number ?? "",
         });
         generalProperties.push({
           name: "Condition #",
           value:
             complaintData.requirement_detail?.additional_details
-              ?.amendment_condition_number,
+              ?.amendment_condition_number ?? "",
         });
         generalProperties.push({
           name: "Condition Description",
-          value: complaintData.requirement_detail?.description,
+          value: complaintData.requirement_detail?.description ?? "",
         });
         break;
       case RequirementSourceEnum.ACT2018:
@@ -87,7 +78,7 @@ const ComplaintGeneralInformation: React.FC<
       case RequirementSourceEnum.OTHER:
         generalProperties.push({
           name: "Condition Description",
-          value: complaintData.requirement_detail?.description,
+          value: complaintData.requirement_detail?.description ?? "",
         });
     }
     generalProperties.push({

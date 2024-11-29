@@ -1,10 +1,11 @@
-import { AddRounded, ExpandMoreRounded } from "@mui/icons-material";
+import { ExpandMoreRounded } from "@mui/icons-material";
 import { Box, Typography, Chip, Button } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import BreadcrumbsNav, {
   BreadcrumbItem,
 } from "@/components/Shared/BreadcrumbsNav";
-
+import CaseFileCreateInspection from "@/components/App/CaseFiles/Profile/CaseFileCreateInspection";
+import CaseFileCreateComplaint from "@/components/App/CaseFiles/Profile/CaseFileCreateComplaint";
 interface FileProfileHeaderProps {
   fileNumber: string;
   status: string;
@@ -40,22 +41,8 @@ const FileProfileHeader: React.FC<FileProfileHeaderProps> = ({
       <Box display={"flex"} gap={1}>
         {showInspectionComplaintButton && (
           <>
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => {}}
-              startIcon={<AddRounded />}
-            >
-              Inspection
-            </Button>
-            <Button
-              variant="text"
-              size="small"
-              onClick={() => {}}
-              startIcon={<AddRounded />}
-            >
-              Complaint
-            </Button>
+            <CaseFileCreateInspection />
+            <CaseFileCreateComplaint />
           </>
         )}
         <Button

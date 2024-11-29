@@ -36,3 +36,8 @@ export const useIsRolesAllowed = (
 
   return isRoleAllowed || isUserAllowed;
 };
+
+export const useCurrentLoggedInUser = () => {
+  const { user } = useAuth();
+  return user?.profile;
+};

@@ -3,27 +3,27 @@ import { Box, Stack } from "@mui/material";
 import { StaffUser } from "@/models/Staff";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { BCDesignTokens } from "epic.theme";
-import { Project } from "@/models/Project";
 import { Initiation } from "@/models/Initiation";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { IRType } from "@/models/IRType";
 import ControlledDateRangePicker from "@/components/Shared/Controlled/ControlledDateRangePicker";
-import ProjectDetailsForm from "@/components/App/ProjectDetailsForm";
+import { IRStatus } from "@/models/IRStatus";
+import { ProjectStatus } from "@/models/ProjectStatus";
 
 type InspectionFormLeftProps = {
-  projectList: Project[];
   initiationList: Initiation[];
   staffUsersList: StaffUser[];
   irTypeList: IRType[];
-  isEditMode?: boolean;
+  irStatusList: IRStatus[];
+  projectStatusList: ProjectStatus[];
 };
 
 const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
-  projectList,
   initiationList,
   staffUsersList,
   irTypeList,
-  isEditMode,
+  irStatusList,
+  projectStatusList,
 }) => {
   return (
     <>
@@ -36,7 +36,14 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
           boxSizing: "border-box",
         }}
       >
-        <ProjectDetailsForm projectList={projectList} isEditMode={isEditMode} />
+        <ControlledTextField
+          name="projectDescription"
+          label="Project Description"
+          placeholder="Project Description"
+          multiline
+          fullWidth
+          minRows={4}
+        />
         <ControlledTextField
           name="locationDescription"
           label="Location Description (optional)"
@@ -85,6 +92,26 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
             fullWidth
           />
           <ControlledDateRangePicker name="dateRange" label="Dates" fullWidth />
+        </Stack>
+        <Stack direction={"row"} gap={2}>
+          <ControlledAutoComplete
+            name="irStatus"
+            label="IR Status (optional)"
+            options={irStatusList}
+            getOptionLabel={(option) => option.name}
+            getOptionKey={(option) => option.id}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            fullWidth
+          />
+          <ControlledAutoComplete
+            name="projectStatus"
+            label="Project Status (optional)"
+            options={projectStatusList}
+            getOptionLabel={(option) => option.name}
+            getOptionKey={(option) => option.id}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            fullWidth
+          />
         </Stack>
       </Box>
     </>

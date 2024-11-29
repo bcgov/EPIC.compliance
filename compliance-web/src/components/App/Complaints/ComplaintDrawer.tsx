@@ -1,20 +1,15 @@
-import { useStaffUsersData } from "@/hooks/useStaff";
-import { useProjectsData } from "@/hooks/useProjects";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Box, Stack } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import ComplaintFormLeft from "./ComplaintFormLeft";
 import DrawerTitleBar from "@/components/Shared/Drawer/DrawerTitleBar";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useMenuStore } from "@/store/menuStore";
-import { useModal } from "@/store/modalStore";
 import {
   formatComplaintData,
-  getProjectId,
   ComplaintFormSchema,
   ComplaintSchemaType,
 } from "./ComplaintFormUtils";
-import LinkCaseFileModal from "@/components/App/CaseFiles/LinkCaseFileModal";
 import {
   Complaint,
   ComplaintAPIData,
@@ -31,15 +26,16 @@ import { useFirstNationsData } from "@/hooks/useFirstNations";
 import { useTopicsData } from "@/hooks/useTopics";
 import ComplaintSourceForm from "./ComplaintSourceForm";
 import RequirementSourceForm from "./RequirementSourceForm";
-import { INITIATION } from "@/utils/constants";
 import { StaffUser } from "@/models/Staff";
-import { formatAuthorization } from "@/utils/appUtils";
 import dayjs from "dayjs";
 import DrawerActionBarTop from "@/components/Shared/Drawer/DrawerActionBarTop";
 import DrawerActionBarBottom from "@/components/Shared/Drawer/DrawerActionBarBottom";
+import { CaseFile } from "@/models/CaseFile";
+import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
 
 type ComplaintDrawerProps = {
   onSubmit: (submitMsg: string) => void;
+  caseFile: CaseFile;
   complaint?: Complaint;
 };
 
@@ -53,28 +49,32 @@ const initFormData: ComplaintFormData = {
 const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   onSubmit,
   complaint,
+  caseFile,
 }) => {
   const { appHeaderHeight } = useMenuStore();
 
-  const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
-
-  const { data: projectList } = useProjectsData({ includeUnapproved: true });
-  const { data: staffUserList } = useStaffUsersData();
   const { data: complaintSourceList } = useComplaintSourcesData();
   const { data: requirementSourceList } = useRequirementSourcesData();
   const { data: agenciesList } = useAgenciesData();
   const { data: firstNationsList } = useFirstNationsData();
   const { data: topicsList } = useTopicsData();
+  const currentUser = useCurrentLoggedInUser();
+
+  const staffUserList = Array.from(
+    new Set(
+      [caseFile.primary_officer, ...(caseFile.officers ?? [])]
+        .filter(Boolean)
+        .map((user) => user.id)
+    )
+  ).map((id) =>
+    [caseFile.primary_officer, ...(caseFile.officers ?? [])].find(
+      (user) => user?.id === id
+    )
+  ) as StaffUser[];
 
   const defaultValues = useMemo<ComplaintFormData>(() => {
     if (complaint) {
       return {
-        project: complaint.project,
-        authorization: formatAuthorization(complaint.authorization),
-        regulatedParty: complaint.regulated_party,
-        projectDescription: complaint.project_description ?? "",
-        projectType: complaint.type,
-        projectSubType: complaint.sub_type,
         concernDescription: complaint.concern_description,
         locationDescription: complaint.location_description,
         primaryOfficer: complaint.primary_officer,
@@ -106,8 +106,22 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
             ?.amendment_condition_number ?? "",
       };
     }
-    return initFormData;
-  }, [agenciesList, complaint, firstNationsList]);
+    const selectedOfficer = staffUserList.find(
+      (user) => user.auth_user_guid === currentUser?.preferred_username
+    );
+    return {
+      ...initFormData,
+      caseFileId: caseFile.id.toString(),
+      primaryOfficer: selectedOfficer,
+    };
+  }, [
+    agenciesList,
+    complaint,
+    firstNationsList,
+    caseFile,
+    staffUserList,
+    currentUser,
+  ]);
 
   const methods = useForm<ComplaintSchemaType>({
     resolver: yupResolver(ComplaintFormSchema),
@@ -115,11 +129,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
     defaultValues,
   });
 
-  const { handleSubmit, reset, getValues } = methods;
-
-  useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues, reset]);
+  const { handleSubmit, reset } = methods;
 
   const onSuccess = useCallback(
     (data: Complaint) => {
@@ -136,24 +146,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   const { mutate: createComplaint } = useCreateComplaint(onSuccess);
   const { mutate: updateComplaint } = useUpdateComplaint(onSuccess);
 
-  const handleOnCaseFileSubmit = useCallback(
-    (caseFileId: number) => {
-      const formData = getValues();
-      const complaintData: ComplaintAPIData = formatComplaintData(
-        formData,
-        caseFileId
-      );
-      createComplaint(complaintData);
-      setModalClose();
-    },
-    [createComplaint, getValues, setModalClose]
-  );
-
   const onSubmitHandler = useCallback(
-    (data: ComplaintSchemaType) => {
+    (formData: ComplaintSchemaType) => {
       if (complaint) {
         // update existing complaint record
-        const formData = getValues();
         const complaintUpdateData: ComplaintAPIData =
           formatComplaintData(formData);
         updateComplaint({
@@ -161,26 +157,14 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           complaint: complaintUpdateData,
         });
       } else {
-        // Open modal for linking or creating case file
-        setModalOpen({
-          content: (
-            <LinkCaseFileModal
-              onSubmit={handleOnCaseFileSubmit}
-              projectId={getProjectId(data)}
-              primaryOfficerId={(data.primaryOfficer as StaffUser).id}
-              initiationId={INITIATION.COMPLAINTS_ID}
-            />
-          ),
-        });
+        const complaintData: ComplaintAPIData = formatComplaintData(
+          formData,
+          caseFile.id
+        );
+        createComplaint(complaintData);
       }
     },
-    [
-      complaint,
-      getValues,
-      updateComplaint,
-      setModalOpen,
-      handleOnCaseFileSubmit,
-    ]
+    [complaint, updateComplaint, caseFile, createComplaint]
   );
 
   return (
@@ -192,11 +176,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           direction="row"
         >
-          <ComplaintFormLeft
-            projectList={projectList ?? []}
-            staffUsersList={staffUserList ?? []}
-            isEditMode={!!complaint}
-          />
+          <ComplaintFormLeft staffUsersList={staffUserList ?? []} />
           <Box
             sx={{
               width: "399px",

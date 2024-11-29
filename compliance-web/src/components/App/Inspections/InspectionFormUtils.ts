@@ -6,10 +6,8 @@ import { Initiation } from "@/models/Initiation";
 import { InspectionAPIData } from "@/models/Inspection";
 import { IRStatus } from "@/models/IRStatus";
 import { IRType } from "@/models/IRType";
-import { Project } from "@/models/Project";
 import { ProjectStatus } from "@/models/ProjectStatus";
 import { StaffUser } from "@/models/Staff";
-import { UNAPPROVED_PROJECT_ID } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { Dayjs } from "dayjs";
 import * as yup from "yup";
@@ -23,12 +21,7 @@ export enum AttendanceEnum {
 }
 
 export const InspectionFormSchema = yup.object().shape({
-  project: yup.object<Project>().nullable().required("Project is required"),
-  authorization: yup.string().nullable(),
-  regulatedParty: yup.string().nullable(),
   projectDescription: yup.string().nullable(),
-  projectType: yup.string().nullable(),
-  projectSubType: yup.string().nullable(),
   locationDescription: yup.string().nullable(),
   utm: yup.string().nullable(),
   primaryOfficer: yup
@@ -135,17 +128,11 @@ export const InspectionFormSchema = yup.object().shape({
 
 export type InspectionSchemaType = yup.InferType<typeof InspectionFormSchema>;
 
-export const getProjectId = (formData: InspectionSchemaType) => {
-  const projectId = (formData.project as Project)?.id ?? "";
-  return projectId === UNAPPROVED_PROJECT_ID ? undefined : projectId;
-};
-
 // Formatting inspection form data for API
 export const formatInspectionData = (
   formData: InspectionSchemaType,
   caseFileId?: number // use as a flag for create new inspection mode
 ) => {
-  const projectId = getProjectId(formData);
   const inAttendanceOptions =
     (formData.inAttendance as Attendance[])?.map((att) => att.id) ?? [];
 
@@ -180,19 +167,7 @@ export const formatInspectionData = (
       ...inspectionData,
     };
   }
-  if (caseFileId) { // map the fields only for create new inspection, and case file id is available
-    inspectionData.project_id = projectId;
-    inspectionData.case_file_id = caseFileId;
+  inspectionData.case_file_id = caseFileId ?? undefined; // map the fields only for create new inspection, and case file id is available
 
-    if (!projectId) { // map the unapproved fields only during create mode
-      inspectionData = {
-        ...inspectionData,
-        unapproved_project_authorization: formData.authorization ?? "",
-        unapproved_project_regulated_party: formData.regulatedParty ?? "",
-        unapproved_project_type: formData.projectType ?? "",
-        unapproved_project_sub_type: formData.projectSubType ?? "",
-      };
-    }
-  }
   return inspectionData;
 };

@@ -5,8 +5,6 @@ import { IRStatus } from "@/models/IRStatus";
 import { IRType } from "@/models/IRType";
 import { ProjectStatus } from "@/models/ProjectStatus";
 import { OnSuccessType, request } from "@/utils/axiosUtils";
-import { UNAPPROVED_PROJECT_ABBREVIATION } from "@/utils/constants";
-import { UNAPPROVED_PROJECT_ID } from "@/utils/constants";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 const fetchIRTypes = (): Promise<IRType[]> => {
@@ -104,10 +102,6 @@ export const useInspectionByNumber = (inspectionNumber: string) => {
     queryFn: async () => {
       const inspection = await fetchInspection(inspectionNumber);
       const inspectionAttendances = await fetchInspectionAttendances(inspection?.id);
-      if (inspection.project.abbreviation === UNAPPROVED_PROJECT_ABBREVIATION) {
-        inspection.project.id = UNAPPROVED_PROJECT_ID;
-        delete inspection.project.abbreviation;
-      }
       return { ...inspection, inspectionAttendances };
     },
     enabled: !!inspectionNumber,

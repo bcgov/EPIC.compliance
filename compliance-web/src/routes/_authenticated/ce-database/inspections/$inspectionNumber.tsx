@@ -14,6 +14,8 @@ import InspectionGeneralInformation from "@/components/App/Inspections/Profile/I
 import ErrorPage from "@/components/Shared/ErrorPage";
 import LoadingPage from "@/components/Shared/LoadingPage";
 import { CR_CONTEXT_TYPE } from "@/utils/constants";
+import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
+import { CaseFile } from "@/models/CaseFile";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/$inspectionNumber"
@@ -34,6 +36,10 @@ function InspectionProfilePage() {
     error,
     isLoading,
   } = useInspectionByNumber(inspectionNumber!);
+
+  const { data: caseFileData } = useCaseFileByNumber(
+    inspectionData?.case_file.case_file_number ?? ""
+  );
 
   const showEditInspectionButton = useIsRolesAllowed(
     [KC_USER_GROUPS.SUPERUSER],
@@ -63,11 +69,12 @@ function InspectionProfilePage() {
         <InspectionDrawer
           onSubmit={handleOnSubmit}
           inspection={inspectionData}
+          caseFile={caseFileData as CaseFile}
         />
       ),
       width: "1118px",
     });
-  }, [setOpen, handleOnSubmit, inspectionData]);
+  }, [setOpen, handleOnSubmit, inspectionData, caseFileData]);
 
   // Conditional rendering
   if (isError) {

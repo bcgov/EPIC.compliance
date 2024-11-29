@@ -1,10 +1,11 @@
 import dateUtils from "@/utils/dateUtils";
 import { EditRounded } from "@mui/icons-material";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import FileProfileProperty from "@/components/App/FileProfileProperty";
 import { CaseFile } from "@/models/CaseFile";
 import CaseFileInspectionsTable from "./CaseFileInspectionsTable";
 import CaseFileComplaintsTable from "./CaseFileComplaintsTable";
+import { formatAuthorization } from "@/utils/appUtils";
 
 interface CaseFileGeneralInformationProps {
   caseFileData: CaseFile;
@@ -34,24 +35,39 @@ const CaseFileGeneralInformation: React.FC<CaseFileGeneralInformationProps> = ({
         )}
       </Box>
       <Box display={"flex"} gap={8}>
-        <Box>
+        <Stack flex={1}>
           <FileProfileProperty
             propertyName="Project"
             propertyValue={caseFileData.project.name}
             size="small"
           />
           <FileProfileProperty
-            propertyName="Date Created"
-            propertyValue={dateUtils.formatDate(caseFileData.date_created)}
+            propertyName="Authorization"
+            propertyValue={formatAuthorization(caseFileData.authorization)}
             size="small"
           />
+          <FileProfileProperty
+            propertyName="Certificate Holder"
+            propertyValue={caseFileData.regulated_party}
+            size="small"
+          />
+          <FileProfileProperty
+            propertyName="Type"
+            propertyValue={caseFileData.type}
+            size="small"
+          />
+          <FileProfileProperty
+            propertyName="Subtype"
+            propertyValue={caseFileData.sub_type}
+            size="small"
+          />
+        </Stack>
+        <Stack flex={1}>
           <FileProfileProperty
             propertyName="Initiation"
             propertyValue={caseFileData.initiation.name}
             size="small"
           />
-        </Box>
-        <Box>
           <FileProfileProperty
             propertyName="Primary"
             propertyValue={caseFileData.primary_officer?.name}
@@ -64,8 +80,18 @@ const CaseFileGeneralInformation: React.FC<CaseFileGeneralInformationProps> = ({
               .join(", ")}
             size="small"
           />
-        </Box>
+          <FileProfileProperty
+            propertyName="Date Created"
+            propertyValue={dateUtils.formatDate(caseFileData.date_created)}
+            size="small"
+          />
+        </Stack>
       </Box>
+      <FileProfileProperty
+        propertyName="Project Description"
+        propertyValue={caseFileData.project_description}
+        size="small"
+      />
       <CaseFileComplaintsTable caseFileId={caseFileData.id} />
       <CaseFileInspectionsTable caseFileId={caseFileData.id} />
     </Box>

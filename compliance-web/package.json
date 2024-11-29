@@ -9,7 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "cy:open": "cypress open",
-    "cy:run-unit": "cypress run --component"
+    "cy:unit": "cypress run --component"
   },
   "dependencies": {
     "@emotion/react": "^11.11.4",
