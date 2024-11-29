@@ -147,10 +147,9 @@ class CaseFileService:
         )
 
     @classmethod
-    def change_case_file_status(cls, case_file_id, status_data):
+    def change_case_file_status(cls, case_file, status_data):
         """Change the status of the case file."""
-        _access_check_for_update(case_file_id)
-        case_file = CaseFileModel.find_by_id(case_file_id)
+        _access_check_for_update(case_file.id)
         if not case_file:
             raise ResourceNotFoundError("Case file not found.")
         status_enum = CaseFileStatusEnum(status_data.get("status"))
@@ -164,7 +163,7 @@ class CaseFileService:
             and status_enum == CaseFileStatusEnum.CLOSED
         ):
             raise UnprocessableEntityError("The case file is already in Open status.")
-        CaseFileModel.change_status(case_file_id, status_enum)
+        CaseFileModel.change_status(case_file.id, status_enum)
 
 
 def _set_project_parameters(case_file):

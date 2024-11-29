@@ -201,9 +201,9 @@ class CaseFileOtherOfficers(Resource):
 
 
 @cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:case_file_id>/status", methods=["PATCH", "OPTIONS"])
-@API.doc(params={"case_file_id": "The unique identifier for the case file"})
-class CaseFileStatus(Resource):
+@API.route("/<string:case_file_number>/status", methods=["PATCH", "OPTIONS"])
+@API.doc(params={"case_file_number": "The unique file number for the case file"})
+class CaseFileNumberStatus(Resource):
     """Update the case file status."""
 
     @staticmethod
@@ -213,8 +213,9 @@ class CaseFileStatus(Resource):
     @API.response(404, "Not Found")
     @ApiHelper.swagger_decorators(API, endpoint_description="Close the case file")
     @API.response(code=204, description="Case file closed")
-    def patch(case_file_id):
+    def patch(case_file_number):
         """Close case file."""
         status = CaseFileStatusSchema().load(API.payload)
-        CaseFileService.change_case_file_status(case_file_id, status)
+        case_file = CaseFileService.get_by_file_number(case_file_number)
+        CaseFileService.change_case_file_status(case_file, status)
         return {}, HTTPStatus.NO_CONTENT
