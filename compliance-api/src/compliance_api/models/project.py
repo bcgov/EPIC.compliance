@@ -12,9 +12,4 @@ class Project(BaseModelVersioned):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-
-    def __setattr__(self, key, value):
-        """Set attribute value."""
-        if hasattr(self, key):
-            raise AttributeError(f"Cannot modify {key}. This class is read-only.")
-        super().__setattr__(key, value)
+    
