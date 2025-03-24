@@ -19,7 +19,6 @@ class Topic(BaseModelVersioned):
         Integer, primary_key=True, autoincrement=True, comment="The unique identifier"
     )
     name = Column(String(150), nullable=False, comment="Name of the topic")
-    new_column = Column(Integer)
 
     @classmethod
     def get_by_name(cls, topic: str) -> Topic:

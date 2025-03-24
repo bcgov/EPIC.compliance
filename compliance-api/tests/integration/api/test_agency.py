@@ -26,11 +26,15 @@ def test_get_specific_agency(app, client, auth_header_super_user):
     """Get agency by id."""
     #  create agencies
     created_agency = AgencyScenario.create(AgencyScenario.agency1.value)
-    url = urljoin(API_BASE_URL, f"agencies/{created_agency.id}")
+    # Store the ID before the session closes
+    agency_id = created_agency.id
+    agency_name = created_agency.name
+
+    url = urljoin(API_BASE_URL, f"agencies/{agency_id}")
     result = client.get(url, headers=auth_header_super_user)
     assert result.status_code == HTTPStatus.OK
-    assert result.json["id"] == created_agency.id
-    assert result.json["name"] == created_agency.name
+    assert result.json["id"] == agency_id
+    assert result.json["name"] == agency_name
 
 
 def test_create_agencies(client, auth_header_super_user):
@@ -86,7 +90,8 @@ def test_update_agency_with_non_super_user(client, auth_header):
     """Update agency."""
     url = urljoin(API_BASE_URL, "agencies/1")
     update_dict = AgencyScenario.agency1.value
-    result = client.patch(url, data=json.dumps(update_dict), headers=auth_header)
+    result = client.patch(url, data=json.dumps(
+        update_dict), headers=auth_header)
     assert result.status_code == HTTPStatus.FORBIDDEN
 
 

@@ -15,6 +15,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, String, asc
+from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from .db import db
 
@@ -88,11 +89,10 @@ class BaseModel(db.Model):
             db.session.add(self)
             db.session.flush()
             db.session.commit()
-        except:
+            return self  # Return self for method chaining
+        except (SQLAlchemyError, DBAPIError) as e:
             db.session.rollback()
-            raise
-        finally:
-            db.session.close()
+            raise e
 
     def update(self, payload: dict, commit=True):
         """Update and commit."""
@@ -108,11 +108,9 @@ class BaseModel(db.Model):
             db.session.delete(self)
             db.session.flush()
             db.session.commit()
-        except:
+        except (SQLAlchemyError, DBAPIError) as e:
             db.session.rollback()
-            raise
-        finally:
-            db.session.close()
+            raise e
 
     @staticmethod
     def rollback():
