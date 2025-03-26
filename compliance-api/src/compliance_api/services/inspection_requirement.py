@@ -185,19 +185,16 @@ class InspectionRequirementService:
         images = InspectionRequirementImageModel.find_all_images(
             requirement_id=requirement_id, image_type=image_type
         )
+        images = _set_signed_url(images)
 
-        for image in images:
-            presigned_url_reponse = DocService.get_presigned_url(
-                {
-                    "relative_url": image.relative_url,
-                    "action": ActionOnFileEnum.GET.value,
-                }
-            )
-            setattr(
-                image,
-                "url",
-                presigned_url_reponse["presigned_url"],
-            )
+    @classmethod
+    def get_all_images_by_inspection(cls, inspection_id):
+        """Get all images per inspection."""
+        _inspection_check(inspection_id)
+        images = InspectionRequirementImageModel.get_all_images_by_inspection(
+            inspection_id
+        )
+        images = _set_signed_url(images)
         return images
 
     @classmethod
@@ -226,6 +223,23 @@ class InspectionRequirementService:
         #  Mark the deletion in the inspection_req_images table
         InspectionRequirementImageModel.delete_image(image.id)
         return delete_response
+
+
+def _set_signed_url(images):
+    """Set the signed url in the image list."""
+    for image in images:
+        presigned_url_reponse = DocService.get_presigned_url(
+            {
+                "relative_url": image.relative_url,
+                "action": ActionOnFileEnum.GET.value,
+            }
+        )
+        setattr(
+            image,
+            "url",
+            presigned_url_reponse["presigned_url"],
+        )
+    return images
 
 
 def _create_image_obj(requirement_id, index, img: dict, image_type):

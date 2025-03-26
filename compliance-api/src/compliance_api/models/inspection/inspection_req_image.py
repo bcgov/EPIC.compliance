@@ -51,7 +51,8 @@ class InspectionRequirementImage(BaseModelVersioned):
     relative_url = Column(
         String, nullable=False, comment="The actual url of the final uploaded image"
     )
-    taken_by = relationship("StaffUser", foreign_keys=[taken_by_id], lazy="joined")
+    taken_by = relationship("StaffUser", foreign_keys=[
+                            taken_by_id], lazy="joined")
     inspection_requirement = relationship(
         "InspectionRequirement", foreign_keys=[requirement_id], lazy="select"
     )
@@ -119,3 +120,36 @@ class InspectionRequirementImage(BaseModelVersioned):
         image.update(DELETE_DIC_PARAMS, commit=False)
         session.flush()
         return image
+
+    @classmethod
+    def get_all_images_by_inspection(cls, inspection_id):
+        """Get all images for a specific inspection.
+
+        Args:
+            inspection_id (int): The ID of the inspection
+
+        Returns:
+            list: List of InspectionRequirementImage objects
+        """
+        from .inspection_requirement import InspectionRequirement
+
+        return (
+            cls.query
+            .join(
+                InspectionRequirement,
+                cls.requirement_id == InspectionRequirement.id
+            )
+            .filter(
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+                InspectionRequirement.inspection_id == inspection_id,
+                InspectionRequirement.is_deleted.is_(False),
+                InspectionRequirement.is_active.is_(True)
+            )
+            .order_by(
+                InspectionRequirement.id,
+                cls.image_type,
+                cls.sort_order
+            )
+            .all()
+        )
