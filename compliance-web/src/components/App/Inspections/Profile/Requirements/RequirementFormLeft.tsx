@@ -84,6 +84,11 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
     control,
     name: "complianceFinding",
   });
+  useEffect(() => {
+    if (enforcementAction?.id !== EnforcementActionEnum.ORDER) {
+      setValue("isReferralToAdministrativePenalty", false);
+    }
+  }, [enforcementAction]);
 
   useEffect(() => {
     if (
