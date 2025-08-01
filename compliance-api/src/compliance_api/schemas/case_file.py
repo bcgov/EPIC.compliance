@@ -229,3 +229,44 @@ class CaseFileUnlinkSchema(BaseSchema):
     case_file_to_unlink = fields.Int(
         metadata={"description": "The case file id to unlink"}, required=True
     )
+
+
+class CaseFileFilterSchema(Schema):
+    """Schema to filter the case files for export and pagination."""
+
+    case_file_number = fields.String(
+        required=False,
+        metadata={"description": "The case file number to filter by"},
+    )
+    project_id = fields.String(
+        required=False,
+        metadata={
+            "description": "The unique identifier of the project. Use 'null' or 'none' for unapproved projects"
+        },
+    )
+    initiation_id = fields.Integer(
+        required=False,
+        metadata={"description": "The initiation option ID to filter by"},
+    )
+    status = fields.String(
+        required=False,
+        metadata={"description": "The case file status to filter by (OPEN/CLOSE)"},
+    )
+    primary_officer_id = fields.Integer(
+        required=False,
+        metadata={"description": "The primary officer ID to filter by"},
+    )
+    date_created = fields.String(
+        required=False,
+        metadata={"description": "Filter case files created on this date (YYYY-MM-DD)"},
+    )
+    sort_by = fields.String(
+        required=False,
+        metadata={
+            "description": "Field to sort by (case_file_number, project, initiation, date_created, status, primary_officer)"
+        },
+    )
+    sort_order = fields.String(
+        required=False,
+        metadata={"description": "Sort order (asc/desc)"},
+    )

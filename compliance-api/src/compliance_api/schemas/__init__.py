@@ -19,7 +19,7 @@ from .agency import AgencyCreateSchema, AgencySchema
 from .appendix import AppendixCreateSchema, AppendixSchema
 from .case_file import (
     CaseFileCreateSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema, CaseFileOptionSchema,
-    CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema)
+    CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema, CaseFileFilterSchema)
 from .common import KeyValueSchema
 from .complaint import (
     ComplaintCreateSchema, ComplaintSchema, ComplaintSourceContactSchema, ComplaintStatusSchema, ComplaintUpdateSchema,
