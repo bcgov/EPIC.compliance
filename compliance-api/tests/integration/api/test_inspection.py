@@ -167,7 +167,11 @@ def test_get_inspections_by_case_file_id(
     result = client.get(url, headers=auth_header)
 
     assert result.status_code == HTTPStatus.OK
-    assert len(result.json) == 1
+    # Check that the response has the expected pagination structure
+    assert "items" in result.json
+    assert "total" in result.json
+    assert result.json["total"] == 1
+    assert len(result.json["items"]) == 1
 
 
 def test_get_inspections(
@@ -183,12 +187,13 @@ def test_get_inspections(
     result = client.get(url, headers=auth_header)
 
     assert result.status_code == HTTPStatus.OK
-    print(result.json)
-    print(created_inspection.id)
+    # Check that the response has the expected pagination structure
+    assert "items" in result.json
+    assert "total" in result.json
     filtered_inspection = next(
         (
             inspection
-            for inspection in result.json
+            for inspection in result.json["items"]
             if inspection["id"] == created_inspection.id
         ),
         None,

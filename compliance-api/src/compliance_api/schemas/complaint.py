@@ -255,6 +255,59 @@ class ComplaintSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
         return data
 
 
+class ComplaintFilterSchema(BaseSchema):
+    """Schema for filtering complaints."""
+
+    complaint_number = fields.Str(
+        metadata={"description": "Filter by complaint number"},
+        required=False,
+    )
+    project_id = fields.Str(
+        metadata={"description": "Filter by project ID"},
+        required=False,
+    )
+    date_received = fields.Date(
+        metadata={"description": "Filter by date received"},
+        required=False,
+    )
+    primary_officer_id = fields.Int(
+        metadata={"description": "Filter by primary officer ID"},
+        required=False,
+    )
+    status = fields.Str(
+        metadata={"description": "Filter by complaint status (Open/Closed)"},
+        required=False,
+    )
+    case_file_number = fields.Str(
+        metadata={"description": "Filter by case file number"},
+        required=False,
+    )
+    case_file_id = fields.Int(
+        metadata={"description": "Filter by case file ID"},
+        required=False,
+    )
+    page_no = fields.Int(
+        metadata={"description": "Page number for pagination"},
+        required=False,
+        missing=1,
+    )
+    page_size = fields.Int(
+        metadata={"description": "Number of items per page"},
+        required=False,
+        missing=15,
+    )
+    sort_by = fields.Str(
+        metadata={"description": "Field to sort by"},
+        required=False,
+        missing="complaint_number",
+    )
+    sort_order = fields.Str(
+        metadata={"description": "Sort order (asc/desc)"},
+        required=False,
+        missing="asc",
+    )
+
+
 class ComplaintStatusSchema(BaseSchema):
     """ComplaintStatusSchema."""
 

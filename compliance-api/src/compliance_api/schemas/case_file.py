@@ -263,7 +263,10 @@ class CaseFileFilterSchema(Schema):
     sort_by = fields.String(
         required=False,
         metadata={
-            "description": "Field to sort by (case_file_number, project, initiation, date_created, status, primary_officer)"
+            "description": (
+                "Field to sort by (case_file_number, project, initiation, "
+                "date_created, status, primary_officer)"
+            )
         },
     )
     sort_order = fields.String(

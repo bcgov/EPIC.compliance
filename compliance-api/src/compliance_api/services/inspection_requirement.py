@@ -908,7 +908,9 @@ def _apply_pagination(query, args, **kwargs):
     all_models = {**core_models, **approval_models, **reference_models}
     sorted_query = _apply_sort(final_query, args, subq=subq, **all_models)
     # Apply pagination
-    paginated_query = sorted_query.offset((pg_params["page"] - 1) * pg_params["per_page"]).limit(pg_params["per_page"])
+    paginated_query = sorted_query.offset(
+        (pg_params["page"] - 1) * pg_params["per_page"]
+    ).limit(pg_params["per_page"])
     return paginated_query, total_count
 
 

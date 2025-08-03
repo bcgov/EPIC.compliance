@@ -496,6 +496,61 @@ class InspectionMoreDetailsSchema(
     requirement_details = fields.Nested(InspectionRequirementDetails, many=True)
 
 
+class InspectionFilterSchema(BaseSchema):
+    """Schema for filtering inspections."""
+
+    ir_number = fields.Str(
+        metadata={"description": "Filter by inspection record number"}, allow_none=True
+    )
+    project_id = fields.Str(
+        metadata={
+            "description": "Filter by project ID (supports 'null' or 'none' for unapproved projects)"
+        },
+        allow_none=True,
+    )
+    start_date = fields.Date(
+        metadata={"description": "Filter by inspection start date"}, allow_none=True
+    )
+    initiation_id = fields.Int(
+        metadata={"description": "Filter by initiation option ID"}, allow_none=True
+    )
+    ir_progress = fields.Str(
+        metadata={"description": "Filter by IR progress status"}, allow_none=True
+    )
+    approval_status = fields.Str(
+        metadata={"description": "Filter by approval status"}, allow_none=True
+    )
+    primary_officer_id = fields.Int(
+        metadata={"description": "Filter by primary officer ID"}, allow_none=True
+    )
+    status = fields.Str(
+        metadata={"description": "Filter by inspection status"}, allow_none=True
+    )
+    case_file_number = fields.Str(
+        metadata={"description": "Filter by case file number"}, allow_none=True
+    )
+    page_no = fields.Int(
+        metadata={"description": "Page number for pagination"},
+        allow_none=True,
+        load_default=1,
+    )
+    page_size = fields.Int(
+        metadata={"description": "Number of items per page"},
+        allow_none=True,
+        load_default=15,
+    )
+    sort_by = fields.Str(
+        metadata={"description": "Field to sort by"},
+        allow_none=True,
+        load_default="ir_number",
+    )
+    sort_order = fields.Str(
+        metadata={"description": "Sort order (asc or desc)"},
+        allow_none=True,
+        load_default="asc",
+    )
+
+
 class InspectionStatusSchema(BaseSchema):
     """ComplaintStatusSchema."""
 

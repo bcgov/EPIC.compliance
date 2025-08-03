@@ -78,8 +78,12 @@ def test_get_case_files_with_case_file_id_passed(
     )
 
     assert result.status_code == HTTPStatus.OK
-    assert result.json[0].get("case_file_id") == second_case_file.id
-    assert len(result.json) == 1
+    # Check that the response has the expected pagination structure
+    assert "items" in result.json
+    assert "total" in result.json
+    assert result.json["items"][0].get("case_file_id") == second_case_file.id
+    assert len(result.json["items"]) == 1
+    assert result.json["total"] == 1
 
 
 def test_create_complaint_by_non_super_user_fail(

@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 from flask import g
-from sqlalchemy import and_, or_, desc, asc, case, cast, String
+from sqlalchemy import String, and_, asc, case, cast, desc
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -50,42 +50,55 @@ class CaseFileService:
         query = _build_base_query()
         query = _apply_case_file_filters(query, filter_data)
         query = _apply_case_file_sorting(query, filter_data)
-        
+
         # Get all case files without pagination
         case_files = query.all()
-        
-        # # Batch set project parameters for all case files
-        # _set_project_parameters_batch(case_files)
-        
+
         # Convert to list of dictionaries for pandas
         case_files_data = []
         for case_file in case_files:
             # Get project name from the joined project or unapproved project
-            project_name = ''
-            if case_file.project_id and hasattr(case_file, 'project') and case_file.project:
-                project_name = case_file.project.name or ''
+            project_name = ""
+            if (
+                case_file.project_id
+                and hasattr(case_file, "project")
+                and case_file.project
+            ):
+                project_name = case_file.project.name or ""
             elif not case_file.project_id:
                 # For unapproved projects, use the name from unapproved project or case file description
                 project_name = UNAPPROVED_PROJECT_NAME
-            
+
             case_file_dict = {
-                'Case File #': case_file.case_file_number or '',
-                'Project': project_name,
-                'Initiation': case_file.initiation.name or '',
-                'Date Created': case_file.created_date.strftime('%Y-%m-%d') if case_file.created_date else '',
-                'Status': case_file.case_file_status.value if case_file.case_file_status else '',
-                'Primary': f"{case_file.primary_officer.first_name} {case_file.primary_officer.last_name}" if case_file.primary_officer else '',
+                "Case File #": case_file.case_file_number or "",
+                "Project": project_name,
+                "Initiation": case_file.initiation.name or "",
+                "Date Created": (
+                    case_file.created_date.strftime("%Y-%m-%d")
+                    if case_file.created_date
+                    else ""
+                ),
+                "Status": (
+                    case_file.case_file_status.value
+                    if case_file.case_file_status
+                    else ""
+                ),
+                "Primary": (
+                    f"{case_file.primary_officer.first_name} {case_file.primary_officer.last_name}"
+                    if case_file.primary_officer
+                    else ""
+                ),
             }
             case_files_data.append(case_file_dict)
-        
+
         # Create DataFrame
         df = pd.DataFrame(case_files_data)
-        
+
         # Create Excel file in memory
         output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, sheet_name='Case Files', index=False)
-        
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="Case Files", index=False)
+
         output.seek(0)
         return output.getvalue()
 
@@ -445,100 +458,107 @@ def _build_case_files_paginated_query(args):
     """Build paginated query for case files with filtering and sorting."""
     # Base query with joins including UnapprovedProject
     query = _build_base_query()
-    
+
     # Apply filters
     query = _apply_case_file_filters(query, args)
-    
+
     # Apply sorting
     query = _apply_case_file_sorting(query, args)
-    
+
     # Get total count before pagination
     total_count = query.count()
-    
+
     # Apply pagination
     paginated_query = _apply_case_file_pagination(query, args)
-    
+
     # Execute query and get results
     case_files = paginated_query.all()
-    
-    # # Batch set project parameters for all case files
-    # _set_project_parameters_batch(case_files)
-    
+
     return case_files, total_count
 
 
 def _build_base_query():
     """Build the base query with all necessary joins."""
-    return db.session.query(CaseFileModel)\
-        .join(CaseFileInitiationOptionModel, CaseFileModel.initiation_id == CaseFileInitiationOptionModel.id)\
-        .outerjoin(ProjectModel, CaseFileModel.project_id == ProjectModel.id)\
-        .outerjoin(StaffUserModel, CaseFileModel.primary_officer_id == StaffUserModel.id)\
-        .outerjoin(UnapprovedProjectModel, CaseFileModel.id == UnapprovedProjectModel.case_file_id)
+    return (
+        db.session.query(CaseFileModel)
+        .join(
+            CaseFileInitiationOptionModel,
+            CaseFileModel.initiation_id == CaseFileInitiationOptionModel.id,
+        )
+        .outerjoin(ProjectModel, CaseFileModel.project_id == ProjectModel.id)
+        .outerjoin(
+            StaffUserModel, CaseFileModel.primary_officer_id == StaffUserModel.id
+        )
+        .outerjoin(
+            UnapprovedProjectModel,
+            CaseFileModel.id == UnapprovedProjectModel.case_file_id,
+        )
+    )
 
 
 def _apply_case_file_filters(query, args):
     """Apply filters to the case file query based on arguments."""
     filters = []
-    
+
     # Case file number filter
-    case_file_number = args.get('case_file_number')
+    case_file_number = args.get("case_file_number")
     if case_file_number:
-        filters.append(CaseFileModel.case_file_number.ilike(f'%{case_file_number}%'))
-    
+        filters.append(CaseFileModel.case_file_number.ilike(f"%{case_file_number}%"))
+
     # Project ID filter (backward compatibility)
-    project_id = args.get('project_id')
+    project_id = args.get("project_id")
     if project_id:
         # Handle both regular projects and unapproved projects
-        if str(project_id).lower() == 'null' or str(project_id).lower() == 'none':
+        if str(project_id).lower() == "null" or str(project_id).lower() == "none":
             filters.append(CaseFileModel.project_id.is_(None))
         else:
             filters.append(CaseFileModel.project_id == project_id)
-    
+
     # Initiation ID filter
-    initiation_id = args.get('initiation_id')
+    initiation_id = args.get("initiation_id")
     if initiation_id:
         filters.append(CaseFileModel.initiation_id == initiation_id)
-    
+
     # Status filter
-    status = args.get('status')
+    status = args.get("status")
     if status:
-        if status.upper() == 'OPEN':
+        if status.upper() == "OPEN":
             filters.append(CaseFileModel.case_file_status == CaseFileStatusEnum.OPEN)
-        elif status.upper() == 'CLOSE':
+        elif status.upper() == "CLOSE":
             filters.append(CaseFileModel.case_file_status == CaseFileStatusEnum.CLOSED)
-    
+
     # Primary officer filter
-    primary_officer_id = args.get('primary_officer_id')
+    primary_officer_id = args.get("primary_officer_id")
     if primary_officer_id:
         filters.append(CaseFileModel.primary_officer_id == primary_officer_id)
-    
+
     # Date created filter
-    date_created = args.get('date_created')
+    date_created = args.get("date_created")
     if date_created:
-        target_date = datetime.strptime(date_created, '%Y-%m-%d')
+        target_date = datetime.strptime(date_created, "%Y-%m-%d")
         filters.append(CaseFileModel.date_created == target_date)
-    
+
     # Apply all filters
     if filters:
         query = query.filter(and_(*filters))
-    
+
     return query
 
 
 def _apply_case_file_sorting(query, args):
     """Apply sorting to the case file query."""
-    sort_by = args.get('sort_by', 'case_file_number')
-    sort_order = args.get('sort_order', 'asc').lower()
-    
-    if sort_by == 'case_file_number':
+    sort_by = args.get("sort_by", "case_file_number")
+    sort_order = args.get("sort_order", "asc").lower()
+
+    if sort_by == "case_file_number":
         sort_field = CaseFileModel.case_file_number
-    elif sort_by == 'project':
+    elif sort_by == "project":
         sort_field = ProjectModel.name
-    elif sort_by == 'initiation':
+    elif sort_by == "initiation":
         sort_field = CaseFileInitiationOptionModel.name
-    elif sort_by == 'date_created':
+    elif sort_by == "date_created":
         sort_field = CaseFileModel.date_created
-    elif sort_by == 'status':
+    elif sort_by == "status":
         # Handle enum sorting with sophisticated case expression
         status_order = list(reversed([e.name for e in CaseFileStatusEnum]))
         case_file_status_case = case(
@@ -546,19 +566,19 @@ def _apply_case_file_sorting(query, args):
             value=cast(CaseFileModel.case_file_status, String),
             else_=len(status_order),
         ).label("case_file_status_order")
-        
+
         custom_order = (
             case_file_status_case.asc()
             if sort_order == "asc"
             else case_file_status_case.desc()
         )
         return query.order_by(custom_order)
-    elif sort_by == 'primary_officer':
+    elif sort_by == "primary_officer":
         sort_field = StaffUserModel.first_name
     else:
         sort_field = CaseFileModel.case_file_number  # Default
-    
-    if sort_order == 'desc':
+
+    if sort_order == "desc":
         return query.order_by(desc(sort_field))
     else:
         return query.order_by(asc(sort_field))
@@ -566,69 +586,7 @@ def _apply_case_file_sorting(query, args):
 
 def _apply_case_file_pagination(query, args):
     """Apply pagination to the case file query."""
-    page = int(args.get('page_no', 1))
-    per_page = int(args.get('page_size', 15))
-    
+    page = int(args.get("page_no", 1))
+    per_page = int(args.get("page_size", 15))
+
     return query.offset((page - 1) * per_page).limit(per_page)
-
-
-def _set_project_parameters_batch(case_files):
-    """Set project parameters for multiple case files efficiently."""
-    if not case_files:
-        return
-    
-    # Separate case files by project type
-    approved_project_ids = []
-    case_files_with_projects = []
-    case_files_without_projects = []
-    
-    for case_file in case_files:
-        if case_file.project_id:
-            approved_project_ids.append(case_file.project_id)
-            case_files_with_projects.append(case_file)
-        else:
-            case_files_without_projects.append(case_file)
-    
-    # Batch fetch all approved project data if any exist
-    projects_lookup = {}
-    if approved_project_ids:
-        try:
-            # Remove duplicates and fetch projects individually (TrackService doesn't have batch method)
-            unique_project_ids = list(set(approved_project_ids))
-            for project_id in unique_project_ids:
-                try:
-                    project_data = TrackService.get_project_by_id(project_id)
-                    projects_lookup[project_id] = project_data
-                except Exception as project_error:
-                    # Log individual project fetch error but continue with others
-                    print(f"Error fetching project {project_id}: {project_error}")
-        except Exception as e:
-            # Log error but don't fail the entire operation
-            print(f"Error in project batch fetch: {e}")
-    
-    # Set parameters for approved projects
-    for case_file in case_files_with_projects:
-        project = projects_lookup.get(case_file.project_id)
-        if project:
-            setattr(case_file, "authorization", project.get("ea_certificate", None))
-            setattr(case_file, "type", project.get("type", {}).get("name"))
-            setattr(case_file, "sub_type", project.get("sub_type", {}).get("name"))
-            setattr(case_file, "regulated_party", project.get("proponent", {}).get("name"))
-    
-    # Set parameters for unapproved projects (data already joined in query)
-    for case_file in case_files_without_projects:
-        # Check if unapproved project data is available from the join
-        if hasattr(case_file, 'unapproved_projects') and case_file.unapproved_projects:
-            unapproved_project = case_file.unapproved_projects[0]  # Should be only one
-            setattr(case_file, "authorization", unapproved_project.authorization)
-            setattr(case_file, "type", unapproved_project.type)
-            setattr(case_file, "sub_type", unapproved_project.sub_type)
-            setattr(case_file, "regulated_party", unapproved_project.regulated_party)
-        else:
-            # Fallback to individual query if join data not available
-            unapproved_project = UnapprovedProjectModel.get_by_case_file_id(case_file.id)
-            if unapproved_project:
-                setattr(case_file, "authorization", unapproved_project.authorization)
-                setattr(case_file, "type", unapproved_project.type)
-                setattr(case_file, "sub_type", unapproved_project.sub_type)
-                setattr(case_file, "regulated_party", unapproved_project.regulated_party)

@@ -23,8 +23,9 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
-    CaseFileCreateSchema, CaseFileFilterSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema, CaseFileOptionSchema,
-    CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema, KeyValueSchema, StaffUserSchema)
+    CaseFileCreateSchema, CaseFileFilterSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema,
+    CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema,
+    KeyValueSchema, StaffUserSchema)
 from compliance_api.services import CaseFileService
 from compliance_api.services.case_file_aggregate import CaseFileAggregateService
 from compliance_api.utils.enum import PermissionEnum
@@ -100,7 +101,10 @@ class CaseFiles(Resource):
     @API.doc(
         params={
             "project_id": {
-                "description": "The unique identifier of the project. Use 'null' or 'none' to filter for unapproved projects",
+                "description": (
+                    "The unique identifier of the project. "
+                    "Use 'null' or 'none' to filter for unapproved projects"
+                ),
                 "type": "string",
                 "required": False,
             },
@@ -140,7 +144,10 @@ class CaseFiles(Resource):
                 "required": False,
             },
             "sort_by": {
-                "description": "Field to sort by (case_file_number, project, initiation, date_created, status, primary_officer)",
+                "description": (
+                    "Field to sort by (case_file_number, project, initiation, "
+                    "date_created, status, primary_officer)"
+                ),
                 "type": "string",
                 "required": False,
             },
@@ -148,11 +155,13 @@ class CaseFiles(Resource):
                 "description": "Sort order (asc/desc)",
                 "type": "string",
                 "required": False,
-            }
+            },
         }
     )
     @API.response(code=200, description="Success", model=[case_file_list_model])
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all case files with pagination and filtering")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch all case files with pagination and filtering"
+    )
     @auth.require
     def get():
         """Fetch all casefiles with pagination and filtering."""

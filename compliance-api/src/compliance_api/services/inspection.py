@@ -1,5 +1,10 @@
 """Service for managing Inspection."""
 
+from io import BytesIO
+
+import pandas as pd
+from sqlalchemy import String, and_, asc, case, cast, desc, func
+
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
     BusinessError, PermissionDeniedError, ResourceNotFoundError, UnprocessableEntityError)
@@ -11,6 +16,7 @@ from compliance_api.models import InspectionAttendance as InspectionAttendanceMo
 from compliance_api.models import InspectionAttendanceOption as InspectionAttendanceOptionModel
 from compliance_api.models import InspectionAttendanceOptionEnum
 from compliance_api.models import InspectionFirstnation as InspectionFirstnationModel
+from compliance_api.models import InspectionInitiationOption
 from compliance_api.models import InspectionInitiationOption as InspectionInitiationOptionModel
 from compliance_api.models import InspectionOfficer as InspectionOfficerModel
 from compliance_api.models import InspectionOtherAttendance as InspectionOtherAttendanceModel
@@ -24,10 +30,15 @@ from compliance_api.models import Order as OrderModel
 from compliance_api.models import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models import OrderProgressEnum
 from compliance_api.models import WarningLetter as WarningLetterModel
+from compliance_api.models import db
+from compliance_api.models.case_file import CaseFile
 from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
+from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
+from compliance_api.models.inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
+from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE
@@ -368,6 +379,109 @@ class InspectionService:
             )
             InspectionAgencyModel.delete_inspection_agency(inspection_id)
 
+    @classmethod
+    def get_inspections_paginated(cls, args):
+        """Get paginated inspections with filtering and sorting."""
+        query = _build_inspections_paginated_query(args)
+
+        # Get total count
+        total_count = query.count()
+
+        # Apply pagination
+        query = _apply_inspections_pagination(query, args)
+
+        # Execute query and process results
+        results = []
+        for result in query.all():
+            inspection = result.Inspection
+            inspection.ir_progress = result.ir_progress
+            inspection.approval_status = result.approval_status
+            if result.approved_by_auth_user_guid is not None:
+                inspection.approved_by = {
+                    "auth_user_guid": result.approved_by_auth_user_guid,
+                    "first_name": result.approved_by_first_name,
+                    "last_name": result.approved_by_last_name,
+                    "id": result.approved_by_id,
+                }
+            results.append(inspection)
+
+        return results, total_count
+
+    @classmethod
+    def generate_inspections_excel(cls, args):
+        """Generate Excel export for inspections."""
+        # Get all matching inspections without pagination
+        query = _build_inspections_paginated_query(args)
+
+        # Execute query and process results
+        results = []
+        for result in query.all():
+            inspection = result[0]
+            inspection.ir_progress = result[1]
+            inspection.approval_status = result[2]
+            if result[3] is not None:
+                inspection.approved_by = {
+                    "auth_user_guid": result[3],
+                    "first_name": result[4],
+                    "last_name": result[5],
+                    "id": result[6],
+                }
+            results.append(inspection)
+
+        # Set project parameters for all inspections
+        for inspection in results:
+            _set_project_status(inspection)
+
+        # Create Excel data
+        excel_data = []
+        for inspection in results:
+            excel_data.append(
+                {
+                    "IR #": inspection.ir_number or "",
+                    "Project": getattr(inspection, "project_name", "") or "",
+                    "Start Date": (
+                        inspection.start_date.strftime("%Y-%m-%d")
+                        if inspection.start_date
+                        else ""
+                    ),
+                    "Initiation": (
+                        inspection.initiation.name if inspection.initiation else ""
+                    ),
+                    "IR Progress": (
+                        inspection.ir_progress.value if inspection.ir_progress else ""
+                    ),
+                    "Approval Status": (
+                        inspection.approval_status.value
+                        if inspection.approval_status
+                        else ""
+                    ),
+                    "Primary": (
+                        f"{inspection.primary_officer.first_name} {inspection.primary_officer.last_name}"
+                        if inspection.primary_officer
+                        else ""
+                    ),
+                    "Status": (
+                        inspection.inspection_status.value
+                        if inspection.inspection_status
+                        else ""
+                    ),
+                    "Case File #": (
+                        inspection.case_file.case_file_number
+                        if inspection.case_file
+                        else ""
+                    ),
+                }
+            )
+
+        # Create Excel file
+        df = pd.DataFrame(excel_data)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, sheet_name="Inspections", index=False)
+        output.seek(0)
+
+        return output
+
 
 def _handle_close_as_note(inspection, session):
     """Handle close as note.
@@ -668,6 +782,228 @@ def _create_inspection_record_number(
     return f"{project_code}_{case_file.case_file_number}_IR{serial_number}"
 
 
+def _create_inspection_other_attendance_object(
+    inspection_data: dict, inspection_id: int
+):
+    """Return inspection other attendance object."""
+    return {
+        "inspection_id": inspection_id,
+        "municipal": inspection_data.get("attendance_municipal"),
+        "other": inspection_data.get("attendance_other"),
+    }
+
+
+def _build_inspections_paginated_query(args):
+    """Build the base query for paginated inspections with filtering and sorting."""
+    # Subquery to get the latest approval record for each inspection record
+    latest_approval_subquery = (
+        db.session.query(
+            InspectionRecordApproval.inspection_record_id,
+            func.max(InspectionRecordApproval.created_date).label("latest_date"),
+        )
+        .filter(
+            InspectionRecordApproval.is_active.is_(True),
+            InspectionRecordApproval.is_deleted.is_(False),
+        )
+        .group_by(InspectionRecordApproval.inspection_record_id)
+        .subquery()
+    )
+
+    # Build base query similar to the model's get_all_inspections method
+    query = (
+        InspectionModel.query.outerjoin(
+            InspectionRecord,
+            and_(
+                InspectionModel.id == InspectionRecord.inspection_id,
+                InspectionRecord.is_deleted.is_(False),
+                InspectionRecord.is_active.is_(True),
+            ),
+        )
+        .outerjoin(
+            InspectionRecordApproval,
+            InspectionRecordApproval.inspection_record_id == InspectionRecord.id,
+        )
+        .outerjoin(
+            latest_approval_subquery,
+            and_(
+                latest_approval_subquery.c.inspection_record_id == InspectionRecord.id,
+                latest_approval_subquery.c.latest_date
+                == InspectionRecordApproval.created_date,
+            ),
+        )
+        .outerjoin(
+            StaffUser,
+            InspectionRecordApproval.approved_by_id == StaffUser.id,
+        )
+        .filter(
+            InspectionModel.is_deleted.is_(False), InspectionModel.is_active.is_(True)
+        )
+        .add_columns(
+            InspectionRecord.ir_progress.label("ir_progress"),
+            InspectionRecordApproval.approval_status.label("approval_status"),
+            StaffUser.auth_user_guid.label("approved_by_auth_user_guid"),
+            StaffUser.first_name.label("approved_by_first_name"),
+            StaffUser.last_name.label("approved_by_last_name"),
+            StaffUser.id.label("approved_by_id"),
+        )
+    )
+
+    # Apply filters
+    query = _apply_inspections_filters(query, args)
+
+    # Apply sorting
+    query = _apply_inspections_sorting(query, args)
+
+    return query
+
+
+def _apply_inspections_filters(query, args):
+    """Apply filters to the inspections query."""
+    filters = []
+
+    # IR number filter
+    if args.get("ir_number"):
+        filters.append(InspectionModel.ir_number.ilike(f"%{args['ir_number']}%"))
+
+    # Project ID filter
+    if args.get("project_id"):
+        project_id = args["project_id"]
+        if project_id.lower() in ["null", "none"]:
+            filters.append(InspectionModel.project_id.is_(None))
+        else:
+            filters.append(InspectionModel.project_id == int(project_id))
+
+    # Case File ID filter
+    if args.get("case_file_id"):
+        filters.append(InspectionModel.case_file_id == int(args["case_file_id"]))
+
+    # Start date filter
+    if args.get("start_date"):
+        filters.append(InspectionModel.start_date == args["start_date"])
+
+    # Initiation filter
+    if args.get("initiation_id"):
+        filters.append(InspectionModel.initiation_id == args["initiation_id"])
+
+    # IR Progress filter
+    if args.get("ir_progress"):
+        progress_enum = IRProgressEnum[args["ir_progress"].upper()]
+        filters.append(InspectionRecord.ir_progress == progress_enum)
+
+    # Approval status filter
+    if args.get("approval_status"):
+        approval_enum = IRApprovalStatusEnum[args["approval_status"].upper()]
+        filters.append(InspectionRecordApproval.approval_status == approval_enum)
+
+    # Primary officer filter
+    if args.get("primary_officer_id"):
+        filters.append(InspectionModel.primary_officer_id == args["primary_officer_id"])
+
+    # Status filter
+    if args.get("status"):
+        try:
+            status_enum = InspectionStatusEnum[args["status"].upper()]
+            filters.append(InspectionModel.inspection_status == status_enum)
+        except KeyError:
+            pass  # Invalid enum value, ignore filter
+
+    # Case file number filter
+    if args.get("case_file_number"):
+        query = query.join(CaseFile, InspectionModel.case_file_id == CaseFile.id)
+        filters.append(CaseFile.case_file_number.ilike(f"%{args['case_file_number']}%"))
+
+    if filters:
+        query = query.filter(and_(*filters))
+
+    return query
+
+
+def _apply_inspections_sorting(query, args):
+    """Apply sorting to the inspections query."""
+    sort_by = args.get("sort_by", "ir_number")
+    sort_order = args.get("sort_order", "asc").lower()
+
+    if sort_by == "ir_number":
+        sort_field = InspectionModel.ir_number
+    elif sort_by == "project":
+        # For project sorting, we'll need to handle this differently since project data comes from external service
+        sort_field = InspectionModel.project_id
+    elif sort_by == "start_date":
+        sort_field = InspectionModel.start_date
+    elif sort_by == "initiation":
+        query = query.join(
+            InspectionInitiationOption,
+            InspectionModel.initiation_id == InspectionInitiationOption.id,
+        )
+        sort_field = InspectionInitiationOption.name
+    elif sort_by == "ir_progress":
+        # Handle enum sorting for IR progress
+        progress_order = list(reversed([e.name for e in IRProgressEnum]))
+        ir_progress_case = case(
+            {status: idx for idx, status in enumerate(progress_order)},
+            value=cast(InspectionRecord.ir_progress, String),
+            else_=len(progress_order),
+        ).label("ir_progress_order")
+
+        custom_order = (
+            ir_progress_case.asc() if sort_order == "asc" else ir_progress_case.desc()
+        )
+        return query.order_by(custom_order)
+    elif sort_by == "approval_status":
+        # Handle enum sorting for approval status
+        approval_order = list(reversed([e.name for e in IRApprovalStatusEnum]))
+        approval_status_case = case(
+            {status: idx for idx, status in enumerate(approval_order)},
+            value=cast(InspectionRecordApproval.approval_status, String),
+            else_=len(approval_order),
+        ).label("approval_status_order")
+
+        custom_order = (
+            approval_status_case.asc()
+            if sort_order == "asc"
+            else approval_status_case.desc()
+        )
+        return query.order_by(custom_order)
+    elif sort_by == "primary_officer":
+        query = query.join(
+            StaffUser, InspectionModel.primary_officer_id == StaffUser.id
+        )
+        sort_field = StaffUser.first_name
+    elif sort_by == "status":
+        # Handle enum sorting for inspection status
+        status_order = list(reversed([e.name for e in InspectionStatusEnum]))
+        inspection_status_case = case(
+            {status: idx for idx, status in enumerate(status_order)},
+            value=cast(InspectionModel.inspection_status, String),
+            else_=len(status_order),
+        ).label("inspection_status_order")
+
+        custom_order = (
+            inspection_status_case.asc()
+            if sort_order == "asc"
+            else inspection_status_case.desc()
+        )
+        return query.order_by(custom_order)
+    elif sort_by == "case_file_number":
+        query = query.join(CaseFile, InspectionModel.case_file_id == CaseFile.id)
+        sort_field = CaseFile.case_file_number
+    else:
+        sort_field = InspectionModel.ir_number  # Default
+
+    if sort_order == "desc":
+        return query.order_by(desc(sort_field))
+    else:
+        return query.order_by(asc(sort_field))
+
+
+def _apply_inspections_pagination(query, args):
+    """Apply pagination to the inspections query."""
+    page = int(args.get("page_no", 1))
+    per_page = int(args.get("page_size", 15))
+
+    return query.offset((page - 1) * per_page).limit(per_page)
+
+
 def _get_project_abbreviation(
     project_id: int,
 ):  # pylint: disable=inconsistent-return-statements
@@ -676,14 +1012,3 @@ def _get_project_abbreviation(
         project = TrackService.get_project_by_id(project_id)
         return project.get("abbreviation")
     return UNAPPROVED_PROJECT_CODE
-
-
-def _create_inspection_other_attendance_object(
-    inspection_data: dict, inspection_id: int
-):
-    """Return inspection other attendance object."""
-    return {
-        "municipal": inspection_data.get("attendance_municipal"),
-        "other": inspection_data.get("attendance_other"),
-        "inspection_id": inspection_id,
-    }
