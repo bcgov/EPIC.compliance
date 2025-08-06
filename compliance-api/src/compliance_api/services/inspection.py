@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Service for managing Inspection."""
 
 from io import BytesIO
@@ -16,7 +17,6 @@ from compliance_api.models import InspectionAttendance as InspectionAttendanceMo
 from compliance_api.models import InspectionAttendanceOption as InspectionAttendanceOptionModel
 from compliance_api.models import InspectionAttendanceOptionEnum
 from compliance_api.models import InspectionFirstnation as InspectionFirstnationModel
-from compliance_api.models import InspectionInitiationOption
 from compliance_api.models import InspectionInitiationOption as InspectionInitiationOptionModel
 from compliance_api.models import InspectionOfficer as InspectionOfficerModel
 from compliance_api.models import InspectionOtherAttendance as InspectionOtherAttendanceModel
@@ -474,10 +474,10 @@ class InspectionService:
             )
 
         # Create Excel file
-        df = pd.DataFrame(excel_data)
+        data_frame = pd.DataFrame(excel_data)
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Inspections", index=False)
+            data_frame.to_excel(writer, sheet_name="Inspections", index=False)
         output.seek(0)
 
         return output
@@ -857,48 +857,58 @@ def _build_inspections_paginated_query(args):
     return query
 
 
-def _apply_inspections_filters(query, args):
-    """Apply filters to the inspections query."""
+def _get_basic_filters(args):
+    """Get basic inspection filters."""
     filters = []
-
+    
     # IR number filter
     if args.get("ir_number"):
         filters.append(InspectionModel.ir_number.ilike(f"%{args['ir_number']}%"))
-
-    # Project ID filter
-    if args.get("project_id"):
-        project_id = args["project_id"]
-        if project_id.lower() in ["null", "none"]:
-            filters.append(InspectionModel.project_id.is_(None))
-        else:
-            filters.append(InspectionModel.project_id == int(project_id))
-
+    
     # Case File ID filter
     if args.get("case_file_id"):
         filters.append(InspectionModel.case_file_id == int(args["case_file_id"]))
-
+    
     # Start date filter
     if args.get("start_date"):
         filters.append(InspectionModel.start_date == args["start_date"])
-
+    
     # Initiation filter
     if args.get("initiation_id"):
         filters.append(InspectionModel.initiation_id == args["initiation_id"])
+    
+    # Primary officer filter
+    if args.get("primary_officer_id"):
+        filters.append(InspectionModel.primary_officer_id == args["primary_officer_id"])
+    
+    return filters
 
+
+def _get_project_id_filter(args):
+    """Get project ID filter with null handling."""
+    if not args.get("project_id"):
+        return None
+    
+    project_id = args["project_id"]
+    if project_id.lower() in ["null", "none"]:
+        return InspectionModel.project_id.is_(None)
+    return InspectionModel.project_id == int(project_id)
+
+
+def _get_enum_filters(args):
+    """Get enum-based filters."""
+    filters = []
+    
     # IR Progress filter
     if args.get("ir_progress"):
         progress_enum = IRProgressEnum[args["ir_progress"].upper()]
         filters.append(InspectionRecord.ir_progress == progress_enum)
-
+    
     # Approval status filter
     if args.get("approval_status"):
         approval_enum = IRApprovalStatusEnum[args["approval_status"].upper()]
         filters.append(InspectionRecordApproval.approval_status == approval_enum)
-
-    # Primary officer filter
-    if args.get("primary_officer_id"):
-        filters.append(InspectionModel.primary_officer_id == args["primary_officer_id"])
-
+    
     # Status filter
     if args.get("status"):
         try:
@@ -906,15 +916,33 @@ def _apply_inspections_filters(query, args):
             filters.append(InspectionModel.inspection_status == status_enum)
         except KeyError:
             pass  # Invalid enum value, ignore filter
+    
+    return filters
 
-    # Case file number filter
+
+def _apply_inspections_filters(query, args):
+    """Apply filters to the inspections query."""
+    filters = []
+    
+    # Get basic filters
+    filters.extend(_get_basic_filters(args))
+    
+    # Get project ID filter
+    project_filter = _get_project_id_filter(args)
+    if project_filter is not None:
+        filters.append(project_filter)
+    
+    # Get enum filters
+    filters.extend(_get_enum_filters(args))
+    
+    # Case file number filter (requires join)
     if args.get("case_file_number"):
         query = query.join(CaseFile, InspectionModel.case_file_id == CaseFile.id)
         filters.append(CaseFile.case_file_number.ilike(f"%{args['case_file_number']}%"))
-
+    
     if filters:
         query = query.filter(and_(*filters))
-
+    
     return query
 
 
@@ -932,10 +960,10 @@ def _apply_inspections_sorting(query, args):
         sort_field = InspectionModel.start_date
     elif sort_by == "initiation":
         query = query.join(
-            InspectionInitiationOption,
-            InspectionModel.initiation_id == InspectionInitiationOption.id,
+            InspectionInitiationOptionModel,
+            InspectionModel.initiation_id == InspectionInitiationOptionModel.id,
         )
-        sort_field = InspectionInitiationOption.name
+        sort_field = InspectionInitiationOptionModel.name
     elif sort_by == "ir_progress":
         # Handle enum sorting for IR progress
         progress_order = list(reversed([e.name for e in IRProgressEnum]))
@@ -992,8 +1020,7 @@ def _apply_inspections_sorting(query, args):
 
     if sort_order == "desc":
         return query.order_by(desc(sort_field))
-    else:
-        return query.order_by(asc(sort_field))
+    return query.order_by(asc(sort_field))
 
 
 def _apply_inspections_pagination(query, args):

@@ -92,12 +92,12 @@ class CaseFileService:
             case_files_data.append(case_file_dict)
 
         # Create DataFrame
-        df = pd.DataFrame(case_files_data)
+        data_frame = pd.DataFrame(case_files_data)
 
         # Create Excel file in memory
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Case Files", index=False)
+            data_frame.to_excel(writer, sheet_name="Case Files", index=False)
 
         output.seek(0)
         return output.getvalue()
@@ -580,8 +580,7 @@ def _apply_case_file_sorting(query, args):
 
     if sort_order == "desc":
         return query.order_by(desc(sort_field))
-    else:
-        return query.order_by(asc(sort_field))
+    return query.order_by(asc(sort_field))
 
 
 def _apply_case_file_pagination(query, args):

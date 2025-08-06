@@ -8,7 +8,6 @@ from sqlalchemy import String, case, cast, func
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import PermissionDeniedError, ResourceNotFoundError, UnprocessableEntityError
-from compliance_api.models.case_file import CaseFile
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintReqOrderDetail as ComplaintReqOrderDetailModel
@@ -216,10 +215,10 @@ class ComplaintService:
             )
 
         # Create Excel file
-        df = pd.DataFrame(excel_data)
+        data_frame = pd.DataFrame(excel_data)
         output = BytesIO()
         with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Complaints", index=False)
+            data_frame.to_excel(writer, sheet_name="Complaints", index=False)
         output.seek(0)
 
         return output
@@ -386,7 +385,7 @@ def _build_complaints_paginated_query(args):
     # Build base query similar to the model's get_all method
     query = (
         ComplaintModel.query.outerjoin(
-            CaseFile, ComplaintModel.case_file_id == CaseFile.id
+            CaseFileModel, ComplaintModel.case_file_id == CaseFileModel.id
         )
         .outerjoin(StaffUser, ComplaintModel.primary_officer_id == StaffUser.id)
         .filter(

@@ -2,7 +2,7 @@
 
 from http import HTTPStatus
 
-from flask import current_app, request
+from flask import current_app, make_response, request
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
@@ -260,7 +260,6 @@ class ComplaintExport(Resource):
     @auth.require
     def post():
         """Export complaints to Excel with filtering."""
-        from flask import make_response
 
         # Get filter data from request body
         filter_data = ComplaintFilterSchema().load(API.payload or {})

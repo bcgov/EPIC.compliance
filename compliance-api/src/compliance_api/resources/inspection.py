@@ -15,7 +15,7 @@
 
 from http import HTTPStatus
 
-from flask import current_app, request
+from flask import current_app, request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
@@ -271,7 +271,6 @@ class InspectionExport(Resource):
     @auth.require
     def post():
         """Export inspections to Excel based on filters."""
-        from flask import send_file
 
         filter_data = InspectionFilterSchema().load(API.payload or {})
         excel_file = InspectionService.generate_inspections_excel(filter_data)
