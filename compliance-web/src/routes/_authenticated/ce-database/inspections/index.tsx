@@ -74,7 +74,7 @@ export function Inspections() {
     return inspectionsList?.some(
       (inspection) =>
         inspection.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING &&
-        inspection.approved_by_id === currentUserStaff?.id
+        inspection.approved_by?.id === currentUserStaff?.id
     );
   }, [inspectionsList, isCurrentUserDeputy, currentUserStaff?.id]);
 
@@ -86,8 +86,8 @@ export function Inspections() {
       if (isCurrentUserDeputy && isDeputyReviewPending) {
         const deputyFilters = [
           {
-            id: "approved_by_id",
-            value: [currentUserStaff?.id?.toString()],
+            id: "reviewer",
+            value: [currentUserStaff?.name],
           },
           {
             id: "approval_status",
@@ -98,7 +98,7 @@ export function Inspections() {
         // Remove existing user-specific filters and add new ones
         const filteredFilters = currentFilters.filter(
           (filter) =>
-            filter.id !== "approved_by_id" && filter.id !== "approval_status"
+            filter.id !== "reviewer" && filter.id !== "approval_status"
         );
         table.setColumnFilters([...filteredFilters, ...deputyFilters]);
       } else if (!isCurrentUserDeputy && isCurrentUserHasPrimary) {
@@ -127,8 +127,8 @@ export function Inspections() {
       isCurrentUserDeputy,
       isDeputyReviewPending,
       isCurrentUserHasPrimary,
-      currentUser?.profile?.name,
-      currentUserStaff?.id,
+      currentUserStaff,
+      currentUser,
     ]
   );
 
@@ -184,7 +184,7 @@ export function Inspections() {
                   const filteredFilters = currentFilters.filter(
                     (filter) =>
                       filter.id !== "primary_officer.name" &&
-                      filter.id !== "approved_by_id" &&
+                      filter.id !== "reviewer" &&
                       filter.id !== "approval_status"
                   );
                   table.setColumnFilters(filteredFilters);
@@ -370,20 +370,6 @@ export function Inspections() {
         filterVariant: "multi-select",
         filterSelectOptions: staffUserList,
         size: 100,
-      },
-      {
-        accessorKey: "approved_by_id",
-        header: "Approved By ID",
-        enableHiding: true,
-        enableColumnFilter: true,
-        filterVariant: "multi-select",
-        accessorFn: (row) => row.approved_by_id?.toString() ?? "",
-        muiTableHeadCellProps: {
-          sx: { display: "none" },
-        },
-        muiTableBodyCellProps: {
-          sx: { display: "none" },
-        },
       },
       {
         accessorKey: "inspection_status",

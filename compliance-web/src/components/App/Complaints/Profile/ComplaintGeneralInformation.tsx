@@ -24,6 +24,10 @@ const ComplaintGeneralInformation: React.FC<
       value: complaintData.concern_description,
     },
     {
+      name: "Topic",
+      value: complaintData.topic?.name,
+    },
+    {
       name: "Location Description",
       value: complaintData.location_description,
     },
@@ -39,47 +43,17 @@ const ComplaintGeneralInformation: React.FC<
       name: "Requirement Source",
       value: complaintData.requirement_source.name,
     });
-    switch (complaintData.requirement_source.id) {
-      case RequirementSourceEnum.SCHEDULE_B:
-        generalProperties.push({
-          name: "Condition #",
-          value:
-            complaintData.requirement_detail?.additional_details
-              ?.condition_number ?? "",
-        });
-        break;
-      case RequirementSourceEnum.EAC:
-        generalProperties.push({
-          name: "Amendment #",
-          value:
-            complaintData.requirement_detail?.additional_details
-              ?.amendment_number ?? "",
-        });
-        generalProperties.push({
-          name: "Condition #",
-          value:
-            complaintData.requirement_detail?.additional_details
-              ?.amendment_condition_number ?? "",
-        });
-        generalProperties.push({
-          name: "Condition Description",
-          value: complaintData.requirement_detail?.description ?? "",
-        });
-        break;
-      case RequirementSourceEnum.ACT2018:
-      case RequirementSourceEnum.ACT2022:
-      case RequirementSourceEnum.CPD:
-      case RequirementSourceEnum.COMPLAINCE_AGREEMENT:
-      case RequirementSourceEnum.OTHER:
-        generalProperties.push({
-          name: "Condition Description",
-          value: complaintData.requirement_detail?.description ?? "",
-        });
+    if (complaintData.requirement_source.id === RequirementSourceEnum.ORDER) {
+      generalProperties.push({
+        name: "Order Number",
+        value: complaintData.requirement_detail?.order_number ?? "",
+      });
+    } else {
+      generalProperties.push({
+        name: "Requirement Details",
+        value: complaintData.requirement_source_description ?? "",
+      });
     }
-    generalProperties.push({
-      name: "Topic",
-      value: complaintData.requirement_detail?.topic?.name,
-    });
   }
 
   let complaintProperties = [

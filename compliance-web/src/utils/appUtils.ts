@@ -1,9 +1,8 @@
-
-export const formatAuthorization = (eaCertifcate: string | undefined): string => {
+export const formatAuthorization = (eaCertifcate: string | undefined, typeOnly?: boolean): string => {
   if (!eaCertifcate) return "n/a";
   return eaCertifcate[0].toLowerCase() === "x"
     ? "Exemption Order"
-    : `EAC# ${eaCertifcate}`;
+    : typeOnly ? "EAC" : `EAC# ${eaCertifcate}`;
 };
 
 export function mergeMapsWithArrayConcat<K, V>(...maps: Map<K, V[]>[]): Map<K, V[]> {

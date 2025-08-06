@@ -59,24 +59,43 @@ export function CaseFiles() {
       if (isCurrentUserHasPrimary) {
         const currentFilters = table.getState().columnFilters;
         const userFilter = {
-          id: "primary_officer.name",
+          id: "primary_officer",
           value: [currentUser?.profile?.name],
+        };
+        const statusFilter = {
+          id: "case_file_status",
+          value: ["Open"],
         };
         
         // Check if user filter already exists
         const existingUserFilterIndex = currentFilters.findIndex(
-          filter => filter.id === "primary_officer.name"
+          filter => filter.id === "primary_officer"
         );
+        
+        // Check if status filter already exists
+        const existingStatusFilterIndex = currentFilters.findIndex(
+          filter => filter.id === "case_file_status"
+        );
+        
+        const newFilters = [...currentFilters];
         
         if (existingUserFilterIndex >= 0) {
           // Update existing user filter
-          const newFilters = [...currentFilters];
           newFilters[existingUserFilterIndex] = userFilter;
-          table.setColumnFilters(newFilters);
         } else {
           // Add user filter to existing filters
-          table.setColumnFilters([...currentFilters, userFilter]);
+          newFilters.push(userFilter);
         }
+        
+        if (existingStatusFilterIndex >= 0) {
+          // Update existing status filter
+          newFilters[existingStatusFilterIndex] = statusFilter;
+        } else {
+          // Add status filter to existing filters
+          newFilters.push(statusFilter);
+        }
+        
+        table.setColumnFilters(newFilters);
       }
     },
     [isCurrentUserHasPrimary, currentUser?.profile?.name]
@@ -199,7 +218,7 @@ export function CaseFiles() {
       },
       {
         accessorFn: (row) => row.primary_officer?.name,
-        id: "primary_officer.name",
+        id: "primary_officer",
         header: "Primary",
         filterVariant: "multi-select",
         filterSelectOptions: staffUserList,
@@ -250,10 +269,10 @@ export function CaseFiles() {
                   // When turning ON, apply user-specific filter
                   applyUserSpecificFilters(table);
                 } else {
-                  // When turning OFF, remove only the user-specific filter
+                  // When turning OFF, remove both user-specific and status filters
                   const currentFilters = table.getState().columnFilters;
                   const filteredFilters = currentFilters.filter(
-                    filter => filter.id !== "primary_officer.name"
+                    filter => filter.id !== "primary_officer" && filter.id !== "case_file_status"
                   );
                   table.setColumnFilters(filteredFilters);
                 }
@@ -272,7 +291,7 @@ export function CaseFiles() {
     },
     [
       showOnlyMyCaseFiles,
-      currentUser?.profile?.given_name,
+      currentUser,
       applyUserSpecificFilters,
     ]
   );

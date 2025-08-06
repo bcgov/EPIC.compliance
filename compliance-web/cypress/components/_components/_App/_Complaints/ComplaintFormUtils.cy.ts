@@ -162,7 +162,7 @@ describe("ComplaintFormUtils", () => {
         contactComments: "Test comments",
         agency: { id: 2, name: "Test Agency" },
         requirementSource: { id: RequirementSourceEnum.SCHEDULE_B, name: "Schedule B" },
-        conditionNumber: "C-123",
+        requirementSourceDescription: "Test requirement description",
         topic: { id: 3, name: "Test Topic" }
       };
 
@@ -170,6 +170,7 @@ describe("ComplaintFormUtils", () => {
         primary_officer_id: 1,
         location_description: "Test location",
         concern_description: "Test concern description",
+        topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
         source_type_id: ComplaintSourceEnum.AGENCY,
         requirement_source_id: RequirementSourceEnum.SCHEDULE_B,
@@ -180,10 +181,7 @@ describe("ComplaintFormUtils", () => {
           comment: "Test comments"
         },
         source_agency_id: 2,
-        requirement_source_details: {
-          topic_id: 3,
-          condition_number: "C-123"
-        },
+        requirement_source_description: "Test requirement description",
         case_file_id: 123
       };
 
@@ -204,9 +202,7 @@ describe("ComplaintFormUtils", () => {
         contactComments: "Test comments",
         firstNation: { id: 2, name: "Test First Nation" },
         requirementSource: { id: RequirementSourceEnum.EAC, name: "EAC" },
-        amendmentNumber: "A-123",
-        amendmentConditionNumber: "AC-456",
-        conditionDescription: "Test condition description",
+        requirementSourceDescription: "Test requirement description",
         topic: { id: 3, name: "Test Topic" }
       };
 
@@ -214,6 +210,7 @@ describe("ComplaintFormUtils", () => {
         primary_officer_id: 1,
         location_description: "Test location",
         concern_description: "Test concern description",
+        topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
         source_type_id: ComplaintSourceEnum.FIRST_NATION,
         requirement_source_id: RequirementSourceEnum.EAC,
@@ -224,12 +221,7 @@ describe("ComplaintFormUtils", () => {
           comment: "Test comments"
         },
         source_first_nation_id: 2,
-        requirement_source_details: {
-          topic_id: 3,
-          amendment_number: "A-123",
-          amendment_condition_number: "AC-456",
-          description: "Test condition description"
-        },
+        requirement_source_description: "Test requirement description",
         case_file_id: undefined
       };
 
@@ -250,7 +242,7 @@ describe("ComplaintFormUtils", () => {
         contactComments: "Test comments",
         otherDescription: "Other source description",
         requirementSource: { id: RequirementSourceEnum.OTHER, name: "Other" },
-        description: "Test requirement description",
+        requirementSourceDescription: "Test requirement description",
         topic: { id: 3, name: "Test Topic" }
       };
 
@@ -258,6 +250,7 @@ describe("ComplaintFormUtils", () => {
         primary_officer_id: 1,
         location_description: "Test location",
         concern_description: "Test concern description",
+        topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
         source_type_id: ComplaintSourceEnum.OTHER,
         requirement_source_id: RequirementSourceEnum.OTHER,
@@ -268,14 +261,53 @@ describe("ComplaintFormUtils", () => {
           comment: "Test comments",
           description: "Other source description"
         },
-        requirement_source_details: {
-          topic_id: 3,
-          description: "Test requirement description"
-        },
+        requirement_source_description: "Test requirement description",
         case_file_id: undefined
       };
 
       const formattedData = formatComplaintData(formData);
+      expect(formattedData).to.deep.equal(expectedFormattedData);
+    });
+
+    it("formats data correctly for API submission with Order requirement source", () => {
+      const formData = {
+        concernDescription: "Test concern description",
+        locationDescription: "Test location",
+        primaryOfficer: { id: 1, full_name: "John Doe" },
+        dateReceived: dayjs("2023-01-01"),
+        complaintSource: { id: ComplaintSourceEnum.AGENCY, name: "Agency" },
+        contactFullName: "Jane Smith",
+        contactEmail: "jane.smith@example.com",
+        contactPhoneNumber: "250-123-4567",
+        contactComments: "Test comments",
+        agency: { id: 2, name: "Test Agency" },
+        requirementSource: { id: RequirementSourceEnum.ORDER, name: "Order" },
+        order: { id: 1, order_number: "ORD-001" },
+        topic: { id: 3, name: "Test Topic" }
+      };
+
+      const expectedFormattedData = {
+        primary_officer_id: 1,
+        location_description: "Test location",
+        concern_description: "Test concern description",
+        topic_id: 3,
+        date_received: dayjs("2023-01-01").toISOString(),
+        source_type_id: ComplaintSourceEnum.AGENCY,
+        requirement_source_id: RequirementSourceEnum.ORDER,
+        complaint_source_contact: {
+          full_name: "Jane Smith",
+          email: "jane.smith@example.com",
+          phone: "250-123-4567",
+          comment: "Test comments"
+        },
+        source_agency_id: 2,
+        requirement_source_details: {
+          order_number: "ORD-001"
+        },
+        case_file_id: 123
+      };
+
+      const formattedData = formatComplaintData(formData, 123);
       expect(formattedData).to.deep.equal(expectedFormattedData);
     });
 
@@ -298,6 +330,7 @@ describe("ComplaintFormUtils", () => {
         primary_officer_id: 1,
         location_description: "",
         concern_description: "Test concern description",
+        topic_id: undefined,
         date_received: dayjs("2023-01-01").toISOString(),
         source_type_id: ComplaintSourceEnum.AGENCY,
         requirement_source_id: undefined,

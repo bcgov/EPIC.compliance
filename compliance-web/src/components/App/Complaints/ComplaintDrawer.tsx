@@ -25,14 +25,13 @@ import { useAgenciesData } from "@/hooks/useAgencies";
 import { useFirstNationsData } from "@/hooks/useFirstNations";
 import { useTopicsData } from "@/hooks/useTopics";
 import ComplaintSourceForm from "./ComplaintSourceForm";
-import RequirementSourceForm from "./RequirementSourceForm";
 import { StaffUser } from "@/models/Staff";
 import dayjs from "dayjs";
 import DrawerActionBarTop from "@/components/Shared/Drawer/DrawerActionBarTop";
 import DrawerActionBarBottom from "@/components/Shared/Drawer/DrawerActionBarBottom";
 import { CaseFile } from "@/models/CaseFile";
 import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
-import { useInspectionOrdersProjectwiseData } from "@/hooks/useInspectionOrders";
+
 
 type ComplaintDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -45,6 +44,8 @@ const initFormData: ComplaintFormData = {
   dateReceived: undefined,
   primaryOfficer: undefined,
   complaintSource: undefined,
+  requirementSource: undefined,
+  order: undefined,
 };
 
 const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
@@ -59,7 +60,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   const { data: agenciesList } = useAgenciesData();
   const { data: firstNationsList } = useFirstNationsData();
   const { data: topicsList } = useTopicsData();
-  const { data: orderList } = useInspectionOrdersProjectwiseData(caseFile.id);
+
   const currentUser = useCurrentLoggedInUser();
 
   const staffUserList = Array.from(
@@ -80,6 +81,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
         concernDescription: complaint.concern_description,
         locationDescription: complaint.location_description,
         primaryOfficer: complaint.primary_officer,
+        topic: complaint.topic,
         dateReceived: dayjs(complaint.date_received),
         complaintSource: complaint.source_type,
         contactFullName: complaint.source_contact.full_name ?? "",
@@ -94,23 +96,8 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
         ),
         otherDescription: complaint.source_contact?.description ?? "",
         requirementSource: complaint.requirement_source,
-        topic: complaint.requirement_detail.topic,
-        conditionNumber:
-          complaint.requirement_detail?.additional_details?.condition_number ??
-          "",
-        conditionDescription: complaint.requirement_detail?.description ?? "",
-        description: complaint.requirement_detail?.description ?? "",
-        amendmentNumber:
-          complaint.requirement_detail?.additional_details?.amendment_number ??
-          "",
-        amendmentConditionNumber:
-          complaint.requirement_detail?.additional_details
-            ?.amendment_condition_number ?? "",
-        order: orderList?.find(
-          (order) =>
-            order.order_number ===
-            complaint.requirement_detail?.additional_details?.order_number
-        ),
+        requirementSourceDescription:
+          complaint.requirement_source_description ?? "",
       };
     }
     const selectedOfficer = staffUserList.find(
@@ -128,7 +115,6 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
     caseFile,
     staffUserList,
     currentUser,
-    orderList,
   ]);
 
   const methods = useForm<ComplaintSchemaType>({
@@ -178,13 +164,22 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmitHandler)}>
-        <DrawerTitleBar title="Create Complaint" isFormDirtyCheck />
+        <DrawerTitleBar
+          title={complaint ? complaint.complaint_number : "Create Complaint"}
+          isFormDirtyCheck
+        />
         <DrawerActionBarTop isShowActionBar={!complaint} />
         <Stack
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           direction="row"
         >
-          <ComplaintFormLeft staffUsersList={staffUserList ?? []} />
+          <ComplaintFormLeft
+            staffUsersList={staffUserList ?? []}
+            topicsList={topicsList ?? []}
+            requirementSourceList={requirementSourceList ?? []}
+            complaint={complaint}
+            caseFileId={caseFile.id}
+          />
           <Box
             sx={{
               width: "399px",
@@ -196,11 +191,6 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
               complaintSourceList={complaintSourceList ?? []}
               agenciesList={agenciesList ?? []}
               firstNationsList={firstNationsList ?? []}
-            />
-            <RequirementSourceForm
-              requirementSourceList={requirementSourceList ?? []}
-              topicsList={topicsList ?? []}
-              orderList={orderList ?? []}
             />
           </Box>
         </Stack>

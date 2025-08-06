@@ -248,7 +248,7 @@ def test_complaint_delete_by_super_user(
 def test_complaint_get_requirement_details(
     client, auth_header, created_staff, created_case_file, mocker, mock_track_service
 ):
-    """Delete complaint by non-superuser."""
+    """Test getting complaint requirement details."""
     contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
     contains_role.return_value = True
     complaint_data = ComplaintScenario.complaint_with_requirement_details.value
@@ -263,10 +263,9 @@ def test_complaint_get_requirement_details(
 
     assert get_result.status_code == HTTPStatus.OK
     input_source_details = complaint_data.get("requirement_source_details")
-    assert get_result.json.get("topic_id") == input_source_details.get("topic_id")
-    assert get_result.json.get("additional_details").get(
-        "condition_number"
-    ) == input_source_details.get("condition_number")
+    # Test the current schema fields: id, complaint_id, order_number
+    assert get_result.json.get("order_number") == input_source_details.get("order_number")
+    assert get_result.json.get("complaint_id") == created_complaint.id
 
 
 def test_complaint_get_source_contact_details(

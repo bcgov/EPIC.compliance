@@ -1,4 +1,7 @@
-import { FormatListBulletedRounded, AssessmentRounded, SettingsRounded } from "@mui/icons-material";
+import {
+  FormatListBulletedRounded,
+  SettingsRounded,
+} from "@mui/icons-material";
 
 export interface RouteMenuItem {
   routeName: string;
@@ -22,19 +25,14 @@ export default function RouteItemsList() {
           path: "/ce-database/inspections",
         },
         {
-          routeName: "Requirements",
-          path: "/ce-database/requirements",
-        },
-        {
           routeName: "Complaints",
           path: "/ce-database/complaints",
         },
+        {
+          routeName: "Requirements",
+          path: "/ce-database/requirements",
+        },
       ],
-    },
-    {
-      routeName: "IR Board",
-      path: "/ir-board",
-      icon: <AssessmentRounded sx={{ transform: "rotate(180deg)" }} />,
     },
     {
       routeName: "Admin",

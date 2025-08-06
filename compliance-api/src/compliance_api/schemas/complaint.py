@@ -15,7 +15,7 @@
 from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, validates_schema
 from marshmallow_enum import EnumField
 
-from compliance_api.models import Complaint, ComplaintRequirementDetail, ComplaintSourceContact, ComplaintStatusEnum
+from compliance_api.models import Complaint, ComplaintSourceContact, ComplaintStatusEnum
 from compliance_api.models.complaint import ComplaintSourceEnum
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
@@ -26,20 +26,12 @@ from .common import KeyValueSchema
 from .staff_user import StaffUserSchema
 
 
-class RequirementSourceDetailSchema(
-    AutoSchemaBase
-):  # pylint: disable=too-many-ancestors
+class RequirementSourceDetailSchema(BaseSchema):
     """RequirementSourceDetailSchema."""
 
-    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
-        """Meta."""
-
-        unknown = EXCLUDE
-        model = ComplaintRequirementDetail
-        include_fk = True
-
-    topic = fields.Nested(KeyValueSchema)
-    additional_details = fields.Raw()
+    id = fields.Int(metadata={"description": "The unique identifier"})
+    complaint_id = fields.Int(metadata={"description": "The complaint id"})
+    order_number = fields.Str(metadata={"description": "The order number"}, allow_none=True)
 
 
 class ComplaintSourceContactSchema(
@@ -109,6 +101,10 @@ class ComplaintUpdateSchema(BaseSchema):
         metadata={"description": "The location details of the complaint."},
         allow_none=True,
     )
+    topic_id = fields.Int(
+        metadata={"description": "The unique identifier of the topic"},
+        allow_none=True,
+    )
     primary_officer_id = fields.Int(
         metadata={
             "description": "The unique identifier of the primary officer who created the complaint."
@@ -130,6 +126,10 @@ class ComplaintUpdateSchema(BaseSchema):
     complaint_source_contact = fields.Nested(ContactCreateSchema)
     requirement_source_id = fields.Int(
         metadata={"description": "The unique identifier of requirement source"},
+        allow_none=True,
+    )
+    requirement_source_description = fields.Str(
+        metadata={"description": "The requirement source description of the complaint"},
         allow_none=True,
     )
     requirement_source_details = fields.Nested(RequirementSourceCreateSchema)
@@ -156,20 +156,6 @@ class ComplaintCreateSchema(ComplaintUpdateSchema):
     )
 
     @validates_schema
-    def validate_topic_and_description(
-        self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
-        """Ensure that the topic is selected if requirement source is added."""
-        requirement_source_id = data.get("requirement_source_id", [])
-        requirement_source_details = data.get("requirement_source_details", {})
-        if requirement_source_id:
-            if not requirement_source_details.get("topic_id", None):
-                raise ValidationError(
-                    "Topic is required when requirement_source is selected",
-                    field_name="requirement_source_details.topic_id",
-                )
-
-    @validates_schema
     def validate_order(
         self, data, **kwargs
     ):  # pylint: disable=no-self-use, unused-argument
@@ -183,23 +169,6 @@ class ComplaintCreateSchema(ComplaintUpdateSchema):
             raise ValidationError(
                 f"Order number is required when requirement_source {RequirementSourceEnum.ORDER.name}",
                 field_name="requirement_source_details.order_number",
-            )
-
-    @validates_schema
-    def validate_condition_number(
-        self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
-        """Ensure that the condition number is selected if requirement source is SCHEDULEB."""
-        requirement_source_id = data.get("requirement_source_id", [])
-        requirement_source_details = data.get("requirement_source_details", {})
-        if (
-            requirement_source_id == RequirementSourceEnum.SCHEDULE_B.value
-            and not requirement_source_details.get("condition_number", None)
-        ):
-            raise ValidationError(
-                f"Condition number is required when requirement_source "
-                f"{RequirementSourceEnum.SCHEDULE_B.name}",
-                field_name="requirement_source_details.condition_number",
             )
 
     @validates_schema
@@ -241,7 +210,8 @@ class ComplaintSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     agency = fields.Nested(KeyValueSchema)
     first_nation = fields.Nested(KeyValueSchema)
     requirement_source = fields.Nested(KeyValueSchema)
-    requirement_detail = fields.Nested(RequirementSourceDetailSchema, only=["topic"])
+    topic = fields.Nested(KeyValueSchema)
+    requirement_detail = fields.Nested(RequirementSourceDetailSchema)
 
     @post_dump
     def post_dump_actions(

@@ -18,6 +18,7 @@ import { InspectionOrder } from "@/models/InspectionOrder";
 import { useInspectionOrdersProjectwiseData } from "@/hooks/useInspectionOrders";
 import { CaseFile } from "@/models/CaseFile";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
+import { formatAuthorization } from "@/utils/appUtils";
 
 type RequirementSourceModalProps = {
   onSubmit: (data: RequirementSourceFormData) => void;
@@ -110,6 +111,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
 
   const { handleSubmit, reset, control, getValues, setValue } = methods;
   const hasUserEditedTitle = useRef(false);
+  const hasUserEditedDescription = useRef(false);
   const currentRequirementSourceId = useRef<string | null>(null);
 
   const selectedRequirementSource = useWatch({
@@ -124,34 +126,61 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
     defaultValue: getValues("order") ?? undefined,
   }) as InspectionOrder;
 
+  const descriptionValue = useWatch({
+    control,
+    name: "description",
+  });
+
+  // Track when user manually edits the description
   useEffect(() => {
-    if (!requirementSourceFormData && selectedOrder?.now_therefore) {
+    if (descriptionValue && !hasUserEditedDescription.current) {
+      const currentDescription = getValues("description");
+      if (currentDescription?.html !== selectedOrder?.now_therefore) {
+        hasUserEditedDescription.current = true;
+      }
+    }
+  }, [descriptionValue, getValues, selectedOrder]);
+
+  useEffect(() => {
+    if (!requirementSourceFormData && selectedOrder?.now_therefore && !hasUserEditedDescription.current) {
       const newValue = {
         html: selectedOrder.now_therefore,
         text: selectedOrder.now_therefore,
       };
       setValue("description", newValue);
-      
+
       // Auto-fill source title for Order
-      if (selectedRequirementSource?.id === RequirementSourceEnum.ORDER && !hasUserEditedTitle.current) {
+      if (
+        selectedRequirementSource?.id === RequirementSourceEnum.ORDER &&
+        !hasUserEditedTitle.current
+      ) {
         // Extract order number without project code prefix
         let orderNumber = selectedOrder.order_number || "";
-        // Remove project code prefix (everything before and including the first underscore)
-        const underscoreIndex = orderNumber.indexOf("_");
-        if (underscoreIndex !== -1) {
-          orderNumber = orderNumber.substring(underscoreIndex + 1);
+        // strip the project code prefix if orderNumber matches the expected format (e.g., "FRARIV_20250007_OR002")
+        // The expected format is: <projectCode>_<number>_<suffix>
+        if (/^[A-Z]+_\d+_/.test(orderNumber)) {
+          const underscoreIndex = orderNumber.indexOf("_");
+          if (underscoreIndex !== -1) {
+            orderNumber = orderNumber.substring(underscoreIndex + 1);
+          }
         }
-        
+
         // Set the source title as "Order orderNumber"
         setValue("requirementSourceTitle", `Order ${orderNumber}`);
       }
     }
-  }, [selectedOrder, setValue, requirementSourceFormData, selectedRequirementSource]);
+  }, [
+    selectedOrder,
+    setValue,
+    requirementSourceFormData,
+    selectedRequirementSource,
+  ]);
 
   useEffect(() => {
     reset(defaultValues);
-    // Reset the user edit flag when form is reset
+    // Reset the user edit flags when form is reset
     hasUserEditedTitle.current = false;
+    hasUserEditedDescription.current = false;
     currentRequirementSourceId.current = null;
   }, [defaultValues, reset]);
 
@@ -172,6 +201,13 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
             "${eac#}",
             caseFileData?.authorization ?? ""
           );
+        }
+        if (sourceTitle && sourceTitle.includes("${eac_type}")) {
+          const eacType = formatAuthorization(
+            caseFileData?.authorization,
+            true
+          );
+          sourceTitle = sourceTitle.replace("${eac_type}", eacType);
         }
         setValue("requirementSourceTitle", sourceTitle);
       }

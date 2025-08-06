@@ -41,6 +41,6 @@ class ComplaintScenario(Enum):
             "phone": fake.phone_number(),
             "comment": fake.text(max_nb_chars=50),
         },
-        "requirement_source_id": 1,
-        "requirement_source_details": {"topic_id": 1, "condition_number": fake.word()},
+        "requirement_source_id": 2,
+        "requirement_source_details": {"order_number": fake.word()},
     }

@@ -11,10 +11,7 @@ from compliance_api.exceptions import PermissionDeniedError, ResourceNotFoundErr
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
-from compliance_api.models.complaint import ComplaintReqEACDetail as ComplaintReqEACDetailModel
 from compliance_api.models.complaint import ComplaintReqOrderDetail as ComplaintReqOrderDetailModel
-from compliance_api.models.complaint import ComplaintReqScheduleBDetail as ComplaintReqScheduleBDetailModel
-from compliance_api.models.complaint import ComplaintRequirementDetail as ComplaintRequirementDetailModel
 from compliance_api.models.complaint import ComplaintRequirementSourceEnum
 from compliance_api.models.complaint import ComplaintSource as ComplaintSourceModel
 from compliance_api.models.complaint import ComplaintSourceContact as ComplaintSourceContactModel
@@ -69,19 +66,13 @@ class ComplaintService:
         complaint = ComplaintModel.find_by_id(complaint_id)
         if not complaint:
             return None
-        requirement = ComplaintRequirementDetailModel.get_by_complaint(complaint_id)
-        source_mapping = {
-            ComplaintRequirementSourceEnum.EAC_CERTIFICATE.value: ComplaintReqEACDetailModel.get_by_requirement,
-            ComplaintRequirementSourceEnum.ORDER.value: ComplaintReqOrderDetailModel.get_by_requirement,
-            ComplaintRequirementSourceEnum.SCHEDULE_B.value: ComplaintReqScheduleBDetailModel.get_by_requirement,
-        }
 
-        data = None
-        if requirement and complaint.requirement_source_id in source_mapping:
-            data = source_mapping[complaint.requirement_source_id](requirement.id)
-        if data:
-            setattr(requirement, "additional_details", data.to_dict())
-        return requirement
+        # Get order details directly if the complaint has ORDER requirement source
+        if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
+            order_detail = ComplaintReqOrderDetailModel.get_by_complaint(complaint_id)
+            if order_detail:
+                return order_detail
+        return None
 
     @classmethod
     def get_by_case_file_id(cls, case_file_id):
@@ -138,9 +129,11 @@ class ComplaintService:
             ComplaintSourceContactModel.delete_by_case_file(
                 case_file_id, ho_session or session
             )
-            ComplaintRequirementDetailModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
+            # Delete order details for complaints in this case file
+            complaints = ComplaintModel.get_by_params({"case_file_id": case_file_id})
+            for complaint in complaints:
+                if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
+                    ComplaintReqOrderDetailModel.delete_details(complaint.id, ho_session or session)
 
     @classmethod
     def delete_complaint(cls, complaint_id):
@@ -152,7 +145,9 @@ class ComplaintService:
         with session_scope() as session:
             ComplaintModel.delete_complaint(complaint_id, session)
             ComplaintSourceContactModel.delete_by_complaint(complaint_id, session)
-            ComplaintRequirementDetailModel.delete_by_complaint(complaint_id, session)
+            # Delete order details if they exist
+            if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
+                ComplaintReqOrderDetailModel.delete_details(complaint_id, session)
         return complaint
 
     @classmethod
@@ -237,58 +232,33 @@ def _create_or_update_requirement_details(
     session=None,
 ):
     """Create or update requirement details."""
-    requirement_detail = ComplaintRequirementDetailModel.get_by_complaint(complaint.id)
-    requirement_source_obj = _create_requirement_source_detail_obj(
-        complaint_data, complaint.id
-    )
-    #  creating details for the first time
-    created_requirement_detail = None
-    if not requirement_detail and complaint_data.get("requirement_source_id", None):
-        created_requirement_detail = ComplaintRequirementDetailModel.create_detail(
-            requirement_source_obj, session=session
-        )
-    #  detail exists and trying to update
-    elif requirement_detail and complaint_data.get("requirement_source_id", None):
-        created_requirement_detail = ComplaintRequirementDetailModel.update_detail(
-            complaint.id, requirement_source_obj, session=session
-        )
-    source_mapping = {
-        ComplaintRequirementSourceEnum.EAC_CERTIFICATE.value: ComplaintReqEACDetailModel,
-        ComplaintRequirementSourceEnum.ORDER.value: ComplaintReqOrderDetailModel,
-        ComplaintRequirementSourceEnum.SCHEDULE_B.value: ComplaintReqScheduleBDetailModel,
-    }
-    #  requirement details source changed, the old has to be deleted
-    if (
-        requirement_detail
-        and old_requirement_source_id != complaint.requirement_source_id
-    ):
-        #  Deleting the requirement details
-        if (
-            not complaint.requirement_source_id
-        ):  # delete only when requirement_source_id is removed
-            ComplaintRequirementDetailModel.delete_by_id(requirement_detail.id, session)
-        if source_mapping.get(old_requirement_source_id, None):
-            #  Deleting additional details if any
-            source_mapping[old_requirement_source_id].delete_details(
-                created_requirement_detail.id, session
-            )
-    #  Adding more details if the requirement source any of the ones in the source_mapping
-    if created_requirement_detail and source_mapping.get(
-        complaint.requirement_source_id, None
-    ):
-        more_detail_class = source_mapping[complaint.requirement_source_id]
-        more_detail = more_detail_class.get_by_requirement(
-            created_requirement_detail.id
-        )
-        more_detail_obj = _create_requirement_source_more_detail_obj(
-            complaint_data, created_requirement_detail.id
-        )
-        if more_detail:
-            more_detail_class.update_details(
-                created_requirement_detail.id, more_detail_obj, session=session
+    # Only handle ORDER requirement source
+    if complaint.requirement_source_id != ComplaintRequirementSourceEnum.ORDER.value:
+        return
+
+    # Check if order details already exist
+    existing_order_detail = ComplaintReqOrderDetailModel.get_by_complaint(complaint.id)
+
+    # Create order detail object
+    order_detail_obj = _create_order_detail_obj(complaint_data, complaint.id)
+
+    if order_detail_obj:
+        if existing_order_detail:
+            # Update existing order details
+            ComplaintReqOrderDetailModel.update_details(
+                complaint.id, order_detail_obj, session=session
             )
         else:
-            more_detail_class.create(more_detail_obj, session=session)
+            # Create new order details
+            ComplaintReqOrderDetailModel.create(order_detail_obj, session=session)
+
+    # Handle requirement source change - delete old order details if source changed
+    if (
+        existing_order_detail
+        and old_requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value
+        and complaint.requirement_source_id != ComplaintRequirementSourceEnum.ORDER.value
+    ):
+        ComplaintReqOrderDetailModel.delete_details(complaint.id, session)
 
 
 def _access_check_create(complaint_data: dict):
@@ -315,34 +285,6 @@ def _access_check_update(complaint):
         )
 
 
-def _create_requirement_source_more_detail_obj(complaint_data: dict, requirement_id):
-    """Create requirement source more details."""
-    requirement_source_id = complaint_data.get("requirement_source_id", None)
-    obj = None
-    if requirement_source_id:
-        obj_creator_map = {
-            ComplaintRequirementSourceEnum.SCHEDULE_B.value: _create_schedule_b_detail_obj,
-            ComplaintRequirementSourceEnum.ORDER.value: _create_order_detail_obj,
-            ComplaintRequirementSourceEnum.EAC_CERTIFICATE.value: _create_eac_detail_obj,
-        }
-        creator_fn = obj_creator_map[requirement_source_id]
-        if creator_fn:
-            obj = creator_fn(complaint_data, requirement_id)
-    return obj
-
-
-def _create_requirement_source_detail_obj(complaint_data: dict, complaint_id):
-    """Create requirement source detail object."""
-    requirement_source_info = complaint_data.get("requirement_source_details", None)
-    if not requirement_source_info:
-        return {}
-    return {
-        "complaint_id": complaint_id,
-        "topic_id": requirement_source_info.get("topic_id"),
-        "description": requirement_source_info.get("description", None),
-    }
-
-
 def _create_source_type_contact_object(complaint_data: dict, complaint_id):
     """Create source contact info."""
     contact_info = complaint_data.get("complaint_source_contact", None)
@@ -366,6 +308,8 @@ def _create_complaint_update_object(complaint_data: dict):
         "primary_officer_id": complaint_data.get("primary_officer_id", None),
         "date_received": complaint_data.get("date_received"),
         "requirement_source_id": complaint_data.get("requirement_source_id", None),
+        "requirement_source_description": complaint_data.get("requirement_source_description", None),
+        "topic_id": complaint_data.get("topic_id", None),
         "source_type_id": complaint_data.get("source_type_id"),
         "source_agency_id": complaint_data.get("source_agency_id", None),
         "source_first_nation_id": complaint_data.get("source_first_nation_id", None),
@@ -414,31 +358,12 @@ def _get_project_abbreviation(
     return UNAPPROVED_PROJECT_CODE
 
 
-def _create_eac_detail_obj(complaint_data: dict, requirement_id):
-    """Create requirement source eac detail obj."""
-    req_info = complaint_data.get("requirement_source_details", {})
-    return {
-        "req_id": requirement_id,
-        "amendment_number": req_info.get("amendment_number", None),
-        "amendment_condition_number": req_info.get("amendment_condition_number", None),
-    }
-
-
-def _create_order_detail_obj(complaint_data: dict, requirement_id):
+def _create_order_detail_obj(complaint_data: dict, complaint_id):
     """Create requirement source order detail obj."""
     req_info = complaint_data.get("requirement_source_details", {})
     return {
-        "req_id": requirement_id,
+        "complaint_id": complaint_id,
         "order_number": req_info.get("order_number", None),
-    }
-
-
-def _create_schedule_b_detail_obj(complaint_data: dict, requirement_id):
-    """Create requirement source schedule b detail obj."""
-    req_info = complaint_data.get("requirement_source_details", {})
-    return {
-        "req_id": requirement_id,
-        "condition_number": req_info.get("condition_number"),
     }
 
 

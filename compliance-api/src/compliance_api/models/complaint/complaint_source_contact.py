@@ -60,7 +60,7 @@ class ComplaintSourceContact(BaseModelVersioned):
     @with_session
     def update_contact(cls, complaint_id, contact_data, session=None):
         """Update contact."""
-        query = cls.query.filter_by(id=complaint_id, is_deleted=False)
+        query = cls.query.filter_by(complaint_id=complaint_id, is_deleted=False)
         contact: ComplaintSourceContact = query.first()
         if not contact:
             return None

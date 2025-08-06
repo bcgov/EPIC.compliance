@@ -20,23 +20,23 @@ class ComplaintReqOrderDetail(BaseModelVersioned):
         autoincrement=True,
         comment="The unique identifier of the complaints",
     )
-    req_id = Column(
+    complaint_id = Column(
         Integer,
         ForeignKey(
-            "complaint_requirement_details.id",
-            name="details_req_id_complaint_req_detail_id",
+            "complaints.id",
+            name="details_complaint_id_complaints_id",
         ),
         nullable=False,
-        comment="The unique id of the requirement details",
+        comment="The unique id of the complaint",
     )
     order_number = Column(String, nullable=True, comment="The order number")
-    requirement_detail = relationship(
-        "ComplaintRequirementDetail", foreign_keys=[req_id], lazy="select"
+    complaint = relationship(
+        "Complaint", foreign_keys=[complaint_id], back_populates="order_detail", lazy="select"
     )
 
     def to_dict(self):
         """Convert model instance to a dictionary for JSON serialization."""
-        return {"id": self.id, "req_id": self.req_id, "order_number": self.order_number}
+        return {"id": self.id, "complaint_id": self.complaint_id, "order_number": self.order_number}
 
     @classmethod
     @with_session
@@ -49,9 +49,9 @@ class ComplaintReqOrderDetail(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def update_details(cls, req_id, requirement_obj, session=None):
-        """Update schedule b details."""
-        query = cls.query.filter_by(req_id=req_id, is_deleted=False)
+    def update_details(cls, complaint_id, requirement_obj, session=None):
+        """Update order details."""
+        query = cls.query.filter_by(complaint_id=complaint_id, is_deleted=False)
         order_requirement = query.first()
         order_requirement.update(requirement_obj, commit=False)
         session.flush()
@@ -59,15 +59,15 @@ class ComplaintReqOrderDetail(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def delete_details(cls, requirement_id, session=None):
+    def delete_details(cls, complaint_id, session=None):
         """Mark the details as deleted."""
         order_requirement = cls.query.filter_by(
-            req_id=requirement_id, is_deleted=False
+            complaint_id=complaint_id, is_deleted=False
         ).first()
         order_requirement.update(DELETE_DIC_PARAMS, commit=False)
         session.flush()
 
     @classmethod
-    def get_by_requirement(cls, req_id):
+    def get_by_complaint(cls, complaint_id):
         """Get additional requirement source details."""
-        return cls.query.filter_by(req_id=req_id, is_deleted=False).first()
+        return cls.query.filter_by(complaint_id=complaint_id, is_deleted=False).first()

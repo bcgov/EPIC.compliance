@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - develop
+      - 'rc1*'
     paths:
       - "compliance-web/**"
   workflow_dispatch:
