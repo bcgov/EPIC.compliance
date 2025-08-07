@@ -4,9 +4,7 @@ import {
   useComplianceFindingsData,
   useEnforcementActionsData,
 } from "@/hooks/useInspectionRequirements";
-import {
-  useInspectionRequirementsGrid,
-} from "@/hooks/useInspectionRequirementsGrid";
+import { useInspectionRequirementsGrid } from "@/hooks/useInspectionRequirementsGrid";
 import { useTopicsData } from "@/hooks/useTopics";
 import {
   InspectionRequirementGrid,
@@ -46,7 +44,7 @@ function Requirements() {
   const { data: staffUsers } = useStaffUsersData();
   const [showOnlyMyRequirements, setShowOnlyMyRequirements] = useState(false);
   const [sorting, setSorting] = useState<MRT_SortingState>([
-    { id: "tpc", desc: false }
+    { id: "tpc", desc: false },
   ]);
 
   const approvalStatusOptions = Object.entries(APPROVAL_STATUS_TEXT).map(
@@ -161,24 +159,28 @@ function Requirements() {
         JSON.stringify(currentFilters) !== JSON.stringify(prevFilters.current);
 
       if (hasChanged) {
-        cachedFiltersStore
-          .getState()
-          .setFilters(
-            requirementsColumnFiltersCacheKey, 
-            columnFilters, 
-            {
-              ...externalFilters,
-              showOnlyMyRequirements,
-              globalFilter,
-            },
-            sorting
-          );
+        cachedFiltersStore.getState().setFilters(
+          requirementsColumnFiltersCacheKey,
+          columnFilters,
+          {
+            ...externalFilters,
+            showOnlyMyRequirements,
+            globalFilter,
+          },
+          sorting
+        );
 
         // Update previous values
         prevFilters.current = currentFilters;
       }
     }
-  }, [columnFilters, externalFilters, showOnlyMyRequirements, globalFilter, sorting]);
+  }, [
+    columnFilters,
+    externalFilters,
+    showOnlyMyRequirements,
+    globalFilter,
+    sorting,
+  ]);
 
   // Use the extracted utility function
   const convertFiltersToQueryParams =
@@ -187,14 +189,14 @@ function Requirements() {
   const queryParams: InspectionRequirementGridQueryParams = useMemo(() => {
     // Extract sorting information from the sorting state
     const currentSort = sorting[0]; // Material React Table supports multiple sorts, but we'll use the first one
-    
+
     return {
       page_no: pagination.pageIndex + 1,
       page_size: pagination.pageSize,
       ...convertFiltersToQueryParams(columnFilters),
-      ...(currentSort && { 
-        sort_by: currentSort.id, 
-        sort_order: currentSort.desc ? "desc" : "asc" 
+      ...(currentSort && {
+        sort_by: currentSort.id,
+        sort_order: currentSort.desc ? "desc" : "asc",
       }),
     };
   }, [
@@ -223,17 +225,17 @@ function Requirements() {
 
   const handleSortingChange = useCallback(
     (
-      updater:
-        | MRT_SortingState
-        | ((old: MRT_SortingState) => MRT_SortingState)
+      updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
     ) => {
-      const newSorting = typeof updater === "function" ? updater(sorting) : updater;
-      
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+
       // Only reset pagination if sorting actually changed
-      const sortingChanged = JSON.stringify(newSorting) !== JSON.stringify(sorting);
-      
+      const sortingChanged =
+        JSON.stringify(newSorting) !== JSON.stringify(sorting);
+
       setSorting(updater);
-      
+
       if (sortingChanged) {
         setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       }
@@ -306,9 +308,11 @@ function Requirements() {
     setShowOnlyMyRequirements(false);
     setSorting([{ id: "tpc", desc: false }]); // Reset to default sorting
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    
+
     // Clear cached filters
-    cachedFiltersStore.getState().clearFilters(requirementsColumnFiltersCacheKey);
+    cachedFiltersStore
+      .getState()
+      .clearFilters(requirementsColumnFiltersCacheKey);
   }, []);
 
   // Handler for the switch filter changes

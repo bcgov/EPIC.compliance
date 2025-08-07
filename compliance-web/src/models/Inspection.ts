@@ -51,6 +51,28 @@ export interface Inspection {
   is_history?: boolean;
 }
 
+export interface InspectionGridQueryParams {
+  case_file_id?: string;
+  ir_number?: string;
+  project_id?: string;
+  start_date?: string;
+  initiation_id?: string;
+  ir_progress?: string;
+  approval_status?: string;
+  primary_officer_id?: string;
+  status?: string;
+  case_file_number?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+  page_no?: number;
+  page_size?: number;
+}
+
+export interface InspectionGridItems {
+  items: Inspection[];
+  total: number;
+}
+
 export interface InspectionMoreDetails extends Inspection {
   requirement_details?: {
     requirement_id: number;
