@@ -185,7 +185,8 @@ export const useInspectionReportsData = (inspectionId: number) => {
     queryKey: ["inspection-reports", inspectionId],
     queryFn: () => fetchInspectionReports(inspectionId),
     enabled: !!inspectionId,
-    staleTime: Infinity,
+    refetchOnMount: true,
+    refetchInterval: 30000,
   });
 };
 
@@ -219,12 +220,14 @@ export const useCreateIRApproval = (onSuccess: OnSuccessType) => {
 
 export const useFetchIRApprovals = (
   inspectionId: number,
-  inspectionRecordId: number
+  inspectionRecordId: number,
 ) => {
   return useQuery({
     queryKey: ["ir-approvals", inspectionId, inspectionRecordId],
     queryFn: () => fetchIRApprovals({ inspectionId, inspectionRecordId }),
     enabled: !!inspectionId && !!inspectionRecordId,
+    refetchOnMount: true,
+    refetchInterval: 30000,
   });
 };
 

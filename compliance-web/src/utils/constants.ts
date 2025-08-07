@@ -150,6 +150,4 @@ export enum EnforcementActionEnum {
   WARNING = "11",
 }
 
-export const DEFAULT_PAGE_SIZE = 15;
-
 export type VARIANT_COLORS = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";

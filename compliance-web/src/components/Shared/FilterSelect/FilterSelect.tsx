@@ -177,14 +177,25 @@ const FilterSelect = memo((props: SelectProps) => {
   }, [props.isSearchable, selectValue]);
 
   useEffect(() => {
-    if (
-      props.value !== undefined &&
-      selectValue !== undefined &&
-      JSON.stringify(selectValue) !== JSON.stringify(props.value)
-    ) {
-      setSelectValue(props.value);
+    // Handle external value changes, including when value is cleared
+    const newValue = props.value !== undefined ? props.value : (isMulti ? [] : "");
+    const currentValue = selectValue !== undefined ? selectValue : (isMulti ? [] : "");
+    
+    if (JSON.stringify(newValue) !== JSON.stringify(currentValue)) {
+      setSelectValue(newValue);
+      
+      // Also update selectedOptions when value changes
+      if (isMulti) {
+        const newSelectedOptions = Array.isArray(newValue) 
+          ? newValue.map((v: OptionType) => v.value)
+          : [];
+        setSelectedOptions(newSelectedOptions);
+      } else {
+        const newSelectedOptions = (newValue as OptionType)?.value || "";
+        setSelectedOptions(newSelectedOptions);
+      }
     }
-  }, [props.value, selectValue]);
+  }, [props.value, selectValue, isMulti]);
 
   return (
     <div ref={menuRef}>
@@ -297,6 +308,10 @@ const FilterSelect = memo((props: SelectProps) => {
             fontWeight: "400",
             fontSize: BCDesignTokens.typographyFontSizeSmallBody,
             paddingLeft: "0.25rem",
+          }),
+          valueContainer: (base) => ({
+            ...base,
+            flexWrap: "nowrap",
           }),
         }}
         isClearable={false}

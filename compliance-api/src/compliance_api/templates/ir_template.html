@@ -405,7 +405,7 @@
                         replace('style="white-space: pre-wrap;"', '') }}</div>
                         {% if source.requirement_documents %}
                         {% for doc in source.requirement_documents %}
-                        <div class="com-ir-document-title">{{ doc.document_title }}{% if doc.appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ doc.appendix_no }})</span>{% endif %}</div>
+                        {% if loop.first %}<div class="com-ir-document-title">{{ doc.document_title }}{% if doc.appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ doc.appendix_no }})</span>{% endif %}</div>{% endif %}
                         {% if doc.section_number or doc.section_title %}
                         <div class="com-ir-document-section">{% if doc.section_number %}Section {{ doc.section_number }} {% endif %}{{ doc.section_title }}
                         </div>

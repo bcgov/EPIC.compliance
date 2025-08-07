@@ -11,6 +11,7 @@ declare global {
       VITE_APP_URL: string;
       VITE_OIDC_AUTHORITY: string;
       VITE_CLIENT_ID: string;
+      VITE_DEFAULT_PAGE_SIZE: number;
       VITE_INPROGRESS_FEATURES: string[];
     };
   }
@@ -32,6 +33,7 @@ const APP_TITLE =
 const APP_URL = window._env_?.VITE_APP_URL || import.meta.env.VITE_APP_URL;
 const OIDC_AUTHORITY = window._env_?.VITE_OIDC_AUTHORITY || import.meta.env.VITE_OIDC_AUTHORITY;
 const CLIENT_ID = window._env_?.VITE_CLIENT_ID || import.meta.env.VITE_CLIENT_ID;
+const DEFAULT_PAGE_SIZE = window._env_?.VITE_DEFAULT_PAGE_SIZE || import.meta.env.VITE_DEFAULT_PAGE_SIZE || 15;
 const INPROGRESS_FEATURES = window._env_?.VITE_INPROGRESS_FEATURES || import.meta.env.VITE_INPROGRESS_FEATURES;
 
 export const AppConfig = {
@@ -43,6 +45,7 @@ export const AppConfig = {
   version: APP_VERSION,
   appTitle: APP_TITLE,
   inprogressFeatures: INPROGRESS_FEATURES,
+  defaultPageSize: DEFAULT_PAGE_SIZE,
 };
 
 export const OidcConfig = {

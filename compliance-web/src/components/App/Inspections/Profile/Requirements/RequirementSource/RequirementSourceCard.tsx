@@ -73,24 +73,6 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
     const isRegulation =
       requirementSource?.id === RequirementSourceEnum.REGULATION;
 
-    const dataSorted = data.slice().sort((a, b) => {
-      const srcType =
-        `${sourceNumberType.toLowerCase()}Number` as keyof RequirementSourceFormData;
-      const aValue = a[srcType];
-      const bValue = b[srcType];
-
-      // Convert both values to strings for localeCompare, handling undefined/null
-      const aStr =
-        aValue !== undefined && aValue !== null ? String(aValue) : "";
-      const bStr =
-        bValue !== undefined && bValue !== null ? String(bValue) : "";
-
-      return aStr.localeCompare(bStr, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
-    });
-
     return (
       <Accordion
         expanded={isExpanded}
@@ -163,7 +145,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
         </AccordionSummary>
         <AccordionDetails sx={{ padding: "0" }}>
           <Stack>
-            {dataSorted.map((item, idx) => (
+            {data.map((item, idx) => (
               <Box key={idx}>
                 <Box
                   sx={{

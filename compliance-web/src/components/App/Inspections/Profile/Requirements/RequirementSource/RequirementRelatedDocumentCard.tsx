@@ -118,11 +118,7 @@ const RequirementRelatedDocumentCard: FC<
         )}
       </AccordionSummary>
       <AccordionDetails sx={{ padding: "0" }}>
-        {relatedDocument.sections
-          ?.sort((a, b) =>
-            (a.sectionNumber ?? "").localeCompare(b.sectionNumber ?? "")
-          )
-          .map((section, idx) => (
+        {relatedDocument.sections?.map((section, idx) => (
             <Box
               key={idx}
               sx={{

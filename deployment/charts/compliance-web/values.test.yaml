@@ -9,6 +9,7 @@ app:
   version: 1.0.0
   in_progress_features: []
   client_id: "epic-compliance"
+  default_page_size: "15"
 aws:
   s3_bucket: "test-epic"
   s3_url: "https://nrs.objectstore.gov.bc.ca"

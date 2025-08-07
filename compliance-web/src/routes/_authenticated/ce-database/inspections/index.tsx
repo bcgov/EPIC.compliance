@@ -371,6 +371,7 @@ export function Inspections() {
         filterSelectOptions: staffUserList,
         size: 100,
       },
+
       {
         accessorKey: "inspection_status",
         header: "Status",
