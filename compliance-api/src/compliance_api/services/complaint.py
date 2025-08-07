@@ -67,7 +67,10 @@ class ComplaintService:
             return None
 
         # Get order details directly if the complaint has ORDER requirement source
-        if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
+        if (
+            complaint.requirement_source_id
+            == ComplaintRequirementSourceEnum.ORDER.value
+        ):
             order_detail = ComplaintReqOrderDetailModel.get_by_complaint(complaint_id)
             if order_detail:
                 return order_detail
@@ -131,8 +134,13 @@ class ComplaintService:
             # Delete order details for complaints in this case file
             complaints = ComplaintModel.get_by_params({"case_file_id": case_file_id})
             for complaint in complaints:
-                if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
-                    ComplaintReqOrderDetailModel.delete_details(complaint.id, ho_session or session)
+                if (
+                    complaint.requirement_source_id
+                    == ComplaintRequirementSourceEnum.ORDER.value
+                ):
+                    ComplaintReqOrderDetailModel.delete_details(
+                        complaint.id, ho_session or session
+                    )
 
     @classmethod
     def delete_complaint(cls, complaint_id):
@@ -145,7 +153,10 @@ class ComplaintService:
             ComplaintModel.delete_complaint(complaint_id, session)
             ComplaintSourceContactModel.delete_by_complaint(complaint_id, session)
             # Delete order details if they exist
-            if complaint.requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value:
+            if (
+                complaint.requirement_source_id
+                == ComplaintRequirementSourceEnum.ORDER.value
+            ):
                 ComplaintReqOrderDetailModel.delete_details(complaint_id, session)
         return complaint
 
@@ -255,7 +266,8 @@ def _create_or_update_requirement_details(
     if (
         existing_order_detail
         and old_requirement_source_id == ComplaintRequirementSourceEnum.ORDER.value
-        and complaint.requirement_source_id != ComplaintRequirementSourceEnum.ORDER.value
+        and complaint.requirement_source_id
+        != ComplaintRequirementSourceEnum.ORDER.value
     ):
         ComplaintReqOrderDetailModel.delete_details(complaint.id, session)
 
@@ -307,7 +319,9 @@ def _create_complaint_update_object(complaint_data: dict):
         "primary_officer_id": complaint_data.get("primary_officer_id", None),
         "date_received": complaint_data.get("date_received"),
         "requirement_source_id": complaint_data.get("requirement_source_id", None),
-        "requirement_source_description": complaint_data.get("requirement_source_description", None),
+        "requirement_source_description": complaint_data.get(
+            "requirement_source_description", None
+        ),
         "topic_id": complaint_data.get("topic_id", None),
         "source_type_id": complaint_data.get("source_type_id"),
         "source_agency_id": complaint_data.get("source_agency_id", None),

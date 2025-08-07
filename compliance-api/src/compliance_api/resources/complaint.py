@@ -260,7 +260,6 @@ class ComplaintExport(Resource):
     @auth.require
     def post():
         """Export complaints to Excel with filtering."""
-
         # Get filter data from request body
         filter_data = ComplaintFilterSchema().load(API.payload or {})
 

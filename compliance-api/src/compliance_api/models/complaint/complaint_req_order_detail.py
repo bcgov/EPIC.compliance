@@ -31,12 +31,19 @@ class ComplaintReqOrderDetail(BaseModelVersioned):
     )
     order_number = Column(String, nullable=True, comment="The order number")
     complaint = relationship(
-        "Complaint", foreign_keys=[complaint_id], back_populates="order_detail", lazy="select"
+        "Complaint",
+        foreign_keys=[complaint_id],
+        back_populates="order_detail",
+        lazy="select",
     )
 
     def to_dict(self):
         """Convert model instance to a dictionary for JSON serialization."""
-        return {"id": self.id, "complaint_id": self.complaint_id, "order_number": self.order_number}
+        return {
+            "id": self.id,
+            "complaint_id": self.complaint_id,
+            "order_number": self.order_number,
+        }
 
     @classmethod
     @with_session

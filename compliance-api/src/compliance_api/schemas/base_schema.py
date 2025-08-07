@@ -47,9 +47,7 @@ class BaseSchema(Schema):  # pylint: disable=too-many-ancestors, too-few-public-
         lambda obj: (
             f"{obj.created_by.firstname} {obj.created_by.lastname}"
             if getattr(obj, "created_by", None) and hasattr(obj.created_by, "firstname")
-            else obj.created_by
-            if getattr(obj, "created_by", None)
-            else None
+            else obj.created_by if getattr(obj, "created_by", None) else None
         )
     )
 
@@ -57,9 +55,7 @@ class BaseSchema(Schema):  # pylint: disable=too-many-ancestors, too-few-public-
         lambda obj: (
             f"{obj.updated_by.firstname} {obj.updated_by.lastname}"
             if getattr(obj, "updated_by", None) and hasattr(obj.updated_by, "firstname")
-            else obj.updated_by
-            if getattr(obj, "updated_by", None)
-            else None
+            else obj.updated_by if getattr(obj, "updated_by", None) else None
         )
     )
 

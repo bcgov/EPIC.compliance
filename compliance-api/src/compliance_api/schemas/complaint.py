@@ -31,7 +31,9 @@ class RequirementSourceDetailSchema(BaseSchema):
 
     id = fields.Int(metadata={"description": "The unique identifier"})
     complaint_id = fields.Int(metadata={"description": "The complaint id"})
-    order_number = fields.Str(metadata={"description": "The order number"}, allow_none=True)
+    order_number = fields.Str(
+        metadata={"description": "The order number"}, allow_none=True
+    )
 
 
 class ComplaintSourceContactSchema(

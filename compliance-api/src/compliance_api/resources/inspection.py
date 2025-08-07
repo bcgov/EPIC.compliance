@@ -271,7 +271,6 @@ class InspectionExport(Resource):
     @auth.require
     def post():
         """Export inspections to Excel based on filters."""
-
         filter_data = InspectionFilterSchema().load(API.payload or {})
         excel_file = InspectionService.generate_inspections_excel(filter_data)
 

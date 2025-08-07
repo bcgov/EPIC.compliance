@@ -860,27 +860,27 @@ def _build_inspections_paginated_query(args):
 def _get_basic_filters(args):
     """Get basic inspection filters."""
     filters = []
-    
+
     # IR number filter
     if args.get("ir_number"):
         filters.append(InspectionModel.ir_number.ilike(f"%{args['ir_number']}%"))
-    
+
     # Case File ID filter
     if args.get("case_file_id"):
         filters.append(InspectionModel.case_file_id == int(args["case_file_id"]))
-    
+
     # Start date filter
     if args.get("start_date"):
         filters.append(InspectionModel.start_date == args["start_date"])
-    
+
     # Initiation filter
     if args.get("initiation_id"):
         filters.append(InspectionModel.initiation_id == args["initiation_id"])
-    
+
     # Primary officer filter
     if args.get("primary_officer_id"):
         filters.append(InspectionModel.primary_officer_id == args["primary_officer_id"])
-    
+
     return filters
 
 
@@ -888,7 +888,7 @@ def _get_project_id_filter(args):
     """Get project ID filter with null handling."""
     if not args.get("project_id"):
         return None
-    
+
     project_id = args["project_id"]
     if project_id.lower() in ["null", "none"]:
         return InspectionModel.project_id.is_(None)
@@ -898,17 +898,17 @@ def _get_project_id_filter(args):
 def _get_enum_filters(args):
     """Get enum-based filters."""
     filters = []
-    
+
     # IR Progress filter
     if args.get("ir_progress"):
         progress_enum = IRProgressEnum[args["ir_progress"].upper()]
         filters.append(InspectionRecord.ir_progress == progress_enum)
-    
+
     # Approval status filter
     if args.get("approval_status"):
         approval_enum = IRApprovalStatusEnum[args["approval_status"].upper()]
         filters.append(InspectionRecordApproval.approval_status == approval_enum)
-    
+
     # Status filter
     if args.get("status"):
         try:
@@ -916,33 +916,33 @@ def _get_enum_filters(args):
             filters.append(InspectionModel.inspection_status == status_enum)
         except KeyError:
             pass  # Invalid enum value, ignore filter
-    
+
     return filters
 
 
 def _apply_inspections_filters(query, args):
     """Apply filters to the inspections query."""
     filters = []
-    
+
     # Get basic filters
     filters.extend(_get_basic_filters(args))
-    
+
     # Get project ID filter
     project_filter = _get_project_id_filter(args)
     if project_filter is not None:
         filters.append(project_filter)
-    
+
     # Get enum filters
     filters.extend(_get_enum_filters(args))
-    
+
     # Case file number filter (requires join)
     if args.get("case_file_number"):
         query = query.join(CaseFile, InspectionModel.case_file_id == CaseFile.id)
         filters.append(CaseFile.case_file_number.ilike(f"%{args['case_file_number']}%"))
-    
+
     if filters:
         query = query.filter(and_(*filters))
-    
+
     return query
 
 

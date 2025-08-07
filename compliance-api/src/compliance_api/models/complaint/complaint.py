@@ -83,7 +83,9 @@ class Complaint(BaseModelVersioned):
         comment="The selected requirement source of the complaint",
     )
     requirement_source_description = Column(
-        String, nullable=True, comment="The requirement source description of the complaint"
+        String,
+        nullable=True,
+        comment="The requirement source description of the complaint",
     )
     topic_id = Column(
         Integer,
