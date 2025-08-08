@@ -161,4 +161,9 @@ export enum EnforcementActionEnum {
   WARNING = "11",
 }
 
+export enum ComplaintStatusEnum {
+  OPEN = "Open",
+  CLOSED = "Closed",
+}
+
 export type VARIANT_COLORS = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
