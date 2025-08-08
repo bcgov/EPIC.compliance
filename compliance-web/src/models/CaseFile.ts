@@ -2,6 +2,7 @@ import { Dayjs } from "dayjs";
 import { Initiation } from "./Initiation";
 import { Project } from "./Project";
 import { StaffUser } from "./Staff";
+import { BaseTableQueryParams } from "./BaseTableQueryParams";
 
 export interface CaseFile {
   id: number;
@@ -21,6 +22,20 @@ export interface CaseFile {
   sub_type?: string;
   project_description?: string;
   caseFileLinks?: CaseFile[];
+}
+
+export interface CaseFileGridQueryParams extends BaseTableQueryParams {
+  case_file_number?: string;
+  project_id?: string;
+  initiation_id?: string;
+  status?: string;
+  primary_officer_id?: string;
+  date_created?: string;
+}
+
+export interface CaseFileGridItems {
+  items: CaseFile[];
+  total: number;
 }
 
 export interface CaseFileFormData {
