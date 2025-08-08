@@ -4,6 +4,7 @@ import { ApprovalStatus } from "./ApprovalStatus";
 import { RequirementSource } from "./RequirementSource";
 import { Topic } from "./Topic";
 import { StaffUser } from "./Staff";
+import { BaseTableQueryParams } from "./BaseTableQueryParams";
 
 export interface InspectionRequirementGrid {
   id: number;
@@ -21,7 +22,7 @@ export interface InspectionRequirementGrid {
   approved_by_id: number;
 }
 
-export interface InspectionRequirementGridQueryParams {
+export interface InspectionRequirementGridQueryParams extends BaseTableQueryParams {
   tpc_ids?: string;
   summary?: string;
   cmd_fnd_ids?: string;
@@ -35,10 +36,6 @@ export interface InspectionRequirementGridQueryParams {
   prm_offc_ids?: string;
   insp_sts?: string;
   project_ids?: string;
-  sort_by?: string;
-  sort_order?: "asc" | "desc";
-  page_no?: number;
-  page_size?: number;
 }
 
 export interface InspectionRequirementGridItems {
