@@ -438,6 +438,14 @@ def _apply_complaints_filters(query, args):
     if args.get("case_file_id"):
         filters.append(ComplaintModel.case_file_id == int(args["case_file_id"]))
 
+    # Topic ID filter
+    if args.get("topic_id"):
+        filters.append(ComplaintModel.topic_id == int(args["topic_id"]))
+
+    # Source type ID filter
+    if args.get("source_type_id"):
+        filters.append(ComplaintModel.source_type_id == int(args["source_type_id"]))
+
     # Date received filter
     if args.get("date_received"):
         filters.append(func.date(ComplaintModel.date_received) == args["date_received"])
@@ -477,6 +485,8 @@ def _apply_complaints_sorting(query, args):
     sort_mappings = {
         "complaint_number": ComplaintModel.complaint_number,
         "project_id": CaseFileModel.project_id,
+        "topic_id": ComplaintModel.topic_id,
+        "source_type_id": ComplaintModel.source_type_id,
         "date_received": ComplaintModel.date_received,
         "primary_officer_id": ComplaintModel.primary_officer_id,
         "case_file_number": CaseFileModel.case_file_number,

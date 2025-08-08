@@ -38,7 +38,7 @@ export const useConvertFiltersToQueryParams = (
               params.project_id = filter.value.join(",");
             }
             break;
-          case "topic":
+          case "topic_id":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.topic_id = filter.value.join(",");
             }
@@ -51,7 +51,7 @@ export const useConvertFiltersToQueryParams = (
               }
             }
             break;
-          case "source_type":
+          case "source_type_id":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.source_type_id = filter.value.join(",");
             }
@@ -141,7 +141,7 @@ export const useComplaintsGridColumns = (
     },
     {
       accessorFn: (row) => row.topic?.name,
-      id: "topic",
+      id: "topic_id",
       header: "Topic",
       filterVariant: "multi-select",
       filterSelectOptions:
@@ -162,7 +162,7 @@ export const useComplaintsGridColumns = (
     },
     {
       accessorFn: (row) => row.source_type?.name,
-      id: "source_type",
+      id: "source_type_id",
       header: "Complaint Source",
       filterVariant: "multi-select",
       filterSelectOptions:

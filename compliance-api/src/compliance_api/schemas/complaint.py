@@ -238,6 +238,14 @@ class ComplaintFilterSchema(BaseSchema):
         metadata={"description": "Filter by project ID"},
         required=False,
     )
+    topic_id = fields.Int(
+        metadata={"description": "Filter by topic ID"},
+        required=False,
+    )
+    source_type_id = fields.Int(
+        metadata={"description": "Filter by source type ID"},
+        required=False,
+    )
     date_received = fields.Date(
         metadata={"description": "Filter by date received"},
         required=False,
