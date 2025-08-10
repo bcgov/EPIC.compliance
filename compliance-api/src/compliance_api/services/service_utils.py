@@ -191,22 +191,31 @@ class ServiceUtils:
                         }
                     )
                     if detail.documents:
+                        # Group documents by document_title
+                        grouped_docs = {}
                         for doc in detail.documents:
+                            title = doc.document_title
+                            if title not in grouped_docs:
+                                grouped_docs[title] = {
+                                    "documents": [],
+                                    "document_title": title
+                                }
+                            grouped_docs[title]["documents"].append({
+                                "appendix_no": (
+                                    doc.appendix.appendix_no
+                                    if doc.appendix
+                                    else None
+                                ),
+                                "section_number": doc.section_number,
+                                "section_title": doc.section_title,
+                                "description": doc.description,
+                            })
+                        
+                        # Add grouped documents to requirement_documents
+                        for grouped_doc in grouped_docs.values():
                             req["requirement_source_details"][-1][
                                 "requirement_documents"
-                            ].append(
-                                {
-                                    "document_title": doc.document_title,
-                                    "appendix_no": (
-                                        doc.appendix.appendix_no
-                                        if doc.appendix
-                                        else None
-                                    ),
-                                    "section_number": doc.section_number,
-                                    "section_title": doc.section_title,
-                                    "description": doc.description,
-                                }
-                            )
+                            ].append(grouped_doc)
             if photo_required:
                 photos = []
                 figures = []

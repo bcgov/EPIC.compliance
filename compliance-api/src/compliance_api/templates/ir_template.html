@@ -404,17 +404,16 @@
                         <div class="com-ir-section-description">{{ source.requirement_source_description | safe |
                         replace('style="white-space: pre-wrap;"', '') }}</div>
                         {% if source.requirement_documents %}
-                        {% for doc in source.requirement_documents %}
-                        {% if loop.first %}<div class="com-ir-document-title">{{ doc.document_title }}{% if doc.appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ doc.appendix_no }})</span>{% endif %}</div>{% endif %}
+                        {% for doc_group in source.requirement_documents %}
+                        <div class="com-ir-document-title">{{ doc_group.document_title }}{% if doc_group.documents and doc_group.documents[0].appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ doc_group.documents[0].appendix_no }})</span>{% endif %}</div>
+                        {% for doc in doc_group.documents %}
                         {% if doc.section_number or doc.section_title %}
-                        <div class="com-ir-document-section">{% if doc.section_number %}Section {{ doc.section_number }} {% endif %}{{ doc.section_title }}
-                        </div>
+                        <div class="com-ir-document-section">{% if doc.section_number %}Section {{ doc.section_number }} {% endif %}{{ doc.section_title }}</div>
                         {% endif %}
                         {% if doc.description %}
-                        <div class="com-ir-document-description">{{ doc.description | safe |
-                            replace('style="white-space:
-                            pre-wrap;"', '') }}</div>
+                        <div class="com-ir-document-description">{{ doc.description | safe | replace('style="white-space: pre-wrap;"', '') }}</div>
                         {% endif %}
+                        {% endfor %}
                         {% endfor %}
                         {% endif %}
                         {% endfor %}

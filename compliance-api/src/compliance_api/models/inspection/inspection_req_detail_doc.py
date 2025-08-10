@@ -1,6 +1,6 @@
 """InspectionRequirementDetailDocument Model."""
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Index, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -60,6 +60,7 @@ class InspectionReqDetailDocument(BaseModelVersioned):
     description = Column(
         String, nullable=True, comment="Additional description of the document"
     )
+    is_deleted = Column(Boolean, nullable=False, default=False)
     requirement_source_detail = relationship(
         "InspectionReqSourceDetail",
         back_populates="documents",
@@ -70,6 +71,16 @@ class InspectionReqDetailDocument(BaseModelVersioned):
         "DocumentType", foreign_keys=[document_type_id], lazy="select"
     )
     appendix = relationship("Appendix", foreign_keys=[appendix_id], lazy="joined")
+
+    __table_args__ = (
+        Index(
+            "unique_non_deleted_req_detail_document_title",  # Index name
+            "req_detail_id",
+            "document_title",
+            unique=True,
+            postgresql_where=(is_deleted is False),  # Condition for uniqueness
+        ),
+    )
 
     @classmethod
     @with_session
