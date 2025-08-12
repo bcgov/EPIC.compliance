@@ -5,6 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 from sqlalchemy import String, and_, asc, case, cast, desc, func
+from sqlalchemy.orm import aliased
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -38,6 +39,7 @@ from compliance_api.models.enforcement_action import EnforcementActionOption as 
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
+from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
@@ -810,6 +812,7 @@ def _build_inspections_paginated_query(args):
     )
 
     # Build base query similar to the model's get_all_inspections method
+    approved_by = aliased(StaffUser)
     query = (
         InspectionModel.query.outerjoin(
             InspectionRecord,
@@ -832,8 +835,8 @@ def _build_inspections_paginated_query(args):
             ),
         )
         .outerjoin(
-            StaffUser,
-            InspectionRecordApproval.approved_by_id == StaffUser.id,
+            approved_by,
+            InspectionRecordApproval.approved_by_id == approved_by.id,
         )
         .filter(
             InspectionModel.is_deleted.is_(False), InspectionModel.is_active.is_(True)
@@ -871,7 +874,7 @@ def _get_basic_filters(args):
 
     # Start date filter
     if args.get("start_date"):
-        filters.append(InspectionModel.start_date == args["start_date"])
+        filters.append(func.date(InspectionModel.start_date) == args["start_date"])
 
     # Initiation filter
     if args.get("initiation_id"):
@@ -954,8 +957,12 @@ def _apply_inspections_sorting(query, args):
     if sort_by == "ir_number":
         sort_field = InspectionModel.ir_number
     elif sort_by == "project":
-        # For project sorting, we'll need to handle this differently since project data comes from external service
-        sort_field = InspectionModel.project_id
+        # Join with ProjectModel to sort by project name
+        query = query.join(
+            CaseFileModel, InspectionModel.case_file_id == CaseFileModel.id
+        )
+        query = query.join(ProjectModel, CaseFileModel.project_id == ProjectModel.id)
+        sort_field = ProjectModel.name
     elif sort_by == "start_date":
         sort_field = InspectionModel.start_date
     elif sort_by == "initiation":
@@ -965,12 +972,13 @@ def _apply_inspections_sorting(query, args):
         )
         sort_field = InspectionInitiationOptionModel.name
     elif sort_by == "ir_progress":
-        # Handle enum sorting for IR progress
-        progress_order = list(reversed([e.name for e in IRProgressEnum]))
+        # Handle enum sorting for IR progress - order by enum values (strings)
+        progress_order = IRProgressEnum.ordered_values()
+
         ir_progress_case = case(
             {status: idx for idx, status in enumerate(progress_order)},
-            value=cast(InspectionRecord.ir_progress, String),
-            else_=len(progress_order),
+            value=func.coalesce(cast(InspectionRecord.ir_progress, String), ""),
+            else_=len(progress_order),  # Default to last position (empty string)
         ).label("ir_progress_order")
 
         custom_order = (

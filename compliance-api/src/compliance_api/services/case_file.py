@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 from flask import g
-from sqlalchemy import String, and_, asc, case, cast, desc
+from sqlalchemy import String, and_, asc, case, cast, desc, func
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -535,8 +535,7 @@ def _apply_case_file_filters(query, args):
     # Date created filter
     date_created = args.get("date_created")
     if date_created:
-        target_date = datetime.strptime(date_created, "%Y-%m-%d")
-        filters.append(CaseFileModel.date_created == target_date)
+        filters.append(func.date(CaseFileModel.date_created) == date_created)
 
     # Apply all filters
     if filters:

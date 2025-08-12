@@ -16,6 +16,7 @@ from compliance_api.models.complaint import ComplaintSource as ComplaintSourceMo
 from compliance_api.models.complaint import ComplaintSourceContact as ComplaintSourceContactModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import session_scope
+from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
@@ -420,60 +421,51 @@ def _apply_complaints_filters(query, args):
     """Apply filters to the complaints query."""
     filters = []
 
-    # Complaint number filter
-    if args.get("complaint_number"):
-        filters.append(
-            ComplaintModel.complaint_number.ilike(f"%{args['complaint_number']}%")
-        )
+    # Define filter mappings to reduce branches
+    filter_mappings = [
+        ("complaint_number", lambda v: ComplaintModel.complaint_number.ilike(f"%{v}%")),
+        ("case_file_id", lambda v: ComplaintModel.case_file_id == int(v)),
+        ("topic_id", lambda v: ComplaintModel.topic_id == int(v)),
+        ("source_type_id", lambda v: ComplaintModel.source_type_id == int(v)),
+        ("date_received", lambda v: func.date(ComplaintModel.date_received) == v),
+        ("primary_officer_id", lambda v: ComplaintModel.primary_officer_id == int(v)),
+        ("case_file_number", lambda v: CaseFileModel.case_file_number.ilike(f"%{v}%")),
+    ]
 
-    # Project ID filter
+    # Apply simple filters using mapping
+    for field_name, filter_func in filter_mappings:
+        if args.get(field_name):
+            filters.append(filter_func(args[field_name]))
+
+    # Handle special cases that need custom logic
+    filters.extend(_get_special_complaint_filters(args))
+
+    # Apply all filters
+    return query.filter(*filters) if filters else query
+
+
+def _get_special_complaint_filters(args):
+    """Get filters that require special handling logic."""
+    special_filters = []
+
+    # Project ID filter (handles null/none values)
     if args.get("project_id"):
         project_id = args["project_id"]
         if project_id.lower() in ["null", "none"]:
-            filters.append(CaseFileModel.project_id.is_(None))
+            special_filters.append(CaseFileModel.project_id.is_(None))
         else:
-            filters.append(CaseFileModel.project_id == int(project_id))
+            special_filters.append(CaseFileModel.project_id == int(project_id))
 
-    # Case File ID filter
-    if args.get("case_file_id"):
-        filters.append(ComplaintModel.case_file_id == int(args["case_file_id"]))
-
-    # Topic ID filter
-    if args.get("topic_id"):
-        filters.append(ComplaintModel.topic_id == int(args["topic_id"]))
-
-    # Source type ID filter
-    if args.get("source_type_id"):
-        filters.append(ComplaintModel.source_type_id == int(args["source_type_id"]))
-
-    # Date received filter
-    if args.get("date_received"):
-        filters.append(func.date(ComplaintModel.date_received) == args["date_received"])
-
-    # Primary officer ID filter
-    if args.get("primary_officer_id"):
-        filters.append(
-            ComplaintModel.primary_officer_id == int(args["primary_officer_id"])
-        )
-
-    # Status filter
+    # Status filter (requires enum validation)
     if args.get("status"):
         status_value = args["status"].upper()
         valid_statuses = [status.name for status in ComplaintStatusEnum]
         if status_value in valid_statuses:
-            filters.append(ComplaintModel.status == ComplaintStatusEnum[status_value])
+            special_filters.append(
+                ComplaintModel.status == ComplaintStatusEnum[status_value]
+            )
 
-    # Case file number filter
-    if args.get("case_file_number"):
-        filters.append(
-            CaseFileModel.case_file_number.ilike(f"%{args['case_file_number']}%")
-        )
-
-    # Apply all filters
-    if filters:
-        query = query.filter(*filters)
-
-    return query
+    return special_filters
 
 
 def _apply_complaints_sorting(query, args):
@@ -481,16 +473,36 @@ def _apply_complaints_sorting(query, args):
     sort_by = args.get("sort_by", "complaint_number")
     sort_order = args.get("sort_order", "asc").lower()
 
-    # Define sorting mappings
+    # Handle project sorting with join to ProjectModel
+    if sort_by == "project":
+        # Join with ProjectModel to sort by project name
+        query = query.outerjoin(
+            ProjectModel, CaseFileModel.project_id == ProjectModel.id
+        )
+        sort_field = ProjectModel.name
+        return query.order_by(
+            sort_field.asc() if sort_order == "asc" else sort_field.desc()
+        )
+
+    # Handle source_type sorting with join to ComplaintSourceModel
+    if sort_by == "source_type_id":
+        # Join with ComplaintSourceModel to sort by source name
+        query = query.outerjoin(
+            ComplaintSourceModel,
+            ComplaintModel.source_type_id == ComplaintSourceModel.id,
+        )
+        sort_field = ComplaintSourceModel.name
+        return query.order_by(
+            sort_field.asc() if sort_order == "asc" else sort_field.desc()
+        )
+
+    # Define sorting mappings for other fields
     sort_mappings = {
         "complaint_number": ComplaintModel.complaint_number,
-        "project_id": CaseFileModel.project_id,
         "topic_id": ComplaintModel.topic_id,
-        "source_type_id": ComplaintModel.source_type_id,
         "date_received": ComplaintModel.date_received,
-        "primary_officer_id": ComplaintModel.primary_officer_id,
+        "primary_officer_id": StaffUser.first_name,  # Sort by staff user first name since StaffUser is already joined
         "case_file_number": CaseFileModel.case_file_number,
-        "case_file_id": ComplaintModel.case_file_id,
     }
 
     # Handle status sorting with enum ordering
