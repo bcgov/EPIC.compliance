@@ -153,68 +153,93 @@ class ServiceUtils:
             #  Skip regulatory considerations
             if requirement.req_type == InspectionRequirementTypeEnum.REG:
                 continue
-            req = {
-                "requirement_id": requirement.id,
-                "requirement_findings": requirement.findings,
-                "requirement_summary": requirement.summary,
-                "sort_order": requirement.sort_order,
-                "compliance_finding": (
-                    requirement.compliance_finding.name
-                    if requirement.compliance_finding
-                    else None
-                ),
-                "enforcement_action": ServiceUtils.get_enforcement_action(
-                    requirement, ir_status
-                ),
-                "requirement_source_details": [],
-                "requirement_photos": [],
-                "requirement_figures": [],
-            }
+
+            req = ServiceUtils._build_base_requirement_dict(requirement, ir_status)
+
             if requirement.requirement_source_details:
-                for detail in requirement.requirement_source_details:
-                    requirement_source_number = (
-                        ServiceUtils.get_requirement_source_number_field(detail)
-                    )
-                    req["requirement_source_details"].append(
-                        {
-                            "requirement_source_id": detail.requirement_source.id,
-                            "requirement_source_name": detail.requirement_source.name,
-                            "requirement_title": ServiceUtils.get_requirement_title(
-                                detail, requirement_source_number
-                            ),
-                            "appendix_no": (
-                                detail.appendix.appendix_no if detail.appendix else None
-                            ),
-                            "requirement_source_number": requirement_source_number,
-                            "requirement_source_description": detail.description,
-                            "requirement_documents": [],
-                        }
-                    )
-                    if detail.documents:
-                        for doc in detail.documents:
-                            req["requirement_source_details"][-1][
-                                "requirement_documents"
-                            ].append(
-                                {
-                                    "document_title": doc.document_title,
-                                    "appendix_no": (
-                                        doc.appendix.appendix_no
-                                        if doc.appendix
-                                        else None
-                                    ),
-                                    "section_number": doc.section_number,
-                                    "section_title": doc.section_title,
-                                    "description": doc.description,
-                                }
-                            )
+                ServiceUtils._process_requirement_source_details(
+                    req, requirement.requirement_source_details
+                )
+
             if photo_required:
-                photos = []
-                figures = []
-                photos, figures = ServiceUtils.get_photos_and_figures(requirement.id)
-                req["requirement_photos"] = photos
-                req["requirement_figures"] = figures
+                ServiceUtils._add_photos_and_figures(req, requirement.id)
+
             result.append(req)
         return result
+
+    @staticmethod
+    def _build_base_requirement_dict(requirement, ir_status):
+        """Build the base requirement dictionary."""
+        return {
+            "requirement_id": requirement.id,
+            "requirement_findings": requirement.findings,
+            "requirement_summary": requirement.summary,
+            "sort_order": requirement.sort_order,
+            "compliance_finding": (
+                requirement.compliance_finding.name
+                if requirement.compliance_finding
+                else None
+            ),
+            "enforcement_action": ServiceUtils.get_enforcement_action(
+                requirement, ir_status
+            ),
+            "requirement_source_details": [],
+            "requirement_photos": [],
+            "requirement_figures": [],
+        }
+
+    @staticmethod
+    def _process_requirement_source_details(req, source_details):
+        """Process requirement source details and add to req dict."""
+        for detail in source_details:
+            requirement_source_number = (
+                ServiceUtils.get_requirement_source_number_field(detail)
+            )
+            source_detail_dict = {
+                "requirement_source_id": detail.requirement_source.id,
+                "requirement_source_name": detail.requirement_source.name,
+                "requirement_title": ServiceUtils.get_requirement_title(
+                    detail, requirement_source_number
+                ),
+                "appendix_no": (
+                    detail.appendix.appendix_no if detail.appendix else None
+                ),
+                "requirement_source_number": requirement_source_number,
+                "requirement_source_description": detail.description,
+                "requirement_documents": [],
+            }
+            req["requirement_source_details"].append(source_detail_dict)
+
+            if detail.documents:
+                ServiceUtils._process_documents(source_detail_dict, detail.documents)
+
+    @staticmethod
+    def _process_documents(source_detail_dict, documents):
+        """Process and group documents by title."""
+        grouped_docs = {}
+        for doc in documents:
+            title = doc.document_title
+            if title not in grouped_docs:
+                grouped_docs[title] = {"documents": [], "document_title": title}
+            grouped_docs[title]["documents"].append(
+                {
+                    "appendix_no": (doc.appendix.appendix_no if doc.appendix else None),
+                    "section_number": doc.section_number,
+                    "section_title": doc.section_title,
+                    "description": doc.description,
+                }
+            )
+
+        # Add grouped documents to requirement_documents
+        for grouped_doc in grouped_docs.values():
+            source_detail_dict["requirement_documents"].append(grouped_doc)
+
+    @staticmethod
+    def _add_photos_and_figures(req, requirement_id):
+        """Add photos and figures to requirement dict."""
+        photos, figures = ServiceUtils.get_photos_and_figures(requirement_id)
+        req["requirement_photos"] = photos
+        req["requirement_figures"] = figures
 
     @staticmethod
     def get_requirement_title(

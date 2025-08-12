@@ -11,10 +11,7 @@ class RequirementDocumentSchema(BaseSchema):
     """Schema for requirement source detail documents."""
 
     document_title = fields.String(allow_none=True)
-    appendix_no = fields.String(allow_none=True)
-    section_number = fields.String(allow_none=True)
-    section_title = fields.String(allow_none=True)
-    description = fields.String(allow_none=True)
+    documents = fields.Raw()
 
 
 class RequirementSourceDetailSchema(BaseSchema):
