@@ -12,6 +12,7 @@ export const UNAPPROVED_PROJECT_ABBREVIATION = "UNPRVD";
 export const STAFF_USER_POSITION = {
   DEPUTY_DIRECTOR: 3,
   DIRECTOR: 4,
+  OTHER: 6,
 }
 
 export const INITIATION = {

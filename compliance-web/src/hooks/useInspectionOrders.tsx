@@ -1,4 +1,4 @@
-import { OnSuccessType, request } from "@/utils/axiosUtils";
+import { OnErrorType, OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   InspectionOrder,
@@ -230,10 +230,14 @@ export const useUpdateInspectionOrder = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: updateInspectionOrder, onSuccess });
 };
 
-export const useInspectionOrderRendered = (onSuccess: OnSuccessType) => {
+export const useInspectionOrderRendered = (
+  onSuccess: OnSuccessType,
+  onError: OnErrorType
+) => {
   return useMutation({
     mutationFn: inspectionOrderRender,
     onSuccess,
+    onError,
   });
 };
 

@@ -34,8 +34,8 @@ const inspectionsColumnFiltersCacheKey = "inspections-column-filters";
 export function Inspections() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData(true);
   const { isLoading: authLoading } = useAuth();
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
   const [showOnlyMyInspections, setShowOnlyMyInspections] = useState(false);
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "ir_number", desc: false },

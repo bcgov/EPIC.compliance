@@ -5,6 +5,7 @@ import { StaffAPIData, StaffUser } from "@/models/Staff";
 import { OnSuccessType, request, requestAuthAPI } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
+import { STAFF_USER_POSITION } from "@/utils/constants";
 
 const fetchStaffUsers = (): Promise<StaffUser[]> => {
   return request({ url: "/staff-users" });
@@ -35,18 +36,25 @@ const deleteStaff = (id: number) => {
   return request({ url: `/staff-users/${id}`, method: "delete" });
 };
 
-export const useStaffUsersData = (
-  is_active: boolean | undefined = undefined
-) => {
+export const useStaffUsersData = (filters: {
+  isActive?: boolean; // filter out inactive users
+  otherPositions?: boolean; // filter out other positions
+} = {
+  isActive: true,
+  otherPositions: true,
+}) => {
   return useQuery({
     queryKey: ["staff-users"],
     queryFn: async () => {
-      let staff = await fetchStaffUsers();
-      staff = staff.sort((a, b) => a.name.localeCompare(b.name));
-      if (is_active === undefined) {
-        return staff;
-      }
-      return staff.filter((p) => p.is_active === is_active);
+      let staffUsers = await fetchStaffUsers();
+      staffUsers = staffUsers.sort((a, b) => a.name.localeCompare(b.name));
+      return staffUsers.filter(
+        (p) =>
+          (filters?.isActive ? p.is_active === filters.isActive : true) &&
+          (filters?.otherPositions
+            ? p.position_id !== STAFF_USER_POSITION.OTHER
+            : true)
+      );
     },
   });
 };

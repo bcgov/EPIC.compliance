@@ -37,7 +37,10 @@ const STAFF_MODAL_WIDTH = "520px";
 export function Staff() {
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
-  const { data: staffUsersList, isLoading } = useStaffUsersData();
+  const { data: staffUsersList, isLoading } = useStaffUsersData({
+    isActive: false,
+    otherPositions: false,
+  });
 
   const [positionList, setPositionList] = useState<string[]>([]);
   const [supervisorList, setSupervisorList] = useState<string[]>([]);

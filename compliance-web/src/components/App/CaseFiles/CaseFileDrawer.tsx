@@ -75,7 +75,7 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
     includeUnapproved: true,
   });
   const { data: initiationList } = useInitiationsData();
-  const { data: staffUserList } = useStaffUsersData(true);
+  const { data: staffUserList } = useStaffUsersData();
   const { appHeaderHeight } = useMenuStore();
 
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);

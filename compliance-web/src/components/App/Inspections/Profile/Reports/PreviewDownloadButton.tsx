@@ -26,6 +26,8 @@ import {
 } from "@/hooks/useAuthorization";
 import { useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { InspectionStatusEnum } from "@/utils/constants";
+import { AxiosError } from "axios";
+import { notify } from "@/store/snackbarStore";
 
 const PreviewDownloadButton = () => {
   const { setOpen: setModalOpen } = useModal();
@@ -66,7 +68,15 @@ const PreviewDownloadButton = () => {
     setPreviewClicked(false);
   };
 
-  const { mutate: mutateIrPreviewData } = useInspectionRecordRender(onSuccess);
+  const onError = (error: AxiosError) => {
+    notify.error(error.message ?? "Error processing report");
+    setPreviewClicked(false);
+  };
+
+  const { mutate: mutateIrPreviewData } = useInspectionRecordRender(
+    onSuccess,
+    onError
+  );
 
   const handlePreviewClick = async () => {
     setPreviewClicked(true);

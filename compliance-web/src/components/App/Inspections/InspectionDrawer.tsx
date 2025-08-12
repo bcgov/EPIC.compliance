@@ -63,7 +63,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
   const { data: attendanceList } = useAttendanceOptionsData();
   const { data: agenciesList } = useAgenciesData();
   const { data: firstNationsList } = useFirstNationsData();
-  const { data: inattendanceOfficersList } = useStaffUsersData(true);
+  const { data: inattendanceOfficersList } = useStaffUsersData();
   const currentUser = useCurrentLoggedInUser();
 
   const staffUserList = [

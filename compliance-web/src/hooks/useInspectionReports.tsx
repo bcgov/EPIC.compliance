@@ -3,7 +3,7 @@ import {
   InspectionRecordApprovalPayload,
   IRApproval,
 } from "@/models/IRApproval";
-import { OnSuccessType, request } from "@/utils/axiosUtils";
+import { OnErrorType, OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 const fetchInspectionReports = (
@@ -252,9 +252,13 @@ export const useUpdateIRReportToFinal = (onSuccess: OnSuccessType) => {
   });
 };
 
-export const useInspectionRecordRender = (onSuccess: OnSuccessType) => {
+export const useInspectionRecordRender = (
+  onSuccess: OnSuccessType,
+  onError?: OnErrorType
+) => {
   return useMutation({
     mutationFn: inspectionRecordRender,
+    onError,
     onSuccess,
   });
 };

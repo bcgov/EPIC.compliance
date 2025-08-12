@@ -1,4 +1,4 @@
-import { OnSuccessType, request } from "@/utils/axiosUtils";
+import { OnErrorType, OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   InspectionWarningLetter,
@@ -182,10 +182,14 @@ export const useUpdateWarningLetter = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: updateWarningLetter, onSuccess });
 };
 
-export const useWarningLetterRendered = (onSuccess: OnSuccessType) => {
+export const useWarningLetterRendered = (
+  onSuccess: OnSuccessType,
+  onError: OnErrorType
+) => {
   return useMutation({
     mutationFn: warningLetterRender,
     onSuccess,
+    onError,
   });
 };
 

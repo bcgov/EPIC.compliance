@@ -62,8 +62,54 @@
             margin: 0;
         }
         .signature {
-            margin-top: 3em;
+            margin-top: 5em;
         }
+
+        .editor-list-ol,
+        .editor-list-ul {
+            padding: 0;
+            margin: 0;
+            margin-left: 8px;
+        }
+
+        .editor-listitem {
+            margin: 0.25rem 1.5rem;
+        }
+
+        .editor-nested-listitem {
+            list-style-type: none;
+        }
+
+        .editor-list-ol1 {
+            padding: 0;
+            margin: 0;
+            list-style-position: outside;
+        }
+        .editor-list-ol2 {
+            padding: 0;
+            margin: 0;
+            list-style-type: upper-alpha;
+            list-style-position: outside;
+        }
+        .editor-list-ol3 {
+            padding: 0;
+            margin: 0;
+            list-style-type: lower-alpha;
+            list-style-position: outside;
+        }
+        .editor-list-ol4 {
+            padding: 0;
+            margin: 0;
+            list-style-type: upper-roman;
+            list-style-position: outside;
+        }
+        .editor-list-ol5 {
+            padding: 0;
+            margin: 0;
+            list-style-type: lower-roman;
+            list-style-position: outside;
+        }
+
         /* Print-specific styles */
         @media print {
             @page {
@@ -102,7 +148,16 @@
     </style>
     <script>
         function stripStyles(html) {
-            return html.replace(/style="[^"]*"/g, '');
+            return html.replace(/style="([^"]*?)"/g, function(match, styleContent) {
+                // Check if the style contains padding-inline-start
+                if (styleContent.includes('padding-inline-start')) {
+                    // Keep only the padding-inline-start property
+                    const paddingInlineStart = styleContent.match(/padding-inline-start:\s*[^;]+/);
+                    return paddingInlineStart ? `style="${paddingInlineStart[0]}"` : '';
+                }
+                // Remove all styles if padding-inline-start is not present
+                return '';
+            });
         }
     </script>
 </head>
@@ -121,10 +176,6 @@
         '')}}
     </div>
     <div class="signature">
-        <br />
-        <br />
-        <br />
-        <br />
         <p>{{officer_details.officer_name}}<br>
         {{officer_details.officer_position}}<br>
         {{department_details.office_name}}</p>
