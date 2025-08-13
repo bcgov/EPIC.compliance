@@ -14,11 +14,16 @@ import {
 } from "@/utils/constants";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
+import { CaseFileOption } from "@/models/CaseFile";
 
 const fetchCaseFiles = (
   queryParams?: CaseFileGridQueryParams
 ): Promise<CaseFileGridItems> => {
   return request({ url: "/case-files", params: queryParams });
+};
+
+const fetchCaseFileOptions = (): Promise<CaseFileOption[]> => {
+  return request({ url: "/case-files/options" });
 };
 
 const fetchCaseFile = (caseFileNumber: string): Promise<CaseFile> => {
@@ -100,6 +105,13 @@ export const useCaseFilesData = (queryParams?: CaseFileGridQueryParams) => {
   return useQuery({
     queryKey: ["case-files", queryParams],
     queryFn: () => fetchCaseFiles(queryParams),
+  });
+};
+
+export const useCaseFileOptions = () => {
+  return useQuery({
+    queryKey: ["case-file-options"],
+    queryFn: () => fetchCaseFileOptions(),
   });
 };
 
