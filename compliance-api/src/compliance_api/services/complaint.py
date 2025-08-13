@@ -20,8 +20,6 @@ from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
-from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE
 from compliance_api.utils.enum import PermissionEnum
 
 from .service_utils import ServiceUtils
