@@ -43,6 +43,7 @@ from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE
 from compliance_api.utils.enum import PermissionEnum
 
 from .epic_track_service.track_service import TrackService
@@ -781,6 +782,8 @@ def _create_inspection_record_number(
     )
     serial_number = f"{count + 1:03}"
     return f"{project_code}_{case_file.case_file_number}_IR{serial_number}"
+
+
 def _create_inspection_other_attendance_object(
     inspection_data: dict, inspection_id: int
 ):
