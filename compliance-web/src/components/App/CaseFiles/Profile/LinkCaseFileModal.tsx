@@ -7,7 +7,8 @@ import ModalActions from "@/components/Shared/Modals/ModalActions";
 import { FC, useEffect, useMemo } from "react";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { CaseFile } from "@/models/CaseFile";
-import { useCaseFilesData } from "@/hooks/useCaseFiles";
+import { useCaseFileOptions } from "@/hooks/useCaseFiles";
+import { CaseFileOption } from "@/models/CaseFile";
 
 type LinkCaseFileModalProps = {
   onSubmit: (caseFileId: number) => void;
@@ -35,20 +36,25 @@ const LinkCaseFileModal: FC<LinkCaseFileModalProps> = ({
   fileNumber,
   isEdit,
 }) => {
-  const { data } = useCaseFilesData();
-  const caseFiles = useMemo(() => data?.items ?? [], [data]);
-
+  const { data: caseFileOptions } = useCaseFileOptions();
+  const linkedCaseFilesOptions = useMemo<CaseFileOption[]>(() => {
+    return linkedCaseFiles?.map((linked) => {
+      return {
+        id: linked.id,
+        name: linked.case_file_number,
+      };
+    }) ?? [];
+  }, [linkedCaseFiles]);
   const filteredCaseFileList =
-    caseFiles
-      ?.filter(
-        (caseFile) =>
-          caseFile.case_file_number !== fileNumber &&
-          !linkedCaseFiles?.some((linked) => linked.id === caseFile.id)
+    (caseFileOptions ?? [])
+      .filter(
+        (caseFileOption) =>
+          caseFileOption.name !== fileNumber &&
+          !linkedCaseFiles?.some((linked) => linked.id === caseFileOption.id)
       )
-      .sort((a, b) => a.case_file_number.localeCompare(b.case_file_number)) ??
-    [];
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-  const caseFilesList = isEdit ? linkedCaseFiles : filteredCaseFileList;
+  const caseFilesList = isEdit ? linkedCaseFilesOptions : filteredCaseFileList;
 
   const methods = useForm<LinkCaseFileFormType>({
     resolver: yupResolver(linkCaseFileSchema),
@@ -79,7 +85,7 @@ const LinkCaseFileModal: FC<LinkCaseFileModalProps> = ({
             label="Case File"
             placeholder="Select Case File"
             options={caseFilesList ?? []}
-            getOptionLabel={(option) => option.case_file_number ?? ""}
+            getOptionLabel={(option) => option.name ?? ""}
             getOptionKey={(option) => option.id}
             isOptionEqualToValue={(option, value) => option.id === value.id}
             fullWidth

@@ -14,9 +14,9 @@ describe("LinkCaseFileModal Component", () => {
   });
 
   const mockCaseFiles = [
-    { id: 1, case_file_number: "CF-001" },
-    { id: 2, case_file_number: "CF-002" },
-    { id: 3, case_file_number: "CF-003" },
+    { id: 1, name: "CF-001" },
+    { id: 2, name: "CF-002" },
+    { id: 3, name: "CF-003" },
   ];
 
   const mockLinkedCaseFiles: CaseFile[] = [
@@ -39,8 +39,8 @@ describe("LinkCaseFileModal Component", () => {
     queryClient.clear();
     
     // Set the query data directly to ensure it's available
-    // The useCaseFilesData hook uses ["case-files", queryParams] as the key
-    queryClient.setQueryData(["case-files", undefined], { items: mockCaseFiles });
+    // The useCaseFileOptions hook uses ["case-file-options"] as the key
+    queryClient.setQueryData(["case-file-options"], mockCaseFiles);
   });
 
   function mountComponent(fileNumber: string, isEdit: boolean) {
@@ -122,7 +122,7 @@ describe("LinkCaseFileModal Component", () => {
 
   it("disables button when no case files are available", () => {
     // Set empty case files for this test
-    queryClient.setQueryData(["case-files", undefined], { items: [] });
+    queryClient.setQueryData(["case-file-options"], []);
 
     mountComponent("CF-100", false);
 
