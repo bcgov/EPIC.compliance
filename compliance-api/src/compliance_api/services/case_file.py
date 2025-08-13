@@ -44,6 +44,23 @@ class CaseFileService:
         return _build_case_files_paginated_query(args)
 
     @classmethod
+    def get_case_file_options(cls):
+        """Return active case files as id-name pairs for dropdown options."""
+        case_files = (
+            CaseFileModel.query.with_entities(
+                CaseFileModel.id,
+                CaseFileModel.case_file_number.label("name")
+            )
+            .filter(
+                CaseFileModel.is_deleted.is_(False),
+                CaseFileModel.is_active.is_(True)
+            )
+            .order_by(CaseFileModel.case_file_number.asc())
+            .all()
+        )
+        return case_files
+
+    @classmethod
     def generate_case_files_excel(cls, filter_data):
         """Generate case files excel export."""
         # Build query without pagination to get all results

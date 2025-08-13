@@ -69,3 +69,9 @@ export interface CaseFileAPIData {
 export interface CaseFileStatusAPIData {
   status: string;
 }
+
+export interface CaseFileOption {
+  id: number;
+  name: string;
+}
+

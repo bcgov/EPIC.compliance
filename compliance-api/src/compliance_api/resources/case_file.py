@@ -372,3 +372,20 @@ class CaseFilesExport(Resource):
 
         # Return the Excel file as a downloadable attachment
         return send_file(BytesIO(output), as_attachment=True, download_name=filename)
+
+
+@API.route("/options")
+class CaseFileOptions(Resource):
+    """Resource for getting case file options."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=[key_value_list_model])
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch active case files as id-name pairs for dropdown options"
+    )
+    @auth.require
+    def get():
+        """Fetch active case files as id-name pairs."""
+        case_file_options = CaseFileService.get_case_file_options()
+        case_file_option_schema = KeyValueSchema(many=True)
+        return case_file_option_schema.dump(case_file_options), HTTPStatus.OK
