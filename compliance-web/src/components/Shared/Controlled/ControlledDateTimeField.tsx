@@ -86,6 +86,7 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
               <DatePicker
                 {...field}
                 label="Date"
+                format={DATE_FORMAT}
                 value={field.value ? dayjs(field.value) : null}
                 onChange={(date: Dayjs | null) => {
                   if (date) {
