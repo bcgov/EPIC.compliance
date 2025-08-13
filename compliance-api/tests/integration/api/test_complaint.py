@@ -78,8 +78,12 @@ def test_get_case_files_with_case_file_id_passed(
     )
 
     assert result.status_code == HTTPStatus.OK
-    assert result.json[0].get("case_file_id") == second_case_file.id
-    assert len(result.json) == 1
+    # Check that the response has the expected pagination structure
+    assert "items" in result.json
+    assert "total" in result.json
+    assert result.json["items"][0].get("case_file_id") == second_case_file.id
+    assert len(result.json["items"]) == 1
+    assert result.json["total"] == 1
 
 
 def test_create_complaint_by_non_super_user_fail(
@@ -260,7 +264,9 @@ def test_complaint_get_requirement_details(
     assert get_result.status_code == HTTPStatus.OK
     input_source_details = complaint_data.get("requirement_source_details")
     # Test the current schema fields: id, complaint_id, order_number
-    assert get_result.json.get("order_number") == input_source_details.get("order_number")
+    assert get_result.json.get("order_number") == input_source_details.get(
+        "order_number"
+    )
     assert get_result.json.get("complaint_id") == created_complaint.id
 
 

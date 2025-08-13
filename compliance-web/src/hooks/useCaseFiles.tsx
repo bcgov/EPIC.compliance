@@ -1,6 +1,8 @@
 import {
   CaseFile,
   CaseFileAPIData,
+  CaseFileGridItems,
+  CaseFileGridQueryParams,
   CaseFileStatusAPIData,
 } from "@/models/CaseFile";
 import { Initiation } from "@/models/Initiation";
@@ -13,8 +15,10 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
 
-const fetchCaseFiles = (projectId?: number): Promise<CaseFile[]> => {
-  return request({ url: "/case-files", params: { project_id: projectId } });
+const fetchCaseFiles = (
+  queryParams?: CaseFileGridQueryParams
+): Promise<CaseFileGridItems> => {
+  return request({ url: "/case-files", params: queryParams });
 };
 
 const fetchCaseFile = (caseFileNumber: string): Promise<CaseFile> => {
@@ -81,10 +85,21 @@ const unlinkCaseFile = ({ id, linkId }: { id: number; linkId: number }) => {
   });
 };
 
-export const useCaseFilesData = () => {
+const caseFilesExport = (queryParams: CaseFileGridQueryParams = {}) => {
+  delete queryParams.page_no;
+  delete queryParams.page_size;
+  return request({
+    method: "POST",
+    url: `/case-files/export`,
+    data: queryParams,
+    responseType: "blob",
+  });
+};
+
+export const useCaseFilesData = (queryParams?: CaseFileGridQueryParams) => {
   return useQuery({
-    queryKey: ["case-files"],
-    queryFn: () => fetchCaseFiles(),
+    queryKey: ["case-files", queryParams],
+    queryFn: () => fetchCaseFiles(queryParams),
   });
 };
 
@@ -117,7 +132,7 @@ export const useOfficersByCaseFileId = (caseFileId: number) => {
 export const useCaseFilesByProjectId = (projectId: number) => {
   return useQuery({
     queryKey: ["case-files-by-projectId", projectId],
-    queryFn: () => fetchCaseFiles(projectId),
+    queryFn: () => fetchCaseFiles({ project_id: projectId.toString()  }),
     enabled: !!projectId,
   });
 };
@@ -151,4 +166,8 @@ export const useLinkCaseFile = (onSuccess: OnSuccessType) => {
 
 export const useUnlinkCaseFile = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: unlinkCaseFile, onSuccess });
+};
+
+export const useCaseFilesExport = (onSuccess: OnSuccessType) => {
+  return useMutation({ mutationFn: caseFilesExport, onSuccess });
 };

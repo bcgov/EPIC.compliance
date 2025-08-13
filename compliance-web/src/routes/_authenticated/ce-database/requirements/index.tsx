@@ -1,52 +1,40 @@
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
-import PageLink from "@/components/Shared/PageLink";
 import { useRequirementSourcesData } from "@/hooks/useComplaints";
 import {
   useComplianceFindingsData,
   useEnforcementActionsData,
 } from "@/hooks/useInspectionRequirements";
-import {
-  useInspectionRequirementExport,
-  useInspectionRequirementsGrid,
-} from "@/hooks/useInspectionRequirementsGrid";
+import { useInspectionRequirementsGrid } from "@/hooks/useInspectionRequirementsGrid";
 import { useTopicsData } from "@/hooks/useTopics";
 import {
   InspectionRequirementGrid,
   InspectionRequirementGridQueryParams,
 } from "@/models/InspectionRequirementGrid";
-import {
-  APPROVAL_STATUS,
-  APPROVAL_STATUS_TEXT,
-  DEFAULT_PAGE_SIZE,
-} from "@/utils/constants";
-import dateUtils from "@/utils/dateUtils";
-import {
-  ChevronLeftRounded,
-  ChevronRightRounded,
-  FileDownloadRounded,
-} from "@mui/icons-material";
-import {
-  Box,
-  Chip,
-  CircularProgress,
-  Typography,
-  Button,
-  IconButton,
-} from "@mui/material";
+import { APPROVAL_STATUS_TEXT } from "@/utils/constants";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useMemo, useState, useCallback } from "react";
+import { MRT_TableState, MRT_SortingState } from "material-react-table";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
 import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
-import { downloadFile } from "@/utils/appUtils";
+import RequirementsGridPagination from "@/components/App/RequirementsGrid/RequirementsGridPagination";
+import RequirementsGridExport from "@/components/App/RequirementsGrid/RequirementsGridExport";
+import {
+  useConvertFiltersToQueryParams,
+  useRequirementsGridColumns,
+} from "@/components/App/RequirementsGrid/RequirementsGridUtils";
 import { useStaffUsersData } from "@/hooks/useStaff";
+import { cachedFiltersStore } from "@/store/cachedFiltersStore";
+import { AppConfig } from "@/utils/config";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/requirements/"
 )({
   component: Requirements,
 });
+
+const requirementsColumnFiltersCacheKey = "requirements-column-filters";
 
 function Requirements() {
   const { data: topics } = useTopicsData();
@@ -55,6 +43,9 @@ function Requirements() {
   const { data: requirementSources } = useRequirementSourcesData();
   const { data: staffUsers } = useStaffUsersData();
   const [showOnlyMyRequirements, setShowOnlyMyRequirements] = useState(false);
+  const [sorting, setSorting] = useState<MRT_SortingState>([
+    { id: "tpc", desc: false },
+  ]);
 
   const approvalStatusOptions = Object.entries(APPROVAL_STATUS_TEXT).map(
     ([id, name]) => ({
@@ -64,7 +55,7 @@ function Requirements() {
   );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: DEFAULT_PAGE_SIZE,
+    pageSize: AppConfig.defaultPageSize,
   });
 
   const [columnFilters, setColumnFilters] = useState<
@@ -75,126 +66,149 @@ function Requirements() {
     Record<string, string[] | string>
   >({});
 
-  // Convert column filters to API query parameters
-  const convertFiltersToQueryParams = useCallback(
-    (filters: MRT_TableState<InspectionRequirementGrid>["columnFilters"]) => {
-      const params: Partial<InspectionRequirementGridQueryParams> = {};
+  // Track if we're in the initial load phase to prevent caching during restoration
+  const isInitialLoad = useRef(true);
+  const [isRestored, setIsRestored] = useState(false);
 
-      filters.forEach((filter) => {
-        switch (filter.id) {
-          case "topic":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.tpc_ids = filter.value.join(",");
-            }
-            break;
-          case "summary":
-            if (typeof filter.value === "string" && filter.value.trim()) {
-              params.summary = filter.value.trim();
-            }
-            break;
-          case "compliance_finding":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.cmd_fnd_ids = filter.value.join(",");
-            }
-            break;
-          case "enforcement_action":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.enf_actn_ids = filter.value.join(",");
-            }
-            break;
-          case "approval_status":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.apprv_sts = filter.value.join(",");
-            }
-            break;
-          case "reviewer":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.reviewer_ids = filter.value.join(",");
-            }
-            break;
-          case "requirement_number":
-            if (typeof filter.value === "string" && filter.value.trim()) {
-              params.req_src_num = filter.value.trim();
-            }
-            break;
-          case "requirement_source":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.req_src_ids = filter.value.join(",");
-            }
-            break;
-          case "ir_number":
-            if (typeof filter.value === "string" && filter.value.trim()) {
-              params.ir_no = filter.value.trim();
-            }
-            break;
-          case "date_issued":
-            if (typeof filter.value === "string" && filter.value.trim()) {
-              // Convert the formatted date back to ISO format for the API
-              const dateValue = filter.value.trim();
-              if (dateValue) {
-                // Assuming the date is in the format used by dateUtils.formatDate
-                // You may need to adjust this based on your API expectations
-                params.date_issued = dateValue;
-              }
-            }
-            break;
-          // requirement_number is not in the query params interface, so skip it
-        }
-      });
+  // Track previous values to prevent unnecessary caching
+  const prevFilters = useRef<{
+    columnFilters: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
+    externalFilters: Record<string, string[] | string>;
+    showOnlyMyRequirements: boolean;
+    globalFilter: string;
+    sorting: MRT_SortingState;
+  }>({
+    columnFilters: [],
+    externalFilters: {},
+    showOnlyMyRequirements: false,
+    globalFilter: "",
+    sorting: [{ id: "tpc", desc: false }],
+  });
 
-      // Add external filters
-      Object.entries(externalFilters).forEach(([key, value]) => {
-        if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
-          switch (key) {
-            case "primary_officer_id":
-              params.prm_offc_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-            case "inspection_status":
-              params.insp_sts = Array.isArray(value) ? value.join(",") : value;
-              break;
-            case "project_id":
-              params.project_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-          }
-        }
-      });
-
-      return params;
-    },
-    [externalFilters]
+  // Get cached filters store methods
+  const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
+  const cachedColumnFilters = getFilters(requirementsColumnFiltersCacheKey);
+  const cachedExternalFilters = getExternalFilters(
+    requirementsColumnFiltersCacheKey
   );
+  const cachedSorting = getSorting(requirementsColumnFiltersCacheKey);
 
-  const queryParams: InspectionRequirementGridQueryParams = useMemo(
-    () => ({
+  // Restore cached filters on component mount
+  useEffect(() => {
+    // Reset the initial load flag on every mount
+    isInitialLoad.current = true;
+
+    if (cachedColumnFilters.length > 0) {
+      setColumnFilters(cachedColumnFilters);
+    }
+    if (cachedExternalFilters) {
+      const restoredExternalFilters = cachedExternalFilters as Record<
+        string,
+        string[] | string
+      >;
+      setExternalFilters(restoredExternalFilters);
+
+      // Restore showOnlyMyRequirements state if it was cached
+      if (restoredExternalFilters.showOnlyMyRequirements !== undefined) {
+        const showOnlyMyRequirementsValue =
+          restoredExternalFilters.showOnlyMyRequirements;
+        if (typeof showOnlyMyRequirementsValue === "boolean") {
+          setShowOnlyMyRequirements(showOnlyMyRequirementsValue);
+        }
+      } else if (
+        restoredExternalFilters.primary_officer_id ||
+        restoredExternalFilters.approver_ids ||
+        restoredExternalFilters.approval_status
+      ) {
+        // Legacy support - if primary_officer_id, approver_ids, or approval_status exists, set showOnlyMyRequirements to true
+        setShowOnlyMyRequirements(true);
+      }
+
+      // Restore global filter if it was cached
+      if (restoredExternalFilters.globalFilter) {
+        setGlobalFilter(restoredExternalFilters.globalFilter as string);
+      }
+    }
+
+    // Restore sorting if it was cached
+    if (cachedSorting && Array.isArray(cachedSorting)) {
+      // Validate that it has the expected structure
+      if (cachedSorting.length > 0 && cachedSorting[0]?.id) {
+        setSorting(cachedSorting);
+      }
+    }
+
+    // Mark restoration as complete and initial load as complete
+    isInitialLoad.current = false;
+    setIsRestored(true);
+  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting]);
+
+  // Cache all filters when they change (but not during initial load)
+  useEffect(() => {
+    if (!isInitialLoad.current) {
+      // Check if any values have actually changed
+      const currentFilters = {
+        columnFilters,
+        externalFilters,
+        showOnlyMyRequirements,
+        globalFilter,
+        sorting,
+      };
+
+      const hasChanged =
+        JSON.stringify(currentFilters) !== JSON.stringify(prevFilters.current);
+
+      if (hasChanged) {
+        cachedFiltersStore.getState().setFilters(
+          requirementsColumnFiltersCacheKey,
+          columnFilters,
+          {
+            ...externalFilters,
+            showOnlyMyRequirements,
+            globalFilter,
+          },
+          sorting
+        );
+
+        // Update previous values
+        prevFilters.current = currentFilters;
+      }
+    }
+  }, [
+    columnFilters,
+    externalFilters,
+    showOnlyMyRequirements,
+    globalFilter,
+    sorting,
+  ]);
+
+  // Use the extracted utility function
+  const convertFiltersToQueryParams =
+    useConvertFiltersToQueryParams(externalFilters);
+
+  const queryParams: InspectionRequirementGridQueryParams = useMemo(() => {
+    // Extract sorting information from the sorting state
+    const currentSort = sorting[0]; // Material React Table supports multiple sorts, but we'll use the first one
+
+    return {
       page_no: pagination.pageIndex + 1,
       page_size: pagination.pageSize,
       ...convertFiltersToQueryParams(columnFilters),
-      ...(globalFilter && { global_search: globalFilter }),
-    }),
-    [
-      pagination.pageIndex,
-      pagination.pageSize,
-      columnFilters,
-      globalFilter,
-      convertFiltersToQueryParams,
-    ]
-  );
+      ...(currentSort && {
+        sort_by: currentSort.id,
+        sort_order: currentSort.desc ? "desc" : "asc",
+      }),
+    };
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    columnFilters,
+    convertFiltersToQueryParams,
+    sorting,
+  ]);
 
   const { data, isLoading } = useInspectionRequirementsGrid(queryParams);
   const requirementsList = useMemo(() => data?.items ?? [], [data]);
-
-  const { mutate: downloadRequirementExport } = useInspectionRequirementExport(
-    (data) => {
-      downloadFile(
-        data,
-        `requirements-${dateUtils.formatDate(new Date().toISOString(), "YYYY-MM-DD-HH-mm-ss")}.xlsx`
-      );
-    }
-  );
 
   const handlePaginationChange = useCallback(
     (
@@ -207,6 +221,26 @@ function Requirements() {
       setPagination(updater);
     },
     []
+  );
+
+  const handleSortingChange = useCallback(
+    (
+      updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
+    ) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+
+      // Only reset pagination if sorting actually changed
+      const sortingChanged =
+        JSON.stringify(newSorting) !== JSON.stringify(sorting);
+
+      setSorting(updater);
+
+      if (sortingChanged) {
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+    },
+    [sorting]
   );
 
   const handleColumnFiltersChange = useCallback(
@@ -269,178 +303,52 @@ function Requirements() {
 
   const handleClearAllFilters = useCallback(() => {
     setExternalFilters({});
+    setColumnFilters([]);
+    setGlobalFilter("");
+    setShowOnlyMyRequirements(false);
+    setSorting([{ id: "tpc", desc: false }]); // Reset to default sorting
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+
+    // Clear cached filters
+    cachedFiltersStore
+      .getState()
+      .clearFilters(requirementsColumnFiltersCacheKey);
   }, []);
 
-  // Handler for the switch
-  const handleShowOnlyMyRequirementsChange = useCallback(
-    (checked: boolean, staffId?: number) => {
-      setShowOnlyMyRequirements(checked);
-      setExternalFilters((prev) => {
-        const newFilters = { ...prev };
-        if (checked && staffId) {
-          newFilters.primary_officer_id = [staffId.toString()];
-        } else {
-          delete newFilters.primary_officer_id;
-        }
-        return newFilters;
+  // Handler for the switch filter changes
+  const handleShowOnlyMyRequirementsFiltersChange = useCallback(
+    (filters: {
+      checked: boolean;
+      externalFilters: Record<string, string[] | string>;
+      columnFilters?: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
+    }) => {
+      setShowOnlyMyRequirements(filters.checked);
+
+      // Apply external filters
+      Object.entries(filters.externalFilters).forEach(([key, value]) => {
+        setExternalFilters((prev) => ({
+          ...prev,
+          [key]: value,
+        }));
       });
+
+      // Reset pagination
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     },
     []
   );
 
-  const columns = useMemo<MRT_ColumnDef<InspectionRequirementGrid>[]>(
-    () => [
-      {
-        accessorFn: (row) => row.topic?.name,
-        id: "topic",
-        header: "Topic",
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          topics?.map((topic) => ({
-            text: topic.name,
-            value: topic.id.toString(),
-          })) ?? [],
-        size: 120,
-      },
-      {
-        accessorKey: "summary",
-        header: "Requirement Summary",
-        filterFn: "contains",
-        size: 200,
-      },
-      {
-        accessorFn: (row) => row.compliance_finding?.name,
-        id: "compliance_finding",
-        header: "Compliance Finding",
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          complianceFindings?.map((complianceFinding) => ({
-            text: complianceFinding.name,
-            value: complianceFinding.id.toString(),
-          })) ?? [],
-        size: 80,
-      },
-      {
-        accessorFn: (row) => row.enforcement_action?.name,
-        id: "enforcement_action",
-        header: "Enforcement Action",
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          enforcementActions?.map((enforcementAction) => ({
-            text: enforcementAction.name,
-            value: enforcementAction.id.toString(),
-          })) ?? [],
-        size: 150,
-      },
-      {
-        accessorKey: "approval_status",
-        header: "Approval Status",
-        Cell: ({ row }) => {
-          return row.original.approval_status ? (
-            <Chip
-              label={row.original.approval_status.name}
-              color={
-                row.original.approval_status.id ===
-                APPROVAL_STATUS.APPROVAL_PENDING
-                  ? "warning"
-                  : row.original.approval_status.id === APPROVAL_STATUS.APPROVED
-                    ? "success"
-                    : "error"
-              }
-              variant="outlined"
-              size="small"
-            />
-          ) : (
-            <></>
-          );
-        },
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          approvalStatusOptions?.map((approvalStatus) => ({
-            text: approvalStatus.name,
-            value: approvalStatus.id.toString(),
-          })) ?? [],
-        size: 120,
-      },
-      {
-        accessorFn: (row) => row.approved_by?.name,
-        id: "reviewer",
-        header: "Reviewer",
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          staffUsers?.map((staffUser) => ({
-            text: staffUser.name,
-            value: staffUser.id.toString(),
-          })) ?? [],
-        size: 100,
-      },
-      {
-        accessorKey: "approved_by_id",
-        header: "Approved By ID",
-        enableHiding: true,
-        enableColumnFilter: true,
-        filterVariant: "multi-select",
-        accessorFn: (row) => row.approved_by_id?.toString() ?? "",
-        muiTableHeadCellProps: {
-          sx: { display: "none" },
-        },
-        muiTableBodyCellProps: {
-          sx: { display: "none" },
-        },
-      },
-      {
-        accessorKey: "requirement_number",
-        header: "Condition #",
-        filterFn: "contains",
-        size: 80,
-      },
-      {
-        accessorFn: (row) => row.requirement_source?.name,
-        id: "requirement_source",
-        header: "Source",
-        filterVariant: "multi-select",
-        filterSelectOptions:
-          requirementSources?.map((requirementSource) => ({
-            text: requirementSource.name,
-            value: requirementSource.id.toString(),
-          })) ?? [],
-        size: 150,
-      },
-      {
-        accessorKey: "ir_number",
-        header: "IR #",
-        filterFn: "contains",
-        Cell: ({ row }) => (
-          <PageLink
-            to="/ce-database/inspections/$inspectionNumber"
-            params={{ inspectionNumber: row.original.ir_number }}
-          />
-        ),
-        size: 120,
-      },
-      {
-        accessorFn: (row) =>
-          row.date_issued ? dateUtils.formatDate(row.date_issued) : "",
-        id: "date_issued",
-        header: "IR Issuance Date",
-        filterVariant: "date",
-        filterFn: "greaterThanOrEqual",
-        size: 120,
-      },
-    ],
-    [
-      topics,
-      complianceFindings,
-      enforcementActions,
-      requirementSources,
-      approvalStatusOptions,
-      staffUsers,
-    ]
-  );
+  // Use the extracted utility function for columns
+  const columns = useRequirementsGridColumns({
+    topics,
+    complianceFindings,
+    enforcementActions,
+    requirementSources,
+    approvalStatusOptions,
+    staffUsers,
+  });
 
-  return isLoading ? (
+  return isLoading || !isRestored ? (
     <Box
       display="flex"
       justifyContent="center"
@@ -454,7 +362,8 @@ function Requirements() {
       columns={columns}
       data={requirementsList ?? []}
       initialState={{
-        sorting: [{ id: "topic", desc: false }],
+        sorting: sorting,
+        columnFilters: isRestored ? columnFilters : [],
       }}
       state={{
         isLoading,
@@ -462,11 +371,12 @@ function Requirements() {
         pagination,
         columnFilters,
         globalFilter,
+        sorting,
       }}
       titleToolbarProps={{
         tableTitle: "Requirements",
       }}
-      enableSorting={false}
+      enableSorting={true}
       enablePagination={false}
       hideFilterToggle={true}
       renderTopToolbarCustomActions={({ table }) => (
@@ -495,8 +405,10 @@ function Requirements() {
               Requirements
             </Typography>
             <ShowOnlyMyRequirementsSwitch
-              checked={showOnlyMyRequirements}
-              onChange={handleShowOnlyMyRequirementsChange}
+              initialChecked={showOnlyMyRequirements}
+              onFiltersChange={handleShowOnlyMyRequirementsFiltersChange}
+              disabled={isLoading}
+              onColumnFiltersChange={handleColumnFiltersChange}
             />
           </Box>
 
@@ -511,52 +423,11 @@ function Requirements() {
           >
             {/* Left side - Export button */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Button
-                variant="text"
-                size="small"
-                startIcon={<FileDownloadRounded />}
-                sx={{ ml: -2 }}
-                onClick={() => downloadRequirementExport(queryParams)}
-              >
-                Export as Excel
-              </Button>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  justifyContent: "center",
-                }}
-              >
-                <Typography variant="body1">
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}{" "}
-                  to{" "}
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    data?.total || 0
-                  )}{" "}
-                  of {data?.total || 0}
-                </Typography>
-                <IconButton
-                  aria-label="page_back"
-                  size="small"
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                >
-                  <ChevronLeftRounded fontSize="small" />
-                </IconButton>
-                <IconButton
-                  aria-label="page_forward"
-                  size="small"
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                >
-                  <ChevronRightRounded fontSize="small" />
-                </IconButton>
-              </Box>
+              <RequirementsGridExport queryParams={queryParams} />
+              <RequirementsGridPagination
+                table={table}
+                totalCount={data?.total || 0}
+              />
             </Box>
 
             {/* Right side - Filters */}
@@ -574,6 +445,7 @@ function Requirements() {
         onPaginationChange: handlePaginationChange,
         onColumnFiltersChange: handleColumnFiltersChange,
         onGlobalFilterChange: handleGlobalFilterChange,
+        onSortingChange: handleSortingChange,
       }}
     />
   );

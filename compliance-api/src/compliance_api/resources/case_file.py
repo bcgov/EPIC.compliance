@@ -13,16 +13,19 @@
 # limitations under the License.
 """API endpoints for managing CaseFile resource."""
 
+from datetime import datetime
 from http import HTTPStatus
+from io import BytesIO
 
-from flask import request
+from flask import request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
-    CaseFileCreateSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema, CaseFileOptionSchema,
-    CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema, KeyValueSchema, StaffUserSchema)
+    CaseFileCreateSchema, CaseFileFilterSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema,
+    CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema,
+    KeyValueSchema, StaffUserSchema)
 from compliance_api.services import CaseFileService
 from compliance_api.services.case_file_aggregate import CaseFileAggregateService
 from compliance_api.utils.enum import PermissionEnum
@@ -66,6 +69,9 @@ case_file_option_schema = ApiHelper.convert_ma_schema_to_restx_model(
 case_file_unlink_schema = ApiHelper.convert_ma_schema_to_restx_model(
     API, CaseFileUnlinkSchema(), "CaseFileUnlinkSchema"
 )
+case_file_filter_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, CaseFileFilterSchema(), "CaseFileFilter"
+)
 
 
 @cors_preflight("GET, OPTIONS")
@@ -95,24 +101,76 @@ class CaseFiles(Resource):
     @API.doc(
         params={
             "project_id": {
-                "description": "The unique identifier of the project",
+                "description": (
+                    "The unique identifier of the project. "
+                    "Use 'null' or 'none' to filter for unapproved projects"
+                ),
+                "type": "string",
+                "required": False,
+            },
+            "case_file_number": {
+                "description": "The case file number to filter by",
+                "type": "string",
+                "required": False,
+            },
+            "initiation_id": {
+                "description": "The initiation option ID to filter by",
                 "type": "integer",
                 "required": False,
-            }
+            },
+            "status": {
+                "description": "The case file status to filter by (OPEN/CLOSE)",
+                "type": "string",
+                "required": False,
+            },
+            "primary_officer_id": {
+                "description": "The primary officer ID to filter by",
+                "type": "integer",
+                "required": False,
+            },
+            "date_created": {
+                "description": "Filter case files created on this date (YYYY-MM-DD)",
+                "type": "string",
+                "required": False,
+            },
+            "page_no": {
+                "description": "The page number for pagination",
+                "type": "integer",
+                "required": False,
+            },
+            "page_size": {
+                "description": "The number of items per page",
+                "type": "integer",
+                "required": False,
+            },
+            "sort_by": {
+                "description": (
+                    "Field to sort by (case_file_number, project, initiation, "
+                    "date_created, status, primary_officer)"
+                ),
+                "type": "string",
+                "required": False,
+            },
+            "sort_order": {
+                "description": "Sort order (asc/desc)",
+                "type": "string",
+                "required": False,
+            },
         }
     )
     @API.response(code=200, description="Success", model=[case_file_list_model])
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all case files")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch all case files with pagination and filtering"
+    )
     @auth.require
     def get():
-        """Fetch all casefiles."""
-        project_id = request.args.get("project_id", None)
-        if project_id:
-            case_files = CaseFileService.get_by_project(project_id)
-        else:
-            case_files = CaseFileService.get_all()
+        """Fetch all casefiles with pagination and filtering."""
+        case_files, total = CaseFileService.get_all_with_pagination(request.args)
         case_file_list_schema = CaseFileSchema(many=True)
-        return case_file_list_schema.dump(case_files), HTTPStatus.OK
+        return {
+            "items": case_file_list_schema.dump(case_files),
+            "total": total,
+        }, HTTPStatus.OK
 
     @staticmethod
     @auth.require
@@ -287,3 +345,30 @@ class CaseFileUnlink(Resource):
         unlink = CaseFileUnlinkSchema().load(API.payload)
         CaseFileService.unlink(case_file_id, unlink)
         return {}, HTTPStatus.NO_CONTENT
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/export", methods=["POST", "OPTIONS"])
+class CaseFilesExport(Resource):
+    """Export all case files as Excel."""
+
+    @staticmethod
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Export all case files as Excel"
+    )
+    @API.expect(case_file_filter_model)
+    @API.doc()
+    @API.response(code=200, description="Success - Excel file download")
+    @auth.require
+    def post():
+        """Export all case files as Excel."""
+        # Get filter parameters from request body instead of query parameters
+        schema = CaseFileFilterSchema()
+        filter_data = schema.load(request.json or {})
+        output = CaseFileService.generate_case_files_excel(filter_data)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"case_files_{timestamp}.xlsx"
+
+        # Return the Excel file as a downloadable attachment
+        return send_file(BytesIO(output), as_attachment=True, download_name=filename)

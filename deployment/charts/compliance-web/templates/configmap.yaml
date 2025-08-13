@@ -17,6 +17,7 @@ data:
         "VITE_APP_URL": "{{ .Values.app.url }}",
         "VITE_OIDC_AUTHORITY": "{{ .Values.keycloak.url }}",
         "VITE_CLIENT_ID": "{{ .Values.keycloak.client }}",
+        "VITE_DEFAULT_PAGE_SIZE": "{{ .Values.app.default_page_size }}",
         "VITE_INPROGRESS_FEATURES": "{{ .Values.app.in_progress_features }}",
         "VITE_DOCUMENT_API_URL": "{{ .Values.app.doc_service_url }}",
         "VITE_AWS_S3_URL": "{{ .Values.aws.s3_url }}",

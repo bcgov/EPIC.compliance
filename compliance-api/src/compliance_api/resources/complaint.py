@@ -2,14 +2,14 @@
 
 from http import HTTPStatus
 
-from flask import current_app, request
+from flask import current_app, make_response, request
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
-    ComplaintCreateSchema, ComplaintSchema, ComplaintSourceContactSchema, ComplaintStatusSchema, ComplaintUpdateSchema,
-    KeyValueSchema, RequirementSourceDetailSchema)
+    ComplaintCreateSchema, ComplaintFilterSchema, ComplaintSchema, ComplaintSourceContactSchema, ComplaintStatusSchema,
+    ComplaintUpdateSchema, KeyValueSchema, RequirementSourceDetailSchema)
 from compliance_api.services import ComplaintService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.util import cors_preflight
@@ -44,6 +44,9 @@ complaint_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 complaint_status_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, ComplaintStatusSchema(), "ComplaintStatus"
 )
+complaint_filter_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, ComplaintFilterSchema(), "ComplaintFilter"
+)
 
 
 @cors_preflight("GET, OPTIONS")
@@ -73,24 +76,81 @@ class Complaints(Resource):
     @API.response(code=200, description="Success", model=[complaint_list_model])
     @API.doc(
         params={
-            "case_file_id": {
-                "description": "The unique identifier of the case file",
+            "complaint_number": {
+                "description": "Filter by complaint number",
+                "type": "string",
+                "required": False,
+            },
+            "project_id": {
+                "description": "Filter by project ID",
+                "type": "string",
+                "required": False,
+            },
+            "date_received": {
+                "description": "Filter by date received (YYYY-MM-DD)",
+                "type": "string",
+                "required": False,
+            },
+            "primary_officer_id": {
+                "description": "Filter by primary officer ID",
                 "type": "integer",
                 "required": False,
-            }
+            },
+            "status": {
+                "description": "Filter by complaint status",
+                "type": "string",
+                "required": False,
+            },
+            "case_file_number": {
+                "description": "Filter by case file number",
+                "type": "string",
+                "required": False,
+            },
+            "case_file_id": {
+                "description": "Filter by case file ID",
+                "type": "integer",
+                "required": False,
+            },
+            "page_no": {
+                "description": "Page number for pagination",
+                "type": "integer",
+                "required": False,
+                "default": 1,
+            },
+            "page_size": {
+                "description": "Number of items per page",
+                "type": "integer",
+                "required": False,
+                "default": 15,
+            },
+            "sort_by": {
+                "description": "Field to sort by",
+                "type": "string",
+                "required": False,
+                "default": "complaint_number",
+            },
+            "sort_order": {
+                "description": "Sort order (asc/desc)",
+                "type": "string",
+                "required": False,
+                "default": "asc",
+            },
         }
     )
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all complaints")
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Fetch all complaints with pagination, filtering, and sorting",
+    )
     @auth.require
     def get():
-        """Fetch all complaints."""
-        case_file_id = request.args.get("case_file_id")
-        if case_file_id:
-            complaints = ComplaintService.get_by_case_file_id(case_file_id)
-        else:
-            complaints = ComplaintService.get_all()
+        """Fetch all complaints with pagination, filtering, and sorting."""
+        args = request.args
+        complaints, total_count = ComplaintService.get_complaints_paginated(args)
         complaint_list_schema = ComplaintSchema(many=True)
-        return complaint_list_schema.dump(complaints), HTTPStatus.OK
+        return {
+            "items": complaint_list_schema.dump(complaints),
+            "total": total_count,
+        }, HTTPStatus.OK
 
     @staticmethod
     @auth.require
@@ -185,6 +245,37 @@ class ComplaintContact(Resource):
         if not contact:
             raise ResourceNotFoundError("Complaint source contact doesn't found")
         return ComplaintSourceContactSchema().dump(contact), HTTPStatus.OK
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/export", methods=["POST", "OPTIONS"])
+class ComplaintExport(Resource):
+    """Resource for exporting complaints to Excel."""
+
+    @staticmethod
+    @API.expect(complaint_filter_model)
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Export complaints to Excel with filtering"
+    )
+    @auth.require
+    def post():
+        """Export complaints to Excel with filtering."""
+        # Get filter data from request body
+        filter_data = ComplaintFilterSchema().load(API.payload or {})
+
+        # Generate Excel file
+        excel_file = ComplaintService.generate_complaints_excel(filter_data)
+
+        # Create response
+        response = make_response(excel_file.getvalue())
+        response.headers["Content-Type"] = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response.headers["Content-Disposition"] = (
+            "attachment; filename=complaints_export.xlsx"
+        )
+
+        return response
 
 
 @cors_preflight("GET, OPTIONS")

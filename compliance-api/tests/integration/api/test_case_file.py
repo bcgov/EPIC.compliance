@@ -179,8 +179,11 @@ def test_get_case_files(client, auth_header, mocker):
     result = client.get(url, headers=auth_header)
 
     assert result.status_code == HTTPStatus.OK
+    # Check that the response has the expected pagination structure
+    assert "items" in result.json
+    assert "total" in result.json
     filtered_case_file = next(
-        (case for case in result.json if case["id"] == created_case.id), None
+        (case for case in result.json["items"] if case["id"] == created_case.id), None
     )
     assert filtered_case_file is not None
 

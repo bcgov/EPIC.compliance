@@ -73,14 +73,14 @@ const makeExternalTableFilter = <SelectProps extends object>(
 
     // Convert current values to option objects for the Select component
     const currentValueAsOptions = useMemo(() => {
-      if (!currentValue) return isMulti ? [] : undefined;
+      if (!currentValue) return isMulti ? [] : "";
       
       if (Array.isArray(currentValue)) {
         return currentValue
           .map(value => options.find(option => option.value === value))
           .filter(Boolean);
       } else {
-        return options.find(option => option.value === currentValue);
+        return options.find(option => option.value === currentValue) || "";
       }
     }, [currentValue, options, isMulti]);
 

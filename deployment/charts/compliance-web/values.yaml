@@ -6,6 +6,7 @@ app:
   track_api_url: https://epictrack-api-c72cba-dev.apps.gold.devops.gov.bc.ca
   env: dev
   version: 1.0.0
+  default_page_size: "15"
 resources:
   cpu:
     limit: 300m

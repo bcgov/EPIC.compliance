@@ -97,6 +97,17 @@ export enum IRProgressEnum {
   ISSUED = "ISSUED",
 }
 
+export enum IRProgressEnumText {
+  PRELIMINARY_DRAFTING = "Preliminary Drafting",
+  PRELIMINARY_DEPUTY_REVIEW = "Preliminary Deputy Review",
+  PRELIMINARY_APPROVED = "Preliminary Approved",
+  HOLDER_PRELIMINARY_REVIEW = "Holder Preliminary Review",
+  FINALIZING_RECORD = "Finalizing Record",
+  FINAL_DEPUTY_REVIEW = "Final Deputy Review",
+  FINAL_APPROVED = "Final Approved",
+  ISSUED = "Issued",
+}
+
 export enum InspectionStatusEnum {
   OPEN = "Open",
   CLOSED = "Closed",
@@ -151,6 +162,9 @@ export enum EnforcementActionEnum {
   WARNING = "11",
 }
 
-export const DEFAULT_PAGE_SIZE = 15;
+export enum ComplaintStatusEnum {
+  OPEN = "Open",
+  CLOSED = "Closed",
+}
 
 export type VARIANT_COLORS = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";

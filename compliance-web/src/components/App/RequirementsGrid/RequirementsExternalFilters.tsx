@@ -42,16 +42,28 @@ const RequirementsExternalFilters: React.FC<
     [projects]
   );
 
-  // Check if any filters are applied
+  // Check if any filters are applied (excluding showOnlyMyRequirements)
   const hasActiveFilters = useMemo(() => {
-    return Object.values(externalFilters).some(
-      (value) =>
-        value && (Array.isArray(value) ? value.length > 0 : value !== "")
+    return Object.entries(externalFilters).some(
+      ([key, value]) =>
+        key !== "showOnlyMyRequirements" &&
+        value &&
+        (Array.isArray(value) ? value.length > 0 : value !== "")
     );
   }, [externalFilters]);
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <ExternalTableFilter
+        filterId="project_id"
+        filterOptions={projectOptions}
+        onFilterChange={onFilterChange}
+        placeholder="Project"
+        variant="inline-standalone"
+        isMulti={true}
+        name="projectFilter"
+        currentValue={externalFilters.project_id}
+      />
       <ExternalTableFilter
         filterId="primary_officer_id"
         filterOptions={primaryOfficerOptions}
@@ -71,16 +83,6 @@ const RequirementsExternalFilters: React.FC<
         isMulti={true}
         name="inspectionStatusFilter"
         currentValue={externalFilters.inspection_status}
-      />
-      <ExternalTableFilter
-        filterId="project_id"
-        filterOptions={projectOptions}
-        onFilterChange={onFilterChange}
-        placeholder="Project"
-        variant="inline-standalone"
-        isMulti={true}
-        name="projectFilter"
-        currentValue={externalFilters.project_id}
       />
       {hasActiveFilters && (
         <Button variant="outlined" size="small" onClick={onClearAll}>
