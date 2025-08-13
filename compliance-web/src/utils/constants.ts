@@ -101,6 +101,17 @@ export enum IRProgressEnum {
   ISSUED = "ISSUED",
 }
 
+export enum IRProgressEnumText {
+  PRELIMINARY_DRAFTING = "Preliminary Drafting",
+  PRELIMINARY_DEPUTY_REVIEW = "Preliminary Deputy Review",
+  PRELIMINARY_APPROVED = "Preliminary Approved",
+  HOLDER_PRELIMINARY_REVIEW = "Holder Preliminary Review",
+  FINALIZING_RECORD = "Finalizing Record",
+  FINAL_DEPUTY_REVIEW = "Final Deputy Review",
+  FINAL_APPROVED = "Final Approved",
+  ISSUED = "Issued",
+}
+
 export enum InspectionStatusEnum {
   OPEN = "Open",
   CLOSED = "Closed",
@@ -153,6 +164,11 @@ export enum EnforcementActionEnum {
   CHARGE_RECOMMENDATION = "9",
   ADVISORY = "10",
   WARNING = "11",
+}
+
+export enum ComplaintStatusEnum {
+  OPEN = "Open",
+  CLOSED = "Closed",
 }
 
 export const ReferralStatus = {

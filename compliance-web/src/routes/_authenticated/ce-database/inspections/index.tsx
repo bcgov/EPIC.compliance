@@ -1,28 +1,29 @@
-import CustomSwitch from "@/components/Shared/Controlled/CustomSwitch";
-import { MasterTableColumnFilter } from "@/components/Shared/FilterSelect/type";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
-import PageLink from "@/components/Shared/PageLink";
 import { useInspectionsData } from "@/hooks/useInspections";
 import { useStaffUsersData } from "@/hooks/useStaff";
-import { Inspection } from "@/models/Inspection";
+import { useProjectsData } from "@/hooks/useProjects";
+import { useInitiationsData } from "@/hooks/useInspections";
+import { Inspection, InspectionGridQueryParams } from "@/models/Inspection";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import {
-  APPROVAL_STATUS,
   APPROVAL_STATUS_TEXT,
-  STAFF_USER_POSITION,
+  IRProgressEnumText,
+  InspectionStatusEnum,
 } from "@/utils/constants";
-import dateUtils from "@/utils/dateUtils";
-import {
-  Box,
-  Chip,
-  CircularProgress,
-  FormControlLabel,
-  Typography,
-} from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
-import { MRT_ColumnDef, MRT_TableInstance } from "material-react-table";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { BCDesignTokens } from "epic.theme";
+import { MRT_TableState, MRT_SortingState } from "material-react-table";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
+import InspectionsGridPagination from "@/components/App/Inspections/InspectionsGrid/InspectionsGridPagination";
+import {
+  useConvertFiltersToQueryParams,
+  useInspectionsGridColumns,
+} from "@/components/App/Inspections/InspectionsGrid/InspectionsGridUtils";
+import ShowOnlyMyInspectionsSwitch from "@/components/App/Inspections/InspectionsGrid/ShowOnlyMyInspectionsSwitch";
+import InspectionsGridExport from "@/components/App/Inspections/InspectionsGrid/InspectionsGridExport";
+import { AppConfig } from "@/utils/config";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/"
@@ -31,396 +32,281 @@ export const Route = createFileRoute(
 const inspectionsColumnFiltersCacheKey = "inspections-column-filters";
 
 export function Inspections() {
-  const { data: inspectionsList, isLoading } = useInspectionsData();
+  const { data: projects } = useProjectsData();
+  const { data: initiations } = useInitiationsData();
+  const { isLoading: authLoading } = useAuth();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
-  const { user: currentUser, isLoading: authLoading } = useAuth();
   const [showOnlyMyInspections, setShowOnlyMyInspections] = useState(false);
-  const [tableInstance, setTableInstance] = useState<
-    MRT_TableInstance<Inspection> | undefined
-  >();
-  const { getFilters, setFilters, getExternalFilters } = cachedFiltersStore();
-  const columnFilters = getFilters(inspectionsColumnFiltersCacheKey);
+  const [sorting, setSorting] = useState<MRT_SortingState>([
+    { id: "ir_number", desc: false },
+  ]);
+
+  const approvalStatusOptions = Object.entries(APPROVAL_STATUS_TEXT).map(
+    ([id, name]) => ({
+      id,
+      name,
+    })
+  );
+
+  // Create static data for IR Progress and Inspection Status
+  const irProgressOptions = Object.entries(IRProgressEnumText).map(
+    ([id, name]) => ({
+      id,
+      name,
+    })
+  );
+
+  const inspectionStatusOptions = Object.entries(InspectionStatusEnum).map(
+    ([id, name]) => ({
+      id,
+      name,
+    })
+  );
+
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: AppConfig.defaultPageSize,
+  });
+
+  const [columnFilters, setColumnFilters] = useState<
+    MRT_TableState<Inspection>["columnFilters"]
+  >([]);
+  const [globalFilter, setGlobalFilter] = useState<string>("");
+  const [externalFilters, setExternalFilters] = useState<
+    Record<string, string[] | string>
+  >({});
+
+  // Track if we're in the initial load phase to prevent caching during restoration
+  const isInitialLoad = useRef(true);
+  const [isRestored, setIsRestored] = useState(false);
+
+  // Track previous values to prevent unnecessary caching
+  const prevFilters = useRef<{
+    columnFilters: MRT_TableState<Inspection>["columnFilters"];
+    externalFilters: Record<string, string[] | string>;
+    showOnlyMyInspections: boolean;
+    globalFilter: string;
+    sorting: MRT_SortingState;
+  }>({
+    columnFilters: [],
+    externalFilters: {},
+    showOnlyMyInspections: false,
+    globalFilter: "",
+    sorting: [{ id: "ir_number", desc: false }],
+  });
+
+  // Get cached filters store methods
+  const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
+  const cachedColumnFilters = getFilters(inspectionsColumnFiltersCacheKey);
   const cachedExternalFilters = getExternalFilters(
     inspectionsColumnFiltersCacheKey
   );
+  const cachedSorting = getSorting(inspectionsColumnFiltersCacheKey);
 
   // Find current user from staff list
-  const currentUserStaff = useMemo(() => {
-    return staffList?.find(
-      (staff) =>
-        staff.auth_user_guid === currentUser?.profile?.preferred_username
-    );
-  }, [staffList, currentUser?.profile?.preferred_username]);
 
-  // Check if current user is a deputy director
-  const isCurrentUserDeputy = useMemo(() => {
-    return (
-      currentUserStaff?.position_id === STAFF_USER_POSITION.DEPUTY_DIRECTOR
-    );
-  }, [currentUserStaff?.position_id]);
+  // Restore cached filters on component mount
+  useEffect(() => {
+    // Reset the initial load flag on every mount
+    isInitialLoad.current = true;
 
-  // Check if current user has primary inspections
-  const isCurrentUserHasPrimary = useMemo(() => {
-    return inspectionsList?.some(
-      (inspection) =>
-        inspection.primary_officer?.auth_user_guid ===
-        currentUser?.profile?.preferred_username
-    );
-  }, [inspectionsList, currentUser?.profile?.preferred_username]);
+    if (cachedColumnFilters.length > 0) {
+      setColumnFilters(cachedColumnFilters);
+    }
+    if (cachedExternalFilters) {
+      const restoredExternalFilters = cachedExternalFilters as Record<
+        string,
+        string[] | string
+      >;
+      setExternalFilters(restoredExternalFilters);
 
-  // Check if deputy has pending approvals
-  const isDeputyReviewPending = useMemo(() => {
-    if (!isCurrentUserDeputy) return false;
-    return inspectionsList?.some(
-      (inspection) =>
-        inspection.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING &&
-        inspection.approved_by?.id === currentUserStaff?.id
-    );
-  }, [inspectionsList, isCurrentUserDeputy, currentUserStaff?.id]);
-
-  // Helper function to apply filters based on user role
-  const applyUserSpecificFilters = useCallback(
-    (table: MRT_TableInstance<Inspection>) => {
-      const currentFilters = table.getState().columnFilters;
-
-      if (isCurrentUserDeputy && isDeputyReviewPending) {
-        const deputyFilters = [
-          {
-            id: "reviewer",
-            value: [currentUserStaff?.name],
-          },
-          {
-            id: "approval_status",
-            value: [APPROVAL_STATUS_TEXT.APPROVAL_PENDING],
-          },
-        ];
-
-        // Remove existing user-specific filters and add new ones
-        const filteredFilters = currentFilters.filter(
-          (filter) =>
-            filter.id !== "reviewer" && filter.id !== "approval_status"
-        );
-        table.setColumnFilters([...filteredFilters, ...deputyFilters]);
-      } else if (!isCurrentUserDeputy && isCurrentUserHasPrimary) {
-        const userFilter = {
-          id: "primary_officer.name",
-          value: [currentUser?.profile?.name],
-        };
-
-        // Check if user filter already exists
-        const existingUserFilterIndex = currentFilters.findIndex(
-          (filter) => filter.id === "primary_officer.name"
-        );
-
-        if (existingUserFilterIndex >= 0) {
-          // Update existing user filter
-          const newFilters = [...currentFilters];
-          newFilters[existingUserFilterIndex] = userFilter;
-          table.setColumnFilters(newFilters);
-        } else {
-          // Add user filter to existing filters
-          table.setColumnFilters([...currentFilters, userFilter]);
+      // Restore showOnlyMyInspections state if it was cached
+      if (restoredExternalFilters.showOnlyMyInspections !== undefined) {
+        const showOnlyMyInspectionsValue =
+          restoredExternalFilters.showOnlyMyInspections;
+        if (typeof showOnlyMyInspectionsValue === "boolean") {
+          setShowOnlyMyInspections(showOnlyMyInspectionsValue);
         }
       }
-    },
-    [
-      isCurrentUserDeputy,
-      isDeputyReviewPending,
-      isCurrentUserHasPrimary,
-      currentUserStaff,
-      currentUser,
-    ]
-  );
 
-  // Initialize external filter state from cache or user role
+      // Restore global filter if it was cached
+      if (restoredExternalFilters.globalFilter) {
+        setGlobalFilter(restoredExternalFilters.globalFilter as string);
+      }
+    }
+
+    // Restore sorting if it was cached
+    if (cachedSorting && Array.isArray(cachedSorting)) {
+      // Validate that it has the expected structure
+      if (cachedSorting.length > 0 && cachedSorting[0]?.id) {
+        setSorting(cachedSorting);
+      }
+    }
+
+    // Mark restoration as complete and initial load as complete
+    isInitialLoad.current = false;
+    setIsRestored(true);
+  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting]);
+
+  // Cache all filters when they change (but not during initial load)
   useEffect(() => {
-    if (cachedExternalFilters?.showOnlyMyInspections !== undefined) {
-      // Restore from cache
-      setShowOnlyMyInspections(
-        cachedExternalFilters.showOnlyMyInspections as boolean
-      );
-    } else if (isCurrentUserDeputy && isDeputyReviewPending) {
-      // Set based on user role if no cache
-      setShowOnlyMyInspections(true);
-    } else if (isCurrentUserHasPrimary) {
-      // Set based on user role if no cache
-      setShowOnlyMyInspections(true);
-    } else {
-      setShowOnlyMyInspections(false);
+    if (!isInitialLoad.current) {
+      // Check if any values have actually changed
+      const currentFilters = {
+        columnFilters,
+        externalFilters,
+        showOnlyMyInspections,
+        globalFilter,
+        sorting,
+      };
+
+      const hasChanged =
+        JSON.stringify(currentFilters) !== JSON.stringify(prevFilters.current);
+
+      if (hasChanged) {
+        cachedFiltersStore.getState().setFilters(
+          inspectionsColumnFiltersCacheKey,
+          columnFilters,
+          {
+            ...externalFilters,
+            showOnlyMyInspections,
+            globalFilter,
+          },
+          sorting
+        );
+
+        // Update previous values
+        prevFilters.current = currentFilters;
+      }
     }
   }, [
-    cachedExternalFilters,
-    isCurrentUserDeputy,
-    isDeputyReviewPending,
-    isCurrentUserHasPrimary,
+    columnFilters,
+    externalFilters,
+    showOnlyMyInspections,
+    globalFilter,
+    sorting,
   ]);
 
-  // Apply filters when table instance is available and state changes
-  useEffect(() => {
-    if (tableInstance) {
-      if (showOnlyMyInspections) {
-        // When external filter is ON, apply user-specific filter
-        applyUserSpecificFilters(tableInstance);
+  // Use the extracted utility function
+  const convertFiltersToQueryParams =
+    useConvertFiltersToQueryParams(externalFilters);
+
+  const queryParams: InspectionGridQueryParams = useMemo(() => {
+    // Extract sorting information from the sorting state
+    const currentSort = sorting[0]; // Material React Table supports multiple sorts, but we'll use the first one
+
+    return {
+      page_no: pagination.pageIndex + 1,
+      page_size: pagination.pageSize,
+      ...convertFiltersToQueryParams(columnFilters),
+      ...(currentSort && {
+        sort_by: currentSort.id,
+        sort_order: currentSort.desc ? "desc" : "asc",
+      }),
+    };
+  }, [
+    pagination.pageIndex,
+    pagination.pageSize,
+    columnFilters,
+    convertFiltersToQueryParams,
+    sorting,
+  ]);
+
+  const { data, isLoading } = useInspectionsData(queryParams);
+  const inspectionsList = useMemo(() => data?.items ?? [], [data]);
+
+  const handlePaginationChange = useCallback(
+    (
+      updater:
+        | MRT_TableState<Inspection>["pagination"]
+        | ((
+            old: MRT_TableState<Inspection>["pagination"]
+          ) => MRT_TableState<Inspection>["pagination"])
+    ) => {
+      setPagination(updater);
+    },
+    []
+  );
+
+  const handleSortingChange = useCallback(
+    (
+      updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
+    ) => {
+      const newSorting =
+        typeof updater === "function" ? updater(sorting) : updater;
+
+      // Only reset pagination if sorting actually changed
+      const sortingChanged =
+        JSON.stringify(newSorting) !== JSON.stringify(sorting);
+
+      setSorting(updater);
+
+      if (sortingChanged) {
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       }
-      // When external filter is OFF, do nothing - let cached column filters remain
-    }
-  }, [tableInstance, showOnlyMyInspections, applyUserSpecificFilters]);
-
-  const renderExternalFilter = useCallback(
-    ({ table }: { table: MRT_TableInstance<Inspection> }) => {
-      return (
-        <FormControlLabel
-          control={
-            <CustomSwitch
-              checked={showOnlyMyInspections}
-              onChange={(e) => {
-                setShowOnlyMyInspections(e.target.checked);
-                if (e.target.checked) {
-                  // When turning ON, apply user-specific filter
-                  applyUserSpecificFilters(table);
-                } else {
-                  // When turning OFF, remove only the user-specific filters
-                  const currentFilters = table.getState().columnFilters;
-                  const filteredFilters = currentFilters.filter(
-                    (filter) =>
-                      filter.id !== "primary_officer.name" &&
-                      filter.id !== "reviewer" &&
-                      filter.id !== "approval_status"
-                  );
-                  table.setColumnFilters(filteredFilters);
-                }
-              }}
-              size="small"
-              disabled={
-                isLoading ||
-                staffLoading ||
-                (isCurrentUserDeputy && !isDeputyReviewPending)
-              }
-            />
-          }
-          label={
-            <Typography variant="body1" mr={1}>
-              <strong>{currentUser?.profile?.given_name}</strong>'s Files
-              {isCurrentUserDeputy && " for Review"}
-            </Typography>
-          }
-          labelPlacement="start"
-        />
-      );
     },
-    [
-      showOnlyMyInspections,
-      isLoading,
-      staffLoading,
-      isCurrentUserDeputy,
-      isDeputyReviewPending,
-      currentUser?.profile?.given_name,
-      applyUserSpecificFilters,
-    ]
+    [sorting]
   );
 
-  const handleCacheFilters = (filters?: MasterTableColumnFilter[]) => {
-    if (!filters) {
-      return;
-    }
-    // Cache both column filters and external filter state
-    setFilters(inspectionsColumnFiltersCacheKey, filters, {
-      showOnlyMyInspections,
-    });
-  };
+  const handleColumnFiltersChange = useCallback(
+    (
+      updater:
+        | MRT_TableState<Inspection>["columnFilters"]
+        | ((
+            old: MRT_TableState<Inspection>["columnFilters"]
+          ) => MRT_TableState<Inspection>["columnFilters"])
+    ) => {
+      const newFilters =
+        typeof updater === "function" ? updater(columnFilters) : updater;
 
-  const createUniqueFilterList = useCallback(
-    (key: keyof Inspection, subKey?: string): string[] => {
-      return [
-        ...new Set(
-          inspectionsList?.map((item) => {
-            const value = item[key];
-            if (typeof value === "object" && value !== null) {
-              if (subKey && subKey in value) {
-                return (value as unknown as Record<string, unknown>)[
-                  subKey
-                ] as string;
-              }
-              return "";
-            }
-            return typeof value === "string" ? value : "";
-          })
-        ),
-      ].filter(Boolean) as string[];
+      // Only reset pagination if filters actually changed
+      const filtersChanged =
+        JSON.stringify(newFilters) !== JSON.stringify(columnFilters);
+
+      setColumnFilters(updater);
+
+      if (filtersChanged) {
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
     },
-    [inspectionsList]
+    [columnFilters]
   );
 
-  const projectList = useMemo(
-    () =>
-      [
-        ...new Set(
-          inspectionsList?.map((ins) => ins.case_file?.project?.name ?? "")
-        ),
-      ].filter(Boolean),
-    [inspectionsList]
-  );
-  const initiationList = useMemo(
-    () => createUniqueFilterList("initiation", "name"),
-    [createUniqueFilterList]
-  );
-  const staffUserList = useMemo(
-    () => createUniqueFilterList("primary_officer", "name"),
-    [createUniqueFilterList]
-  );
-  const reviewerList = useMemo(
-    () => createUniqueFilterList("approved_by", "name"),
-    [createUniqueFilterList]
-  );
-  const inspectionStatusList = useMemo(
-    () => createUniqueFilterList("inspection_status"),
-    [createUniqueFilterList]
-  );
-  const irProgressList = useMemo(
-    () => createUniqueFilterList("ir_progress", "name"),
-    [createUniqueFilterList]
-  );
-  const approvalStatusList = useMemo(
-    () => createUniqueFilterList("approval_status", "name"),
-    [createUniqueFilterList]
+  const handleGlobalFilterChange = useCallback(
+    (
+      updater:
+        | MRT_TableState<Inspection>["globalFilter"]
+        | ((
+            old: MRT_TableState<Inspection>["globalFilter"]
+          ) => MRT_TableState<Inspection>["globalFilter"])
+    ) => {
+      const newGlobalFilter =
+        typeof updater === "function" ? updater(globalFilter) : updater;
+
+      // Only reset pagination if global filter actually changed
+      const globalFilterChanged = newGlobalFilter !== globalFilter;
+
+      setGlobalFilter(updater);
+
+      if (globalFilterChanged) {
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+    },
+    [globalFilter]
   );
 
-  const columns = useMemo<MRT_ColumnDef<Inspection>[]>(
-    () => [
-      {
-        accessorKey: "ir_number",
-        header: "IR #",
-        filterFn: "contains",
-        Cell: ({ row }) => (
-          <PageLink
-            to="/ce-database/inspections/$inspectionNumber"
-            params={{ inspectionNumber: row.original.ir_number }}
-          />
-        ),
-      },
-      {
-        accessorFn: (row) => row.case_file?.project?.name,
-        header: "Project",
-        filterVariant: "multi-select",
-        filterSelectOptions: projectList,
-      },
-      {
-        accessorFn: (row) => dateUtils.formatDate(row.start_date),
-        id: "start_date",
-        header: "Start Date",
-        filterFn: "contains",
-        size: 120,
-      },
-      {
-        accessorFn: (row) => row.initiation?.name,
-        id: "initiation",
-        header: "Initiation",
-        filterVariant: "multi-select",
-        filterSelectOptions: initiationList,
-        size: 120,
-      },
-      {
-        accessorFn: (row) => row.ir_progress?.name,
-        id: "ir_progress",
-        header: "IR Progress",
-        filterVariant: "multi-select",
-        filterSelectOptions: irProgressList,
-        size: 120,
-      },
-      {
-        accessorFn: (row) => row.approval_status?.name,
-        id: "approval_status",
-        header: "Approval Status",
-        Cell: ({ row }) => {
-          return row.original.approval_status ? (
-            <Chip
-              label={row.original.approval_status?.name}
-              color={
-                row.original.approval_status?.id ===
-                APPROVAL_STATUS.APPROVAL_PENDING
-                  ? "warning"
-                  : row.original.approval_status?.id ===
-                      APPROVAL_STATUS.APPROVED
-                    ? "success"
-                    : "error"
-              }
-              variant="outlined"
-              size="small"
-            />
-          ) : (
-            <></>
-          );
-        },
-        filterVariant: "multi-select",
-        filterSelectOptions: approvalStatusList,
-        size: 100,
-      },
-      {
-        accessorFn: (row) => row.approved_by?.name,
-        id: "reviewer",
-        header: "Reviewer",
-        filterVariant: "multi-select",
-        filterSelectOptions: reviewerList,
-        size: 100,
-      },
-      {
-        accessorFn: (row) => row.primary_officer?.name,
-        id: "primary_officer.name",
-        header: "Primary",
-        filterVariant: "multi-select",
-        filterSelectOptions: staffUserList,
-        size: 100,
-      },
+  // Use the extracted utility function for columns
+  const columns = useInspectionsGridColumns({
+    projectList: projects,
+    initiationList: initiations,
+    irProgressList: irProgressOptions,
+    approvalStatusList: approvalStatusOptions,
+    reviewerList: staffList,
+    staffUserList: staffList,
+    inspectionStatusList: inspectionStatusOptions,
+  });
 
-      {
-        accessorKey: "inspection_status",
-        header: "Status",
-        Cell: ({ row }) => {
-          return row.original.inspection_status ? (
-            <Chip
-              label={row.original.inspection_status}
-              color={
-                row.original.inspection_status?.toLowerCase() === "open"
-                  ? "success"
-                  : "error"
-              }
-              variant="outlined"
-              size="small"
-            />
-          ) : (
-            <></>
-          );
-        },
-        filterVariant: "multi-select",
-        filterSelectOptions: inspectionStatusList,
-        size: 80,
-      },
-      {
-        accessorFn: (row) => row.case_file?.case_file_number,
-        header: "Case File #",
-        filterFn: "contains",
-        Cell: ({ row }) => (
-          <PageLink
-            to="/ce-database/case-files/$caseFileNumber"
-            params={{
-              caseFileNumber: row.original.case_file?.case_file_number,
-            }}
-          />
-        ),
-      },
-    ],
-    [
-      projectList,
-      initiationList,
-      irProgressList,
-      approvalStatusList,
-      staffUserList,
-      inspectionStatusList,
-      reviewerList,
-    ]
-  );
-
-  return authLoading || staffLoading ? (
+  return authLoading || staffLoading || !isRestored ? (
     <Box
       display="flex"
       justifyContent="center"
@@ -433,20 +319,102 @@ export function Inspections() {
     <MasterDataTable
       columns={columns}
       data={inspectionsList ?? []}
-      setTableInstance={setTableInstance}
       initialState={{
-        sorting: [{ id: "ir_number", desc: false }],
-        columnFilters: columnFilters,
+        sorting: sorting,
+        columnFilters: isRestored ? columnFilters : [],
       }}
       state={{
         isLoading,
         showGlobalFilter: true,
+        pagination,
+        columnFilters,
+        globalFilter,
+        sorting,
       }}
       titleToolbarProps={{
         tableTitle: "Inspections",
       }}
-      renderExternalFilter={renderExternalFilter}
-      onCacheFilters={handleCacheFilters}
+      enableSorting={true}
+      enablePagination={false}
+      hideFilterToggle={true}
+      renderTopToolbarCustomActions={({ table }) => (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            width: "100%",
+            mr: -1,
+          }}
+        >
+          {/* Title section with toggle */}
+          <Box
+            sx={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-end",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{ color: BCDesignTokens.typographyColorLink }}
+            >
+              Inspections
+            </Typography>
+            <ShowOnlyMyInspectionsSwitch
+              initialChecked={showOnlyMyInspections}
+              onFiltersChange={({
+                checked,
+                externalFilters,
+                columnFilters,
+              }) => {
+                setShowOnlyMyInspections(checked);
+                if (externalFilters) {
+                  Object.entries(externalFilters).forEach(([key, value]) => {
+                    setExternalFilters((prev) => ({
+                      ...prev,
+                      [key]: value,
+                    }));
+                  });
+                }
+                if (columnFilters) {
+                  handleColumnFiltersChange(columnFilters);
+                }
+              }}
+              disabled={isLoading}
+              onColumnFiltersChange={handleColumnFiltersChange}
+            />
+          </Box>
+
+          {/* Pagination and controls section */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+            }}
+          >
+            {/* Left side - Export and Pagination */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <InspectionsGridExport queryParams={queryParams} />
+              <InspectionsGridPagination
+                table={table}
+                totalCount={data?.total || 0}
+              />
+            </Box>
+          </Box>
+        </Box>
+      )}
+      remoteDataConfig={{
+        enableRemoteData: true,
+        rowCount: data?.total,
+        onPaginationChange: handlePaginationChange,
+        onColumnFiltersChange: handleColumnFiltersChange,
+        onGlobalFilterChange: handleGlobalFilterChange,
+        onSortingChange: handleSortingChange,
+      }}
     />
   );
 }

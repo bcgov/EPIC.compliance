@@ -4,7 +4,7 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import ModalActions from "@/components/Shared/Modals/ModalActions";
-import { FC, useEffect } from "react";
+import { FC, useEffect, useMemo } from "react";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { CaseFile } from "@/models/CaseFile";
 import { useCaseFilesData } from "@/hooks/useCaseFiles";
@@ -35,7 +35,8 @@ const LinkCaseFileModal: FC<LinkCaseFileModalProps> = ({
   fileNumber,
   isEdit,
 }) => {
-  const { data: caseFiles } = useCaseFilesData();
+  const { data } = useCaseFilesData();
+  const caseFiles = useMemo(() => data?.items ?? [], [data]);
 
   const filteredCaseFileList =
     caseFiles

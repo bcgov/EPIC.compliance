@@ -3,6 +3,8 @@ import { Initiation } from "@/models/Initiation";
 import {
   Inspection,
   InspectionAPIData,
+  InspectionGridItems,
+  InspectionGridQueryParams,
   InspectionMoreDetails,
   InspectionStatusAPIData,
 } from "@/models/Inspection";
@@ -33,8 +35,26 @@ const fetchProjectStatuses = (): Promise<ProjectStatus[]> => {
   return request({ url: "/project-status-options" });
 };
 
-const fetchInspections = (caseFileId?: number): Promise<Inspection[]> => {
-  return request({ url: "/inspections", params: { case_file_id: caseFileId } });
+const fetchInspections = (
+  queryParams?: InspectionGridQueryParams
+): Promise<InspectionGridItems> => {
+  return request({
+    url: "/inspections",
+    params: queryParams,
+  });
+};
+
+const inspectionsExport = (
+  queryParams: InspectionGridQueryParams = {}
+) => {
+  delete queryParams.page_no;
+  delete queryParams.page_size;
+  return request({
+    method: "POST",
+    url: `/inspections/export`,
+    data: queryParams,
+    responseType: "blob",
+  });
 };
 
 const fetchInspectionsMoreDetails = (
@@ -127,10 +147,19 @@ export const useProjectStatusesData = () => {
   });
 };
 
-export const useInspectionsData = () => {
+export const useInspectionsData = (
+  queryParams?: InspectionGridQueryParams
+) => {
   return useQuery({
-    queryKey: ["inspections"],
-    queryFn: () => fetchInspections(),
+    queryKey: ["inspections", queryParams],
+    queryFn: () => fetchInspections(queryParams),
+  });
+};
+
+export const useInspectionsExport = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: inspectionsExport,
+    onSuccess,
   });
 };
 
@@ -152,7 +181,7 @@ export const useInspectionByNumber = (inspectionNumber: string) => {
 export const useInspectionsByCaseFileId = (caseFileId: number) => {
   return useQuery({
     queryKey: ["inspections-by-caseFileId", caseFileId],
-    queryFn: () => fetchInspections(caseFileId),
+    queryFn: () => fetchInspections({ case_file_id: caseFileId.toString() }),
     enabled: !!caseFileId,
   });
 };

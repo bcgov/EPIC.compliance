@@ -15,15 +15,15 @@
 
 from http import HTTPStatus
 
-from flask import current_app, request
+from flask import current_app, request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
-    InspectionAttendanceSchema, InspectionCreateSchema, InspectionMoreDetailsSchema, InspectionOfficerSchema,
-    InspectionReqImageSchema, InspectionRequirementBulkUpdateSchema, InspectionSchema, InspectionStatusSchema,
-    InspectionUpdateSchema, KeyValueSchema, StaffUserSchema)
+    InspectionAttendanceSchema, InspectionCreateSchema, InspectionFilterSchema, InspectionMoreDetailsSchema,
+    InspectionOfficerSchema, InspectionReqImageSchema, InspectionRequirementBulkUpdateSchema, InspectionSchema,
+    InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, StaffUserSchema)
 from compliance_api.services import InspectionRequirementService, InspectionService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.util import cors_preflight
@@ -42,6 +42,9 @@ inspection_create_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 inspection_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, InspectionSchema(), "InspectionList"
+)
+inspection_filter_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, InspectionFilterSchema(), "InspectionFilter"
 )
 inspection_officer_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, InspectionOfficerSchema(), "InspectionOfficer"
@@ -144,27 +147,99 @@ class Inspections(Resource):
     """Resource for managing inspections."""
 
     @staticmethod
-    @API.response(code=200, description="Success", model=[inspection_list_model])
+    @API.response(code=200, description="Success")
     @API.doc(
         params={
             "case_file_id": {
                 "description": "The unique identifier of the case file",
                 "type": "integer",
                 "required": False,
-            }
+            },
+            "ir_number": {
+                "description": "Filter by inspection record number",
+                "type": "string",
+                "required": False,
+            },
+            "project_id": {
+                "description": "Filter by project ID (supports 'null' or 'none' for unapproved projects)",
+                "type": "string",
+                "required": False,
+            },
+            "start_date": {
+                "description": "Filter by inspection start date",
+                "type": "string",
+                "required": False,
+            },
+            "initiation_id": {
+                "description": "Filter by initiation option ID",
+                "type": "integer",
+                "required": False,
+            },
+            "ir_progress": {
+                "description": "Filter by IR progress status",
+                "type": "string",
+                "required": False,
+            },
+            "approval_status": {
+                "description": "Filter by approval status",
+                "type": "string",
+                "required": False,
+            },
+            "primary_officer_id": {
+                "description": "Filter by primary officer ID",
+                "type": "integer",
+                "required": False,
+            },
+            "status": {
+                "description": "Filter by inspection status",
+                "type": "string",
+                "required": False,
+            },
+            "case_file_number": {
+                "description": "Filter by case file number",
+                "type": "string",
+                "required": False,
+            },
+            "page_no": {
+                "description": "Page number for pagination",
+                "type": "integer",
+                "required": False,
+                "default": 1,
+            },
+            "page_size": {
+                "description": "Number of items per page",
+                "type": "integer",
+                "required": False,
+                "default": 15,
+            },
+            "sort_by": {
+                "description": "Field to sort by",
+                "type": "string",
+                "required": False,
+                "default": "ir_number",
+            },
+            "sort_order": {
+                "description": "Sort order (asc or desc)",
+                "type": "string",
+                "required": False,
+                "default": "asc",
+            },
         }
     )
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all inspections")
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Fetch all inspections with pagination, filtering, and sorting",
+    )
     @auth.require
     def get():
-        """Fetch all inspections."""
-        case_file_id = request.args.get("case_file_id")
-        if case_file_id:
-            inspections = InspectionService.get_by_case_file_id(case_file_id)
-        else:
-            inspections = InspectionService.get_all_inspections()
+        """Fetch all inspections with pagination, filtering, and sorting."""
+        args = request.args
+        inspections, total_count = InspectionService.get_inspections_paginated(args)
         inspection_list_schema = InspectionSchema(many=True)
-        return inspection_list_schema.dump(inspections), HTTPStatus.OK
+        return {
+            "items": inspection_list_schema.dump(inspections),
+            "total": total_count,
+        }, HTTPStatus.OK
 
     @staticmethod
     @ApiHelper.swagger_decorators(API, endpoint_description="Create an inspection")
@@ -180,6 +255,31 @@ class Inspections(Resource):
         inspection_data = InspectionCreateSchema().load(API.payload)
         created_inspection = InspectionService.create(inspection_data)
         return InspectionSchema().dump(created_inspection), HTTPStatus.CREATED
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/export", methods=["POST", "OPTIONS"])
+class InspectionExport(Resource):
+    """Resource for exporting inspections to Excel."""
+
+    @staticmethod
+    @API.expect(inspection_filter_model)
+    @API.response(code=200, description="Excel file generated successfully")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Export inspections to Excel"
+    )
+    @auth.require
+    def post():
+        """Export inspections to Excel based on filters."""
+        filter_data = InspectionFilterSchema().load(API.payload or {})
+        excel_file = InspectionService.generate_inspections_excel(filter_data)
+
+        return send_file(
+            excel_file,
+            as_attachment=True,
+            download_name="inspections_export.xlsx",
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
 
 
 @cors_preflight("GET, OPTIONS")
