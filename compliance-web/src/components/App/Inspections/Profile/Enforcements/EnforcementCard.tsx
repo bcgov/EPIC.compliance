@@ -14,28 +14,34 @@ import {
   getApproverName,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
+import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 
 const EnforcementCard = ({
   order,
   warningLetter,
   requirementEnforcements,
   administrativePenalty,
+  chargeRecommendation,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   requirementEnforcements: InspectionRequirement[];
   administrativePenalty?: AdministrativePenalty;
+  chargeRecommendation?: ChargeRecommendation;
 }) => {
+  // console.log(chargeRecommendation)
   const requirementSummaryFormatted = formatRequirementSummary(
     order,
     warningLetter,
-    administrativePenalty
+    administrativePenalty,
+    chargeRecommendation
   );
   const requirementSourcesFormatted = formatRequirementSources(
     requirementEnforcements,
     order,
     warningLetter,
-    administrativePenalty
+    administrativePenalty,
+    chargeRecommendation
   );
   const sentForReviewDate = getSentForReviewDate(order, warningLetter);
   const approvedByDate = getApprovedByDate(order, warningLetter);
@@ -70,12 +76,14 @@ const EnforcementCard = ({
           >
             {order?.order_number ??
               warningLetter?.warning_letter_number ??
-              administrativePenalty?.administrative_penalty_number}
+              administrativePenalty?.administrative_penalty_number ??
+              chargeRecommendation?.charge_recommendation_number}
           </Typography>
           <EnforcementStatusFlag
             order={order}
             warningLetter={warningLetter}
             administrativePenalty={administrativePenalty}
+            chargeRecommendation={chargeRecommendation}
           />
         </Stack>
         <Stack>
@@ -160,6 +168,71 @@ const EnforcementCard = ({
                   gridProps={{ xs: 6 }}
                 />
               )}
+            </>
+          )}
+          {chargeRecommendation && (
+            <>
+              <GridLabelValuePair
+                label="Date to Crown Counsel"
+                value={
+                  chargeRecommendation.date_to_crown_counsel
+                    ? dateUtils.formatDate(chargeRecommendation.date_to_crown_counsel)
+                    : ""
+                }
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Court File #"
+                value={chargeRecommendation.court_file_number || ""}
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Charge Decision"
+                value={chargeRecommendation.charge_decision?.name || ""}
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Charge Decision Date"
+                value={
+                  chargeRecommendation.charge_decision_date
+                    ? dateUtils.formatDate(chargeRecommendation.charge_decision_date)
+                    : ""
+                }
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Court Appearances"
+                value={chargeRecommendation.court_appearances || ""}
+                multiline
+              />
+              <GridLabelValuePair
+                label="Judgement"
+                value={chargeRecommendation.judgment?.name || ""}
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Judgement Date"
+                value={
+                  chargeRecommendation.judgment_date
+                    ? dateUtils.formatDate(chargeRecommendation.judgment_date)
+                    : ""
+                }
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Sentence Date"
+                value={
+                  chargeRecommendation.sentence_date
+                    ? dateUtils.formatDate(chargeRecommendation.sentence_date)
+                    : ""
+                }
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Sentence Type"
+                value={chargeRecommendation.sentence_type || ""}
+                gridProps={{ xs: 6 }}
+              />
             </>
           )}
         </Grid>

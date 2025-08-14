@@ -1,4 +1,5 @@
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
+import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { InspectionOrder } from "@/models/InspectionOrder";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import {
@@ -8,6 +9,7 @@ import {
   VARIANT_COLORS,
   WarningLetterProgressEnum,
   ReferralStatus,
+  CRStatus,
 } from "@/utils/constants";
 import { Chip } from "@mui/material";
 import { useMemo } from "react";
@@ -16,10 +18,12 @@ const EnforcementStatusFlag = ({
   order,
   warningLetter,
   administrativePenalty,
+  chargeRecommendation,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   administrativePenalty?: AdministrativePenalty;
+  chargeRecommendation?: ChargeRecommendation;
 }) => {
   const flagStatus = useMemo(() => {
     let status: {
@@ -97,10 +101,21 @@ const EnforcementStatusFlag = ({
       ) {
         status.color = "success";
       }
+    } else if (chargeRecommendation) {
+      status = {
+        name: chargeRecommendation.status?.name || CRStatus.DRAFTING.name,
+      };
+      if (chargeRecommendation.status?.id === CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id) {
+        status.color = "warning";
+      } else if (chargeRecommendation.status?.id === CRStatus.DEPUTY_REVIEW.id) {
+        status.color = "warning";
+      } else if (chargeRecommendation.status?.id === CRStatus.CEB_NOT_PROCEEDING.id) {
+        status.color = "error";
+      }
     }
 
     return status;
-  }, [order, warningLetter, administrativePenalty]);
+  }, [order, warningLetter, administrativePenalty, chargeRecommendation]);
 
   return flagStatus.name ? (
     <Chip

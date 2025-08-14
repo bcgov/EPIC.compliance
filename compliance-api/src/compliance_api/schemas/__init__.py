@@ -20,6 +20,8 @@ from .appendix import AppendixCreateSchema, AppendixSchema
 from .case_file import (
     CaseFileCreateSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema, CaseFileOptionSchema,
     CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema)
+from .charge_recommendation import (
+    ChargeRecommendationCreateSchema, ChargeRecommendationSchema, ChargeRecommendationUpdateSchema)
 from .common import KeyValueSchema
 from .complaint import (
     ComplaintCreateSchema, ComplaintSchema, ComplaintSourceContactSchema, ComplaintStatusSchema, ComplaintUpdateSchema,
@@ -49,6 +51,8 @@ from .order_approval import CreateOrderApprovalSchema, OrderApprovalSchema, Upda
 from .paginate import PaginationParameterSchema
 from .project import ProjectSchema
 from .requirement_source import RequirementSourceSchema
+from .restorative_justice import (
+    RestorativeJusticeCreateSchema, RestorativeJusticeSchema, RestorativeJusticeUpdateSchema)
 from .section import SectionSchema
 from .staff_user import StaffUserCreateSchema, StaffUserSchema, StaffUserUpdateSchema
 from .topic import TopicCreateSchema, TopicSchema

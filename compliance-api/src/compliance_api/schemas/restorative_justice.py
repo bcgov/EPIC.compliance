@@ -1,0 +1,102 @@
+"""Restorative Justice Schemas."""
+
+from marshmallow import fields, post_dump
+
+from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
+
+from ..models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
+from .base_schema import AutoSchemaBase, BaseSchema
+from .inspection_requirement import InspectionRequirementSchema
+
+
+class RestorativeJusticeUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+    """Schema for restorative justice model."""
+
+    inspection_id = fields.Integer(
+        required=True, metadata={"description": "The inspection id"}
+    )
+    restorative_details = fields.String(
+        allow_none=True,
+        metadata={"description": "Restorative justice details"},
+    )
+    date_restorative_complete = fields.DateTime(
+        allow_none=True,
+        format=INPUT_DATE_TIME_FORMAT,
+        error_messages={
+            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
+        },
+        metadata={"description": "The date when restorative justice was completed"},
+    )
+    inspection_requirement_ids = fields.List(
+        fields.Integer(),
+        allow_none=True,
+        metadata={"description": "List of inspection requirement IDs"},
+    )
+
+
+class RestorativeJusticeCreateSchema(
+    RestorativeJusticeUpdateSchema
+):  # pylint: disable=too-many-ancestors
+    """Schema for restorative justice model."""
+
+    restorative_justice_number = fields.String(
+        allow_none=True,
+        metadata={"description": "The unique restorative justice number."},
+    )
+
+
+class RestorativeJusticeInspectionRequirementMapSchema(
+    AutoSchemaBase
+):  # pylint: disable=too-many-ancestors
+    """Schema for restorative justice inspection requirement map model."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Meta class to auto generate schema."""
+
+        model = RestorativeJusticeInspectionRequirementMap
+        load_instance = True
+
+    inspection_requirement = fields.Nested(
+        InspectionRequirementSchema(),
+        only=("id", "summary"),
+    )
+
+
+class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
+    """Schema for restorative justice model."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Meta class to auto generate schema."""
+
+        model = RestorativeJustice
+        load_instance = True
+
+    restorative_details = fields.String(
+        allow_none=True,
+        metadata={"description": "Restorative justice details"},
+    )
+    restorative_justice_requirement_maps = fields.Nested(
+        RestorativeJusticeInspectionRequirementMapSchema(),
+        many=True,
+        only=("id", "inspection_requirement_id", "inspection_requirement"),
+    )
+
+    @post_dump(pass_many=True)
+    def transform_data(self, data, many, **kwargs):  # pylint: disable=unused-argument
+        """Transform data after serialization."""
+        if many:
+            for item in data:
+                self._transform_single_item(item)
+        else:
+            self._transform_single_item(data)
+        return data
+
+    def _transform_single_item(self, item):
+        """Transform a single item."""
+        # Transform enum values to their string representation
+        if "status" in item and item["status"]:
+            item["status"] = (
+                item["status"].value
+                if hasattr(item["status"], "value")
+                else item["status"]
+            )

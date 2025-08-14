@@ -76,6 +76,7 @@ export const DRAWER_WIDTHS = {
 
 export const MODAL_WIDTHS = {
   ADMINISTRATIVE_PENALTY: "520px",
+  CHARGE_RECOMMENDATION: "520px",
 };
 
 export enum APPROVAL_STATUS {
@@ -165,6 +166,24 @@ export const ReferralStatus = {
 export const APDecisionStatus = {
   AP_ISSUED: { id: "AP_ISSUED", name: "AP Issued" },
   AP_NOT_PROCEEDING: { id: "AP_NOT_PROCEEDING", name: "AP Not Proceeding" },
+};
+
+export const CRStatus = {
+  DRAFTING: { id: "DRAFTING", name: "Drafting" },
+  DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
+  SUBMITTED_TO_CROWN_COUNSEL: { id: "SUBMITTED_TO_CROWN_COUNSEL", name: "Submitted to Crown Counsel" },
+  CEB_NOT_PROCEEDING: { id: "CEB_NOT_PROCEEDING", name: "CEB Not Proceeding" },
+};
+
+export const CRDecision = {
+  APPROVED: { id: "APPROVED", name: "Approved" },
+  NOT_PROCEEDING: { id: "NOT_PROCEEDING", name: "Not Proceeding" },
+};
+
+export const CRJudgment = {
+  GUILTY: { id: "GUILTY", name: "Guilty" },
+  NOT_GUILTY: { id: "NOT_GUILTY", name: "Not Guilty" },
+  DISMISSED: { id: "DISMISSED", name: "Dismissed" },
 };
 
 export const DEFAULT_PAGE_SIZE = 15;

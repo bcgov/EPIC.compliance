@@ -131,7 +131,9 @@ class ViolationTicketStatusSchema(BaseSchema):  # pylint: disable=too-many-ances
     )
 
     @post_load
-    def extract_status_value(self, data, **kwargs):  # pylint: disable=unused-argument,no-self-use
+    def extract_status_value(
+        self, data, **kwargs
+    ):  # pylint: disable=unused-argument,no-self-use
         """Extract the value of the status enum."""
         if "status" in data and hasattr(data["status"], "value"):
             data["status"] = data["status"].value

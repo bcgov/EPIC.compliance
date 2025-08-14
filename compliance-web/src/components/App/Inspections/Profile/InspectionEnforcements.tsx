@@ -18,6 +18,7 @@ import { useInspectionWarningLettersData } from "@/hooks/useInspectionWarningLet
 import WarningLetterDrawer from "@/components/App/Inspections/Profile/Enforcements/WarningLetters/WarningLetterDrawer";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
+import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { AddRounded } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
@@ -25,8 +26,11 @@ import OrderCreateModal from "@/components/App/Inspections/Profile/Enforcements/
 import WarningLetterCreateModal from "@/components/App/Inspections/Profile/Enforcements/WarningLetters/WarningLetterCreateModal";
 import AdministrativePenaltyCreateModal from "@/components/App/Inspections/Profile/Enforcements/AdministrativePenalty/AdministrativePenaltyCreateModal";
 import AdministrativePenaltyUpdateModal from "@/components/App/Inspections/Profile/Enforcements/AdministrativePenalty/AdministrativePenaltyUpdateModal";
+import ChargeRecommendationCreateModal from "@/components/App/Inspections/Profile/Enforcements/ChargeRecommendation/ChargeRecommendationCreateModal";
+import ChargeRecommendationUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ChargeRecommendation/ChargeRecommendationUpdateModal";
 import { prepNonProceededRequirements } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
+import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 
 interface InspectionEnforcementsProps {
@@ -83,12 +87,18 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isLoading: isInspectionAdministrativePenaltiesLoading,
   } = useAdministrativePenaltiesData(inspectionData.id);
 
+  const {
+    data: inspectionChargeRecommendationsData,
+    isLoading: isInspectionChargeRecommendationsLoading,
+  } = useChargeRecommendationsData(inspectionData.id);
+
   useEffect(() => {
     if (
       !isInspectionRequirementsLoading &&
       !isInspectionOrdersLoading &&
       !isInspectionWarningLettersLoading &&
-      !isInspectionAdministrativePenaltiesLoading
+      !isInspectionAdministrativePenaltiesLoading &&
+      !isInspectionChargeRecommendationsLoading
     ) {
       setIsDataLoading(false);
     }
@@ -97,6 +107,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isInspectionOrdersLoading,
     isInspectionWarningLettersLoading,
     isInspectionAdministrativePenaltiesLoading,
+    isInspectionChargeRecommendationsLoading,
   ]);
 
   useEffect(() => {
@@ -110,6 +121,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               EnforcementActionEnum.WARNING_LETTER,
               EnforcementActionEnum.ORDER,
               EnforcementActionEnum.AP_RECOMMENDATION,
+              EnforcementActionEnum.CHARGE_RECOMMENDATION,
             ].includes(enforcement.id as EnforcementActionEnum)
           )
       );
@@ -159,6 +171,21 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionAdministrativePenaltiesData]);
 
+  const nonProceededChargeRecommendationRequirements = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    const chargeRecommendationReqIds = inspectionChargeRecommendationsData?.map(
+      (chargeRecommendation) =>
+        chargeRecommendation.charge_recommendation_requirement_maps?.map(
+          (map) => map.inspection_requirement_id
+        )
+    );
+    return prepNonProceededRequirements({
+      requirements: requirementEnforcements,
+      reqIds: chargeRecommendationReqIds,
+      enforcementActionType: EnforcementActionEnum.CHARGE_RECOMMENDATION,
+    });
+  }, [requirementEnforcements, inspectionChargeRecommendationsData]);
+
   const openEnforcementModal = (
     modelType: EnforcementActionEnum,
     requirement?: InspectionRequirement
@@ -204,6 +231,18 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
           />
         );
         break;
+      case EnforcementActionEnum.CHARGE_RECOMMENDATION:
+        content = (
+          <ChargeRecommendationCreateModal
+            inspectionData={inspectionData}
+            requirementsList={requirementEnforcements}
+            requirement={requirement}
+            onSubmit={() => {
+              setModalClose();
+            }}
+          />
+        );
+        break;
     }
 
     setModalOpen({
@@ -225,8 +264,8 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
       onClick: () => openEnforcementModal(EnforcementActionEnum.AP_RECOMMENDATION),
     },
     {
-      text: "Charge (Report to Crown Council)",
-      onClick: () => {},
+      text: "Charge Recommendation",
+      onClick: () => openEnforcementModal(EnforcementActionEnum.CHARGE_RECOMMENDATION),
     },
   ];
 
@@ -300,6 +339,27 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   };
 
+  const openChargeRecommendationUpdateModal = (
+    chargeRecommendation: ChargeRecommendation
+  ) => {
+    setModalOpen({
+      content: (
+        <ChargeRecommendationUpdateModal
+          chargeRecommendationData={chargeRecommendation}
+          inspectionData={inspectionData}
+          requirementsList={requirementEnforcements}
+          onSubmit={() => {
+            // Refresh the charge recommendations data
+            queryClient.invalidateQueries({
+              queryKey: ["charge-recommendations", inspectionData.id],
+            });
+          }}
+        />
+      ),
+        width: MODAL_WIDTHS.CHARGE_RECOMMENDATION,
+    });
+  };
+
   return (
     <DynamicHeightBox
       display={"flex"}
@@ -329,6 +389,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               ...nonProceededOrderRequirements,
               ...nonProceededWarningLetterRequirements,
               ...nonProceededAPRequirements,
+              ...nonProceededChargeRecommendationRequirements,
             ].map((requirement,index) => (
               <EnforcementNotificationCard
                 key={index}
@@ -365,6 +426,17 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
             >
               <EnforcementCard
                 administrativePenalty={penality}
+                requirementEnforcements={requirementEnforcements}
+              />
+            </Box>
+          ))}
+          {inspectionChargeRecommendationsData?.map((chargeRecommendation) => (
+            <Box
+              key={chargeRecommendation.id}
+              onClick={() => openChargeRecommendationUpdateModal(chargeRecommendation)}
+            >
+              <EnforcementCard
+                chargeRecommendation={chargeRecommendation}
                 requirementEnforcements={requirementEnforcements}
               />
             </Box>

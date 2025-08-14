@@ -28,6 +28,7 @@ from .agency import API as AGENCY_API
 from .apihelper import Api
 from .appendix import API as APPENDIX_API
 from .case_file import API as CASE_FILE_API
+from .charge_recommendation import API as CHARGE_RECOMMENDATION_API
 from .complaint import API as COMPLAINT_API
 from .compliance_finding import API as COMPLIANCE_FINDING_API
 from .continuation_report import API as CONTINUATION_REPORT_API
@@ -44,6 +45,7 @@ from .position import API as POSITION_API
 from .project import API as PROJECT_API
 from .project_status import API as PROJECT_STATUS_API
 from .requirement_source import API as REQUIREMENT_SOURCE_API
+from .restorative_justice import API as RESTORATIVE_JUSTICE_API
 from .section import API as SECTION_API
 from .staff_user import API as USER_API
 from .topic import API as TOPIC_API
@@ -108,4 +110,6 @@ API.add_namespace(SECTION_API)
 API.add_namespace(VIOLATION_TICKET_API, path="violation-tickets")
 API.add_namespace(WARNING_LETTER_API, path="warning-letters")
 API.add_namespace(ADMINISTRATIVE_PENALTY_API, path="administrative-penalties")
+API.add_namespace(CHARGE_RECOMMENDATION_API, path="charge-recommendations")
+API.add_namespace(RESTORATIVE_JUSTICE_API, path="restorative-justices")
 API.add_namespace(INSPECTION_REQUIREMENTS_API, path="inspection-requirements")

@@ -20,6 +20,9 @@ from .agency import Agency
 from .appendix import Appendix
 from .case_file import (
     CaseFile, CaseFileInitiationEnum, CaseFileInitiationOption, CaseFileLink, CaseFileOfficer, CaseFileStatusEnum)
+from .charge_recommendation import (
+    ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationInspectionRequirementMap,
+    ChargeRecommendationStatusEnum, JudgmentEnum)
 from .complaint import Complaint, ComplaintReqOrderDetail, ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum
 from .compliance_finding import ComplianceFindingOption, ComplianceFindingOptionEnum
 from .continuation_report import ContinuationReport, ContinuationReportKey
@@ -41,6 +44,7 @@ from .position import Position
 from .project import Project
 from .req_source_document_map import RequirementSourceDocumentMap
 from .requirement_source import RequirementSource, RequirementSourceEnum
+from .restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
 from .section import Section
 from .staff_user import StaffUser
 from .topic import Topic
