@@ -81,8 +81,18 @@ class Complaints(Resource):
                 "type": "string",
                 "required": False,
             },
-            "project_id": {
-                "description": "Filter by project ID",
+            "project_ids": {
+                "description": "Filter by project ID(s). Can be a single value or comma-separated list",
+                "type": "string",
+                "required": False,
+            },
+            "topic_ids": {
+                "description": "Filter by topic ID(s). Can be a single value or comma-separated list",
+                "type": "string",
+                "required": False,
+            },
+            "source_type_ids": {
+                "description": "Filter by source type ID(s). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },
@@ -91,13 +101,13 @@ class Complaints(Resource):
                 "type": "string",
                 "required": False,
             },
-            "primary_officer_id": {
-                "description": "Filter by primary officer ID",
-                "type": "integer",
+            "primary_officer_ids": {
+                "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list",
+                "type": "string",
                 "required": False,
             },
-            "status": {
-                "description": "Filter by complaint status",
+            "statuses": {
+                "description": "Filter by complaint status(es). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },

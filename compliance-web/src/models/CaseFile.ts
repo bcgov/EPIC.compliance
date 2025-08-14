@@ -26,10 +26,10 @@ export interface CaseFile {
 
 export interface CaseFileGridQueryParams extends BaseTableQueryParams {
   case_file_number?: string;
-  project_id?: string;
-  initiation_id?: string;
-  status?: string;
-  primary_officer_id?: string;
+  project_ids?: string;
+  initiation_ids?: string;
+  statuses?: string;
+  primary_officer_ids?: string;
   date_created?: string;
 }
 

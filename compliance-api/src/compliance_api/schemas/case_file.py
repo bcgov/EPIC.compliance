@@ -238,21 +238,21 @@ class CaseFileFilterSchema(Schema):
         required=False,
         metadata={"description": "The case file number to filter by"},
     )
-    project_id = fields.String(
+    project_ids = fields.String(
         required=False,
         metadata={
             "description": "The unique identifier of the project. Use 'null' or 'none' for unapproved projects"
         },
     )
-    initiation_id = fields.Integer(
+    initiation_ids = fields.String(
         required=False,
         metadata={"description": "The initiation option ID to filter by"},
     )
-    status = fields.String(
+    statuses = fields.String(
         required=False,
         metadata={"description": "The case file status to filter by (OPEN/CLOSE)"},
     )
-    primary_officer_id = fields.Integer(
+    primary_officer_ids = fields.String(
         required=False,
         metadata={"description": "The primary officer ID to filter by"},
     )

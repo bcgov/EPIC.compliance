@@ -41,37 +41,43 @@ export const useConvertFiltersToQueryParams = (
             break;
           case "project":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.project_id = filter.value.join(",");
+              params.project_ids = filter.value.join(",");
             }
             break;
           case "initiation":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.initiation_id = filter.value.join(",");
+              params.initiation_ids = filter.value.join(",");
             }
             break;
           case "ir_progress":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.ir_progress = filter.value.join(",");
+              params.ir_progresses = filter.value.join(",");
             }
             break;
           case "approval_status":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.approval_status = filter.value.join(",");
+              params.approval_statuses = filter.value.join(",");
             }
             break;
           case "primary_officer":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.primary_officer_id = filter.value.join(",");
+              params.primary_officer_ids = filter.value.join(",");
             }
             break;
           case "status":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.status = filter.value.join(",");
+              params.statuses = filter.value.join(",");
             }
             break;
           case "case_file_number":
             if (typeof filter.value === "string" && filter.value.trim()) {
               params.case_file_number = filter.value.trim();
+            }
+            break;
+          case "reviewer":
+          case "approved_by":
+            if (Array.isArray(filter.value) && filter.value.length > 0) {
+              params.approved_by_ids = filter.value.join(",");
             }
             break;
           case "start_date":
@@ -92,13 +98,18 @@ export const useConvertFiltersToQueryParams = (
       Object.entries(externalFilters).forEach(([key, value]) => {
         if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
           switch (key) {
-            case "primary_officer_id":
-              params.primary_officer_id = Array.isArray(value)
+            case "primary_officer_ids":
+              params.primary_officer_ids = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;
-            case "approval_status":
-              params.approval_status = Array.isArray(value)
+            case "approval_statuses":
+              params.approval_statuses = Array.isArray(value)
+                ? value.join(",")
+                : value;
+              break;
+            case "approved_by_ids":
+              params.approved_by_ids = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;
