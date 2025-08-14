@@ -111,15 +111,15 @@ class RestorativeJustice(BaseModelVersioned):
         comment="Status of the restorative justice",
         default=RestorativeJusticeStatusEnum.DRAFTING,
     )
-    restorative_details = Column(
+    restitution_details = Column(
         Text,
         nullable=True,
-        comment="Restorative justice details",
+        comment="Restitution details",
     )
-    date_restorative_complete = Column(
+    date_restitution_complete = Column(
         DateTime(timezone=True),
         nullable=True,
-        comment="Date when the restorative justice was completed",
+        comment="Date when the restitution was completed",
     )
 
     # Relationships
@@ -148,15 +148,14 @@ class RestorativeJustice(BaseModelVersioned):
 
     @classmethod
     def _determine_status(
-        cls, restorative_details=None, date_restorative_complete=None
+        cls, restitution_details=None, date_restitution_complete=None
     ):
         """Determine the status based on provided fields."""
-        if date_restorative_complete:
+        if date_restitution_complete:
             return RestorativeJusticeStatusEnum.CLOSED
-        elif restorative_details:
+        if restitution_details:
             return RestorativeJusticeStatusEnum.OPEN
-        else:
-            return RestorativeJusticeStatusEnum.DRAFTING
+        return RestorativeJusticeStatusEnum.DRAFTING
 
     @classmethod
     @with_session
@@ -168,8 +167,8 @@ class RestorativeJustice(BaseModelVersioned):
             or restorative_justice_data["status"] is None
         ):
             restorative_justice_data["status"] = cls._determine_status(
-                restorative_justice_data.get("restorative_details"),
-                restorative_justice_data.get("date_restorative_complete"),
+                restorative_justice_data.get("restitution_details"),
+                restorative_justice_data.get("date_restitution_complete"),
             )
 
         restorative_justice = cls(**restorative_justice_data)
@@ -192,15 +191,15 @@ class RestorativeJustice(BaseModelVersioned):
             or restorative_justice_update_data["status"] is None
         ):
             # Use updated values if provided, otherwise use current values
-            restorative_details = restorative_justice_update_data.get(
-                "restorative_details", current_record.restorative_details
+            restitution_details = restorative_justice_update_data.get(
+                "restitution_details", current_record.restitution_details
             )
-            date_restorative_complete = restorative_justice_update_data.get(
-                "date_restorative_complete", current_record.date_restorative_complete
+            date_restitution_complete = restorative_justice_update_data.get(
+                "date_restitution_complete", current_record.date_restitution_complete
             )
 
             restorative_justice_update_data["status"] = cls._determine_status(
-                restorative_details, date_restorative_complete
+                restitution_details, date_restitution_complete
             )
 
         session.query(cls).filter(cls.id == restorative_justice_id).update(

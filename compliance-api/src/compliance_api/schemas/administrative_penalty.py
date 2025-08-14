@@ -139,13 +139,13 @@ class AdministrativePenaltySchema(AutoSchemaBase):  # pylint: disable=too-many-a
         if "referral_status" in data and data["referral_status"]:
             data["referral_status"] = {
                 "id": ReferralStatusEnum(data["referral_status"]).name,
-                "value": ReferralStatusEnum(data["referral_status"]).value,
+                "name": ReferralStatusEnum(data["referral_status"]).value,
             }
 
         if "decision" in data and data["decision"]:
             data["decision"] = {
                 "id": DecisionEnum(data["decision"]).name,
-                "value": DecisionEnum(data["decision"]).value,
+                "name": DecisionEnum(data["decision"]).value,
             }
 
         return data

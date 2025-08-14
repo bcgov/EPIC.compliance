@@ -83,7 +83,7 @@ const EnforcementStatusFlag = ({
       }
     } else if (administrativePenalty) {
       status = {
-        name: administrativePenalty.referral_status.value,
+        name: administrativePenalty.referral_status.name,
       };
       if (
         administrativePenalty.referral_status.id ===

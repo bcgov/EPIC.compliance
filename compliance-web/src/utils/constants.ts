@@ -76,7 +76,7 @@ export const DRAWER_WIDTHS = {
 
 export const MODAL_WIDTHS = {
   ADMINISTRATIVE_PENALTY: "520px",
-  CHARGE_RECOMMENDATION: "520px",
+  CHARGE_RECOMMENDATION: "568px",
 };
 
 export enum APPROVAL_STATUS {
@@ -100,6 +100,17 @@ export enum IRProgressEnum {
   FINAL_DEPUTY_REVIEW = "FINAL_DEPUTY_REVIEW",
   FINAL_APPROVED = "FINAL_APPROVED",
   ISSUED = "ISSUED",
+}
+
+export enum IRProgressEnumText {
+  PRELIMINARY_DRAFTING = "Preliminary Drafting",
+  PRELIMINARY_DEPUTY_REVIEW = "Preliminary Deputy Review",
+  PRELIMINARY_APPROVED = "Preliminary Approved",
+  HOLDER_PRELIMINARY_REVIEW = "Holder Preliminary Review",
+  FINALIZING_RECORD = "Finalizing Record",
+  FINAL_DEPUTY_REVIEW = "Final Deputy Review",
+  FINAL_APPROVED = "Final Approved",
+  ISSUED = "Issued",
 }
 
 export enum InspectionStatusEnum {
@@ -156,6 +167,11 @@ export enum EnforcementActionEnum {
   WARNING = "11",
 }
 
+export enum ComplaintStatusEnum {
+  OPEN = "Open",
+  CLOSED = "Closed",
+}
+
 export const ReferralStatus = {
   DRAFTING: { id: "DRAFTING", name: "Drafting" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
@@ -182,8 +198,7 @@ export const CRDecision = {
 
 export const CRJudgment = {
   GUILTY: { id: "GUILTY", name: "Guilty" },
-  NOT_GUILTY: { id: "NOT_GUILTY", name: "Not Guilty" },
-  DISMISSED: { id: "DISMISSED", name: "Dismissed" },
+  NOT_GUILTY: { id: "NOT_GUILTY", name: "Not Guilty" }
 };
 
 export const DEFAULT_PAGE_SIZE = 15;

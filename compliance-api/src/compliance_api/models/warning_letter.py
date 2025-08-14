@@ -226,9 +226,7 @@ class WarningLetter(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label(
-                    "warning_letter_count"
-                ),  # pylint: disable=not-callable
+                func.count(cls.id).label("warning_letter_count"),  # pylint: disable=not-callable
             )
             .filter(
                 CaseFileModel.project_id == project_id,

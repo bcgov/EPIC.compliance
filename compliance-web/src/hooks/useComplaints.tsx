@@ -1,6 +1,8 @@
 import {
   Complaint,
   ComplaintAPIData,
+  ComplaintGridItems,
+  ComplaintGridQueryParams,
   ComplaintStatusAPIData,
 } from "@/models/Complaint";
 import { ComplaintSource } from "@/models/ComplaintSource";
@@ -21,8 +23,21 @@ const fetchComplaintSources = (): Promise<ComplaintSource[]> => {
   return request({ url: "/complaints/sources" });
 };
 
-const fetchComplaints = (caseFileId?: number): Promise<Complaint[]> => {
-  return request({ url: "/complaints", params: { case_file_id: caseFileId } });
+const fetchComplaints = (
+  queryParams: ComplaintGridQueryParams = {}
+): Promise<ComplaintGridItems> => {
+  return request({ url: "/complaints", params: queryParams });
+};
+
+const complaintsExport = (queryParams: ComplaintGridQueryParams = {}) => {
+  delete queryParams.page_no;
+  delete queryParams.page_size;
+  return request({
+    method: "POST",
+    url: `/complaints/export`,
+    data: queryParams,
+    responseType: "blob",
+  });
 };
 
 const fetchComplaint = (complaintNumber: string): Promise<Complaint> => {
@@ -89,17 +104,23 @@ export const useComplaintSourcesData = () => {
   });
 };
 
-export const useComplaintsData = () => {
+export const useComplaintsData = (
+  queryParams: ComplaintGridQueryParams = {}
+) => {
   return useQuery({
-    queryKey: ["complaints"],
-    queryFn: () => fetchComplaints(),
+    queryKey: ["complaints", queryParams],
+    queryFn: () => fetchComplaints(queryParams),
   });
+};
+
+export const useComplaintsExport = (onSuccess: OnSuccessType) => {
+  return useMutation({ mutationFn: complaintsExport, onSuccess });
 };
 
 export const useComplaintsByCaseFileId = (caseFileId: number) => {
   return useQuery({
     queryKey: ["complaints-by-caseFileId", caseFileId],
-    queryFn: () => fetchComplaints(caseFileId),
+    queryFn: () => fetchComplaints({ case_file_id: caseFileId.toString() }),
     enabled: !!caseFileId,
   });
 };

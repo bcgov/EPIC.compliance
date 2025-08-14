@@ -1,8 +1,10 @@
 """Service for managing complaint."""
 
-from datetime import datetime
+from io import BytesIO
 
+import pandas as pd
 from flask import g
+from sqlalchemy import String, case, cast, func
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import PermissionDeniedError, ResourceNotFoundError, UnprocessableEntityError
@@ -14,10 +16,11 @@ from compliance_api.models.complaint import ComplaintSource as ComplaintSourceMo
 from compliance_api.models.complaint import ComplaintSourceContact as ComplaintSourceContactModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import session_scope
+from compliance_api.models.project import Project as ProjectModel
+from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
-from compliance_api.utils.enum import ContextEnum, PermissionEnum
+from compliance_api.utils.enum import PermissionEnum
 
 from .service_utils import ServiceUtils
 
@@ -174,6 +177,65 @@ class ComplaintService:
 
         ComplaintModel.change_status(complaint_id, status_enum)
 
+    @classmethod
+    def get_complaints_paginated(cls, args):
+        """Get paginated complaints with filtering and sorting."""
+        query = _build_complaints_paginated_query(args)
+
+        # Get total count
+        total_count = query.count()
+
+        # Apply pagination
+        query = _apply_complaints_pagination(query, args)
+
+        # Execute query and process results
+        results = query.all()
+
+        return results, total_count
+
+    @classmethod
+    def generate_complaints_excel(cls, args):
+        """Generate Excel file for complaints with filtering."""
+        query = _build_complaints_paginated_query(args)
+
+        # Get all results without pagination for export
+        complaints = query.all()
+
+        # Prepare data for Excel
+        excel_data = []
+        for complaint in complaints:
+            excel_data.append(
+                {
+                    "Complaint #": complaint.complaint_number or "",
+                    "Project": getattr(complaint, "project_name", "") or "",
+                    "Date Received": (
+                        complaint.date_received.strftime("%Y-%m-%d")
+                        if complaint.date_received
+                        else ""
+                    ),
+                    "Primary": (
+                        f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
+                        if complaint.primary_officer
+                        else ""
+                    ),
+                    "Status": complaint.status.value if complaint.status else "",
+                    "Case File #": (
+                        complaint.case_file.case_file_number
+                        if complaint.case_file
+                        else ""
+                    ),
+                }
+            )
+
+        # Create Excel file
+        data_frame = pd.DataFrame(excel_data)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            data_frame.to_excel(writer, sheet_name="Complaints", index=False)
+        output.seek(0)
+
+        return output
+
 
 def _create_or_update_requirement_details(
     complaint_data: dict,
@@ -316,22 +378,157 @@ def _get_first_nation(first_nation_id):
     return {"id": response.get("id"), "name": response.get("name")}
 
 
-def _create_cr_entry(complaint_id, complaint_no, action, case_file_id):
-    """Create the continuation report entry."""
-    return {
-        "case_file_id": case_file_id,
-        "text": f"{complaint_no} is {action}",
-        "rich_text": f"<p>{complaint_no} is {action}</p>",
-        "date_created": datetime.utcnow().strftime(INPUT_DATE_TIME_FORMAT),
-        "context_type": ContextEnum.COMPLAINT,
-        "context_id": complaint_id,
-        "keys": [{"key": complaint_no, "key_context": ContextEnum.COMPLAINT}],
-    }
-
-
 def _complaint_close_check(complaint):
     """Check and raise error if the complaint is in CLOSED status."""
     if complaint.status == ComplaintStatusEnum.CLOSED:
         raise UnprocessableEntityError(
             "No change can be made to a complaint in CLOSED status"
         )
+
+
+def _build_complaints_paginated_query(args):
+    """Build the base query for paginated complaints with filtering and sorting."""
+    # Build base query similar to the model's get_all method
+    query = (
+        ComplaintModel.query.outerjoin(
+            CaseFileModel, ComplaintModel.case_file_id == CaseFileModel.id
+        )
+        .outerjoin(StaffUser, ComplaintModel.primary_officer_id == StaffUser.id)
+        .filter(
+            ComplaintModel.is_deleted.is_(False), ComplaintModel.is_active.is_(True)
+        )
+    )
+
+    # Apply filters
+    query = _apply_complaints_filters(query, args)
+
+    # Apply sorting
+    query = _apply_complaints_sorting(query, args)
+
+    return query
+
+
+def _apply_complaints_filters(query, args):
+    """Apply filters to the complaints query."""
+    filters = []
+
+    # Define filter mappings to reduce branches
+    filter_mappings = [
+        ("complaint_number", lambda v: ComplaintModel.complaint_number.ilike(f"%{v}%")),
+        ("case_file_id", lambda v: ComplaintModel.case_file_id == int(v)),
+        ("topic_id", lambda v: ComplaintModel.topic_id == int(v)),
+        ("source_type_id", lambda v: ComplaintModel.source_type_id == int(v)),
+        ("date_received", lambda v: func.date(ComplaintModel.date_received) == v),
+        ("primary_officer_id", lambda v: ComplaintModel.primary_officer_id == int(v)),
+        ("case_file_number", lambda v: CaseFileModel.case_file_number.ilike(f"%{v}%")),
+    ]
+
+    # Apply simple filters using mapping
+    for field_name, filter_func in filter_mappings:
+        if args.get(field_name):
+            filters.append(filter_func(args[field_name]))
+
+    # Handle special cases that need custom logic
+    filters.extend(_get_special_complaint_filters(args))
+
+    # Apply all filters
+    return query.filter(*filters) if filters else query
+
+
+def _get_special_complaint_filters(args):
+    """Get filters that require special handling logic."""
+    special_filters = []
+
+    # Project ID filter (handles null/none values)
+    if args.get("project_id"):
+        project_id = args["project_id"]
+        if project_id.lower() in ["null", "none"]:
+            special_filters.append(CaseFileModel.project_id.is_(None))
+        else:
+            special_filters.append(CaseFileModel.project_id == int(project_id))
+
+    # Status filter (requires enum validation)
+    if args.get("status"):
+        status_value = args["status"].upper()
+        valid_statuses = [status.name for status in ComplaintStatusEnum]
+        if status_value in valid_statuses:
+            special_filters.append(
+                ComplaintModel.status == ComplaintStatusEnum[status_value]
+            )
+
+    return special_filters
+
+
+def _apply_complaints_sorting(query, args):
+    """Apply sorting to the complaints query."""
+    sort_by = args.get("sort_by", "complaint_number")
+    sort_order = args.get("sort_order", "asc").lower()
+
+    # Handle project sorting with join to ProjectModel
+    if sort_by == "project":
+        # Join with ProjectModel to sort by project name
+        query = query.outerjoin(
+            ProjectModel, CaseFileModel.project_id == ProjectModel.id
+        )
+        sort_field = ProjectModel.name
+        return query.order_by(
+            sort_field.asc() if sort_order == "asc" else sort_field.desc()
+        )
+
+    # Handle source_type sorting with join to ComplaintSourceModel
+    if sort_by == "source_type_id":
+        # Join with ComplaintSourceModel to sort by source name
+        query = query.outerjoin(
+            ComplaintSourceModel,
+            ComplaintModel.source_type_id == ComplaintSourceModel.id,
+        )
+        sort_field = ComplaintSourceModel.name
+        return query.order_by(
+            sort_field.asc() if sort_order == "asc" else sort_field.desc()
+        )
+
+    # Define sorting mappings for other fields
+    sort_mappings = {
+        "complaint_number": ComplaintModel.complaint_number,
+        "topic_id": ComplaintModel.topic_id,
+        "date_received": ComplaintModel.date_received,
+        "primary_officer_id": StaffUser.first_name,  # Sort by staff user first name since StaffUser is already joined
+        "case_file_number": CaseFileModel.case_file_number,
+    }
+
+    # Handle status sorting with enum ordering
+    if sort_by == "status":
+        # Handle enum sorting for complaint status
+        status_order = list(reversed([e.name for e in ComplaintStatusEnum]))
+        status_case = case(
+            {status: idx for idx, status in enumerate(status_order)},
+            value=cast(ComplaintModel.status, String),
+            else_=len(status_order),
+        ).label("complaint_status_order")
+
+        custom_order = status_case.asc() if sort_order == "asc" else status_case.desc()
+        return query.order_by(custom_order)
+
+    # Apply regular sorting
+    if sort_by in sort_mappings:
+        sort_column = sort_mappings[sort_by]
+        if sort_order == "asc":
+            query = query.order_by(sort_column.asc())
+        else:
+            query = query.order_by(sort_column.desc())
+    else:
+        # Default sorting
+        query = query.order_by(ComplaintModel.complaint_number.asc())
+
+    return query
+
+
+def _apply_complaints_pagination(query, args):
+    """Apply pagination to the complaints query."""
+    page_no = int(args.get("page_no", 1))
+    page_size = int(args.get("page_size", 15))
+
+    offset = (page_no - 1) * page_size
+    query = query.offset(offset).limit(page_size)
+
+    return query

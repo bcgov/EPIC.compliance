@@ -4,10 +4,11 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_, func
 from sqlalchemy.orm import relationship
 
 from compliance_api.models.base_model import BaseModelVersioned
+from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -254,9 +255,7 @@ class ChargeRecommendation(BaseModelVersioned):
         cls, charge_recommendation_id, charge_recommendation_update_data, session=None
     ):
         """Update the charge recommendation."""
-        inspection_requirement_ids = charge_recommendation_update_data.pop(
-            "inspection_requirement_ids", []
-        )
+        charge_recommendation_update_data.pop("inspection_requirement_ids", None)
         query = session.query(cls) if session else cls.query
         charge_recommendation = query.filter_by(id=charge_recommendation_id).first()
         if not charge_recommendation:
@@ -265,40 +264,6 @@ class ChargeRecommendation(BaseModelVersioned):
         charge_recommendation.update(
             charge_recommendation_update_data, commit=not session
         )
-
-        if inspection_requirement_ids is not None:
-            # Get existing requirement maps
-            existing_maps = ChargeRecommendationInspectionRequirementMap.get_by_charge_recommendation_id(
-                charge_recommendation_id
-            )
-            existing_requirement_ids = [
-                map_item.inspection_requirement_id for map_item in existing_maps
-            ]
-
-            # Find requirements to delete and add
-            requirements_to_delete = [
-                req_id
-                for req_id in existing_requirement_ids
-                if req_id not in inspection_requirement_ids
-            ]
-            requirements_to_add = [
-                req_id
-                for req_id in inspection_requirement_ids
-                if req_id not in existing_requirement_ids
-            ]
-
-            # Delete removed requirements
-            if requirements_to_delete:
-                ChargeRecommendationInspectionRequirementMap.bulk_delete(
-                    charge_recommendation_id, requirements_to_delete, session
-                )
-
-            # Add new requirements
-            if requirements_to_add:
-                ChargeRecommendationInspectionRequirementMap.bulk_insert(
-                    charge_recommendation_id, requirements_to_add, session
-                )
-
         return charge_recommendation
 
     @classmethod
@@ -341,19 +306,27 @@ class ChargeRecommendation(BaseModelVersioned):
         cls, project_id: int, case_file_id: int, session=None
     ):
         """Get count of charge recommendations by project and case file id."""
-        return (
+        result = (
             session.query(cls)
-            .join(InspectionModel, cls.inspection_id == InspectionModel.id)
+            .join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
+            .with_entities(
+                InspectionModel.case_file_id,
+                CaseFileModel.project_id,
+                func.count(cls.id).label("charge_recommendation_count"),  # pylint: disable=not-callable
+            )
             .filter(
                 and_(
-                    InspectionModel.project_id == project_id,
+                    CaseFileModel.project_id == project_id,
                     InspectionModel.case_file_id == case_file_id,
                     cls.is_active.is_(True),
                     cls.is_deleted.is_(False),
                 )
             )
-            .count()
+            .group_by(InspectionModel.case_file_id, CaseFileModel.project_id)
+            .first()
         )
+        return result.charge_recommendation_count if result else 0
 
     @classmethod
     @with_session

@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, DialogContent } from "@mui/material";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -229,47 +229,49 @@ const AdministrativePenaltyUpdateModal: FC<
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
         <ModalTitleBar title="Administrative Penalty Recommendation" />
-        <Box sx={{ p: "1rem 1.5rem" }}>
-          <ControlledAutoComplete
-            name="referral_status"
-            label="Referral Status"
-            options={referralStatusOptions}
-            getOptionLabel={(option) => option.name}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            placeholder="Select referral status"
-            fullWidth
-          />
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <ControlledDateField
-              name="date_referred"
-              label="Date Referred to Decision Maker"
-              sx={{ width: "100%" }}
-            />
-            <ControlledDateField
-              name="decision_date"
-              label="Decision Date"
-              sx={{ width: "100%" }}
-            />
-          </Box>
-          <ControlledAutoComplete
-            name="decision"
-            label="DM Decision"
-            options={decisionOptions}
-            getOptionLabel={(option) => option.name}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            placeholder="Select an option..."
-            fullWidth
-          />
-          {decision?.id === "AP_ISSUED" && (
-            <ControlledTextField
-              name="penalty_amount"
-              label="Penalty Amount"
-              placeholder="Enter penalty amount"
-              type="number"
+        <DialogContent dividers sx={{ p: 0 }}>
+          <Box sx={{ p: "1rem 1.5rem" }}>
+            <ControlledAutoComplete
+              name="referral_status"
+              label="Referral Status"
+              options={referralStatusOptions}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              placeholder="Select referral status"
               fullWidth
             />
-          )}
-        </Box>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <ControlledDateField
+                name="date_referred"
+                label="Date Referred to Decision Maker"
+                sx={{ width: "100%" }}
+              />
+              <ControlledDateField
+                name="decision_date"
+                label="Decision Date"
+                sx={{ width: "100%" }}
+              />
+            </Box>
+            <ControlledAutoComplete
+              name="decision"
+              label="DM Decision"
+              options={decisionOptions}
+              getOptionLabel={(option) => option.name}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              placeholder="Select an option..."
+              fullWidth
+            />
+            {decision?.id === "AP_ISSUED" && (
+              <ControlledTextField
+                name="penalty_amount"
+                label="Penalty Amount"
+                placeholder="Enter penalty amount"
+                type="number"
+                fullWidth
+              />
+            )}
+          </Box>
+        </DialogContent>
         <ModalActions
           onSecondaryAction={handleCancel}
           onPrimaryAction={handleSubmit(handleSubmitForm)}

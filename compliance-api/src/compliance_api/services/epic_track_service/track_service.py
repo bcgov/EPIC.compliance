@@ -24,6 +24,14 @@ class TrackService:
         return project_response.json()
 
     @staticmethod
+    def get_projects():
+        """Return projects from track."""
+        project_response = _request_track_service("projects")
+        if project_response.status_code != 200:
+            raise BusinessError("Error finding projects")
+        return project_response.json()
+
+    @staticmethod
     def get_project_statuses():
         """Return the project statuses from track."""
         project_status_response = _request_track_service(

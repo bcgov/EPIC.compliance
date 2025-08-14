@@ -4,10 +4,11 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, Numeric, String
+from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, func
 from sqlalchemy.orm import relationship
 
 from compliance_api.models.base_model import BaseModelVersioned
+from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -201,7 +202,7 @@ class AdministrativePenalty(BaseModelVersioned):
         cls, administrative_penalty_id, administrative_penalty_update_data, session=None
     ):
         """Update the administrative penalty."""
-        inspection_requirement_ids = administrative_penalty_update_data.pop(
+        administrative_penalty_update_data.pop(
             "inspection_requirement_ids", []
         )
         query = session.query(cls) if session else cls.query
@@ -212,39 +213,6 @@ class AdministrativePenalty(BaseModelVersioned):
         administrative_penalty.update(
             administrative_penalty_update_data, commit=not session
         )
-
-        if inspection_requirement_ids is not None:
-            # Get existing requirement maps
-            existing_maps = AdministrativePenaltyInspectionRequirementMap.get_by_administrative_penalty_id(
-                administrative_penalty_id
-            )
-            existing_requirement_ids = [
-                map_item.inspection_requirement_id for map_item in existing_maps
-            ]
-
-            # Find requirements to delete and add
-            requirements_to_delete = [
-                req_id
-                for req_id in existing_requirement_ids
-                if req_id not in inspection_requirement_ids
-            ]
-            requirements_to_add = [
-                req_id
-                for req_id in inspection_requirement_ids
-                if req_id not in existing_requirement_ids
-            ]
-
-            # Delete removed requirements
-            if requirements_to_delete:
-                AdministrativePenaltyInspectionRequirementMap.bulk_delete(
-                    administrative_penalty_id, requirements_to_delete, session
-                )
-
-            # Add new requirements
-            if requirements_to_add:
-                AdministrativePenaltyInspectionRequirementMap.bulk_insert(
-                    administrative_penalty_id, requirements_to_add, session
-                )
 
         return administrative_penalty
 
@@ -268,15 +236,24 @@ class AdministrativePenalty(BaseModelVersioned):
     @classmethod
     def get_count_by_project_nd_case_file_id(cls, project_id: int, case_file_id: int):
         """Get count of administrative penalties by project and case file id."""
-        return (
-            cls.query.join(InspectionModel)
+        result = (
+            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
+            .with_entities(
+                InspectionModel.case_file_id,
+                CaseFileModel.project_id,
+                func.count(cls.id).label("administrative_penalty_count"),  # pylint: disable=not-callable
+            )
             .filter(
-                InspectionModel.project_id == project_id,
+                CaseFileModel.project_id == project_id,
                 InspectionModel.case_file_id == case_file_id,
+                cls.is_active.is_(True),
                 cls.is_deleted.is_(False),
             )
-            .count()
+            .group_by(InspectionModel.case_file_id, CaseFileModel.project_id)
+            .first()
         )
+        return result.administrative_penalty_count if result else 0
 
     @classmethod
     def does_administrative_penalty_exists_by_requirement_ids(

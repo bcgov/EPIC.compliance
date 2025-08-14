@@ -9,6 +9,7 @@ import { ProjectStatus } from "./ProjectStatus";
 import { StaffUser } from "./Staff";
 import { ApprovalStatus } from "./ApprovalStatus";
 import { IRProgress } from "./IRProgress";
+import { BaseTableQueryParams } from "./BaseTableQueryParams";
 
 export interface Inspection {
   id: number;
@@ -49,6 +50,24 @@ export interface Inspection {
   approved_by?: StaffUser;
   ir_progress?: IRProgress;
   is_history?: boolean;
+}
+
+export interface InspectionGridQueryParams extends BaseTableQueryParams {
+  case_file_id?: string;
+  ir_number?: string;
+  project_id?: string;
+  start_date?: string;
+  initiation_id?: string;
+  ir_progress?: string;
+  approval_status?: string;
+  primary_officer_id?: string;
+  status?: string;
+  case_file_number?: string;
+}
+
+export interface InspectionGridItems {
+  items: Inspection[];
+  total: number;
 }
 
 export interface InspectionMoreDetails extends Inspection {

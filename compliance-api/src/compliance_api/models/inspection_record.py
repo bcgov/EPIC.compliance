@@ -40,6 +40,20 @@ class IRProgressEnum(Enum):
     FINAL_APPROVED = "Final Approved"
     ISSUED = "Issued"
 
+    @classmethod
+    def ordered_values(cls):
+        """Return ordered values for IR Progress."""
+        return [
+            cls.FINAL_APPROVED.name,
+            cls.FINAL_DEPUTY_REVIEW.name,
+            cls.FINALIZING_RECORD.name,
+            cls.HOLDER_PRELIMINARY_REVIEW.name,
+            cls.ISSUED.name,
+            cls.PRELIMINARY_APPROVED.name,
+            cls.PRELIMINARY_DEPUTY_REVIEW.name,
+            cls.PRELIMINARY_DRAFTING.name,
+        ]
+
 
 class InspectionRecord(BaseModelVersioned):
     """Definition of the InspectionRecord."""

@@ -15,17 +15,17 @@ class RestorativeJusticeUpdateSchema(BaseSchema):  # pylint: disable=too-many-an
     inspection_id = fields.Integer(
         required=True, metadata={"description": "The inspection id"}
     )
-    restorative_details = fields.String(
+    restitution_details = fields.String(
         allow_none=True,
-        metadata={"description": "Restorative justice details"},
+        metadata={"description": "Restitution details"},
     )
-    date_restorative_complete = fields.DateTime(
+    date_restitution_complete = fields.DateTime(
         allow_none=True,
         format=INPUT_DATE_TIME_FORMAT,
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
-        metadata={"description": "The date when restorative justice was completed"},
+        metadata={"description": "The date when restitution was completed"},
     )
     inspection_requirement_ids = fields.List(
         fields.Integer(),
@@ -71,9 +71,9 @@ class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
         model = RestorativeJustice
         load_instance = True
 
-    restorative_details = fields.String(
+    restitution_details = fields.String(
         allow_none=True,
-        metadata={"description": "Restorative justice details"},
+        metadata={"description": "Restitution details"},
     )
     restorative_justice_requirement_maps = fields.Nested(
         RestorativeJusticeInspectionRequirementMapSchema(),
@@ -91,7 +91,7 @@ class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
             self._transform_single_item(data)
         return data
 
-    def _transform_single_item(self, item):
+    def _transform_single_item(self, item):  # pylint: disable=no-self-use
         """Transform a single item."""
         # Transform enum values to their string representation
         if "status" in item and item["status"]:

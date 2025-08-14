@@ -51,7 +51,7 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   );
   const { data: inspectionsList } = useInspectionsData();
   const { data: staffUsersList } = useStaffUsersData();
-
+  
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(
     new Set()
   );

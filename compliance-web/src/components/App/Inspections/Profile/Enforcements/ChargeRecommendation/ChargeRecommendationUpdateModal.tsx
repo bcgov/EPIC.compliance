@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, DialogContent } from "@mui/material";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -237,87 +237,87 @@ const ChargeRecommendationUpdateModal: FC<
 
   return (
     <FormProvider {...methods}>
-      <Box component="form" onSubmit={methods.handleSubmit(handleSubmit)}>
+      <form onSubmit={methods.handleSubmit(handleSubmit)}>
         <ModalTitleBar
           title={`Charge Recommendation ${chargeRecommendationData.charge_recommendation_number}`}
           onClose={setModalClose}
         />
-        
-        <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 2 }}>
-          {/* Drafting - one line */}
-          <ControlledAutoComplete
-            name="status"
-            label="Status"
-            options={statusOptions}
-            getOptionLabel={(option) => option?.name || ""}
-            isOptionEqualToValue={(option, value) => option?.id === value?.id}
-          />
-
-          {/* Date to Crown Counsel and Court File # - one line */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-            <ControlledDateField
-              name="date_to_crown_counsel"
-              label="Date to Crown Counsel"
+        <DialogContent dividers sx={{ p: 0 }}>
+          <Box sx={{ p: 3, display: "flex", flexDirection: "column"}}>
+            {/* Drafting - one line */}
+            <ControlledAutoComplete
+              name="status"
+              label="Status"
+              options={statusOptions}
+              getOptionLabel={(option) => option?.name || ""}
+              isOptionEqualToValue={(option, value) => option?.id === value?.id}
             />
+
+            {/* Date to Crown Counsel and Court File # - one line */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <ControlledDateField
+                name="date_to_crown_counsel"
+                label="Date to Crown Counsel"
+              />
+              <ControlledTextField
+                name="court_file_number"
+                label="Court File #"
+              />
+            </Box>
+
+            {/* Charge Decision and Charge Decision Date - one line */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <ControlledAutoComplete
+                name="charge_decision"
+                label="Charge Decision"
+                options={decisionOptions}
+                getOptionLabel={(option) => option?.name || ""}
+                isOptionEqualToValue={(option, value) => option?.id === value?.id}
+              />
+              <ControlledDateField
+                name="charge_decision_date"
+                label="Charge Decision Date"
+              />
+            </Box>
+
+            {/* Court Appearances - one line */}
             <ControlledTextField
-              name="court_file_number"
-              label="Court File #"
+              name="court_appearances"
+              label="Court Appearances"
+              multiline
+              rows={3}
             />
-          </Box>
 
-          {/* Charge Decision and Charge Decision Date - one line */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-            <ControlledAutoComplete
-              name="charge_decision"
-              label="Charge Decision"
-              options={decisionOptions}
-              getOptionLabel={(option) => option?.name || ""}
-              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-            />
+            {/* Judgment and Judgment Date - one line */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <ControlledAutoComplete
+                name="judgment"
+                label="Judgment"
+                options={judgmentOptions}
+                getOptionLabel={(option) => option?.name || ""}
+                isOptionEqualToValue={(option, value) => option?.id === value?.id}
+              />
+              <ControlledDateField
+                name="judgment_date"
+                label="Judgment Date"
+              />
+            </Box>
+
+            {/* Sentence Date - one line */}
             <ControlledDateField
-              name="charge_decision_date"
-              label="Charge Decision Date"
+              name="sentence_date"
+              label="Sentence Date"
+            />
+
+            {/* Sentence Type - one line */}
+            <ControlledTextField
+              name="sentence_type"
+              label="Sentence Type"
+              multiline
+              rows={2}
             />
           </Box>
-
-          {/* Court Appearances - one line */}
-          <ControlledTextField
-            name="court_appearances"
-            label="Court Appearances"
-            multiline
-            rows={3}
-          />
-
-          {/* Judgment and Judgment Date - one line */}
-          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-            <ControlledAutoComplete
-              name="judgment"
-              label="Judgment"
-              options={judgmentOptions}
-              getOptionLabel={(option) => option?.name || ""}
-              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-            />
-            <ControlledDateField
-              name="judgment_date"
-              label="Judgment Date"
-            />
-          </Box>
-
-          {/* Sentence Date - one line */}
-          <ControlledDateField
-            name="sentence_date"
-            label="Sentence Date"
-          />
-
-          {/* Sentence Type - one line */}
-          <ControlledTextField
-            name="sentence_type"
-            label="Sentence Type"
-            multiline
-            rows={2}
-          />
-        </Box>
-
+        </DialogContent>
         <ModalActions
           onSecondaryAction={setModalClose}
           onPrimaryAction={methods.handleSubmit(handleSubmit)}
@@ -326,7 +326,7 @@ const ChargeRecommendationUpdateModal: FC<
           primaryActionButtonText="Save"
           secondaryActionButtonText="Cancel"
         />
-      </Box>
+      </form>
     </FormProvider>
   );
 };

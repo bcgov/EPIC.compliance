@@ -1,4 +1,4 @@
-
+import { Option } from './common';
 
 export interface AdministrativePenalty {
   administrative_penalty_requirement_maps: AdministrativePenaltyRequirementMap[];
@@ -8,8 +8,8 @@ export interface AdministrativePenalty {
   date_referred: string;
   decision_date: string;
   is_active: boolean;
-  referral_status: APStatus;
-  decision?: APStatus;
+  referral_status: Option;
+  decision?: Option;
   penalty_amount?: string;
 }
 
@@ -32,9 +32,4 @@ export interface AdministrativePenaltyAPIData {
   penalty_amount?: number;
   inspection_requirement_ids: number[];
   administrative_penalty_number?: string;
-}
-
-export interface APStatus {
-  id: string;
-  value: string;
 }

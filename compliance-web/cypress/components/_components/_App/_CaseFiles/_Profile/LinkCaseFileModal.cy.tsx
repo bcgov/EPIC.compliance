@@ -14,9 +14,9 @@ describe("LinkCaseFileModal Component", () => {
   });
 
   const mockCaseFiles = [
-    { id: 1, case_file_number: "CF-001" },
-    { id: 2, case_file_number: "CF-002" },
-    { id: 3, case_file_number: "CF-003" },
+    { id: 1, name: "CF-001" },
+    { id: 2, name: "CF-002" },
+    { id: 3, name: "CF-003" },
   ];
 
   const mockLinkedCaseFiles: CaseFile[] = [
@@ -33,23 +33,14 @@ describe("LinkCaseFileModal Component", () => {
       primary_officer: undefined,
     },
   ];
-  beforeEach(() => {
-    // Mock the useCaseFilesData hook response
-    cy.stub(window, "fetch").callsFake((url) => {
-      if (url.toString().includes("/api/case-files")) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(mockCaseFiles),
-        });
-      }
-      return Promise.reject(new Error(`Unhandled fetch request: ${url}`));
-    });
 
+  beforeEach(() => {
     // Reset the query client before each test
     queryClient.clear();
-
+    
     // Set the query data directly to ensure it's available
-    queryClient.setQueryData(["case-files"], mockCaseFiles);
+    // The useCaseFileOptions hook uses ["case-file-options"] as the key
+    queryClient.setQueryData(["case-file-options"], mockCaseFiles);
   });
 
   function mountComponent(fileNumber: string, isEdit: boolean) {
@@ -130,15 +121,12 @@ describe("LinkCaseFileModal Component", () => {
   });
 
   it("disables button when no case files are available", () => {
+    // Set empty case files for this test
+    queryClient.setQueryData(["case-file-options"], []);
+
     mountComponent("CF-100", false);
 
-    // Override the intercept to return empty array
-    cy.intercept("GET", "/api/case-files*", {
-      statusCode: 200,
-      body: [],
-    }).as("getEmptyCaseFiles");
-
-    // Action buttons should not be visible
-    cy.contains("button", "Link").should("be.disabled");
+    // Action buttons should not be visible when no case files are available
+    cy.contains("button", "Link").should("not.exist");
   });
 });

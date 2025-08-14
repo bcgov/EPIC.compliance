@@ -9,6 +9,7 @@ import { Agency } from "./Agency";
 import { FirstNation } from "./FirstNation";
 import { Topic } from "./Topic";
 import { InspectionOrder } from "./InspectionOrder";
+import { BaseTableQueryParams } from "./BaseTableQueryParams";
 
 export interface Complaint {
   id: number;
@@ -42,6 +43,23 @@ export interface Complaint {
   sub_type?: string;
   agency?: Agency;
   first_nation?: FirstNation;
+}
+
+export interface ComplaintGridQueryParams extends BaseTableQueryParams {
+  complaint_number?: string;
+  project_id?: string;
+  topic_id?: string;
+  date_received?: string;
+  source_type_id?: string;
+  primary_officer_id?: string;
+  status?: string;
+  case_file_number?: string;
+  case_file_id?: string;
+}
+
+export interface ComplaintGridItems {
+  items: Complaint[];
+  total: number;
 }
 
 export interface ComplaintFormData {

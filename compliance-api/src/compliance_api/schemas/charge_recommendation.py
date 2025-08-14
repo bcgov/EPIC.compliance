@@ -147,7 +147,7 @@ class ChargeRecommendationSchema(AutoSchemaBase):  # pylint: disable=too-many-an
             self._transform_single_item(data)
         return data
 
-    def _transform_single_item(self, item):
+    def _transform_single_item(self, item):  # pylint: disable=no-self-use
         """Transform a single item."""
         # Transform enum values to objects with id and value properties
         if "status" in item and item["status"]:
