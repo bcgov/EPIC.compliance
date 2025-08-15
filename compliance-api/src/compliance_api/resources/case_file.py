@@ -100,9 +100,10 @@ class CaseFiles(Resource):
     @staticmethod
     @API.doc(
         params={
-            "project_id": {
+            "project_ids": {
                 "description": (
-                    "The unique identifier of the project. "
+                    "The unique identifier(s) of the project. "
+                    "Can be a single value or comma-separated list. "
                     "Use 'null' or 'none' to filter for unapproved projects"
                 ),
                 "type": "string",
@@ -113,19 +114,21 @@ class CaseFiles(Resource):
                 "type": "string",
                 "required": False,
             },
-            "initiation_id": {
-                "description": "The initiation option ID to filter by",
-                "type": "integer",
-                "required": False,
-            },
-            "status": {
-                "description": "The case file status to filter by (OPEN/CLOSE)",
+            "initiation_ids": {
+                "description": "The initiation option ID(s) to filter by. "
+                "Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },
-            "primary_officer_id": {
-                "description": "The primary officer ID to filter by",
-                "type": "integer",
+            "statuses": {
+                "description": "The case file status(es) to filter by (OPEN/CLOSE). "
+                "Can be a single value or comma-separated list",
+                "type": "string",
+                "required": False,
+            },
+            "primary_officer_ids": {
+                "description": "The primary officer ID(s) to filter by. Can be a single value or comma-separated list",
+                "type": "string",
                 "required": False,
             },
             "date_created": {
@@ -381,7 +384,8 @@ class CaseFileOptions(Resource):
     @staticmethod
     @API.response(code=200, description="Success", model=[key_value_list_model])
     @ApiHelper.swagger_decorators(
-        API, endpoint_description="Fetch active case files as id-name pairs for dropdown options"
+        API,
+        endpoint_description="Fetch active case files as id-name pairs for dropdown options",
     )
     @auth.require
     def get():

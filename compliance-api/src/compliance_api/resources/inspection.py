@@ -160,8 +160,9 @@ class Inspections(Resource):
                 "type": "string",
                 "required": False,
             },
-            "project_id": {
-                "description": "Filter by project ID (supports 'null' or 'none' for unapproved projects)",
+            "project_ids": {
+                "description": "Filter by project ID(s). Can be a single value or comma-separated list "
+                "(supports 'null' or 'none' for unapproved projects)",
                 "type": "string",
                 "required": False,
             },
@@ -170,33 +171,38 @@ class Inspections(Resource):
                 "type": "string",
                 "required": False,
             },
-            "initiation_id": {
-                "description": "Filter by initiation option ID",
-                "type": "integer",
-                "required": False,
-            },
-            "ir_progress": {
-                "description": "Filter by IR progress status",
+            "initiation_ids": {
+                "description": "Filter by initiation option ID(s). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },
-            "approval_status": {
-                "description": "Filter by approval status",
+            "ir_progresses": {
+                "description": "Filter by IR progress status(es). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },
-            "primary_officer_id": {
-                "description": "Filter by primary officer ID",
-                "type": "integer",
+            "approval_statuses": {
+                "description": "Filter by approval status(es). Can be a single value or comma-separated list",
+                "type": "string",
                 "required": False,
             },
-            "status": {
-                "description": "Filter by inspection status",
+            "primary_officer_ids": {
+                "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list",
+                "type": "string",
+                "required": False,
+            },
+            "statuses": {
+                "description": "Filter by inspection status(es). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },
             "case_file_number": {
                 "description": "Filter by case file number",
+                "type": "string",
+                "required": False,
+            },
+            "approved_by_ids": {
+                "description": "Filter by reviewer/approver ID(s). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },

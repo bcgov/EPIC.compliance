@@ -48,12 +48,10 @@ class CaseFileService:
         """Return active case files as id-name pairs for dropdown options."""
         case_files = (
             CaseFileModel.query.with_entities(
-                CaseFileModel.id,
-                CaseFileModel.case_file_number.label("name")
+                CaseFileModel.id, CaseFileModel.case_file_number.label("name")
             )
             .filter(
-                CaseFileModel.is_deleted.is_(False),
-                CaseFileModel.is_active.is_(True)
+                CaseFileModel.is_deleted.is_(False), CaseFileModel.is_active.is_(True)
             )
             .order_by(CaseFileModel.case_file_number.asc())
             .all()
@@ -522,32 +520,26 @@ def _apply_case_file_filters(query, args):
     if case_file_number:
         filters.append(CaseFileModel.case_file_number.ilike(f"%{case_file_number}%"))
 
-    # Project ID filter (backward compatibility)
-    project_id = args.get("project_id")
-    if project_id:
-        # Handle both regular projects and unapproved projects
-        if str(project_id).lower() == "null" or str(project_id).lower() == "none":
-            filters.append(CaseFileModel.project_id.is_(None))
-        else:
-            filters.append(CaseFileModel.project_id == project_id)
+    # Project IDs filter
+    if args.get("project_ids"):
+        filters.append(CaseFileModel.project_id.in_(args["project_ids"].split(",")))
 
-    # Initiation ID filter
-    initiation_id = args.get("initiation_id")
-    if initiation_id:
-        filters.append(CaseFileModel.initiation_id == initiation_id)
+    # Initiation IDs filter
+    if args.get("initiation_ids"):
+        filters.append(
+            CaseFileModel.initiation_id.in_(args["initiation_ids"].split(","))
+        )
 
-    # Status filter
-    status = args.get("status")
-    if status:
-        if status.upper() == "OPEN":
-            filters.append(CaseFileModel.case_file_status == CaseFileStatusEnum.OPEN)
-        elif status.upper() == "CLOSE":
-            filters.append(CaseFileModel.case_file_status == CaseFileStatusEnum.CLOSED)
+    # Statuses filter
+    if args.get("statuses"):
+        statuses = [s.upper().strip() for s in args["statuses"].split(",")]
+        filters.append(CaseFileModel.case_file_status.in_(statuses))
 
-    # Primary officer filter
-    primary_officer_id = args.get("primary_officer_id")
-    if primary_officer_id:
-        filters.append(CaseFileModel.primary_officer_id == primary_officer_id)
+    # Primary officer IDs filter
+    if args.get("primary_officer_ids"):
+        filters.append(
+            CaseFileModel.primary_officer_id.in_(args["primary_officer_ids"].split(","))
+        )
 
     # Date created filter
     date_created = args.get("date_created")
