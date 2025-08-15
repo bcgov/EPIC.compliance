@@ -10,6 +10,7 @@ from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
 from compliance_api.schemas import InspectionRecordPreviewSchema
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 
 from ..docgen_service.docgen_service import DocGenService
 
@@ -275,6 +276,19 @@ class InspectionRecordService:
             .build()
         )
         preview_data = InspectionRecordPreviewSchema().dump(ir_data)
+        
+        # Apply style conversion to HTML fields (similar to order.py and warning_letter.py)
+        if preview_data.get("inspection_scope"):
+            preview_data["inspection_scope"] = convert_inline_styles_for_pdf(preview_data["inspection_scope"])
+        if preview_data.get("preliminary_review_details"):
+            preview_data["preliminary_review_details"] = convert_inline_styles_for_pdf(preview_data["preliminary_review_details"])
+        if preview_data.get("finding_statement"):
+            preview_data["finding_statement"] = convert_inline_styles_for_pdf(preview_data["finding_statement"])
+        if preview_data.get("enforcement_summary"):
+            preview_data["enforcement_summary"] = convert_inline_styles_for_pdf(preview_data["enforcement_summary"])
+        if preview_data.get("action_required_by_rp"):
+            preview_data["action_required_by_rp"] = convert_inline_styles_for_pdf(preview_data["action_required_by_rp"])
+        
         response = DocGenService.render_template(
             "IR_TEMPLATE", preview_data, output_format
         )
