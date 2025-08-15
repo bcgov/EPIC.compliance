@@ -56,7 +56,7 @@ export const useConvertFiltersToQueryParams = (
               params.source_type_ids = filter.value.join(",");
             }
             break;
-          case "primary_officer_id":
+          case "primary_officer_ids":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.primary_officer_ids = filter.value.join(",");
             }
@@ -179,7 +179,7 @@ export const useComplaintsGridColumns = (
     },
     {
       accessorFn: (row) => row.primary_officer?.name,
-      id: "primary_officer_id",
+      id: "primary_officer_ids",
       header: "Primary",
       filterVariant: "multi-select",
       filterSelectOptions:
