@@ -15,6 +15,7 @@ import {
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
+import { ViolationTicket } from "@/models/ViolationTicket";
 
 const EnforcementCard = ({
   order,
@@ -22,26 +23,30 @@ const EnforcementCard = ({
   requirementEnforcements,
   administrativePenalty,
   chargeRecommendation,
+  violationTicket,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   requirementEnforcements: InspectionRequirement[];
   administrativePenalty?: AdministrativePenalty;
   chargeRecommendation?: ChargeRecommendation;
+  violationTicket?: ViolationTicket;
 }) => {
   // console.log(chargeRecommendation)
   const requirementSummaryFormatted = formatRequirementSummary(
     order,
     warningLetter,
     administrativePenalty,
-    chargeRecommendation
+    chargeRecommendation,
+    violationTicket
   );
   const requirementSourcesFormatted = formatRequirementSources(
     requirementEnforcements,
     order,
     warningLetter,
     administrativePenalty,
-    chargeRecommendation
+    chargeRecommendation,
+    violationTicket
   );
   const sentForReviewDate = getSentForReviewDate(order, warningLetter);
   const approvedByDate = getApprovedByDate(order, warningLetter);
@@ -77,13 +82,15 @@ const EnforcementCard = ({
             {order?.order_number ??
               warningLetter?.warning_letter_number ??
               administrativePenalty?.administrative_penalty_number ??
-              chargeRecommendation?.charge_recommendation_number}
+              chargeRecommendation?.charge_recommendation_number ??
+              violationTicket?.vt_number}
           </Typography>
           <EnforcementStatusFlag
             order={order}
             warningLetter={warningLetter}
             administrativePenalty={administrativePenalty}
             chargeRecommendation={chargeRecommendation}
+            violationTicket={violationTicket}
           />
         </Stack>
         <Stack>
@@ -158,7 +165,7 @@ const EnforcementCard = ({
               />
               <GridLabelValuePair
                 label="Decision"
-                value={administrativePenalty.decision?.value || ""}
+                value={administrativePenalty.decision?.name || ""}
                 gridProps={{ xs: 6 }}
               />
               {administrativePenalty.penalty_amount && (
@@ -231,6 +238,37 @@ const EnforcementCard = ({
               <GridLabelValuePair
                 label="Sentence Type"
                 value={chargeRecommendation.sentence_type || ""}
+                gridProps={{ xs: 6 }}
+              />
+            </>
+          )}
+          {violationTicket && (
+            <>
+              <GridLabelValuePair
+                label="Ticket #"
+                value={violationTicket.ticket_number || ""}
+                gridProps={{ xs: 6 }}
+              />
+              <GridLabelValuePair
+                label="Date Issued"
+                value={
+                  violationTicket.date_issued
+                    ? dateUtils.formatDate(violationTicket.date_issued)
+                    : ""
+                }
+                gridProps={{ xs: 6 }}
+              />
+             
+              <GridLabelValuePair
+                label="Fine Amount"
+                value={`$${violationTicket.fine_amount || 0}`}
+                gridProps={{ xs: 6 }}
+              />
+               <GridLabelValuePair
+                label="Status Date"
+                value={ violationTicket.status_date
+                    ? dateUtils.formatDate(violationTicket.status_date)
+                    : ""}
                 gridProps={{ xs: 6 }}
               />
             </>

@@ -77,6 +77,7 @@ export const DRAWER_WIDTHS = {
 export const MODAL_WIDTHS = {
   ADMINISTRATIVE_PENALTY: "520px",
   CHARGE_RECOMMENDATION: "568px",
+  VIOLATION_TICKET: "520px",
 };
 
 export enum APPROVAL_STATUS {
