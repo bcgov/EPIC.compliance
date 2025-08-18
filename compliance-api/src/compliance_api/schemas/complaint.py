@@ -234,28 +234,38 @@ class ComplaintFilterSchema(BaseSchema):
         metadata={"description": "Filter by complaint number"},
         required=False,
     )
-    project_id = fields.Str(
-        metadata={"description": "Filter by project ID"},
+    project_ids = fields.Str(
+        metadata={
+            "description": "Filter by project ID(s). Can be a single value or comma-separated list"
+        },
         required=False,
     )
-    topic_id = fields.Int(
-        metadata={"description": "Filter by topic ID"},
+    topic_ids = fields.Str(
+        metadata={
+            "description": "Filter by topic ID(s). Can be a single value or comma-separated list"
+        },
         required=False,
     )
-    source_type_id = fields.Int(
-        metadata={"description": "Filter by source type ID"},
+    source_type_ids = fields.Str(
+        metadata={
+            "description": "Filter by source type ID(s). Can be a single value or comma-separated list"
+        },
         required=False,
     )
     date_received = fields.Date(
         metadata={"description": "Filter by date received"},
         required=False,
     )
-    primary_officer_id = fields.Int(
-        metadata={"description": "Filter by primary officer ID"},
+    primary_officer_ids = fields.Str(
+        metadata={
+            "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list"
+        },
         required=False,
     )
-    status = fields.Str(
-        metadata={"description": "Filter by complaint status (Open/Closed)"},
+    statuses = fields.Str(
+        metadata={
+            "description": "Filter by status(es). Can be a single value or comma-separated list"
+        },
         required=False,
     )
     case_file_number = fields.Str(

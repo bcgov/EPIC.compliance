@@ -32,12 +32,12 @@ export const useConvertFiltersToQueryParams = (
             break;
           case "project":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.project_id = filter.value.join(",");
+              params.project_ids = filter.value.join(",");
             }
             break;
-          case "initiation":
+          case "initiation":  
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.initiation_id = filter.value.join(",");
+              params.initiation_ids = filter.value.join(",");
             }
             break;
           case "date_created":
@@ -50,12 +50,12 @@ export const useConvertFiltersToQueryParams = (
             break;
           case "status":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.status = filter.value.join(",");
+              params.statuses = filter.value.join(",");
             }
             break;
           case "primary_officer":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.primary_officer_id = filter.value.join(",");
+              params.primary_officer_ids = filter.value.join(",");
             }
             break;
         }
@@ -65,13 +65,23 @@ export const useConvertFiltersToQueryParams = (
       Object.entries(externalFilters).forEach(([key, value]) => {
         if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
           switch (key) {
-            case "primary_officer_id":
-              params.primary_officer_id = Array.isArray(value)
+            case "primary_officer_ids":
+              params.primary_officer_ids = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;
-            case "project_id":
-              params.project_id = Array.isArray(value)
+            case "project_ids":
+              params.project_ids = Array.isArray(value)
+                ? value.join(",")
+                : value;
+              break;
+            case "initiation_ids":
+              params.initiation_ids = Array.isArray(value)
+                ? value.join(",")
+                : value;
+              break;
+            case "statuses":
+              params.statuses = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;

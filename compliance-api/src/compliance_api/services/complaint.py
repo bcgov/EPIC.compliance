@@ -20,6 +20,7 @@ from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
+from compliance_api.utils.constant import UNAPPROVED_PROJECT_NAME
 from compliance_api.utils.enum import PermissionEnum
 
 from .service_utils import ServiceUtils
@@ -190,7 +191,7 @@ class ComplaintService:
 
         # Execute query and process results
         results = query.all()
-
+        results = _make_complaint_object(results)
         return results, total_count
 
     @classmethod
@@ -200,19 +201,23 @@ class ComplaintService:
 
         # Get all results without pagination for export
         complaints = query.all()
-
+        complaints = _make_complaint_object(complaints)
         # Prepare data for Excel
         excel_data = []
         for complaint in complaints:
+            topic = complaint.topic
+            complaint_source = complaint.source_type
             excel_data.append(
                 {
                     "Complaint #": complaint.complaint_number or "",
                     "Project": getattr(complaint, "project_name", "") or "",
+                    "Topic": getattr(topic, "name", "") or "",
                     "Date Received": (
                         complaint.date_received.strftime("%Y-%m-%d")
                         if complaint.date_received
                         else ""
                     ),
+                    "Complaint Source": getattr(complaint_source, "name", "") or "",
                     "Primary": (
                         f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
                         if complaint.primary_officer
@@ -235,6 +240,19 @@ class ComplaintService:
         output.seek(0)
 
         return output
+
+
+def _make_complaint_object(complaints):
+    """Make complaint object."""
+    results = []
+    for result in complaints:
+        complaint = result.Complaint
+        if complaint.case_file.project_id is not None:
+            complaint.project_name = complaint.case_file.project.name
+        else:
+            complaint.project_name = UNAPPROVED_PROJECT_NAME
+        results.append(complaint)
+    return results
 
 
 def _create_or_update_requirement_details(
@@ -393,10 +411,12 @@ def _build_complaints_paginated_query(args):
         ComplaintModel.query.outerjoin(
             CaseFileModel, ComplaintModel.case_file_id == CaseFileModel.id
         )
+        .outerjoin(ProjectModel, CaseFileModel.project_id == ProjectModel.id)
         .outerjoin(StaffUser, ComplaintModel.primary_officer_id == StaffUser.id)
         .filter(
             ComplaintModel.is_deleted.is_(False), ComplaintModel.is_active.is_(True)
         )
+        .add_columns(ProjectModel.name.label("project_name"))
     )
 
     # Apply filters
@@ -412,21 +432,35 @@ def _apply_complaints_filters(query, args):
     """Apply filters to the complaints query."""
     filters = []
 
-    # Define filter mappings to reduce branches
-    filter_mappings = [
+    # Single value filters (no change needed)
+    single_value_mappings = [
         ("complaint_number", lambda v: ComplaintModel.complaint_number.ilike(f"%{v}%")),
         ("case_file_id", lambda v: ComplaintModel.case_file_id == int(v)),
-        ("topic_id", lambda v: ComplaintModel.topic_id == int(v)),
-        ("source_type_id", lambda v: ComplaintModel.source_type_id == int(v)),
         ("date_received", lambda v: func.date(ComplaintModel.date_received) == v),
-        ("primary_officer_id", lambda v: ComplaintModel.primary_officer_id == int(v)),
         ("case_file_number", lambda v: CaseFileModel.case_file_number.ilike(f"%{v}%")),
     ]
 
-    # Apply simple filters using mapping
-    for field_name, filter_func in filter_mappings:
+    # Apply single value filters
+    for field_name, filter_func in single_value_mappings:
         if args.get(field_name):
             filters.append(filter_func(args[field_name]))
+
+    # Multi-value filters (plural parameters with comma-separated support)
+    if args.get("topic_ids"):
+        topic_ids = [int(id_str.strip()) for id_str in args["topic_ids"].split(",")]
+        filters.append(ComplaintModel.topic_id.in_(topic_ids))
+
+    if args.get("source_type_ids"):
+        source_type_ids = [
+            int(id_str.strip()) for id_str in args["source_type_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.source_type_id.in_(source_type_ids))
+
+    if args.get("primary_officer_ids"):
+        primary_officer_ids = [
+            int(id_str.strip()) for id_str in args["primary_officer_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.primary_officer_id.in_(primary_officer_ids))
 
     # Handle special cases that need custom logic
     filters.extend(_get_special_complaint_filters(args))
@@ -439,22 +473,20 @@ def _get_special_complaint_filters(args):
     """Get filters that require special handling logic."""
     special_filters = []
 
-    # Project ID filter (handles null/none values)
-    if args.get("project_id"):
-        project_id = args["project_id"]
-        if project_id.lower() in ["null", "none"]:
+    # Project IDs filter (handles null/none values and comma-separated lists)
+    if args.get("project_ids"):
+        project_ids = args["project_ids"].split(",")
+        if "null" in project_ids or "none" in project_ids:
             special_filters.append(CaseFileModel.project_id.is_(None))
         else:
-            special_filters.append(CaseFileModel.project_id == int(project_id))
+            special_filters.append(CaseFileModel.project_id.in_(project_ids))
 
-    # Status filter (requires enum validation)
-    if args.get("status"):
-        status_value = args["status"].upper()
-        valid_statuses = [status.name for status in ComplaintStatusEnum]
-        if status_value in valid_statuses:
-            special_filters.append(
-                ComplaintModel.status == ComplaintStatusEnum[status_value]
-            )
+    # Statuses filter (comma-separated support)
+    if args.get("statuses"):
+        status_values = [
+            status.upper().strip() for status in args["statuses"].split(",")
+        ]
+        special_filters.append(ComplaintModel.status.in_(status_values))
 
     return special_filters
 

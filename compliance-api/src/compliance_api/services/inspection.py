@@ -43,7 +43,7 @@ from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
-from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE
+from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE, UNAPPROVED_PROJECT_NAME
 from compliance_api.utils.enum import PermissionEnum
 
 from .epic_track_service.track_service import TrackService
@@ -393,19 +393,7 @@ class InspectionService:
         query = _apply_inspections_pagination(query, args)
 
         # Execute query and process results
-        results = []
-        for result in query.all():
-            inspection = result.Inspection
-            inspection.ir_progress = result.ir_progress
-            inspection.approval_status = result.approval_status
-            if result.approved_by_auth_user_guid is not None:
-                inspection.approved_by = {
-                    "auth_user_guid": result.approved_by_auth_user_guid,
-                    "first_name": result.approved_by_first_name,
-                    "last_name": result.approved_by_last_name,
-                    "id": result.approved_by_id,
-                }
-            results.append(inspection)
+        results = _make_inspection_object(query.all())
 
         return results, total_count
 
@@ -416,23 +404,7 @@ class InspectionService:
         query = _build_inspections_paginated_query(args)
 
         # Execute query and process results
-        results = []
-        for result in query.all():
-            inspection = result[0]
-            inspection.ir_progress = result[1]
-            inspection.approval_status = result[2]
-            if result[3] is not None:
-                inspection.approved_by = {
-                    "auth_user_guid": result[3],
-                    "first_name": result[4],
-                    "last_name": result[5],
-                    "id": result[6],
-                }
-            results.append(inspection)
-
-        # Set project parameters for all inspections
-        for inspection in results:
-            _set_project_status(inspection)
+        results = _make_inspection_object(query.all())
 
         # Create Excel data
         excel_data = []
@@ -533,6 +505,28 @@ def _handle_close_as_note(inspection, session):
                 },
                 session,
             )
+
+
+def _make_inspection_object(inspections):
+    """Make inspection object."""
+    results = []
+    for result in inspections:
+        inspection = result.Inspection
+        inspection.ir_progress = result.ir_progress
+        inspection.approval_status = result.approval_status
+        if result.approved_by_auth_user_guid is not None:
+            inspection.approved_by = {
+                "auth_user_guid": result.approved_by_auth_user_guid,
+                "first_name": result.approved_by_first_name,
+                "last_name": result.approved_by_last_name,
+                "id": result.approved_by_id,
+            }
+        if inspection.project_id is not None:
+            inspection.project_name = inspection.project.name
+        else:
+            inspection.project_name = UNAPPROVED_PROJECT_NAME
+        results.append(inspection)
+    return results
 
 
 def _make_requirement_detail_object(
@@ -844,10 +838,10 @@ def _build_inspections_paginated_query(args):
         .add_columns(
             InspectionRecord.ir_progress.label("ir_progress"),
             InspectionRecordApproval.approval_status.label("approval_status"),
-            StaffUser.auth_user_guid.label("approved_by_auth_user_guid"),
-            StaffUser.first_name.label("approved_by_first_name"),
-            StaffUser.last_name.label("approved_by_last_name"),
-            StaffUser.id.label("approved_by_id"),
+            approved_by.auth_user_guid.label("approved_by_auth_user_guid"),
+            approved_by.first_name.label("approved_by_first_name"),
+            approved_by.last_name.label("approved_by_last_name"),
+            approved_by.id.label("approved_by_id"),
         )
     )
 
@@ -877,25 +871,31 @@ def _get_basic_filters(args):
         filters.append(func.date(InspectionModel.start_date) == args["start_date"])
 
     # Initiation filter
-    if args.get("initiation_id"):
-        filters.append(InspectionModel.initiation_id == args["initiation_id"])
+    if args.get("initiation_ids"):
+        filters.append(
+            InspectionModel.initiation_id.in_(args["initiation_ids"].split(","))
+        )
 
     # Primary officer filter
-    if args.get("primary_officer_id"):
-        filters.append(InspectionModel.primary_officer_id == args["primary_officer_id"])
+    if args.get("primary_officer_ids"):
+        filters.append(
+            InspectionModel.primary_officer_id.in_(
+                args["primary_officer_ids"].split(",")
+            )
+        )
 
     return filters
 
 
 def _get_project_id_filter(args):
     """Get project ID filter with null handling."""
-    if not args.get("project_id"):
+    if not args.get("project_ids"):
         return None
 
-    project_id = args["project_id"]
-    if project_id.lower() in ["null", "none"]:
+    project_ids = args["project_ids"].split(",")
+    if "null" in project_ids or "none" in project_ids:
         return InspectionModel.project_id.is_(None)
-    return InspectionModel.project_id == int(project_id)
+    return InspectionModel.project_id.in_(project_ids)
 
 
 def _get_enum_filters(args):
@@ -903,24 +903,43 @@ def _get_enum_filters(args):
     filters = []
 
     # IR Progress filter
-    if args.get("ir_progress"):
-        progress_enum = IRProgressEnum[args["ir_progress"].upper()]
-        filters.append(InspectionRecord.ir_progress == progress_enum)
+    if args.get("ir_progresses"):
+        ir_progress_list = [
+            prog.upper().strip() for prog in args["ir_progresses"].split(",")
+        ]
+        filters.append(InspectionRecord.ir_progress.in_(ir_progress_list))
 
     # Approval status filter
-    if args.get("approval_status"):
-        approval_enum = IRApprovalStatusEnum[args["approval_status"].upper()]
-        filters.append(InspectionRecordApproval.approval_status == approval_enum)
+    if args.get("approval_statuses"):
+        approval_enum = [
+            IRApprovalStatusEnum[status.upper().strip()]
+            for status in args["approval_statuses"].split(",")
+        ]
+        filters.append(InspectionRecordApproval.approval_status.in_(approval_enum))
 
     # Status filter
-    if args.get("status"):
-        try:
-            status_enum = InspectionStatusEnum[args["status"].upper()]
-            filters.append(InspectionModel.inspection_status == status_enum)
-        except KeyError:
-            pass  # Invalid enum value, ignore filter
+    if args.get("statuses"):
+        status_enum = [
+            InspectionStatusEnum[status.upper().strip()]
+            for status in args["statuses"].split(",")
+        ]
+        filters.append(InspectionModel.inspection_status.in_(status_enum))
 
     return filters
+
+
+def _get_approved_by_filter(args):
+    """Get approved by filter using the existing query structure."""
+    if not args.get("approved_by_ids"):
+        return None
+
+    approved_by_ids = [
+        int(id_str.strip()) for id_str in args["approved_by_ids"].split(",")
+    ]
+
+    # Since the query already joins with the latest approval and approved_by (StaffUser),
+    # we can directly filter on the approved_by_id from InspectionRecordApproval
+    return InspectionRecordApproval.approved_by_id.in_(approved_by_ids)
 
 
 def _apply_inspections_filters(query, args):
@@ -937,6 +956,11 @@ def _apply_inspections_filters(query, args):
 
     # Get enum filters
     filters.extend(_get_enum_filters(args))
+
+    # Get approved by filter (requires subquery)
+    approved_by_filter = _get_approved_by_filter(args)
+    if approved_by_filter is not None:
+        filters.append(approved_by_filter)
 
     # Case file number filter (requires join)
     if args.get("case_file_number"):

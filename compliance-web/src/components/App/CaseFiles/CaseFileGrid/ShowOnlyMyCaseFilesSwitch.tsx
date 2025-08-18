@@ -66,15 +66,15 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
     (isChecked: boolean): Record<string, string[] | string> => {
       if (!isChecked || !currentStaff?.id) {
         return {
-          primary_officer_id: [],
-          status: [],
+          primary_officer_ids: [],
+          statuses: [],
         };
       }
 
       // For regular users, filter by primary officer and status 'open'
       return {
-        primary_officer_id: [currentStaff.id.toString()],
-        status: ["Open"],
+        primary_officer_ids: [currentStaff.id.toString()],
+        statuses: ["Open"],
       };
     },
     [currentStaff?.id]

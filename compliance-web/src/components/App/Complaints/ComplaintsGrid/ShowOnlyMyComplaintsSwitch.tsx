@@ -66,13 +66,13 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
     (isChecked: boolean): Record<string, string[] | string> => {
       if (!isChecked || !currentStaff?.id) {
         return {
-          primary_officer_id: [],
+          primary_officer_ids: [],
         };
       }
 
       // For regular users, filter by primary officer
       return {
-        primary_officer_id: [currentStaff.id.toString()],
+        primary_officer_ids: [currentStaff.id.toString()],
       };
     },
     [currentStaff?.id]
@@ -90,7 +90,7 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
       );
       return [
         {
-          id: "primary_officer_id",
+          id: "primary_officer_ids",
           value: [currentUserStaff?.name || ""],
         },
       ];
@@ -118,7 +118,7 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
         if (newChecked) {
           // Remove existing user-specific filters and add new ones
           const filteredFilters = columnFilters.filter(
-            (filter) => filter.id !== "primary_officer_id"
+            (filter) => filter.id !== "primary_officer_ids"
           );
           onColumnFiltersChange([
             ...filteredFilters,
@@ -127,7 +127,7 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
         } else {
           // Remove user-specific filters when turning off
           const filteredFilters = columnFilters.filter(
-            (filter) => filter.id !== "primary_officer_id"
+            (filter) => filter.id !== "primary_officer_ids"
           );
           onColumnFiltersChange(filteredFilters);
         }

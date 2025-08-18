@@ -502,32 +502,54 @@ class InspectionFilterSchema(BaseSchema):
     ir_number = fields.Str(
         metadata={"description": "Filter by inspection record number"}, allow_none=True
     )
-    project_id = fields.Str(
+    project_ids = fields.Str(
         metadata={
-            "description": "Filter by project ID (supports 'null' or 'none' for unapproved projects)"
+            "description": "Filter by project ID(s). Can be a single value or comma-separated list "
+            "(supports 'null' or 'none' for unapproved projects)"
         },
         allow_none=True,
     )
     start_date = fields.Date(
         metadata={"description": "Filter by inspection start date"}, allow_none=True
     )
-    initiation_id = fields.Int(
-        metadata={"description": "Filter by initiation option ID"}, allow_none=True
+    initiation_ids = fields.Str(
+        metadata={
+            "description": "Filter by initiation option ID(s). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
-    ir_progress = fields.Str(
-        metadata={"description": "Filter by IR progress status"}, allow_none=True
+    ir_progresses = fields.Str(
+        metadata={
+            "description": "Filter by IR progress status(es). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
-    approval_status = fields.Str(
-        metadata={"description": "Filter by approval status"}, allow_none=True
+    approval_statuses = fields.Str(
+        metadata={
+            "description": "Filter by approval status(es). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
-    primary_officer_id = fields.Int(
-        metadata={"description": "Filter by primary officer ID"}, allow_none=True
+    primary_officer_ids = fields.Str(
+        metadata={
+            "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
-    status = fields.Str(
-        metadata={"description": "Filter by inspection status"}, allow_none=True
+    statuses = fields.Str(
+        metadata={
+            "description": "Filter by inspection status(es). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
     case_file_number = fields.Str(
         metadata={"description": "Filter by case file number"}, allow_none=True
+    )
+    approved_by_ids = fields.Str(
+        metadata={
+            "description": "Filter by reviewer/approver ID(s). Can be a single value or comma-separated list"
+        },
+        allow_none=True,
     )
     page_no = fields.Int(
         metadata={"description": "Page number for pagination"},

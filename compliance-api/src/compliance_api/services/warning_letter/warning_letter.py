@@ -17,6 +17,7 @@ from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.services.warning_letter.warning_letter_template_constant import WARNING_LETTER_CONTENT
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME
 from compliance_api.utils.datetime import convert_to_full_month_format
+from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
 
 
@@ -277,7 +278,7 @@ def _create_warning_letter_data(warning_letter):
                     else None
                 )
             ),
-            "content": warning_letter.content,
+            "content": convert_inline_styles_for_pdf(warning_letter.content),
         },
         "department_details": {
             "logo_url": department_details.logo_url,
