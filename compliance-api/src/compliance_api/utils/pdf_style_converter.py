@@ -1,5 +1,5 @@
 """
-PDF Style Converter Utility
+PDF Style Converter Utility.
 
 This module provides utilities to convert inline CSS styles to PDF-compatible formats.
 The PDF rendering engine used by the docgen service may not support all CSS properties,
@@ -7,18 +7,18 @@ so this utility converts unsupported properties to equivalent supported ones.
 """
 
 import re
-from typing import Dict, Optional
+from typing import Dict
 from bs4 import BeautifulSoup
 
 
 class PDFStyleConverter:
     """Converts inline styles in HTML to PDF-compatible format."""
-    
+
     # Map of unsupported CSS properties to their PDF-compatible equivalents
     PROPERTY_MAP = {
         'padding-inline-start': 'margin-left',
         'padding-inline-end': 'margin-right',
-        'padding-block-start': 'margin-top', 
+        'padding-block-start': 'margin-top',
         'padding-block-end': 'margin-bottom',
         'margin-inline-start': 'margin-left',
         'margin-inline-end': 'margin-right',
@@ -29,7 +29,7 @@ class PDFStyleConverter:
         'border-block-start': 'border-top',
         'border-block-end': 'border-bottom',
     }
-    
+
     # CSS properties that are generally well-supported in PDF
     SUPPORTED_PROPERTIES = {
         'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom',
@@ -44,12 +44,12 @@ class PDFStyleConverter:
         'display', 'position', 'float', 'clear',
         'vertical-align',
     }
-    
+
     # Properties that should be removed as they cause issues in PDF
     PROBLEMATIC_PROPERTIES = {
         'white-space': ['pre-wrap', 'pre-line'],  # Specific values that cause issues
         'overflow': True,
-        'overflow-x': True, 
+        'overflow-x': True,
         'overflow-y': True,
         'box-shadow': True,
         'text-shadow': True,
@@ -68,32 +68,31 @@ class PDFStyleConverter:
     def convert_html_styles(cls, html_content: str) -> str:
         """
         Convert inline styles in HTML to PDF-compatible format.
-        
+
         Args:
             html_content: HTML string with inline styles
-            
+
         Returns:
             HTML string with converted styles
         """
         if not html_content:
             return html_content
-            
+
         # First fix list ordering issues
         html_content = cls._fix_list_ordering(html_content)
-        
+
         def style_replacer(match):
             """Replace style attribute with PDF-compatible version."""
-            full_match = match.group(0)  # The entire style="..." match
             style_content = match.group(1)  # Just the content inside quotes
-            
+
             converted_styles = cls._convert_style_string(style_content)
-            
+
             if converted_styles:
                 return f'style="{converted_styles}"'
             else:
                 # Remove empty style attribute completely
                 return ''
-        
+
         # Process all style attributes
         result = re.sub(r'style="([^"]*?)"', style_replacer, html_content)
         return result
@@ -102,31 +101,30 @@ class PDFStyleConverter:
     def _fix_list_ordering(cls, html_content: str) -> str:
         """
         Fix list ordering issues by properly processing nested lists and ensuring correct numbering.
-        
+
         Args:
             html_content: HTML string with list ordering issues
-            
+
         Returns:
             HTML string with corrected list ordering
         """
         if not html_content:
             return html_content
-            
+
         try:
             soup = BeautifulSoup(html_content, 'html.parser')
-            
+
             # Process all ordered lists
             for ol in soup.find_all('ol', class_='editor-list-ol'):
                 cls._fix_ordered_list(ol)
-                
+
             # Process all unordered lists
             for ul in soup.find_all('ul', class_='editor-list-ul'):
                 cls._fix_unordered_list(ul)
-                
+
             return str(soup)
-        except Exception as e:
+        except Exception:  # noqa: B902
             # If BeautifulSoup fails, return original content
-            print(f"Warning: Failed to fix list ordering: {e}")
             return html_content
 
     @classmethod
@@ -134,21 +132,20 @@ class PDFStyleConverter:
         """Fix numbering in an ordered list element."""
         if not ol_element:
             return
-            
+
         # Get the list level from class names
-        list_level = 1
         for class_name in ol_element.get('class', []):
             if class_name.startswith('editor-list-ol') and len(class_name) > 13:
                 try:
                     level_str = class_name[13:]  # Extract number after 'editor-list-ol'
-                    list_level = int(level_str)
+                    int(level_str)  # Validate it's a number
                 except ValueError:
                     pass
                 break
-        
+
         # Reset counter for this list
         counter = 1
-        
+
         # Process list items
         for li in ol_element.find_all('li', recursive=False):
             # Check if this is a nested list item that should not be numbered
@@ -161,12 +158,12 @@ class PDFStyleConverter:
                 # This is a regular list item that should be numbered
                 li['value'] = str(counter)
                 counter += 1
-                
+
             # Recursively process nested lists
             nested_ol = li.find('ol', class_='editor-list-ol')
             if nested_ol:
                 cls._fix_ordered_list(nested_ol)
-                
+
             nested_ul = li.find('ul', class_='editor-list-ul')
             if nested_ul:
                 cls._fix_unordered_list(nested_ul)
@@ -176,18 +173,18 @@ class PDFStyleConverter:
         """Fix bullet points in an unordered list element."""
         if not ul_element:
             return
-            
+
         # Process list items
         for li in ul_element.find_all('li', recursive=False):
             # Remove value attributes from unordered list items
             if li.has_attr('value'):
                 del li['value']
-                
+
             # Recursively process nested lists
             nested_ol = li.find('ol', class_='editor-list-ol')
             if nested_ol:
                 cls._fix_ordered_list(nested_ol)
-                
+
             nested_ul = li.find('ul', class_='editor-list-ul')
             if nested_ul:
                 cls._fix_unordered_list(nested_ul)
@@ -196,20 +193,20 @@ class PDFStyleConverter:
     def _convert_style_string(cls, style_string: str) -> str:
         """
         Convert a CSS style string to PDF-compatible format.
-        
+
         Args:
             style_string: CSS style string (content of style attribute)
-            
+
         Returns:
             Converted CSS style string
         """
         if not style_string:
             return ""
-            
+
         # Parse individual CSS declarations
         declarations = cls._parse_css_declarations(style_string)
         converted_declarations = []
-        
+
         for prop, value in declarations.items():
             # Convert unsupported properties to supported ones
             if prop in cls.PROPERTY_MAP:
@@ -224,22 +221,22 @@ class PDFStyleConverter:
             # Skip unsupported properties
             else:
                 continue
-                
+
         return "; ".join(converted_declarations)
 
     @classmethod
     def _parse_css_declarations(cls, style_string: str) -> Dict[str, str]:
         """
         Parse CSS declarations from a style string.
-        
+
         Args:
             style_string: CSS style string
-            
+
         Returns:
             Dictionary of property: value pairs
         """
         declarations = {}
-        
+
         # Split by semicolon and process each declaration
         for declaration in style_string.split(';'):
             declaration = declaration.strip()
@@ -249,7 +246,7 @@ class PDFStyleConverter:
                 value = value.strip()
                 if prop and value:
                     declarations[prop] = value
-                    
+
         return declarations
 
     @classmethod
@@ -258,12 +255,12 @@ class PDFStyleConverter:
         # Check exact match
         if prop in cls.SUPPORTED_PROPERTIES:
             return True
-            
+
         # Check prefixes (e.g., border-left-width matches border-)
         for supported in cls.SUPPORTED_PROPERTIES:
             if prop.startswith(supported + '-'):
                 return True
-                
+
         return False
 
     @classmethod
@@ -280,11 +277,11 @@ class PDFStyleConverter:
 
 def convert_inline_styles_for_pdf(html_content: str) -> str:
     """
-    Convenience function to convert HTML inline styles for PDF compatibility.
-    
+    Convert HTML inline styles for PDF compatibility.
+
     Args:
         html_content: HTML string with inline styles
-        
+
     Returns:
         HTML string with PDF-compatible styles
     """
