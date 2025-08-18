@@ -28,8 +28,11 @@ class ViolationTicketCreateSchema(BaseSchema):  # pylint: disable=too-many-ances
             "description": "List of inspection requirement IDs associated with the violation ticket."
         },
     )
+
+
 class ViolationTicketUpdateSchema(ViolationTicketCreateSchema):  # pylint: disable=too-many-ancestors
     """Schema for violation ticket model."""
+
     date_issued = fields.DateTime(
         required=False,
         format=INPUT_DATE_TIME_FORMAT,
@@ -38,7 +41,7 @@ class ViolationTicketUpdateSchema(ViolationTicketCreateSchema):  # pylint: disab
         },
         metadata={"description": "The date the ticket was issued"},
     )
- 
+
     fine_amount = fields.Decimal(
         required=False,
         places=2,
@@ -59,13 +62,6 @@ class ViolationTicketUpdateSchema(ViolationTicketCreateSchema):  # pylint: disab
         },
         metadata={"description": "The status date"},
     )
-   
-
-
-class ViolationTicketCreateSchema(
-    ViolationTicketUpdateSchema
-):  # pylint: disable=too-many-ancestors
-    """Schema for violation ticket model."""
 
 
 class ViolationTicketInspectionRequirementMapSchema(

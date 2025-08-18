@@ -257,7 +257,7 @@ def _create_violation_ticket_obj(inspection, violation_ticket_data: dict) -> dic
     }
 
 
-def _create_vt_number(project_id: int, case_file_id: int,ticket_number: int ) -> str:
+def _create_vt_number(project_id: int, case_file_id: int, ticket_number: int) -> str:
     """Generate the VT number."""
     project_abbreviation = ServiceUtils.get_project_abbreviation(project_id)
 
@@ -268,9 +268,4 @@ def _create_vt_number(project_id: int, case_file_id: int,ticket_number: int ) ->
 
     master_number = case_file.case_file_number
 
-    # Get next ticket number for this project and case file
-    ticket_count = ViolationTicketModel.get_count_by_project_and_case_file_id(
-        project_id, case_file_id
-    )
-   
     return f"{project_abbreviation}_{master_number}_VT-{ticket_number}"
