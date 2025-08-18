@@ -69,13 +69,12 @@ const ChargeRecommendationCreateModal: FC<
           <ChargeRecommendationUpdateModal
             inspectionData={inspectionData}
             chargeRecommendationData={data}
-            requirementsList={requirementsList}
             onSubmit={(updatedData) => {
               onSubmit(updatedData);
             }}
           />
         ),
-        width: MODAL_WIDTHS.ADMINISTRATIVE_PENALTY,
+        width: MODAL_WIDTHS.CHARGE_RECOMMENDATION,
       });
     }, 100);
   };

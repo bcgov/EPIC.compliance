@@ -235,7 +235,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <ChargeRecommendationCreateModal
             inspectionData={inspectionData}
-            requirementsList={requirementEnforcements}
+            requirementsList={nonProceededChargeRecommendationRequirements}
             requirement={requirement}
             onSubmit={() => {
               setModalClose();
@@ -347,7 +347,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <ChargeRecommendationUpdateModal
           chargeRecommendationData={chargeRecommendation}
           inspectionData={inspectionData}
-          requirementsList={requirementEnforcements}
           onSubmit={() => {
             // Refresh the charge recommendations data
             queryClient.invalidateQueries({

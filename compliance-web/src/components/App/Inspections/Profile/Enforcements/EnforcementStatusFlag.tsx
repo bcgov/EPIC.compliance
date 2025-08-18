@@ -106,7 +106,7 @@ const EnforcementStatusFlag = ({
         name: chargeRecommendation.status?.name || CRStatus.DRAFTING.name,
       };
       if (chargeRecommendation.status?.id === CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id) {
-        status.color = "warning";
+        status.color = "success";
       } else if (chargeRecommendation.status?.id === CRStatus.DEPUTY_REVIEW.id) {
         status.color = "warning";
       } else if (chargeRecommendation.status?.id === CRStatus.CEB_NOT_PROCEEDING.id) {

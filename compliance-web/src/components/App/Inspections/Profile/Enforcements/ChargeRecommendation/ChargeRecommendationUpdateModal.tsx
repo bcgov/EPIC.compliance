@@ -1,4 +1,4 @@
-import { Box, DialogContent } from "@mui/material";
+import { DialogContent, Box } from "@mui/material";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -18,17 +18,17 @@ import {
   ChargeRecommendationAPIData,
 } from "@/models/ChargeRecommendation";
 import { Inspection } from "@/models/Inspection";
-import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import { CRStatus, CRDecision, CRJudgment } from "@/utils/constants";
 import dayjs, { Dayjs } from "dayjs";
 
 const chargeRecommendationUpdateSchema = yup.object().shape({
-  status: yup
-    .mixed<StatusOption>()
-    .required("Status is required"),
-  date_to_crown_counsel: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
+  status: yup.mixed<StatusOption>().required("Status is required"),
+  date_to_crown_counsel: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .typeError("Invalid date"),
   charge_decision: yup.mixed<DecisionOption>().nullable(),
   charge_decision_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   court_file_number: yup.string().nullable(),
@@ -80,7 +80,6 @@ const judgmentOptions: JudgmentOption[] = Object.values(CRJudgment).map(
 type ChargeRecommendationUpdateModalProps = {
   chargeRecommendationData: ChargeRecommendation;
   inspectionData: Inspection;
-  requirementsList: InspectionRequirement[];
   onSubmit: (data: ChargeRecommendation) => void;
 };
 
@@ -93,15 +92,18 @@ const ChargeRecommendationUpdateModal: FC<
   const defaultValues = useMemo(() => {
     const currentStatus = chargeRecommendationData.status || CRStatus.DRAFTING;
     const selectedStatusOption =
-      statusOptions.find((option) => option.id === currentStatus?.id) || statusOptions[0];
+      statusOptions.find((option) => option.id === currentStatus?.id) ||
+      statusOptions[0];
 
     const currentDecision = chargeRecommendationData.charge_decision;
     const selectedDecisionOption =
-      decisionOptions.find((option) => option.id === currentDecision?.id) || null;
+      decisionOptions.find((option) => option.id === currentDecision?.id) ||
+      null;
 
     const currentJudgment = chargeRecommendationData.judgment;
     const selectedJudgmentOption =
-      judgmentOptions.find((option) => option.id === currentJudgment?.id) || null;
+      judgmentOptions.find((option) => option.id === currentJudgment?.id) ||
+      null;
 
     return {
       status: selectedStatusOption,
@@ -131,12 +133,14 @@ const ChargeRecommendationUpdateModal: FC<
     defaultValues,
   });
 
-  const onUpdateSuccess = (updatedChargeRecommendation: ChargeRecommendation) => {
+  const onUpdateSuccess = (
+    updatedChargeRecommendation: ChargeRecommendation
+  ) => {
     queryClient.invalidateQueries({
       queryKey: ["inspection-charge-recommendations", inspectionData.id],
     });
     notify.success(
-      `Charge Recommendation ${updatedChargeRecommendation.charge_recommendation_number || ''} updated successfully`
+      `Charge Recommendation ${updatedChargeRecommendation.charge_recommendation_number || ""} updated successfully`
     );
     onSubmit(updatedChargeRecommendation);
     setModalClose();
@@ -159,9 +163,10 @@ const ChargeRecommendationUpdateModal: FC<
     (data: ChargeRecommendationUpdateFormType) => {
       const updateData: Partial<ChargeRecommendationAPIData> = {
         inspection_id: inspectionData.id,
-        inspection_requirement_ids: chargeRecommendationData.charge_recommendation_requirement_maps
-          .map((map) => map.inspection_requirement_id)
-          .filter((id) => id != null),
+        inspection_requirement_ids:
+          chargeRecommendationData.charge_recommendation_requirement_maps
+            .map((map) => map.inspection_requirement_id)
+            .filter((id) => id != null),
       };
 
       if (data.status?.id) {
@@ -241,20 +246,20 @@ const ChargeRecommendationUpdateModal: FC<
         <ModalTitleBar
           title={`Charge Recommendation ${chargeRecommendationData.charge_recommendation_number}`}
           onClose={setModalClose}
+          titleVariant="h6"
         />
-        <DialogContent dividers sx={{ p: 0 }}>
-          <Box sx={{ p: 3, display: "flex", flexDirection: "column"}}>
-            {/* Drafting - one line */}
+        <DialogContent dividers sx={{ p: "1rem 1.5rem" }}>
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
             <ControlledAutoComplete
               name="status"
               label="Status"
               options={statusOptions}
               getOptionLabel={(option) => option?.name || ""}
               isOptionEqualToValue={(option, value) => option?.id === value?.id}
+              isRequired={true}
             />
 
-            {/* Date to Crown Counsel and Court File # - one line */}
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <ControlledDateField
                 name="date_to_crown_counsel"
                 label="Date to Crown Counsel"
@@ -262,17 +267,20 @@ const ChargeRecommendationUpdateModal: FC<
               <ControlledTextField
                 name="court_file_number"
                 label="Court File #"
+                fullWidth
               />
             </Box>
 
-            {/* Charge Decision and Charge Decision Date - one line */}
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <ControlledAutoComplete
                 name="charge_decision"
                 label="Charge Decision"
                 options={decisionOptions}
                 getOptionLabel={(option) => option?.name || ""}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                isOptionEqualToValue={(option, value) =>
+                  option?.id === value?.id
+                }
+                fullWidth
               />
               <ControlledDateField
                 name="charge_decision_date"
@@ -280,41 +288,36 @@ const ChargeRecommendationUpdateModal: FC<
               />
             </Box>
 
-            {/* Court Appearances - one line */}
             <ControlledTextField
               name="court_appearances"
               label="Court Appearances"
               multiline
-              rows={3}
+              rows={1}
+              fullWidth
             />
 
-            {/* Judgment and Judgment Date - one line */}
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 2 }}>
               <ControlledAutoComplete
                 name="judgment"
                 label="Judgment"
                 options={judgmentOptions}
                 getOptionLabel={(option) => option?.name || ""}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
+                isOptionEqualToValue={(option, value) =>
+                  option?.id === value?.id
+                }
+                fullWidth
               />
               <ControlledDateField
                 name="judgment_date"
                 label="Judgment Date"
+                sx={{ flex: 1 }}
               />
             </Box>
-
-            {/* Sentence Date - one line */}
-            <ControlledDateField
-              name="sentence_date"
-              label="Sentence Date"
-            />
-
-            {/* Sentence Type - one line */}
+            <ControlledDateField name="sentence_date" label="Sentence Date" />
             <ControlledTextField
               name="sentence_type"
               label="Sentence Type"
-              multiline
-              rows={2}
+              fullWidth
             />
           </Box>
         </DialogContent>
