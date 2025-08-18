@@ -62,7 +62,7 @@
             margin: 0;
         }
         .signature {
-            margin-top: 5em;
+            padding-top: 5em;
         }
 
         .editor-list-ol,
@@ -80,34 +80,93 @@
             list-style-type: none;
         }
 
+        .no-numbering {
+            list-style-type: none !important;
+        }
+
         .editor-list-ol1 {
             padding: 0;
             margin: 0;
             list-style-position: outside;
+            counter-reset: list-counter-1;
         }
         .editor-list-ol2 {
             padding: 0;
             margin: 0;
             list-style-type: upper-alpha;
             list-style-position: outside;
+            counter-reset: list-counter-2;
         }
         .editor-list-ol3 {
             padding: 0;
             margin: 0;
             list-style-type: lower-alpha;
             list-style-position: outside;
+            counter-reset: list-counter-3;
         }
         .editor-list-ol4 {
             padding: 0;
             margin: 0;
             list-style-type: upper-roman;
             list-style-position: outside;
+            counter-reset: list-counter-4;
         }
         .editor-list-ol5 {
             padding: 0;
             margin: 0;
             list-style-type: lower-roman;
             list-style-position: outside;
+            counter-reset: list-counter-5;
+        }
+
+        /* CSS Counter-based numbering for better PDF compatibility */
+        .editor-list-ol1 > li:not(.no-numbering) {
+            counter-increment: list-counter-1;
+        }
+        .editor-list-ol1 > li:not(.no-numbering)::before {
+            content: counter(list-counter-1) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol2 > li:not(.no-numbering) {
+            counter-increment: list-counter-2;
+        }
+        .editor-list-ol2 > li:not(.no-numbering)::before {
+            content: counter(list-counter-2, upper-alpha) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol3 > li:not(.no-numbering) {
+            counter-increment: list-counter-3;
+        }
+        .editor-list-ol3 > li:not(.no-numbering)::before {
+            content: counter(list-counter-3, lower-alpha) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol4 > li:not(.no-numbering) {
+            counter-increment: list-counter-4;
+        }
+        .editor-list-ol4 > li:not(.no-numbering)::before {
+            content: counter(list-counter-4, upper-roman) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol5 > li:not(.no-numbering) {
+            counter-increment: list-counter-5;
+        }
+        .editor-list-ol5 > li:not(.no-numbering)::before {
+            content: counter(list-counter-5, lower-roman) ". ";
+            font-weight: inherit;
+        }
+
+        /* Hide default list markers when using CSS counters */
+        .editor-list-ol1 > li:not(.no-numbering),
+        .editor-list-ol2 > li:not(.no-numbering),
+        .editor-list-ol3 > li:not(.no-numbering),
+        .editor-list-ol4 > li:not(.no-numbering),
+        .editor-list-ol5 > li:not(.no-numbering) {
+            list-style-type: none;
         }
 
         /* Print-specific styles */
@@ -146,20 +205,6 @@
             }
         }
     </style>
-    <script>
-        function stripStyles(html) {
-            return html.replace(/style="([^"]*?)"/g, function(match, styleContent) {
-                // Check if the style contains padding-inline-start
-                if (styleContent.includes('padding-inline-start')) {
-                    // Keep only the padding-inline-start property
-                    const paddingInlineStart = styleContent.match(/padding-inline-start:\s*[^;]+/);
-                    return paddingInlineStart ? `style="${paddingInlineStart[0]}"` : '';
-                }
-                // Remove all styles if padding-inline-start is not present
-                return '';
-            });
-        }
-    </script>
 </head>
 <br>
 <div class="com-order-footer">
@@ -167,13 +212,11 @@
 </div>
 <div class="com-order-content">
     <div class="section">
-        {{order_details.where_as  | safe | replace('style="white-space: pre-wrap;"',
-        '')}}
+        {{order_details.where_as | safe}}
     </div>
 
     <div class="section">
-        {{order_details.now_therefore | safe | replace('style="white-space: pre-wrap;"',
-        '')}}
+        {{order_details.now_therefore | safe}}
     </div>
     <div class="signature">
         <p>{{officer_details.officer_name}}<br>

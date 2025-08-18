@@ -20,10 +20,10 @@ from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
+from compliance_api.utils.constant import UNAPPROVED_PROJECT_NAME
+from compliance_api.utils.enum import PermissionEnum
 
 from .service_utils import ServiceUtils
-from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE
-from compliance_api.utils.enum import PermissionEnum
 
 
 class ComplaintService:
@@ -191,7 +191,7 @@ class ComplaintService:
 
         # Execute query and process results
         results = query.all()
-
+        results = _make_complaint_object(results)
         return results, total_count
 
     @classmethod
@@ -201,19 +201,23 @@ class ComplaintService:
 
         # Get all results without pagination for export
         complaints = query.all()
-
+        complaints = _make_complaint_object(complaints)
         # Prepare data for Excel
         excel_data = []
         for complaint in complaints:
+            topic = complaint.topic
+            complaint_source = complaint.source_type
             excel_data.append(
                 {
                     "Complaint #": complaint.complaint_number or "",
                     "Project": getattr(complaint, "project_name", "") or "",
+                    "Topic": getattr(topic, "name", "") or "",
                     "Date Received": (
                         complaint.date_received.strftime("%Y-%m-%d")
                         if complaint.date_received
                         else ""
                     ),
+                    "Complaint Source": getattr(complaint_source, "name", "") or "",
                     "Primary": (
                         f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
                         if complaint.primary_officer
@@ -236,6 +240,19 @@ class ComplaintService:
         output.seek(0)
 
         return output
+
+
+def _make_complaint_object(complaints):
+    """Make complaint object."""
+    results = []
+    for result in complaints:
+        complaint = result.Complaint
+        if complaint.case_file.project_id is not None:
+            complaint.project_name = complaint.case_file.project.name
+        else:
+            complaint.project_name = UNAPPROVED_PROJECT_NAME
+        results.append(complaint)
+    return results
 
 
 def _create_or_update_requirement_details(
@@ -394,10 +411,12 @@ def _build_complaints_paginated_query(args):
         ComplaintModel.query.outerjoin(
             CaseFileModel, ComplaintModel.case_file_id == CaseFileModel.id
         )
+        .outerjoin(ProjectModel, CaseFileModel.project_id == ProjectModel.id)
         .outerjoin(StaffUser, ComplaintModel.primary_officer_id == StaffUser.id)
         .filter(
             ComplaintModel.is_deleted.is_(False), ComplaintModel.is_active.is_(True)
         )
+        .add_columns(ProjectModel.name.label("project_name"))
     )
 
     # Apply filters
