@@ -21,7 +21,6 @@ import {
   ViolationTicket,
   ViolationTicketAPIData,
 } from "@/models/ViolationTicket";
-import { ViolationTicketStatus } from "@/utils/constants";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import ViolationTicketUpdateModal from "./ViolationTicketUpdateModal";

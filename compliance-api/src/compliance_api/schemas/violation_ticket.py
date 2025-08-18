@@ -11,8 +11,10 @@ from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
 from .staff_user import StaffUserSchema
 
+
 class ViolationTicketCreateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Schema for violation ticket model."""
+
     inspection_id = fields.Integer(
         required=True, metadata={"description": "The inspection id"}
     )
