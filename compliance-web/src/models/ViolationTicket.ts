@@ -26,7 +26,7 @@ export interface ViolationTicketAPIData {
   date_issued?: string;
   ticket_number: string;
   fine_amount?: string;
-  status: string;
+  status?: string;
   status_date?: string;
   inspection_requirement_ids: number[];
 }
@@ -36,8 +36,4 @@ export interface VTStatus {
   name: string;
 }
 
-export enum ViolationTicketStatusEnum {
-  ISSUED = "ISSUED",
-  PAID = "PAID",
-  DISPUTED = "DISPUTED"
-}
+

@@ -168,6 +168,12 @@ export enum EnforcementActionEnum {
   WARNING = "11",
 }
 
+export enum ViolationTicketStatus {
+  ISSUED = "ISSUED",
+  PAID = "PAID",
+  DISPUTED = "DISPUTED"
+}
+
 export enum ComplaintStatusEnum {
   OPEN = "Open",
   CLOSED = "Closed",

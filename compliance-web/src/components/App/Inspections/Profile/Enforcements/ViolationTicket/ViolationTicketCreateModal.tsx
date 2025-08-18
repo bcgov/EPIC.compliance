@@ -20,8 +20,8 @@ import { useCreateViolationTicket } from "@/hooks/useViolationTickets";
 import {
   ViolationTicket,
   ViolationTicketAPIData,
-  ViolationTicketStatusEnum,
 } from "@/models/ViolationTicket";
+import { ViolationTicketStatus } from "@/utils/constants";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import ViolationTicketUpdateModal from "./ViolationTicketUpdateModal";
@@ -107,8 +107,6 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
           data.requirements as InspectionRequirement[]
         ).map((requirement) => requirement.id),
         ticket_number: data.ticket_number?.toString() || "", // Convert number to string for API
-        status: ViolationTicketStatusEnum.ISSUED,
-
       };
 
       createViolationTicket({

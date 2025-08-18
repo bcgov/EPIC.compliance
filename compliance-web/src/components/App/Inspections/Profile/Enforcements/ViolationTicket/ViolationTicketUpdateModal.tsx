@@ -13,8 +13,8 @@ import { useUpdateViolationTicket, useDeleteViolationTicket } from "@/hooks/useV
 import {
   ViolationTicket,
   ViolationTicketAPIData,
-  ViolationTicketStatusEnum,
 } from "@/models/ViolationTicket";
+import { ViolationTicketStatus } from "@/utils/constants";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
@@ -40,9 +40,9 @@ type StatusOption = {
 };
 
 const statusOptions: StatusOption[] = [
-  { id: ViolationTicketStatusEnum.ISSUED, name: "Issued" },
-  { id: ViolationTicketStatusEnum.PAID, name: "Paid" },
-  { id: ViolationTicketStatusEnum.DISPUTED, name: "Disputed" },
+  { id: ViolationTicketStatus.ISSUED, name: "Issued" },
+  { id: ViolationTicketStatus.PAID, name: "Paid" },
+  { id: ViolationTicketStatus.DISPUTED, name: "Disputed" },
 ];
 
 type ViolationTicketUpdateModalProps = {
