@@ -54,7 +54,7 @@ describe("CaseFileComplaintsTable", () => {
 
   beforeEach(() => {
     queryClient = new QueryClient();
-    queryClient.setQueryData(["complaints-by-caseFileId", 1], mockComplaints);
+    queryClient.setQueryData(["complaints-by-caseFileId", 1], {items: mockComplaints});
 
     // Create a simple router for testing
     const rootRoute = createRootRoute();

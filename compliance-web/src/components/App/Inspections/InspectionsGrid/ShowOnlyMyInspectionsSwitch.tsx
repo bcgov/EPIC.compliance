@@ -77,7 +77,7 @@ const ShowOnlyMyInspectionsSwitch: React.FC<
       if (!isChecked || !currentStaff?.id) {
         return {
           primary_officer_id: [],
-          reviewer: [],
+          approved_by_ids: [],
           approval_status: [],
         };
       }
@@ -85,7 +85,7 @@ const ShowOnlyMyInspectionsSwitch: React.FC<
       if (isCurrentUserDeputy) {
         // For deputy directors, filter by both reviewer and approval status
         return {
-          reviewer: [currentStaff.id.toString()],
+          approved_by_ids: [currentStaff.id.toString()],
           approval_status: [APPROVAL_STATUS.APPROVAL_PENDING],
         };
       } else {

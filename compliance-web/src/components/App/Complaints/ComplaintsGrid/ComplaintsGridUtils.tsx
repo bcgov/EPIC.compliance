@@ -35,12 +35,12 @@ export const useConvertFiltersToQueryParams = (
             break;
           case "project":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.project_id = filter.value.join(",");
+              params.project_ids = filter.value.join(",");
             }
             break;
           case "topic_id":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.topic_id = filter.value.join(",");
+              params.topic_ids = filter.value.join(",");
             }
             break;
           case "date_received":
@@ -53,17 +53,17 @@ export const useConvertFiltersToQueryParams = (
             break;
           case "source_type_id":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.source_type_id = filter.value.join(",");
+              params.source_type_ids = filter.value.join(",");
             }
             break;
-          case "primary_officer_id":
+          case "primary_officer_ids":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.primary_officer_id = filter.value.join(",");
+              params.primary_officer_ids = filter.value.join(",");
             }
             break;
           case "status":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.status = filter.value.join(",");
+              params.statuses = filter.value.join(",");
             }
             break;
           case "case_file_number":
@@ -78,13 +78,18 @@ export const useConvertFiltersToQueryParams = (
       Object.entries(externalFilters).forEach(([key, value]) => {
         if (value && (Array.isArray(value) ? value.length > 0 : value !== "")) {
           switch (key) {
-            case "primary_officer_id":
-              params.primary_officer_id = Array.isArray(value)
+            case "primary_officer_ids":
+              params.primary_officer_ids = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;
-            case "project_id":
-              params.project_id = Array.isArray(value)
+            case "project_ids":
+              params.project_ids = Array.isArray(value)
+                ? value.join(",")
+                : value;
+              break;
+            case "statuses":
+              params.statuses = Array.isArray(value)
                 ? value.join(",")
                 : value;
               break;
@@ -174,7 +179,7 @@ export const useComplaintsGridColumns = (
     },
     {
       accessorFn: (row) => row.primary_officer?.name,
-      id: "primary_officer_id",
+      id: "primary_officer_ids",
       header: "Primary",
       filterVariant: "multi-select",
       filterSelectOptions:

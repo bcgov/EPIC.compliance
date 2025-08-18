@@ -47,12 +47,12 @@ export interface Complaint {
 
 export interface ComplaintGridQueryParams extends BaseTableQueryParams {
   complaint_number?: string;
-  project_id?: string;
-  topic_id?: string;
+  project_ids?: string;
+  topic_ids?: string;
   date_received?: string;
-  source_type_id?: string;
-  primary_officer_id?: string;
-  status?: string;
+  source_type_ids?: string;
+  primary_officer_ids?: string;
+  statuses?: string;
   case_file_number?: string;
   case_file_id?: string;
 }

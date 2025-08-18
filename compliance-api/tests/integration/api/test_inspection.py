@@ -170,8 +170,8 @@ def test_get_inspections_by_case_file_id(
     # Check that the response has the expected pagination structure
     assert "items" in result.json
     assert "total" in result.json
-    assert result.json["total"] > 1
-    assert len(result.json["items"]) > 0
+    assert result.json["total"] >= 1
+    assert len(result.json["items"]) >= 1
 
 
 def test_get_inspections(

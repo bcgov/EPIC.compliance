@@ -31,7 +31,7 @@ export function Complaints() {
   const { data: projects } = useProjectsData();
   const { data: topics } = useTopicsData();
   const { data: complaintSources } = useComplaintSourcesData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData(true);
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
   const { isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "complaint_number", desc: false },

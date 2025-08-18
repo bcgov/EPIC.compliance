@@ -38,7 +38,9 @@ const caseFilesColumnFiltersCacheKey = "case-files-column-filters";
 export function CaseFiles() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData(true);
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData({
+    isActive: true
+  });
   const { isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "case_file_number", desc: true },
@@ -108,10 +110,11 @@ export function CaseFiles() {
       }
 
       // Restore "My Files" switch state if it was cached
+      const primaryOfficerFilter = restoredExternalFilters.primary_officer_ids || restoredExternalFilters.primary_officer_id;
       if (
-        restoredExternalFilters.primary_officer_id &&
-        Array.isArray(restoredExternalFilters.primary_officer_id) &&
-        restoredExternalFilters.primary_officer_id.length > 0
+        primaryOfficerFilter &&
+        Array.isArray(primaryOfficerFilter) &&
+        primaryOfficerFilter.length > 0
       ) {
         setMyFilesChecked(true);
       }
@@ -162,9 +165,12 @@ export function CaseFiles() {
     }
   }, [columnFilters, externalFilters, globalFilter, sorting, myFilesChecked]);
 
+  // Memoize external filters to prevent unnecessary recreations
+  const memoizedExternalFilters = useMemo(() => externalFilters, [externalFilters]);
+
   // Use the extracted utility function
   const convertFiltersToQueryParams =
-    useConvertFiltersToQueryParams(externalFilters);
+    useConvertFiltersToQueryParams(memoizedExternalFilters);
 
   const queryParams: CaseFileGridQueryParams = useMemo(() => {
     // Extract sorting information from the sorting state
@@ -277,13 +283,21 @@ export function CaseFiles() {
       externalFilters: Record<string, string[] | string>;
       columnFilters?: MRT_TableState<CaseFile>["columnFilters"];
     }) => {
-      setMyFilesChecked(filters.checked);
-      setExternalFilters(filters.externalFilters);
+      // Only update if the values have actually changed
+      const filtersChanged = JSON.stringify(filters.externalFilters) !== JSON.stringify(externalFilters);
+      const checkedChanged = filters.checked !== myFilesChecked;
 
-      // Reset pagination when filters change
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      if (checkedChanged) {
+        setMyFilesChecked(filters.checked);
+      }
+
+      if (filtersChanged) {
+        setExternalFilters(filters.externalFilters);
+        // Reset pagination when filters change
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
     },
-    []
+    [externalFilters, myFilesChecked]
   );
 
   // Use the extracted utility function for columns
