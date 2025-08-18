@@ -17,6 +17,7 @@ from compliance_api.services.epic_track_service.track_service import TrackServic
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, UNAPPROVED_PROJECT_CODE
 from compliance_api.utils.datetime import convert_to_full_month_format
+from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
 
 from .order_constant import DEFAULT_ACT, DEFAULT_CHAPTER, DEFAULT_SECTION
@@ -297,8 +298,8 @@ def _create_order_data(inspection, order):
     return {
         "order_details": {
             "order_number": order.order_number,
-            "where_as": order.where_as,
-            "now_therefore": order.now_therefore,
+            "where_as": convert_inline_styles_for_pdf(order.where_as),
+            "now_therefore": convert_inline_styles_for_pdf(order.now_therefore),
             "issued_date": (
                 order_date.strftime("%Y-%m-%d")
                 if order_date
