@@ -16,10 +16,11 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
-  const { data: complaints } = useComplaintsByCaseFileId(caseFile.id);
+  const { data } = useComplaintsByCaseFileId(caseFile.id);
+  const complaints = useMemo(() => data?.items || [], [data]);
 
   const [expandedComplaints, setExpandedComplaints] = useState<Set<number>>(
     new Set()

@@ -55,14 +55,15 @@ export interface Inspection {
 export interface InspectionGridQueryParams extends BaseTableQueryParams {
   case_file_id?: string;
   ir_number?: string;
-  project_id?: string;
+  project_ids?: string;
   start_date?: string;
-  initiation_id?: string;
-  ir_progress?: string;
-  approval_status?: string;
-  primary_officer_id?: string;
-  status?: string;
+  initiation_ids?: string;
+  ir_progresses?: string;
+  approval_statuses?: string;
+  primary_officer_ids?: string;
+  statuses?: string;
   case_file_number?: string;
+  approved_by_ids?: string;
 }
 
 export interface InspectionGridItems {
