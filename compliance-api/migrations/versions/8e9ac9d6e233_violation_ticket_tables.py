@@ -143,4 +143,5 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_violation_ticket_inspection_requirement_maps_version_end_transaction_id'))
 
     op.drop_table('violation_ticket_inspection_requirement_maps_version')
+    op.execute("DROP TYPE violationticketstatusenum")
     # ### end Alembic commands ###
