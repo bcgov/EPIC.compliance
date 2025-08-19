@@ -11,6 +11,7 @@ import {
   WarningLetterProgressEnum,
   ReferralStatus,
   CRStatus,
+  ViolationTicketStatus
 } from "@/utils/constants";
 import { Chip } from "@mui/material";
 import { useMemo } from "react";
@@ -119,11 +120,11 @@ const EnforcementStatusFlag = ({
       status = {
         name: violationTicket.status.name,
       };
-      if (violationTicket.status.id === "ISSUED") {
+      if (violationTicket.status.id === ViolationTicketStatus.ISSUED) {
         status.color = "success";
-      } else if (violationTicket.status.id === "PAID") {
+      } else if (violationTicket.status.id === ViolationTicketStatus.PAID) {
         status.color = "success";
-      } else if (violationTicket.status.id === "DISPUTED") {
+      } else if (violationTicket.status.id === ViolationTicketStatus.DISPUTED) {
         status.color = "error";
       }
     }
