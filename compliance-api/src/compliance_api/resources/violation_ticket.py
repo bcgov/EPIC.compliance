@@ -31,12 +31,12 @@ violation_ticket_status_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
+@cors_preflight("GET,POST,OPTIONS")
 @API.route("", methods=["GET", "POST", "OPTIONS"])
 class ViolationTickets(Resource):
     """Resource for managing violation tickets."""
 
     @staticmethod
-    @cors_preflight("GET,POST,OPTIONS")
     @auth.require
     @API.doc(
         "get_violation_tickets",
@@ -51,7 +51,6 @@ class ViolationTickets(Resource):
         return ViolationTicketSchema(many=True).dump(violation_tickets), HTTPStatus.OK
 
     @staticmethod
-    @cors_preflight("GET,POST,OPTIONS")
     @auth.require
     @API.doc(
         "create_violation_ticket",
@@ -67,12 +66,12 @@ class ViolationTickets(Resource):
         return ViolationTicketSchema().dump(violation_ticket), HTTPStatus.CREATED
 
 
+@cors_preflight("GET,PATCH,DELETE,OPTIONS")
 @API.route("/<int:violation_ticket_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"])
 class ViolationTicket(Resource):
     """Resource for managing a single ViolationTicket."""
 
     @staticmethod
-    @cors_preflight("GET,PATCH,DELETE,OPTIONS")
     @auth.require
     @API.doc(
         "get_violation_ticket",
@@ -86,7 +85,6 @@ class ViolationTicket(Resource):
         return ViolationTicketSchema().dump(violation_ticket), HTTPStatus.OK
 
     @staticmethod
-    @cors_preflight("GET,PATCH,DELETE,OPTIONS")
     @auth.require
     @API.doc(
         "update_violation_ticket",
@@ -109,7 +107,6 @@ class ViolationTicket(Resource):
         return ViolationTicketSchema().dump(violation_ticket), HTTPStatus.OK
 
     @staticmethod
-    @cors_preflight("GET,PATCH,DELETE,OPTIONS")
     @auth.require
     @API.doc(
         "delete_violation_ticket",
@@ -122,12 +119,12 @@ class ViolationTicket(Resource):
         return "", HTTPStatus.NO_CONTENT
 
 
+@cors_preflight("GET,OPTIONS")
 @API.route("/vt-number/<string:vt_number>", methods=["GET", "OPTIONS"])
 class ViolationTicketByVtNumber(Resource):
     """Resource for managing a single ViolationTicket by VT number."""
 
     @staticmethod
-    @cors_preflight("GET,OPTIONS")
     @auth.require
     @API.doc(
         "get_violation_ticket_by_vt_number",

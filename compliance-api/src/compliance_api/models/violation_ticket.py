@@ -139,14 +139,14 @@ class ViolationTicket(BaseModelVersioned):
     )
     vt_number = Column(String, nullable=False, comment="System generated VT number")
     date_issued = Column(
-        DateTime(timezone=True), nullable=False, comment="Date the ticket was issued"
+        DateTime(timezone=True), nullable=True, comment="Date the ticket was issued"
     )
     ticket_number = Column(String, nullable=False, comment="Manual ticket number")
-    fine_amount = Column(Numeric(10, 2), nullable=False, comment="Fine amount")
+    fine_amount = Column(Numeric(10, 2), nullable=True, comment="Fine amount")
     status = Column(
-        Enum(ViolationTicketStatusEnum), nullable=False, comment="Ticket status"
+        Enum(ViolationTicketStatusEnum), nullable=True, comment="Ticket status"
     )
-    status_date = Column(DateTime(timezone=True), nullable=False, comment="Status date")
+    status_date = Column(DateTime(timezone=True), nullable=True, comment="Status date")
     inspection_id = Column(
         Integer,
         ForeignKey("inspections.id"),

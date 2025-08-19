@@ -19,6 +19,7 @@ import WarningLetterDrawer from "@/components/App/Inspections/Profile/Enforcemen
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
+import { ViolationTicket } from "@/models/ViolationTicket";
 import { AddRounded } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
@@ -28,9 +29,12 @@ import AdministrativePenaltyCreateModal from "@/components/App/Inspections/Profi
 import AdministrativePenaltyUpdateModal from "@/components/App/Inspections/Profile/Enforcements/AdministrativePenalty/AdministrativePenaltyUpdateModal";
 import ChargeRecommendationCreateModal from "@/components/App/Inspections/Profile/Enforcements/ChargeRecommendation/ChargeRecommendationCreateModal";
 import ChargeRecommendationUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ChargeRecommendation/ChargeRecommendationUpdateModal";
+import ViolationTicketCreateModal from "@/components/App/Inspections/Profile/Enforcements/ViolationTicket/ViolationTicketCreateModal";
+import ViolationTicketUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ViolationTicket/ViolationTicketUpdateModal";
 import { prepNonProceededRequirements } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
 import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
+import { useViolationTicketsData } from "@/hooks/useViolationTickets";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 
 interface InspectionEnforcementsProps {
@@ -92,13 +96,20 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isLoading: isInspectionChargeRecommendationsLoading,
   } = useChargeRecommendationsData(inspectionData.id);
 
+  const {
+    data: inspectionViolationTicketsData,
+    isLoading: isInspectionViolationTicketsLoading,
+  } = useViolationTicketsData(inspectionData.id);
+
   useEffect(() => {
     if (
       !isInspectionRequirementsLoading &&
       !isInspectionOrdersLoading &&
       !isInspectionWarningLettersLoading &&
       !isInspectionAdministrativePenaltiesLoading &&
-      !isInspectionChargeRecommendationsLoading
+      !isInspectionChargeRecommendationsLoading &&
+      !isInspectionAdministrativePenaltiesLoading &&
+      !isInspectionViolationTicketsLoading
     ) {
       setIsDataLoading(false);
     }
@@ -108,11 +119,12 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isInspectionWarningLettersLoading,
     isInspectionAdministrativePenaltiesLoading,
     isInspectionChargeRecommendationsLoading,
+    isInspectionViolationTicketsLoading,
   ]);
 
   useEffect(() => {
     if (inspectionRequirementsData) {
-      // filter requirements with enforcement actions as order or warning letter
+      // filter requirements with enforcement actions as order, warning letter, administrative penalty, or violation ticket
       const filteredRequirements = inspectionRequirementsData.filter(
         (requirement) =>
           requirement.enforcement_action_data?.length &&
@@ -122,6 +134,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               EnforcementActionEnum.ORDER,
               EnforcementActionEnum.AP_RECOMMENDATION,
               EnforcementActionEnum.CHARGE_RECOMMENDATION,
+              EnforcementActionEnum.VIOLATION_TICKET,
             ].includes(enforcement.id as EnforcementActionEnum)
           )
       );
@@ -186,6 +199,21 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionChargeRecommendationsData]);
 
+  const nonProceededVTRequirements = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    const vtReqIds = inspectionViolationTicketsData?.map(
+      (violationTicket) =>
+        violationTicket.violation_ticket_requirement_maps?.map(
+          (map) => map.inspection_requirement_id
+        )
+    );
+    return prepNonProceededRequirements({
+      requirements: requirementEnforcements,
+      reqIds: vtReqIds,
+      enforcementActionType: EnforcementActionEnum.VIOLATION_TICKET,
+    });
+  }, [requirementEnforcements, inspectionViolationTicketsData]);
+
   const openEnforcementModal = (
     modelType: EnforcementActionEnum,
     requirement?: InspectionRequirement
@@ -225,7 +253,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
             requirementsList={nonProceededAPRequirements}
             requirement={requirement}
             onSubmit={() => {
-              // TODO: Add AdministrativePenalty drawer when available
               setModalClose();
             }}
           />
@@ -235,9 +262,22 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <ChargeRecommendationCreateModal
             inspectionData={inspectionData}
-            requirementsList={requirementEnforcements}
+            requirementsList={nonProceededChargeRecommendationRequirements}
             requirement={requirement}
             onSubmit={() => {
+              setModalClose();
+            }}
+          />
+        );
+        break;
+      case EnforcementActionEnum.VIOLATION_TICKET:
+        content = (
+          <ViolationTicketCreateModal
+            inspectionData={inspectionData}
+            requirementsList={nonProceededVTRequirements}
+            requirement={requirement}
+            onSubmit={() => {
+              // TODO: Add ViolationTicket drawer when available
               setModalClose();
             }}
           />
@@ -265,8 +305,13 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     },
     {
       text: "Charge Recommendation",
-      onClick: () => openEnforcementModal(EnforcementActionEnum.CHARGE_RECOMMENDATION),
+      onClick: () => openEnforcementModal(EnforcementActionEnum.CHARGE_RECOMMENDATION)
     },
+    {
+      text: "Violation Ticket",
+      onClick: () => openEnforcementModal(EnforcementActionEnum.VIOLATION_TICKET),
+    }
+    
   ];
 
   const openEnforcementOrderDrawer = (order: InspectionOrder) => {
@@ -347,7 +392,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <ChargeRecommendationUpdateModal
           chargeRecommendationData={chargeRecommendation}
           inspectionData={inspectionData}
-          requirementsList={requirementEnforcements}
           onSubmit={() => {
             // Refresh the charge recommendations data
             queryClient.invalidateQueries({
@@ -357,6 +401,26 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         />
       ),
         width: MODAL_WIDTHS.CHARGE_RECOMMENDATION,
+    });
+  };
+
+  const openViolationTicketUpdateModal = (
+    violationTicket: ViolationTicket
+  ) => {
+    setModalOpen({
+      content: (
+        <ViolationTicketUpdateModal
+          violationTicket={violationTicket}
+          inspectionData={inspectionData}
+          onSuccess={() => {
+            // Refresh the violation tickets data
+            queryClient.invalidateQueries({
+              queryKey: ["inspection-violation-tickets", inspectionData.id],
+            });
+          }}
+        />
+      ),
+        width: MODAL_WIDTHS.VIOLATION_TICKET,
     });
   };
 
@@ -390,6 +454,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               ...nonProceededWarningLetterRequirements,
               ...nonProceededAPRequirements,
               ...nonProceededChargeRecommendationRequirements,
+              ...nonProceededVTRequirements,
             ].map((requirement,index) => (
               <EnforcementNotificationCard
                 key={index}
@@ -437,6 +502,17 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
             >
               <EnforcementCard
                 chargeRecommendation={chargeRecommendation}
+                requirementEnforcements={requirementEnforcements}
+              />
+            </Box>
+          ))}
+            {inspectionViolationTicketsData?.map((violationTicket) => (
+            <Box
+              key={violationTicket.id}
+              onClick={() => openViolationTicketUpdateModal(violationTicket)}
+            >
+              <EnforcementCard
+                violationTicket={violationTicket}
                 requirementEnforcements={requirementEnforcements}
               />
             </Box>

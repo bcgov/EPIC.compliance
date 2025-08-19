@@ -12,27 +12,40 @@ from .inspection_requirement import InspectionRequirementSchema
 from .staff_user import StaffUserSchema
 
 
-class ViolationTicketUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+class ViolationTicketCreateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Schema for violation ticket model."""
 
     inspection_id = fields.Integer(
         required=True, metadata={"description": "The inspection id"}
-    )
-    date_issued = fields.DateTime(
-        required=True,
-        format=INPUT_DATE_TIME_FORMAT,
-        error_messages={
-            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
-        },
-        metadata={"description": "The date the ticket was issued"},
     )
     ticket_number = fields.String(
         required=True,
         validate=validate.Length(min=1, max=100),
         metadata={"description": "The manual ticket number"},
     )
-    fine_amount = fields.Decimal(
+    inspection_requirement_ids = fields.List(
+        fields.Integer(),
         required=True,
+        metadata={
+            "description": "List of inspection requirement IDs associated with the violation ticket."
+        },
+    )
+
+
+class ViolationTicketUpdateSchema(ViolationTicketCreateSchema):  # pylint: disable=too-many-ancestors
+    """Schema for violation ticket model."""
+
+    date_issued = fields.DateTime(
+        required=False,
+        format=INPUT_DATE_TIME_FORMAT,
+        error_messages={
+            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
+        },
+        metadata={"description": "The date the ticket was issued"},
+    )
+
+    fine_amount = fields.Decimal(
+        required=False,
         places=2,
         validate=validate.Range(min=0),
         metadata={"description": "The fine amount"},
@@ -44,26 +57,13 @@ class ViolationTicketUpdateSchema(BaseSchema):  # pylint: disable=too-many-ances
         by_value=False,
     )
     status_date = fields.DateTime(
-        required=True,
+        required=False,
         format=INPUT_DATE_TIME_FORMAT,
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
         metadata={"description": "The status date"},
     )
-    inspection_requirement_ids = fields.List(
-        fields.Integer(),
-        required=True,
-        metadata={
-            "description": "List of inspection requirement IDs associated with the violation ticket."
-        },
-    )
-
-
-class ViolationTicketCreateSchema(
-    ViolationTicketUpdateSchema
-):  # pylint: disable=too-many-ancestors
-    """Schema for violation ticket model."""
 
 
 class ViolationTicketInspectionRequirementMapSchema(
@@ -76,6 +76,7 @@ class ViolationTicketInspectionRequirementMapSchema(
 
         model = ViolationTicketInspectionRequirementMap
         unknown = EXCLUDE
+        include_fk = True
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),

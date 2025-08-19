@@ -2,6 +2,7 @@ import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { InspectionOrder } from "@/models/InspectionOrder";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
+import { ViolationTicket } from "@/models/ViolationTicket";
 import {
   APPROVAL_STATUS,
   OrderProgressEnum,
@@ -10,6 +11,7 @@ import {
   WarningLetterProgressEnum,
   ReferralStatus,
   CRStatus,
+  ViolationTicketStatus
 } from "@/utils/constants";
 import { Chip } from "@mui/material";
 import { useMemo } from "react";
@@ -19,11 +21,13 @@ const EnforcementStatusFlag = ({
   warningLetter,
   administrativePenalty,
   chargeRecommendation,
+  violationTicket,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   administrativePenalty?: AdministrativePenalty;
   chargeRecommendation?: ChargeRecommendation;
+  violationTicket?: ViolationTicket;
 }) => {
   const flagStatus = useMemo(() => {
     let status: {
@@ -106,16 +110,27 @@ const EnforcementStatusFlag = ({
         name: chargeRecommendation.status?.name || CRStatus.DRAFTING.name,
       };
       if (chargeRecommendation.status?.id === CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id) {
-        status.color = "warning";
+        status.color = "success";
       } else if (chargeRecommendation.status?.id === CRStatus.DEPUTY_REVIEW.id) {
         status.color = "warning";
       } else if (chargeRecommendation.status?.id === CRStatus.CEB_NOT_PROCEEDING.id) {
         status.color = "error";
       }
+    } else if (violationTicket) {
+      status = {
+        name: violationTicket.status.name,
+      };
+      if (violationTicket.status.id === ViolationTicketStatus.ISSUED) {
+        status.color = "success";
+      } else if (violationTicket.status.id === ViolationTicketStatus.PAID) {
+        status.color = "success";
+      } else if (violationTicket.status.id === ViolationTicketStatus.DISPUTED) {
+        status.color = "error";
+      }
     }
 
     return status;
-  }, [order, warningLetter, administrativePenalty, chargeRecommendation]);
+  }, [order, warningLetter, administrativePenalty, chargeRecommendation,violationTicket]);
 
   return flagStatus.name ? (
     <Chip

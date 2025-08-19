@@ -79,6 +79,12 @@ class ViolationTicketService:
             inspection, violation_ticket_data
         )
 
+        # Check if vt_number already exists for other entries in the database
+        if ViolationTicketModel.get_by_vt_number(violation_ticket_obj["vt_number"]):
+            raise UnprocessableEntityError(
+                f"Violation ticket with number {violation_ticket_obj['vt_number']} already exists."
+            )
+
         # Database operations within session scope
         with session_scope() as session:
             # Create the violation ticket
@@ -237,7 +243,7 @@ def _create_violation_ticket_obj(inspection, violation_ticket_data: dict) -> dic
     Generates VT number and sets default status if not provided.
     """
     vt_number = _create_vt_number(
-        inspection.case_file.project_id, inspection.case_file_id
+        inspection.case_file.project_id, inspection.case_file_id, violation_ticket_data.get("ticket_number")
     )
 
     return {
@@ -251,7 +257,7 @@ def _create_violation_ticket_obj(inspection, violation_ticket_data: dict) -> dic
     }
 
 
-def _create_vt_number(project_id: int, case_file_id: int) -> str:
+def _create_vt_number(project_id: int, case_file_id: int, ticket_number: int) -> str:
     """Generate the VT number."""
     project_abbreviation = ServiceUtils.get_project_abbreviation(project_id)
 
@@ -261,11 +267,5 @@ def _create_vt_number(project_id: int, case_file_id: int) -> str:
         raise ResourceNotFoundError(f"Case file with ID {case_file_id} not found")
 
     master_number = case_file.case_file_number
-
-    # Get next ticket number for this project and case file
-    ticket_count = ViolationTicketModel.get_count_by_project_and_case_file_id(
-        project_id, case_file_id
-    )
-    ticket_number = str(ticket_count + 1).zfill(3)  # Zero-padded to 3 digits
 
     return f"{project_abbreviation}_{master_number}_VT-{ticket_number}"
