@@ -103,7 +103,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         inspection_requirement_ids: (
           data.requirements as InspectionRequirement[]
         ).map((requirement) => requirement.id),
-        ticket_number: data.ticket_number || "", // Already a string
+        ticket_number: data.ticket_number || "", 
       };
 
       createViolationTicket({
