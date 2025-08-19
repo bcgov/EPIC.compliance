@@ -65,20 +65,20 @@ ACTION_REQUIRED_BY_RP = """<p class="editor-paragraph" dir="ltr"><b><strong clas
 </p>"""
 
 ENFORCEMENT_SUMMARY = {
-    "NOTICE_OF_NON_COMPLIANCE": """<div>{{ regulated_party }} is not compliant with {{ number }} of
+    "NOTICE_OF_NON_COMPLIANCE": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not compliant with {{ number }} of
      {{ req_source_name }} of {{ eac }}. {{ regulated_party }} has been issued a Notice of Non-Compliance. See
-     Requirement {{ req_sort_order }} for further information.</div>""",
-    "WARNING_LETTER": """<div>{{ regulated_party }} is not compliant with {{ ','.join(condition_lines)}}
+     Requirement {{ req_sort_order }} for further information.</p>""",
+    "WARNING_LETTER": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not compliant with {{ ','.join(condition_lines)}}
      of {{ eac }}. See Appendix X for Warning Letter {{ warning_letter_no }} for the non-compliance and
-      Requirement {{ req_sort_order }} for further information.</div>""",
-    "ORDER": """<div>In Addition, {{ regulated_party }} is not compliant with {{ ','.join(condition_lines)}}
+      Requirement {{ req_sort_order }} for further information.</p>""",
+    "ORDER": """<p class="editor-paragraph" dir="ltr">In Addition, {{ regulated_party }} is not compliant with {{ ','.join(condition_lines)}}
      of {{ eac }}. See Appendix X for Order {{ order_no }} issued under {{ section_no }} of the <i>{{ act }}</i>
-     and Requirement {{ req_sort_order }} for further information.</div>""",
-    "ADMINISTRATIVE_PENALTY": """<div>In Addition, the findings for Requirement {{ req_sort_order }}
-    may be referred to a decision maker for consideration of an Administrative Penalty.</div>""",
-    "AGENCY": """<div>{{ number }} of {{ req_source_name }} of {{ eac }} was refered to {{ agency_name }}.
-     See Requirement {{ req_sort_order }} for further information</div>""",
-    "DEFAULT": """<div>The EAO CEB may inspect to determine if {{ project_name }} has been brought into compliance with these
+     and Requirement {{ req_sort_order }} for further information.</p>""",
+    "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In Addition, the findings for Requirement {{ req_sort_order }}
+    may be referred to a decision maker for consideration of an Administrative Penalty.</p>""",
+    "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of {{ eac }} was refered to {{ agency_name }}.
+     See Requirement {{ req_sort_order }} for further information</p>""",
+    "DEFAULT": """<p class="editor-paragraph" dir="ltr">The EAO CEB may inspect to determine if {{ project_name }} has been brought into compliance with these
      requirements. Continued non-compliance with these requirements may result in additional enforcement
-     under the <i>{{ act }}</i> </div>""",
+     under the <i>{{ act }}</i> </p>""",
 }
