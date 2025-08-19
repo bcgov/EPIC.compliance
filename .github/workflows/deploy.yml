@@ -37,7 +37,7 @@ jobs:
           oc rollout restart deployment/compliance-web -n ${{ secrets.OPENSHIFT_REPOSITORY }}-${{ github.event.inputs.environment }}
   update_templates:
     needs: deployment
-    uses: ./.github/workflows/deploy-and-update-template.yml
+    uses: ./.github/workflows/deploy_templates.yaml
     with:
       environment: ${{ github.event.inputs.environment }}
     secrets: inherit
