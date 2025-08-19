@@ -8,6 +8,7 @@ so this utility converts unsupported properties to equivalent supported ones.
 
 import re
 from typing import Dict
+
 from bs4 import BeautifulSoup
 
 

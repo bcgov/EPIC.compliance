@@ -6,9 +6,10 @@ import { FC } from "react";
 type ModalTitleBarProps = {
   title: string;
   onClose?: () => void;
+  titleVariant?: "h5" | "h6";
 };
 
-const ModalTitleBar: FC<ModalTitleBarProps> = ({ title, onClose }) => {
+const ModalTitleBar: FC<ModalTitleBarProps> = ({ title, onClose, titleVariant = "h5" }) => {
   const { setClose } = useModal();
 
   return (
@@ -21,7 +22,7 @@ const ModalTitleBar: FC<ModalTitleBarProps> = ({ title, onClose }) => {
         paddingRight: "1rem",
       }}
     >
-      <Typography variant="h5">{title}</Typography>
+      <Typography variant={titleVariant}>{title}</Typography>
       <IconButton
         aria-label="close"
         onClick={() => {

@@ -66,7 +66,7 @@ const EnforcementModal = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmitHandler)}>
-        <ModalTitleBar title={title} />
+        <ModalTitleBar title={title} titleVariant="h6" />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <ControlledAutoComplete
