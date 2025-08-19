@@ -158,7 +158,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               label="Ticket #"
               placeholder="Enter ticket number"
               sx={{ width: "100%" }}
-
+              disabled
             />
 
           </Box>

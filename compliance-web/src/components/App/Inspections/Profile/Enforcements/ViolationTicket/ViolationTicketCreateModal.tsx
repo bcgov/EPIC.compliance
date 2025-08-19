@@ -26,9 +26,7 @@ import { notify } from "@/store/snackbarStore";
 import ViolationTicketUpdateModal from "./ViolationTicketUpdateModal";
 import { MODAL_WIDTHS } from "@/utils/constants";
 const violationTicketSchema = baseEnforcementSchema.shape({
-  ticket_number: yup.number().transform((value, originalValue) => {
-    return originalValue === "" ? null : value;
-  }).required("Ticket Number is required").integer("Ticket Number must be a whole number").positive("Ticket Number must be positive"),
+  ticket_number: yup.string().required("Ticket Number is required").trim(),
 });
 
 type ViolationTicketFormType = yup.InferType<typeof violationTicketSchema>;
@@ -105,7 +103,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         inspection_requirement_ids: (
           data.requirements as InspectionRequirement[]
         ).map((requirement) => requirement.id),
-        ticket_number: data.ticket_number?.toString() || "", // Convert number to string for API
+        ticket_number: data.ticket_number || "", // Already a string
       };
 
       createViolationTicket({
@@ -164,13 +162,9 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
               name="ticket_number"
               label="Ticket #"
               placeholder="Enter ticket number"
-              type="number"
+              type="text"
               fullWidth
               sx={{ mb: 2 }}
-              inputProps={{
-                min: 1,
-                step: 1,
-              }}
             />
           </Box>
           {selectedRequirements?.length > 1 && (
