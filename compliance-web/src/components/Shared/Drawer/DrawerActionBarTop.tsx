@@ -1,10 +1,14 @@
 import React from "react";
-import { Box, Button } from "@mui/material";
+import { Box } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { useFormContext } from "react-hook-form";
+import LoadingButton from "../LoadingButton";
 
-const DrawerActionBarTop: React.FC<{ isShowActionBar: boolean }> = React.memo(
-  ({ isShowActionBar }) => {
+const DrawerActionBarTop: React.FC<{
+  isShowActionBar: boolean;
+  isLoading?: boolean;
+}> = React.memo(
+  ({ isShowActionBar, isLoading }) => {
     const {
       formState: { isValid },
     } = useFormContext();
@@ -17,9 +21,9 @@ const DrawerActionBarTop: React.FC<{ isShowActionBar: boolean }> = React.memo(
           textAlign: "right",
         }}
       >
-        <Button type="submit" disabled={!isValid}>
+        <LoadingButton type="submit" disabled={!isValid} isLoading={isLoading}>
           Create
-        </Button>
+        </LoadingButton>
       </Box>
     ) : null;
   }
