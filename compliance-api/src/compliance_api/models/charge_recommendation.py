@@ -4,8 +4,9 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_, func
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel

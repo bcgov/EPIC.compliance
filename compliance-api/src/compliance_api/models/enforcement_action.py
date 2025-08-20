@@ -19,6 +19,7 @@ class EnforcementActionOptionEnum(Enum):
     CHARGE_RECOMMENDATION = 9
     ADVISORY = 10
     WARNING = 11
+    RESTORATIVE_JUSTICE = 12
 
 
 class EnforcementActionOption(OptionModel):

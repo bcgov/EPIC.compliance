@@ -112,6 +112,22 @@ class InspectionRecord(BaseModelVersioned):
         comment="State of the inspection record",
         default=IRProgressEnum.PRELIMINARY_DRAFTING,
     )
+    record_prepared_by_id = Column(
+        ForeignKey("staff_users.id", name="ir_record_prepared_by_id_fkey"),
+        nullable=True,
+        comment="The unique identifier of the user who prepared the record",
+    )
+    record_prepared_by_position_id = Column(
+        ForeignKey("positions.id", name="ir_record_prepared_by_position_id_fkey"),
+        nullable=True,
+        comment="The unique identifier of the position of the user who prepared the record",
+    )
+    record_prepared_by = relationship(
+        "StaffUser", foreign_keys=[record_prepared_by_id], lazy="joined"
+    )
+    record_prepared_by_position = relationship(
+        "Position", foreign_keys=[record_prepared_by_position_id], lazy="joined"
+    )
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="joined")
     ir_status = relationship(
         "IRStatusOption", foreign_keys=[ir_status_id], lazy="joined"
