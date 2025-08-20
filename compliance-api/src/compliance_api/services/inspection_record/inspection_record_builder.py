@@ -434,10 +434,8 @@ class InspectionRecordDataBuilder:
                 )
             )
             self.data["enforcement_summary"] = (
-                "<p class=\"editor-paragraph\" dir=\"ltr\">"
-                + "<p class=\"editor-paragraph\"><br></p>".join(
-                    enforcement_summary_lines
-                )
+                '<p class="editor-paragraph" dir="ltr">'
+                + '<p class="editor-paragraph"><br></p>'.join(enforcement_summary_lines)
                 + "</p>"
             )
         return self

@@ -85,10 +85,51 @@ class RestorativeJusticeInspectionRequirementMap(BaseModelVersioned):
     @with_session
     def delete_by_restorative_justice_id(cls, restorative_justice_id, session=None):
         """Delete all restorative justice requirement maps by restorative justice id."""
-        session.query(cls).filter(
-            cls.restorative_justice_id == restorative_justice_id
-        ).update(DELETE_DIC_PARAMS)
-        session.commit()
+        query = session.query(cls) if session else cls.query
+        maps = query.filter_by(restorative_justice_id=restorative_justice_id).all()
+        for map_item in maps:
+            map_item.update(DELETE_DIC_PARAMS, commit=False)
+        session.flush()
+
+    @classmethod
+    @with_session
+    def bulk_delete(
+        cls,
+        restorative_justice_id: int,
+        inspection_requirement_ids: list[int],
+        session=None,
+    ):
+        """Delete inspection requirement ids by id per restorative justice."""
+        query = session.query(cls) if session else cls.query
+        requirements = query.filter(
+            cls.restorative_justice_id == restorative_justice_id,
+            cls.inspection_requirement_id.in_(inspection_requirement_ids),
+        )
+        for requirement in requirements:
+            requirement.update(DELETE_DIC_PARAMS, commit=not session)
+        session.flush()
+
+    @classmethod
+    @with_session
+    def bulk_insert(
+        cls,
+        restorative_justice_id: int,
+        inspection_requirement_ids: list[int],
+        session=None,
+    ):
+        """Insert inspection requirements per restorative justice."""
+        restorative_justice_inspection_requirement_map_data = [
+            RestorativeJusticeInspectionRequirementMap(
+                **{
+                    "restorative_justice_id": restorative_justice_id,
+                    "inspection_requirement_id": inspection_requirement_id,
+                }
+            )
+            for inspection_requirement_id in inspection_requirement_ids
+        ]
+        session.add_all(restorative_justice_inspection_requirement_map_data)
+        session.flush()
+        return restorative_justice_inspection_requirement_map_data
 
 
 class RestorativeJustice(BaseModelVersioned):
@@ -173,7 +214,7 @@ class RestorativeJustice(BaseModelVersioned):
 
         restorative_justice = cls(**restorative_justice_data)
         session.add(restorative_justice)
-        session.commit()
+        session.flush()
         return restorative_justice
 
     @classmethod
@@ -183,7 +224,7 @@ class RestorativeJustice(BaseModelVersioned):
     ):
         """Update the restorative justice."""
         # Get current record to check existing values
-        current_record = cls.get_by_id(restorative_justice_id)
+        restorative_justice = cls.find_by_id(restorative_justice_id)
 
         # Auto-set status if not explicitly provided
         if (
@@ -192,21 +233,20 @@ class RestorativeJustice(BaseModelVersioned):
         ):
             # Use updated values if provided, otherwise use current values
             restitution_details = restorative_justice_update_data.get(
-                "restitution_details", current_record.restitution_details
+                "restitution_details", restorative_justice.restitution_details
             )
             date_restitution_complete = restorative_justice_update_data.get(
-                "date_restitution_complete", current_record.date_restitution_complete
+                "date_restitution_complete",
+                restorative_justice.date_restitution_complete,
             )
 
             restorative_justice_update_data["status"] = cls._determine_status(
                 restitution_details, date_restitution_complete
             )
 
-        session.query(cls).filter(cls.id == restorative_justice_id).update(
-            restorative_justice_update_data
-        )
-        session.commit()
-        return cls.get_by_id(restorative_justice_id)
+        restorative_justice.update(restorative_justice_update_data, commit=False)
+        session.flush()
+        return restorative_justice
 
     @classmethod
     @with_session

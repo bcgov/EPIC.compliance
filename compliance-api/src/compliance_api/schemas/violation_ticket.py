@@ -32,7 +32,9 @@ class ViolationTicketCreateSchema(BaseSchema):  # pylint: disable=too-many-ances
     )
 
 
-class ViolationTicketUpdateSchema(ViolationTicketCreateSchema):  # pylint: disable=too-many-ancestors
+class ViolationTicketUpdateSchema(
+    ViolationTicketCreateSchema
+):  # pylint: disable=too-many-ancestors
     """Schema for violation ticket model."""
 
     date_issued = fields.DateTime(

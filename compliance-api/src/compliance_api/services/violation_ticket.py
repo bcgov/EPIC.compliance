@@ -243,7 +243,9 @@ def _create_violation_ticket_obj(inspection, violation_ticket_data: dict) -> dic
     Generates VT number and sets default status if not provided.
     """
     vt_number = _create_vt_number(
-        inspection.case_file.project_id, inspection.case_file_id, violation_ticket_data.get("ticket_number")
+        inspection.case_file.project_id,
+        inspection.case_file_id,
+        violation_ticket_data.get("ticket_number"),
     )
 
     return {
