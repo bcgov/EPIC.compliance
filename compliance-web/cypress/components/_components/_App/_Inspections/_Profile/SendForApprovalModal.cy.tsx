@@ -254,7 +254,6 @@ describe("SendForApprovalModal", () => {
       
       // Button should show loading state with CircularProgress instead of text
       cy.get('[data-testid="primary-action-modal-button"]').should("not.contain", "Send");
-      cy.get('[data-testid="primary-action-modal-button"]').should("not.be.disabled");
       // Should contain CircularProgress component
       cy.get('[data-testid="primary-action-modal-button"] .MuiCircularProgress-root').should("exist");
     });
@@ -266,14 +265,22 @@ describe("SendForApprovalModal", () => {
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
       
-      // Button should be enabled even when loading (isPending doesn't disable the button)
-      cy.get('[data-testid="primary-action-modal-button"]').should("not.be.disabled");
+      // Button should be disabled when loading (LoadingButton disables when isLoading is true)
+      cy.get('[data-testid="primary-action-modal-button"]').should("be.disabled");
       
-      // Submit form
-      cy.get('[data-testid="primary-action-modal-button"]').click();
+      // Form submission should be prevented when button is disabled
+      // Note: The button is disabled during loading to prevent multiple submissions
+    });
+
+    it("should show loading text when isPending is true", () => {
+      mountComponent({ isPending: true });
       
-      // Should still call onSubmitHandler when loading
-      cy.get("@onSubmitHandler").should("have.been.called");
+      // Select a director first
+      cy.get('input[placeholder="Select Deputy Director"]').click();
+      cy.get('[role="option"]').first().click();
+      
+      // Should show loading text instead of "Send"
+      cy.get('[data-testid="primary-action-modal-button"]').should("contain", "Loading...");
     });
   });
 
