@@ -29,8 +29,10 @@ const AgencyModal: React.FC<AgencyModalProps> = ({ onSubmit, agency }) => {
     onSubmit(agency ? "Successfully updated!" : "Successfully added!");
   };
 
-  const { mutate: addAgency } = useAddAgency(onSuccess);
-  const { mutate: updateAgency } = useUpdateAgency(onSuccess);
+  const { mutate: addAgency, isPending: isPendingAddAgency } =
+    useAddAgency(onSuccess);
+  const { mutate: updateAgency, isPending: isPendingUpdateAgency } =
+    useUpdateAgency(onSuccess);
 
   const methods = useForm({
     resolver: yupResolver(agencySchema),
@@ -75,7 +77,10 @@ const AgencyModal: React.FC<AgencyModalProps> = ({ onSubmit, agency }) => {
             fullWidth
           />
         </DialogContent>
-        <ModalActions primaryActionButtonText={agency ? "Save" : "Add"} />
+        <ModalActions
+          primaryActionButtonText={agency ? "Save" : "Add"}
+          isLoading={isPendingAddAgency || isPendingUpdateAgency}
+        />
       </form>
     </FormProvider>
   );
