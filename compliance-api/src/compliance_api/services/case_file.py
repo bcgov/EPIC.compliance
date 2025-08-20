@@ -508,6 +508,7 @@ def _build_base_query():
             UnapprovedProjectModel,
             CaseFileModel.id == UnapprovedProjectModel.case_file_id,
         )
+        .filter(CaseFileModel.is_deleted.is_(False), CaseFileModel.is_active.is_(True))
     )
 
 
