@@ -417,7 +417,8 @@ class InspectionRecordDataBuilder:
                 for req in self.requirements
             ):
                 enforcement_summary_lines.append(
-                    "<p>See Regulatory Considerations Section for additional information.</p>"
+                    """<p class="editor-paragraph" dir="ltr">See Regulatory Considerations
+                    Section for additional information.</p>"""
                 )
         if len(enforcement_summary_lines) > 0:
             if not self.data.get("project_details"):
@@ -433,7 +434,11 @@ class InspectionRecordDataBuilder:
                 )
             )
             self.data["enforcement_summary"] = (
-                f"<p class='editor-paragraph' dir='ltr'>{'</br>'.join(enforcement_summary_lines)}</p>"
+                "<p class=\"editor-paragraph\" dir=\"ltr\">"
+                + "<p class=\"editor-paragraph\"><br></p>".join(
+                    enforcement_summary_lines
+                )
+                + "</p>"
             )
         return self
 
