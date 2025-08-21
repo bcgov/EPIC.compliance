@@ -87,7 +87,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
       const updateData: RestorativeJusticeUpdateAPIData = {
         restitution_details: data.restitution_details,
         date_restitution_complete: data.date_restitution_complete
-          ? (data.date_restitution_complete as any).format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
+          ? (data.date_restitution_complete as dayjs.Dayjs).format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
           : undefined,
       };
 
@@ -97,7 +97,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
         inspectionId: inspectionData.id,
       });
     },
-    [updateRestorativeJustice, restorativeJustice.id]
+    [updateRestorativeJustice, restorativeJustice.id, inspectionData.id]
   );
 
   const handleCancel = () => {

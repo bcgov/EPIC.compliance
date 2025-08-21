@@ -39,6 +39,6 @@ export interface RestorativeJusticeUpdateAPIData {
 }
 
 export interface RJStatus {
-    id: string;
-    name: string;
-  };
+  id: string;
+  name: string;
+}

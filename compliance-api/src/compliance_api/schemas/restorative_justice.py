@@ -4,7 +4,11 @@ from marshmallow import fields, post_dump
 
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
-from ..models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap, RestorativeJusticeStatusEnum
+from ..models.restorative_justice import (
+    RestorativeJustice,
+    RestorativeJusticeInspectionRequirementMap,
+    RestorativeJusticeStatusEnum,
+)
 from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
 
@@ -61,7 +65,7 @@ class RestorativeJusticeInspectionRequirementMapSchema(
         InspectionRequirementSchema(),
         only=("id", "summary"),
     )
-    
+
     inspection_requirement_id = fields.Integer()
 
 
