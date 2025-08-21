@@ -100,7 +100,7 @@ jobs:
             
             response=$(curl -s -w "\n%{http_code}" -X PATCH \
               "https://${API_HOST}/api/templates/${template_name}" \
-              -H "Authorization: Bearer ${API_TOKEN}" \
+              -H "X-API-Key: ${API_TOKEN}" \
               -H "Content-Type: application/json" \
               -d "{\"template\":\"${template_base64}\"}")
             
