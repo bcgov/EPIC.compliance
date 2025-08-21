@@ -36,8 +36,10 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
 
     inspection = fields.Nested(InspectionSchema)
     ir_status = fields.Nested(KeyValueSchema)
-    record_prepared_by = fields.Nested(StaffUserSchema,
-        only=("id", "first_name", "last_name", "name", "auth_user_guid", "position"),)
+    record_prepared_by = fields.Nested(
+        StaffUserSchema,
+        only=("id", "first_name", "last_name", "name", "auth_user_guid", "position"),
+    )
     record_prepared_by_position = fields.Nested(KeyValueSchema, dump_only=True)
 
     @post_dump
