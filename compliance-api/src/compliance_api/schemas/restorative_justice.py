@@ -1,13 +1,11 @@
 """Restorative Justice Schemas."""
 
 from marshmallow import fields, post_dump
+
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from ..models.restorative_justice import (
-    RestorativeJustice,
-    RestorativeJusticeInspectionRequirementMap,
-    RestorativeJusticeStatusEnum,
-)
+    RestorativeJustice, RestorativeJusticeInspectionRequirementMap, RestorativeJusticeStatusEnum)
 from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
 
