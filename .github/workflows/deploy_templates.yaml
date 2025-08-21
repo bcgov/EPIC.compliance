@@ -102,7 +102,7 @@ jobs:
               "https://${API_HOST}/api/templates/${template_name}" \
               -H "X-API-Key: ${API_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"template\":\"${template_base64}\"}")
+              -d "{\"template_content\":\"${template_base64}\",\"app\":\"COMPLIANCE\"}")
             
             http_code=$(echo "$response" | tail -n1)
             
