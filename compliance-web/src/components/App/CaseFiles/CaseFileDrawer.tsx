@@ -129,8 +129,10 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
     [caseFile, onSubmit, reset]
   );
 
-  const { mutate: createCaseFile } = useCreateCaseFile(onSuccess);
-  const { mutate: updateCaseFile } = useUpdateCaseFile(onSuccess);
+  const { mutate: createCaseFile, isPending: isCreateCaseFilePending } =
+    useCreateCaseFile(onSuccess);
+  const { mutate: updateCaseFile, isPending: isUpdateCaseFilePending } =
+    useUpdateCaseFile(onSuccess);
 
   const getProjectId = (formData: CaseFileSchemaType) => {
     const projectId = (formData.project as Project)?.id ?? "";
@@ -177,7 +179,10 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
           title={caseFile ? caseFile.case_file_number : "Create Case File"}
           isFormDirtyCheck
         />
-        <DrawerActionBarTop isShowActionBar={!caseFile} />
+        <DrawerActionBarTop
+          isShowActionBar={!caseFile}
+          isLoading={isCreateCaseFilePending}
+        />
         <Box
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           overflow={"auto"}
@@ -190,7 +195,10 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
             isSuperUser={isSuperUser}
           />
         </Box>
-        <DrawerActionBarBottom isShowActionBar={!!caseFile} />
+        <DrawerActionBarBottom
+          isShowActionBar={!!caseFile}
+          isLoading={isUpdateCaseFilePending}
+        />
       </form>
     </FormProvider>
   );

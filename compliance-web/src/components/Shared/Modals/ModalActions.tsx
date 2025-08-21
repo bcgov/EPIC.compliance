@@ -1,15 +1,10 @@
 import { useModal } from "@/store/modalStore";
 import { DeleteOutlineRounded } from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  DialogActions,
-  Typography,
-} from "@mui/material";
+import { Box, Button, DialogActions, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import LoadingButton from "@/components/Shared/LoadingButton";
 
 type ModalActionsProps = {
   primaryActionButtonText?: string;
@@ -20,6 +15,7 @@ type ModalActionsProps = {
   onDeleteAction?: () => void;
   onDeleteConfirmationText?: string;
   isLoading?: boolean;
+  isDeleteActionLoading?: boolean;
 };
 
 const ModalActions: FC<ModalActionsProps> = ({
@@ -31,6 +27,7 @@ const ModalActions: FC<ModalActionsProps> = ({
   onDeleteAction,
   onDeleteConfirmationText = "Are you sure you want to delete this?",
   isLoading = false,
+  isDeleteActionLoading = false,
 }) => {
   const { setClose } = useModal();
   const formContext = useFormContext();
@@ -72,21 +69,18 @@ const ModalActions: FC<ModalActionsProps> = ({
             >
               {secondaryActionButtonText ?? "Cancel"}
             </Button>
-            <Button
+            <LoadingButton
               sx={{ minWidth: 100 }}
               type={onPrimaryAction ? "button" : "submit"}
+              isLoading={isLoading}
               onClick={onPrimaryAction}
               disabled={
                 (!!isButtonValidation && !isValid) || showDeleteConfirmation
               }
               data-testid="primary-action-modal-button"
             >
-              {isLoading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                (primaryActionButtonText ?? "Ok")
-              )}
-            </Button>
+              {primaryActionButtonText ?? "Ok"}
+            </LoadingButton>
           </Box>
         </DialogActions>
       )}
@@ -125,14 +119,15 @@ const ModalActions: FC<ModalActionsProps> = ({
           >
             No, Cancel
           </Button>
-          <Button
+          <LoadingButton
             sx={{ minWidth: 100, height: 40 }}
             onClick={onDeleteAction}
             color="error"
             data-testid="delete-confirmation-button"
+            isLoading={isDeleteActionLoading}
           >
             Yes, Delete
-          </Button>
+          </LoadingButton>
         </Box>
       )}
     </>

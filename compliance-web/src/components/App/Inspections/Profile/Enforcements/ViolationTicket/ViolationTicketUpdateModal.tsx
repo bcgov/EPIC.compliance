@@ -158,7 +158,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               label="Ticket #"
               placeholder="Enter ticket number"
               sx={{ width: "100%" }}
-
+              disabled
             />
 
           </Box>
@@ -203,10 +203,11 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
         <ModalActions
           onSecondaryAction={handleCancel}
           onPrimaryAction={handleSubmit(handleSubmitForm)}
-          onDeleteAction={handleDelete}
-          isLoading={isPendingUpdate || isPendingDelete}
+          isLoading={isPendingUpdate}
           primaryActionButtonText="Save"
           secondaryActionButtonText="Cancel"
+          onDeleteAction={handleDelete}
+          isDeleteActionLoading={isPendingDelete}
         />
       </form>
     </FormProvider>

@@ -28,8 +28,8 @@ const TopicModal: React.FC<TopicModalProps> = ({ onSubmit, topic }) => {
     onSubmit(topic ? "Successfully updated!" : "Successfully added!");
   };
 
-  const { mutate: addTopic } = useAddTopic(onSuccess);
-  const { mutate: updateTopic } = useUpdateTopic(onSuccess);
+  const { mutate: addTopic, isPending: isPendingAddTopic } = useAddTopic(onSuccess);
+  const { mutate: updateTopic, isPending: isPendingUpdateTopic } = useUpdateTopic(onSuccess);
 
   const methods = useForm({
     resolver: yupResolver(topicSchema),
@@ -67,7 +67,10 @@ const TopicModal: React.FC<TopicModalProps> = ({ onSubmit, topic }) => {
             isRequired={true}
           />
         </DialogContent>
-        <ModalActions primaryActionButtonText={topic ? "Save" : "Add"} />
+        <ModalActions
+          primaryActionButtonText={topic ? "Save" : "Add"}
+          isLoading={isPendingAddTopic || isPendingUpdateTopic}
+        />
       </form>
     </FormProvider>
   );

@@ -275,10 +275,11 @@ const AdministrativePenaltyUpdateModal: FC<
         <ModalActions
           onSecondaryAction={handleCancel}
           onPrimaryAction={handleSubmit(handleSubmitForm)}
-          onDeleteAction={handleDelete}
-          isLoading={isPendingUpdate || isPendingDelete}
+          isLoading={isPendingUpdate}
           primaryActionButtonText="Save"
           secondaryActionButtonText="Cancel"
+          onDeleteAction={handleDelete}
+          isDeleteActionLoading={isPendingDelete}
         />
       </form>
     </FormProvider>

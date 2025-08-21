@@ -25,6 +25,6 @@ keycloak:
 service:
   port: 8080
 replicas:
-  count: 1
+  count: 2
 mountPath: /usr/share/nginx/html/config/
 

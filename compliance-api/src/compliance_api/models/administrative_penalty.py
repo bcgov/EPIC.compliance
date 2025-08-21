@@ -239,9 +239,9 @@ class AdministrativePenalty(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label(
+                func.count(cls.id).label(  # pylint: disable=not-callable
                     "administrative_penalty_count"
-                ),  # pylint: disable=not-callable
+                ),
             )
             .filter(
                 CaseFileModel.project_id == project_id,

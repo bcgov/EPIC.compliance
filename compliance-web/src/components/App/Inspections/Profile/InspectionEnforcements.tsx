@@ -186,18 +186,36 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
 
   const nonProceededChargeRecommendationRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
+    
     const chargeRecommendationReqIds = inspectionChargeRecommendationsData?.map(
       (chargeRecommendation) =>
         chargeRecommendation.charge_recommendation_requirement_maps?.map(
           (map) => map.inspection_requirement_id
         )
     );
-    return prepNonProceededRequirements({
-      requirements: requirementEnforcements,
-      reqIds: chargeRecommendationReqIds,
-      enforcementActionType: EnforcementActionEnum.CHARGE_RECOMMENDATION,
-    });
+    
+    return requirementEnforcements
+      .filter(requirement => 
+        requirement.enforcement_action_data?.some(
+          enforcement => enforcement.id === EnforcementActionEnum.CHARGE_RECOMMENDATION
+        ) &&
+        !chargeRecommendationReqIds?.flat().includes(requirement.id)
+      )
+      .map(requirement => ({
+        ...requirement,
+        enforcement_action_data: requirement.enforcement_action_data || []
+      }));
   }, [requirementEnforcements, inspectionChargeRecommendationsData]);
+
+
+  const allRequirementsForChargeRecommendation = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    
+    return requirementEnforcements.map(requirement => ({
+      ...requirement,
+      enforcement_action_data: requirement.enforcement_action_data || []
+    }));
+  }, [requirementEnforcements]);
 
   const nonProceededVTRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
@@ -258,18 +276,18 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
           />
         );
         break;
-      case EnforcementActionEnum.CHARGE_RECOMMENDATION:
-        content = (
-          <ChargeRecommendationCreateModal
-            inspectionData={inspectionData}
-            requirementsList={nonProceededChargeRecommendationRequirements}
-            requirement={requirement}
-            onSubmit={() => {
-              setModalClose();
-            }}
-          />
-        );
-        break;
+             case EnforcementActionEnum.CHARGE_RECOMMENDATION:
+         content = (
+           <ChargeRecommendationCreateModal
+             inspectionData={inspectionData}
+             requirementsList={allRequirementsForChargeRecommendation}
+             requirement={requirement}
+             onSubmit={() => {
+               setModalClose();
+             }}
+           />
+         );
+         break;
       case EnforcementActionEnum.VIOLATION_TICKET:
         content = (
           <ViolationTicketCreateModal
