@@ -92,6 +92,7 @@ jobs:
           
           for file_path in ${TEMPLATE_DIR}/*.html; do
             template_name=$(basename "$file_path" .html)
+            template_name_upper=${template_name^^}   # convert to caps
             echo "Processing: $template_name"
             
             template_base64=$(base64 -w 0 "$file_path")
