@@ -64,7 +64,7 @@ jobs:
           # Set API host based on environment
           case $ENVIRONMENT in
             dev)
-              API_HOST="docgen-api-c72cba-dev.apps.gold.devops.gov.bc.ca"
+              API_HOST="docgen-api-c8b80a-dev.apps.gold.devops.gov.bc.ca"
               ;;
             test)
               API_HOST="docgen-api-c8b80a-test.apps.gold.devops.gov.bc.ca"
