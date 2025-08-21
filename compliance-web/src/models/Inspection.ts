@@ -105,6 +105,17 @@ export interface InspectionFormData {
   projectStatus?: ProjectStatus;
   caseFileId?: string;
   isHistory?: boolean;
+  isIndependentEnvMonitor?: boolean;
+  isCHRepresentatives?: boolean;
+  officers?: StaffUser[];
+  inAttendance?: any[];
+  agencies?: any[];
+  firstNations?: any[];
+  municipal?: string;
+  other?: string;
+  projectDescription?: string;
+  locationDescription?: string;
+  utm?: string;
 }
 
 export interface InspectionAPIData {
