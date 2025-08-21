@@ -20,6 +20,7 @@ import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { ViolationTicket } from "@/models/ViolationTicket";
+import { RestorativeJustice } from "@/models/RestorativeJustice";
 import { AddRounded } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
@@ -31,10 +32,13 @@ import ChargeRecommendationCreateModal from "@/components/App/Inspections/Profil
 import ChargeRecommendationUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ChargeRecommendation/ChargeRecommendationUpdateModal";
 import ViolationTicketCreateModal from "@/components/App/Inspections/Profile/Enforcements/ViolationTicket/ViolationTicketCreateModal";
 import ViolationTicketUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ViolationTicket/ViolationTicketUpdateModal";
+import RestorativeJusticeCreateModal from "@/components/App/Inspections/Profile/Enforcements/RestorativeJustice/RestorativeJusticeCreateModal";
+import RestorativeJusticeUpdateModal from "@/components/App/Inspections/Profile/Enforcements/RestorativeJustice/RestorativeJusticeUpdateModal";
 import { prepNonProceededRequirements } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
 import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
 import { useViolationTicketsData } from "@/hooks/useViolationTickets";
+import { useRestorativeJusticeByInspection } from "@/hooks/useRestorativeJustice";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 
 interface InspectionEnforcementsProps {
@@ -101,6 +105,11 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isLoading: isInspectionViolationTicketsLoading,
   } = useViolationTicketsData(inspectionData.id);
 
+  const {
+    data: inspectionRestorativeJusticeData,
+    isLoading: isInspectionRestorativeJusticeLoading,
+  } = useRestorativeJusticeByInspection(inspectionData.id);
+
   useEffect(() => {
     if (
       !isInspectionRequirementsLoading &&
@@ -108,8 +117,8 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
       !isInspectionWarningLettersLoading &&
       !isInspectionAdministrativePenaltiesLoading &&
       !isInspectionChargeRecommendationsLoading &&
-      !isInspectionAdministrativePenaltiesLoading &&
-      !isInspectionViolationTicketsLoading
+      !isInspectionViolationTicketsLoading &&
+      !isInspectionRestorativeJusticeLoading
     ) {
       setIsDataLoading(false);
     }
@@ -120,6 +129,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     isInspectionAdministrativePenaltiesLoading,
     isInspectionChargeRecommendationsLoading,
     isInspectionViolationTicketsLoading,
+    isInspectionRestorativeJusticeLoading,
   ]);
 
   useEffect(() => {
@@ -135,6 +145,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               EnforcementActionEnum.AP_RECOMMENDATION,
               EnforcementActionEnum.CHARGE_RECOMMENDATION,
               EnforcementActionEnum.VIOLATION_TICKET,
+              EnforcementActionEnum.RESTORATIVE_JUSTICE,
             ].includes(enforcement.id as EnforcementActionEnum)
           )
       );
@@ -232,6 +243,34 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionViolationTicketsData]);
 
+  const nonProceededRestorativeJusticeRequirements = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    const rjReqIds = inspectionRestorativeJusticeData?.map(
+      (restorativeJustice) =>
+        restorativeJustice.restorative_justice_requirement_maps?.map(
+          (map) => map.inspection_requirement_id
+        )
+    );
+    return prepNonProceededRequirements({
+      requirements: requirementEnforcements,
+      reqIds: rjReqIds,
+      enforcementActionType: EnforcementActionEnum.RESTORATIVE_JUSTICE,
+    });
+  }, [requirementEnforcements, inspectionRestorativeJusticeData]);
+
+  const allRequirementsForRestorativeJustice = useMemo(() => {
+  if (!requirementEnforcements) return [];
+
+  return requirementEnforcements
+    .filter(requirement => 
+      requirement.compliance_finding?.name === "Out" // ✅ filter compliance_finding is Out
+    )
+    .map(requirement => ({
+      ...requirement,
+      enforcement_action_data: requirement.enforcement_action_data || []
+    }));
+}, [requirementEnforcements]);
+
   const openEnforcementModal = (
     modelType: EnforcementActionEnum,
     requirement?: InspectionRequirement
@@ -288,19 +327,30 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
            />
          );
          break;
-      case EnforcementActionEnum.VIOLATION_TICKET:
-        content = (
-          <ViolationTicketCreateModal
-            inspectionData={inspectionData}
-            requirementsList={nonProceededVTRequirements}
-            requirement={requirement}
-            onSubmit={() => {
-              // TODO: Add ViolationTicket drawer when available
-              setModalClose();
-            }}
-          />
-        );
-        break;
+             case EnforcementActionEnum.VIOLATION_TICKET:
+         content = (
+           <ViolationTicketCreateModal
+             inspectionData={inspectionData}
+             requirementsList={nonProceededVTRequirements}
+             requirement={requirement}
+             onSubmit={() => {
+               setModalClose();
+             }}
+           />
+         );
+         break;
+       case EnforcementActionEnum.RESTORATIVE_JUSTICE:
+         content = (
+           <RestorativeJusticeCreateModal
+             inspectionData={inspectionData}
+             requirementsList={allRequirementsForRestorativeJustice}
+             requirement={requirement}
+             onSubmit={() => {
+               setModalClose();
+             }}
+           />
+         );
+         break;
     }
 
     setModalOpen({
@@ -323,12 +373,16 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     },
     {
       text: "Charge Recommendation",
-      onClick: () => openEnforcementModal(EnforcementActionEnum.CHARGE_RECOMMENDATION)
+      onClick: () => openEnforcementModal(EnforcementActionEnum.CHARGE_RECOMMENDATION),
     },
-    {
-      text: "Violation Ticket",
-      onClick: () => openEnforcementModal(EnforcementActionEnum.VIOLATION_TICKET),
-    }
+     {
+       text: "Violation Ticket",
+       onClick: () => openEnforcementModal(EnforcementActionEnum.VIOLATION_TICKET),
+     },
+     {
+       text: "Restorative Justice",
+       onClick: () => openEnforcementModal(EnforcementActionEnum.RESTORATIVE_JUSTICE),
+     }
     
   ];
 
@@ -442,6 +496,26 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   };
 
+  const openRestorativeJusticeUpdateModal = (
+    restorativeJustice: RestorativeJustice
+  ) => {
+    setModalOpen({
+      content: (
+        <RestorativeJusticeUpdateModal
+          restorativeJustice={restorativeJustice}
+          inspectionData={inspectionData}
+          onSuccess={() => {
+            // Refresh the restorative justice data
+            queryClient.invalidateQueries({
+              queryKey: ["inspection-restorative-justice", inspectionData.id],
+            });
+          }}
+        />
+      ),
+        width: MODAL_WIDTHS.RESTORATIVE_JUSTICE,
+    });
+  };
+
   return (
     <DynamicHeightBox
       display={"flex"}
@@ -468,11 +542,12 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <>
           {isEnforcementsAllowed &&
             [
-              ...nonProceededOrderRequirements,
-              ...nonProceededWarningLetterRequirements,
-              ...nonProceededAPRequirements,
-              ...nonProceededChargeRecommendationRequirements,
-              ...nonProceededVTRequirements,
+                           ...nonProceededOrderRequirements,
+             ...nonProceededWarningLetterRequirements,
+             ...nonProceededAPRequirements,
+             ...nonProceededChargeRecommendationRequirements,
+             ...nonProceededVTRequirements,
+             ...nonProceededRestorativeJusticeRequirements,
             ].map((requirement,index) => (
               <EnforcementNotificationCard
                 key={index}
@@ -524,17 +599,28 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               />
             </Box>
           ))}
-            {inspectionViolationTicketsData?.map((violationTicket) => (
-            <Box
-              key={violationTicket.id}
-              onClick={() => openViolationTicketUpdateModal(violationTicket)}
-            >
-              <EnforcementCard
-                violationTicket={violationTicket}
-                requirementEnforcements={requirementEnforcements}
-              />
-            </Box>
-          ))}
+                         {inspectionViolationTicketsData?.map((violationTicket) => (
+             <Box
+               key={violationTicket.id}
+               onClick={() => openViolationTicketUpdateModal(violationTicket)}
+             >
+               <EnforcementCard
+                 violationTicket={violationTicket}
+                 requirementEnforcements={requirementEnforcements}
+               />
+             </Box>
+           ))}
+           {inspectionRestorativeJusticeData?.map((restorativeJustice) => (
+             <Box
+               key={restorativeJustice.id}
+               onClick={() => openRestorativeJusticeUpdateModal(restorativeJustice)}
+             >
+               <EnforcementCard
+                 restorativeJustice={restorativeJustice}
+                 requirementEnforcements={requirementEnforcements}
+               />
+             </Box>
+           ))}
         </>
       )}
     </DynamicHeightBox>

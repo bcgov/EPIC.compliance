@@ -4,7 +4,7 @@ from marshmallow import fields, post_dump
 
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
-from ..models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
+from ..models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap, RestorativeJusticeStatusEnum
 from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
 
@@ -55,11 +55,14 @@ class RestorativeJusticeInspectionRequirementMapSchema(
 
         model = RestorativeJusticeInspectionRequirementMap
         load_instance = True
+        include_fk = True
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),
         only=("id", "summary"),
     )
+    
+    inspection_requirement_id = fields.Integer()
 
 
 class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
@@ -70,6 +73,7 @@ class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
 
         model = RestorativeJustice
         load_instance = True
+        include_fk = True
 
     restitution_details = fields.String(
         allow_none=True,
@@ -95,8 +99,7 @@ class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
         """Transform a single item."""
         # Transform enum values to their string representation
         if "status" in item and item["status"]:
-            item["status"] = (
-                item["status"].value
-                if hasattr(item["status"], "value")
-                else item["status"]
-            )
+            item["status"] = {
+                "id": RestorativeJusticeStatusEnum(item["status"]).name,
+                "name": RestorativeJusticeStatusEnum(item["status"]).value,
+            }

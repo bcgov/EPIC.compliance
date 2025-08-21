@@ -78,6 +78,7 @@ export const MODAL_WIDTHS = {
   ADMINISTRATIVE_PENALTY: "520px",
   CHARGE_RECOMMENDATION: "568px",
   VIOLATION_TICKET: "520px",
+  RESTORATIVE_JUSTICE: "520px",
 };
 
 export enum APPROVAL_STATUS {
@@ -166,6 +167,7 @@ export enum EnforcementActionEnum {
   CHARGE_RECOMMENDATION = "9",
   ADVISORY = "10",
   WARNING = "11",
+  RESTORATIVE_JUSTICE = "12",
 }
 
 export enum ViolationTicketStatus {
@@ -173,7 +175,11 @@ export enum ViolationTicketStatus {
   PAID = "PAID",
   DISPUTED = "DISPUTED"
 }
-
+export enum RestorativeJusticeStatus {
+  DRAFTING = "DRAFTING",
+  OPEN = "OPEN",
+  CLOSED = "CLOSED"
+}
 export enum ComplaintStatusEnum {
   OPEN = "Open",
   CLOSED = "Closed",
