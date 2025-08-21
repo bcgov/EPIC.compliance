@@ -1,7 +1,6 @@
 """Restorative Justice Schemas."""
 
 from marshmallow import fields, post_dump
-
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from ..models.restorative_justice import (
