@@ -1,5 +1,5 @@
 import { Dayjs } from "dayjs";
-import { InspectionAttendance } from "./Attendance";
+import { Attendance, InspectionAttendance } from "./Attendance";
 import { CaseFile } from "./CaseFile";
 import { Initiation } from "./Initiation";
 import { IRStatus } from "./IRStatus";
@@ -10,6 +10,8 @@ import { StaffUser } from "./Staff";
 import { ApprovalStatus } from "./ApprovalStatus";
 import { IRProgress } from "./IRProgress";
 import { BaseTableQueryParams } from "./BaseTableQueryParams";
+import { Agency } from "./Agency";
+import { FirstNation } from "./FirstNation";
 
 export interface Inspection {
   id: number;
@@ -108,9 +110,9 @@ export interface InspectionFormData {
   isIndependentEnvMonitor?: boolean;
   isCHRepresentatives?: boolean;
   officers?: StaffUser[];
-  inAttendance?: any[];
-  agencies?: any[];
-  firstNations?: any[];
+  inAttendance?: Attendance[];
+  agencies?: Agency[];
+  firstNations?: FirstNation[];
   municipal?: string;
   other?: string;
   projectDescription?: string;

@@ -3,14 +3,19 @@ import { AddRounded } from "@mui/icons-material";
 import { Box, Grid, Typography, Link, Button } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import MailingAddressPopover from "./MailingAddressPopover";
+import PreparedByPopover from "./PreparedByPopover";
 import { usePopover } from "@/store/popoverStore";
 import { useEffect, useState } from "react";
 import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
-import { formatAuthorization } from "@/utils/appUtils";
+import {
+  formatAuthorization,
+  renderStaffNameWithPosition,
+} from "@/utils/appUtils";
 import { useUpdateInspectionRecord } from "@/hooks/useInspectionReports";
 import { notify } from "@/store/snackbarStore";
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { IRProgressEnum } from "@/utils/constants";
+import { StaffUser } from "@/models/Staff";
 
 const ProjectOverview = () => {
   const {
@@ -23,13 +28,22 @@ const ProjectOverview = () => {
   } = useReportStore();
   const { setOpen, setClose } = usePopover();
   const [mailingAddress, setMailingAddress] = useState("");
+  const [recordPreparedBy, setRecordPreparedBy] = useState<StaffUser | null>(
+    null
+  );
 
   useEffect(() => {
     setMailingAddress(inspectionReportsData?.mailing_address ?? "");
+    const recordPreparedBy = inspectionReportsData?.record_prepared_by;
+    if (recordPreparedBy) {
+      recordPreparedBy.position =
+        inspectionReportsData?.record_prepared_by_position;
+    }
+    setRecordPreparedBy(recordPreparedBy ?? null);
   }, [inspectionReportsData]);
 
   const handleOnSuccess = (data: InspectionRecord) => {
-    notify.success("Mailing address updated");
+    notify.success("Record updated");
     setInspectionReportsData(data);
     setClose();
   };
@@ -44,6 +58,17 @@ const ProjectOverview = () => {
       updateRecord: {
         field_name: "mailing_address",
         value: mailingAddress,
+      },
+    });
+  };
+
+  const updatePrimaryOfficer = (primaryOfficerId: number) => {
+    updateInspectionRecord({
+      inspectionId: inspectionData?.id ?? 0,
+      inspectionRecordId: inspectionReportsData?.id ?? 0,
+      updateRecord: {
+        field_name: "record_prepared_by_id",
+        value: primaryOfficerId.toString(),
       },
     });
   };
@@ -66,6 +91,22 @@ const ProjectOverview = () => {
         <MailingAddressPopover
           onSubmit={updateMailingAddress}
           mailingAddress={mailingAddress}
+        />
+      ),
+      width: "440px",
+    });
+  };
+
+  const editPreparedBy = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    primaryOfficer: StaffUser
+  ) => {
+    setOpen({
+      anchorEl: event.currentTarget,
+      content: (
+        <PreparedByPopover
+          onSubmit={updatePrimaryOfficer}
+          currentPrimaryOfficer={primaryOfficer}
         />
       ),
       width: "440px",
@@ -164,6 +205,32 @@ const ProjectOverview = () => {
                 Add Mailing Address
               </Button>
             )
+          )}
+        </Grid>
+        <Grid item xs={12}>
+          <Typography
+            variant="body2"
+            color={BCDesignTokens.typographyColorPlaceholder}
+          >
+            Record Prepared By
+          </Typography>
+          {recordPreparedBy && (
+            <Link
+              sx={{
+                display: "flex",
+                gap: 0.75,
+                cursor: !isReportsReadOnly ? "pointer" : "default",
+                "&:hover": {
+                  textDecoration: !isReportsReadOnly ? "underline" : "none",
+                },
+              }}
+              underline="none"
+              onClick={(e) =>
+                !isReportsReadOnly && editPreparedBy(e, recordPreparedBy)
+              }
+            >
+              {renderStaffNameWithPosition(recordPreparedBy)}
+            </Link>
           )}
         </Grid>
         <GridLabelValuePair

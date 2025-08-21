@@ -1,6 +1,8 @@
 import { Inspection } from "./Inspection";
 import { IRProgress } from "./IRProgress";
 import { IRStatus } from "./IRStatus";
+import { StaffUser } from "./Staff";
+import { Position } from "./Position";
 
 export interface InspectionRecord {
   id?: number;
@@ -18,6 +20,10 @@ export interface InspectionRecord {
   is_active?: boolean;
   mailing_address?: string;
   preliminary_review_details?: string;
+  record_prepared_by_id?: number;
+  record_prepared_by_position_id?: number;
+  record_prepared_by?: StaffUser;
+  record_prepared_by_position?: Position;
   field_change_info?: {
     inspection_scope_changed?: boolean;
     finding_statement_changed?: boolean;
