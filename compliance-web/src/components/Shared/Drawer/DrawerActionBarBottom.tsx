@@ -6,6 +6,7 @@ import { useFormContext } from "react-hook-form";
 import { DeleteOutlineRounded } from "@mui/icons-material";
 import { useModal } from "@/store/modalStore";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
+import LoadingButton from "@/components/Shared/LoadingButton";
 
 type DrawerActionBarBottomProps = {
   isShowActionBar: boolean;
@@ -14,6 +15,7 @@ type DrawerActionBarBottomProps = {
   onDeleteDescription?: string;
   isDirtyManual?: boolean;
   customCancelFn?: () => void;
+  isLoading?: boolean;
 };
 
 const DrawerActionBarBottom: React.FC<DrawerActionBarBottomProps> = React.memo(
@@ -24,6 +26,7 @@ const DrawerActionBarBottom: React.FC<DrawerActionBarBottomProps> = React.memo(
     onDeleteDescription,
     isDirtyManual,
     customCancelFn,
+    isLoading,
   }) => {
     const { setClose } = useDrawer();
     const { setOpen, setClose: setModalClose } = useModal();
@@ -81,12 +84,13 @@ const DrawerActionBarBottom: React.FC<DrawerActionBarBottomProps> = React.memo(
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
               type="submit"
               disabled={!isValid || (!isDirtyManual && !isDirty)}
+              isLoading={isLoading}
             >
               Save
-            </Button>
+            </LoadingButton>
           </Box>
         </Box>
       )

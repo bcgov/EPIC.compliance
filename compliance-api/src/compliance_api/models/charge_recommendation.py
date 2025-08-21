@@ -313,7 +313,9 @@ class ChargeRecommendation(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label("charge_recommendation_count"),  # pylint: disable=not-callable
+                func.count(cls.id).label(
+                    "charge_recommendation_count"
+                ),  # pylint: disable=not-callable
             )
             .filter(
                 and_(

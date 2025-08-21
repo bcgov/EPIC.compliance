@@ -324,10 +324,11 @@ const ChargeRecommendationUpdateModal: FC<
         <ModalActions
           onSecondaryAction={setModalClose}
           onPrimaryAction={methods.handleSubmit(handleSubmit)}
-          onDeleteAction={handleDelete}
-          isLoading={isUpdating || isDeleting}
+          isLoading={isUpdating}
           primaryActionButtonText="Save"
           secondaryActionButtonText="Cancel"
+          onDeleteAction={handleDelete}
+          isDeleteActionLoading={isDeleting}
         />
       </form>
     </FormProvider>

@@ -127,12 +127,15 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
     resetForm();
   }, [onSubmit, resetForm]);
 
-  const { mutate: createInspectionRequirement } =
-    useCreateInspectionRequirement(onCreateSuccess);
+  const {
+    mutate: createInspectionRequirement,
+    isPending: isCreateInspectionRequirementPending,
+  } = useCreateInspectionRequirement(onCreateSuccess);
 
   const {
     mutate: updateInspectionRequirement,
     data: inspectionRequirementUpdateData,
+    isPending: isUpdateInspectionRequirementPending,
   } = useUpdateInspectionRequirement(onUpdateSuccess);
 
   const formatAndSetFormData = useCallback(
@@ -319,7 +322,10 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           isDirtyManual={isDataChanged}
           customCloseFn={handleClearData}
         />
-        <DrawerActionBarTop isShowActionBar={!inspectionRequirementData} />
+        <DrawerActionBarTop
+          isShowActionBar={!inspectionRequirementData}
+          isLoading={isCreateInspectionRequirementPending}
+        />
         <Stack
           key={JSON.stringify(inspectionRequirementData)}
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
@@ -353,6 +359,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           onDeleteDescription="You are about to delete this Requirement. Are you sure?"
           isDirtyManual={isDataChanged}
           customCancelFn={handleClearData}
+          isLoading={isUpdateInspectionRequirementPending}
         />
       </form>
     </FormProvider>

@@ -146,7 +146,10 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     [onSubmit, reset, formatFormData, queryClient, inspection]
   );
 
-  const { mutate: updateInspectionOrder } = useUpdateInspectionOrder(onSuccess);
+  const {
+    mutate: updateInspectionOrder,
+    isPending: isUpdateInspectionOrderPending,
+  } = useUpdateInspectionOrder(onSuccess);
 
   const onSubmitHandler = useCallback(
     (formData: EnforcementFormType) => {
@@ -326,6 +329,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
           onDeleteAction={onDeleteOrder}
           onDeleteTitle="Delete Order"
           onDeleteDescription={`You are about to delete Order ${enforcementOrder.order_number}. Are you sure?`}
+          isLoading={isUpdateInspectionOrderPending}
         />
       </form>
     </FormProvider>

@@ -32,7 +32,6 @@ import DrawerActionBarBottom from "@/components/Shared/Drawer/DrawerActionBarBot
 import { CaseFile } from "@/models/CaseFile";
 import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
 
-
 type ComplaintDrawerProps = {
   onSubmit: (submitMsg: string) => void;
   caseFile: CaseFile;
@@ -137,8 +136,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
     [complaint, onSubmit, reset]
   );
 
-  const { mutate: createComplaint } = useCreateComplaint(onSuccess);
-  const { mutate: updateComplaint } = useUpdateComplaint(onSuccess);
+  const { mutate: createComplaint, isPending: isCreateComplaintPending } =
+    useCreateComplaint(onSuccess);
+  const { mutate: updateComplaint, isPending: isUpdateComplaintPending } =
+    useUpdateComplaint(onSuccess);
 
   const onSubmitHandler = useCallback(
     (formData: ComplaintSchemaType) => {
@@ -168,7 +169,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           title={complaint ? complaint.complaint_number : "Create Complaint"}
           isFormDirtyCheck
         />
-        <DrawerActionBarTop isShowActionBar={!complaint} />
+        <DrawerActionBarTop
+          isShowActionBar={!complaint}
+          isLoading={isCreateComplaintPending}
+        />
         <Stack
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           direction="row"
@@ -194,7 +198,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
             />
           </Box>
         </Stack>
-        <DrawerActionBarBottom isShowActionBar={!!complaint} />
+        <DrawerActionBarBottom
+          isShowActionBar={!!complaint}
+          isLoading={isUpdateComplaintPending}
+        />
       </form>
     </FormProvider>
   );

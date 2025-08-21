@@ -98,8 +98,8 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
     onSubmit(staff ? "Successfully updated!" : "Successfully added!");
   };
 
-  const { mutate: addStaff } = useAddStaff(onSuccess);
-  const { mutate: updateStaff } = useUpdateStaff(onSuccess);
+  const { mutate: addStaff, isPending: isPendingAddStaff } = useAddStaff(onSuccess);
+  const { mutate: updateStaff, isPending: isPendingUpdateStaff } = useUpdateStaff(onSuccess);
 
   const onSubmitHandler = (data: StaffSchemaType) => {
     const staffData: StaffAPIData = {
@@ -136,7 +136,10 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
               staffUsersList={staffUsersList}
             />
           </DialogContent>
-          <ModalActions primaryActionButtonText={staff ? "Save" : "Add"} />
+          <ModalActions
+            primaryActionButtonText={staff ? "Save" : "Add"}
+            isLoading={isPendingAddStaff || isPendingUpdateStaff}
+          />
         </form>
       </FormProvider>
     </>

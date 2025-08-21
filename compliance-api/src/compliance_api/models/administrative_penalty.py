@@ -202,17 +202,13 @@ class AdministrativePenalty(BaseModelVersioned):
         cls, administrative_penalty_id, administrative_penalty_update_data, session=None
     ):
         """Update the administrative penalty."""
-        administrative_penalty_update_data.pop(
-            "inspection_requirement_ids", []
-        )
-        query = session.query(cls) if session else cls.query
-        administrative_penalty = query.filter_by(id=administrative_penalty_id).first()
+        administrative_penalty_update_data.pop("inspection_requirement_ids", [])
+        administrative_penalty = cls.find_by_id(administrative_penalty_id)
         if not administrative_penalty:
             return None
 
-        administrative_penalty.update(
-            administrative_penalty_update_data, commit=not session
-        )
+        administrative_penalty.update(administrative_penalty_update_data, commit=False)
+        session.flush()
 
         return administrative_penalty
 
@@ -242,7 +238,9 @@ class AdministrativePenalty(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label("administrative_penalty_count"),  # pylint: disable=not-callable
+                func.count(cls.id).label(
+                    "administrative_penalty_count"
+                ),  # pylint: disable=not-callable
             )
             .filter(
                 CaseFileModel.project_id == project_id,

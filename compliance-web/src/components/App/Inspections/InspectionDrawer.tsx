@@ -156,8 +156,10 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
     [inspection, onSubmit, reset]
   );
 
-  const { mutate: createInspection } = useCreateInspection(onSuccess);
-  const { mutate: updateInspection } = useUpdateInspection(onSuccess);
+  const { mutate: createInspection, isPending: isCreateInspectionPending } =
+    useCreateInspection(onSuccess);
+  const { mutate: updateInspection, isPending: isUpdateInspectionPending } =
+    useUpdateInspection(onSuccess);
 
   const onSubmitHandler = useCallback(
     (formData: InspectionSchemaType) => {
@@ -186,7 +188,10 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           title={inspection ? inspection.ir_number : "Create Inspection"}
           isFormDirtyCheck
         />
-        <DrawerActionBarTop isShowActionBar={!inspection} />
+        <DrawerActionBarTop
+          isShowActionBar={!inspection}
+          isLoading={isCreateInspectionPending}
+        />
         <Stack
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           direction={"row"}
@@ -204,7 +209,10 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
             staffList={inattendanceOfficersList ?? []}
           />
         </Stack>
-        <DrawerActionBarBottom isShowActionBar={!!inspection} />
+        <DrawerActionBarBottom
+          isShowActionBar={!!inspection}
+          isLoading={isUpdateInspectionPending}
+        />
       </form>
     </FormProvider>
   );

@@ -1,11 +1,10 @@
 """Restorative Justice Service."""
 
-from typing import List
+from http import HTTPStatus
 
 from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.db import session_scope
-from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
 from compliance_api.services.service_utils import ServiceUtils
 
@@ -47,13 +46,20 @@ class RestorativeJusticeService:
         cls, restorative_justice_data: dict
     ) -> RestorativeJustice:
         """Create a new restorative justice."""
-        # Extract inspection requirement IDs
-        inspection_requirement_ids = restorative_justice_data.pop(
+        inspection_id = restorative_justice_data.get("inspection_id")
+        inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        ServiceUtils.inspection_status_check(inspection)
+
+        inspection_requirement_ids = restorative_justice_data.get(
             "inspection_requirement_ids", []
         )
 
-        # Validate that restorative justice doesn't already exist for these requirements
-        if inspection_requirement_ids:
+        restorative_justice_obj = _create_rj_object(
+            inspection, restorative_justice_data
+        )
+        # Validate requirements if provided
+        if inspection_requirement_ids is not None:
             exists = (
                 RestorativeJustice.does_restorative_justice_exists_by_requirement_ids(
                     inspection_requirement_ids
@@ -63,26 +69,16 @@ class RestorativeJusticeService:
                 raise BadRequestError(
                     "A restorative justice already exists for one or more of the selected requirements"
                 )
-
-        # Generate restorative justice number if not provided
-        if not restorative_justice_data.get("restorative_justice_number"):
-            restorative_justice_data["restorative_justice_number"] = (
-                cls._generate_restorative_justice_number(
-                    restorative_justice_data["inspection_id"]
-                )
-            )
-
-        # Create the restorative justice
+        # Create restorative justice with session scope
         with session_scope() as session:
             restorative_justice = RestorativeJustice.create_restorative_justice(
-                restorative_justice_data, session
+                restorative_justice_obj, session
             )
-
-            # Create requirement mappings
-            if inspection_requirement_ids:
-                cls._create_requirement_mappings(
-                    restorative_justice.id, inspection_requirement_ids, session
-                )
+            cls.insert_or_update_inspection_requirements(
+                restorative_justice.id,
+                inspection_requirement_ids,
+                session,
+            )
 
         return restorative_justice
 
@@ -117,69 +113,105 @@ class RestorativeJusticeService:
 
             # Handle requirement mappings if provided
             if inspection_requirement_ids is not None:
-                # Delete existing requirement mappings
-                RestorativeJusticeInspectionRequirementMap.delete_by_restorative_justice_id(
-                    restorative_justice_id, session
+                cls.insert_or_update_inspection_requirements(
+                    restorative_justice_id,
+                    inspection_requirement_ids,
+                    session,
                 )
-
-                # Create new requirement mappings
-                if inspection_requirement_ids:
-                    cls._create_requirement_mappings(
-                        restorative_justice_id, inspection_requirement_ids, session
-                    )
 
         return updated_restorative_justice
 
     @classmethod
-    def delete_restorative_justice(cls, restorative_justice_id: int) -> None:
+    def delete_restorative_justice(cls, restorative_justice_id: int):
         """Delete a restorative justice."""
-        # Check if restorative justice exists
-        cls.get_by_id(restorative_justice_id)
-
-        with session_scope() as session:
-            # Soft delete the restorative justice
-            RestorativeJustice.update_restorative_justice(
-                restorative_justice_id, {"is_deleted": True}, session
+        restorative_justice = RestorativeJustice.find_by_id(restorative_justice_id)
+        if not restorative_justice:
+            raise ResourceNotFoundError(
+                f"Restorative Justice with id: {restorative_justice_id} not found"
             )
 
-            # Delete requirement mappings
+        ServiceUtils.access_check_update_for_inspection(restorative_justice.inspection)
+        ServiceUtils.inspection_status_check(restorative_justice.inspection)
+
+        with session_scope() as session:
+            RestorativeJustice.update_restorative_justice(
+                restorative_justice_id,
+                {"is_deleted": True, "is_active": False},
+                session,
+            )
             RestorativeJusticeInspectionRequirementMap.delete_by_restorative_justice_id(
                 restorative_justice_id, session
             )
+        return HTTPStatus.NO_CONTENT
 
     @classmethod
-    def _create_requirement_mappings(
+    def insert_or_update_inspection_requirements(
         cls,
         restorative_justice_id: int,
-        inspection_requirement_ids: List[int],
+        inspection_requirement_ids: list[int],
         session=None,
     ):
-        """Create requirement mappings for a restorative justice."""
-        for requirement_id in inspection_requirement_ids:
-            mapping_data = {
-                "restorative_justice_id": restorative_justice_id,
-                "inspection_requirement_id": requirement_id,
+        """Insert/Update inspection requirements associated with a given restorative justice."""
+        if inspection_requirement_ids is not None:
+            existing_requirements = RestorativeJusticeInspectionRequirementMap.get_by_restorative_justice_id(
+                restorative_justice_id
+            )
+            existing_requirement_ids = {
+                req.inspection_requirement_id for req in existing_requirements
             }
-            RestorativeJusticeInspectionRequirementMap.create_restorative_justice_requirement_map(
-                mapping_data, session
+
+            new_requirement_ids = set(inspection_requirement_ids)
+            requirement_ids_to_be_deleted = existing_requirement_ids.difference(
+                new_requirement_ids
+            )
+            requirement_ids_to_be_added = new_requirement_ids.difference(
+                existing_requirement_ids
             )
 
-    @classmethod
-    def _generate_restorative_justice_number(cls, inspection_id: int) -> str:
-        """Generate a unique restorative justice number."""
-        inspection = InspectionModel.find_by_id(inspection_id)
-        if not inspection:
-            raise ResourceNotFoundError("Given inspection doesn't exist")
+            if requirement_ids_to_be_deleted:
+                RestorativeJusticeInspectionRequirementMap.bulk_delete(
+                    restorative_justice_id,
+                    list(requirement_ids_to_be_deleted),
+                    session,
+                )
+            if requirement_ids_to_be_added:
+                RestorativeJusticeInspectionRequirementMap.bulk_insert(
+                    restorative_justice_id,
+                    list(requirement_ids_to_be_added),
+                    session,
+                )
 
-        project_code = ServiceUtils.get_project_abbreviation(inspection.project_id)
-        case_file = CaseFileModel.find_by_id(inspection.case_file_id)
-        if not case_file:
-            raise ResourceNotFoundError("Given case file doesn't exist")
-        if case_file.project_id != inspection.project_id:
-            raise UnprocessableEntityError("Given project and case file don't match")
 
-        count = RestorativeJustice.get_count_by_project_nd_case_file_id(
-            inspection.project_id, inspection.case_file_id
-        )
-        serial_number = f"{count + 1:03}"
-        return f"{project_code}_{case_file.case_file_number}_RJ{serial_number}"
+def _create_rj_object(inspection, restorative_justice_data):
+    """Create restorative justice object."""
+    # Generate restorative justice number if not provided
+    rj_number = restorative_justice_data.get("restorative_justice_number")
+    if not rj_number:
+        project_id = inspection.case_file.project_id
+        case_file_id = inspection.case_file_id
+        rj_number = _create_restorative_justice_number(project_id, case_file_id)
+
+    return {
+        "restorative_justice_number": rj_number,
+        "inspection_id": inspection.id,
+        "restitution_details": restorative_justice_data.get("restitution_details"),
+        "date_restitution_complete": restorative_justice_data.get(
+            "date_restitution_complete"
+        ),
+    }
+
+
+def _create_restorative_justice_number(project_id: int, case_file_id: int) -> str:
+    """Generate the restorative justice number."""
+    project_code = ServiceUtils.get_project_abbreviation(project_id)
+    case_file = CaseFileModel.find_by_id(case_file_id)
+    if not case_file:
+        raise ResourceNotFoundError("Given case file doesn't exist")
+    if case_file.project_id != project_id:
+        raise UnprocessableEntityError("Given project and case file don't match")
+
+    count = RestorativeJustice.get_count_by_project_nd_case_file_id(
+        project_id, case_file_id
+    )
+    serial_number = f"{count + 1:03}"
+    return f"{project_code}_{case_file.case_file_number}_RJ{serial_number}"

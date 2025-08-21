@@ -134,7 +134,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
     [onSubmit, reset, formatFormData, queryClient, inspection.id]
   );
 
-  const { mutate: updateWarningLetter } = useUpdateWarningLetter(onSuccess);
+  const { mutate: updateWarningLetter, isPending: isUpdateWarningLetterPending } = useUpdateWarningLetter(onSuccess);
 
   const onSubmitHandler = useCallback(
     (formData: EnforcementFormType) => {
@@ -298,6 +298,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
           onDeleteAction={onDeleteWarningLetter}
           onDeleteTitle="Delete Warning Letter"
           onDeleteDescription={`You are about to delete Warning Letter ${warningLetter.warning_letter_number}. Are you sure?`}
+          isLoading={isUpdateWarningLetterPending}
         />
       </form>
     </FormProvider>

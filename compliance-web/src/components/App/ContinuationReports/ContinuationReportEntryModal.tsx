@@ -89,9 +89,12 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
     );
   };
 
-  const { mutate: addEntry } = useCreateContinuationReportEntry(onSuccess);
-  const { mutate: updateEntry } = useUpdateContinuationReportEntry(onSuccess);
-  const { mutate: deleteEntry } = useDeleteContinuationReportEntry(onSuccess);
+  const { mutate: addEntry, isPending: isPendingAddEntry } =
+    useCreateContinuationReportEntry(onSuccess);
+  const { mutate: updateEntry, isPending: isPendingUpdateEntry } =
+    useUpdateContinuationReportEntry(onSuccess);
+  const { mutate: deleteEntry, isPending: isPendingDeleteEntry } =
+    useDeleteContinuationReportEntry(onSuccess);
 
   const onSubmitHandler = (data: ContinuationReportSchemaType) => {
     const crEntry: ContinuationReportAPIData = {
@@ -144,7 +147,9 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
             primaryActionButtonText={
               continuationReportEntry ? "Save" : "Add Entry"
             }
+            isLoading={isPendingAddEntry || isPendingUpdateEntry}
             onDeleteAction={continuationReportEntry ? onDeleteEntry : undefined}
+            isDeleteActionLoading={isPendingDeleteEntry}
           />
         </form>
       </FormProvider>

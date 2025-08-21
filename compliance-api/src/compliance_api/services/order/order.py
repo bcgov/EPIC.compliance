@@ -310,10 +310,10 @@ def _create_order_data(inspection, order):
             ),
         },
         "officer_details": {
-            "officer_name": inspection.primary_officer.first_name
+            "officer_name": order.issuing_officer.first_name
             + " "
-            + inspection.primary_officer.last_name,
-            "officer_position": inspection.primary_officer.position.name,
+            + order.issuing_officer.last_name,
+            "officer_position": order.issuing_officer.position.name,
         },
         "department_details": {
             "logo_url": department_details.logo_url,
