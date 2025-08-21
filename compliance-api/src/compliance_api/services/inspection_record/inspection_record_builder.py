@@ -53,6 +53,16 @@ class InspectionRecordDataBuilder:
             "mailing_address": (
                 self.existing_ir.mailing_address if self.existing_ir else None
             ),
+            "record_prepared_by_id": (
+                self.existing_ir.record_prepared_by_id
+                if self.existing_ir
+                else inspection.primary_officer_id
+            ),
+            "record_prepared_by_position_id": (
+                self.existing_ir.record_prepared_by_position_id
+                if self.existing_ir
+                else inspection.primary_officer.position_id
+            ),
         }
         self.data["inspection_details"] = {
             "id": self.inspection.id,
@@ -104,7 +114,12 @@ class InspectionRecordDataBuilder:
             "primary_officer": {
                 "name": f"{self.inspection.primary_officer.first_name} {self.inspection.primary_officer.last_name}",
                 "position": self.inspection.primary_officer.position.name,
-            }
+            },
+            "record_prepared_by": {
+                "name": f"{self.existing_ir.record_prepared_by.first_name} "
+                f"{self.existing_ir.record_prepared_by.last_name}",
+                "position": self.existing_ir.record_prepared_by.position.name,
+            },
         }
 
         # Build the attendance information

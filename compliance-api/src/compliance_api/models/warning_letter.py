@@ -4,7 +4,8 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, func
+from sqlalchemy import ForeignKey, Index, Integer, String
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 from compliance_api.models.base_model import BaseModelVersioned
@@ -226,7 +227,9 @@ class WarningLetter(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label("warning_letter_count"),  # pylint: disable=not-callable
+                func.count(cls.id).label(  # pylint: disable=not-callable
+                    "warning_letter_count"
+                ),
             )
             .filter(
                 CaseFileModel.project_id == project_id,

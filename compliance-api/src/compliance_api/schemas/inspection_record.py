@@ -69,6 +69,7 @@ class UpdateInspectionRecordSchema(BaseSchema):
             "finding_statement": fields.Str(),
             "enforcement_summary": fields.Str(),
             "action_required_by_rp": fields.Str(),
+            "record_prepared_by_id": fields.Int(),
             "ir_progress": EnumField(IRProgressEnum, by_value=False),
             "date_issued": fields.DateTime(
                 format=INPUT_DATE_TIME_FORMAT,

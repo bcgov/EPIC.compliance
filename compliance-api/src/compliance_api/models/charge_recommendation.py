@@ -4,8 +4,9 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_, func
+from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -313,9 +314,9 @@ class ChargeRecommendation(BaseModelVersioned):
             .with_entities(
                 InspectionModel.case_file_id,
                 CaseFileModel.project_id,
-                func.count(cls.id).label(
+                func.count(cls.id).label(  # pylint: disable=not-callable
                     "charge_recommendation_count"
-                ),  # pylint: disable=not-callable
+                ),
             )
             .filter(
                 and_(

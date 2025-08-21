@@ -5,8 +5,10 @@ from compliance_api.models import Inspection as InspectionModel
 from compliance_api.models import InspectionRecord as InspectionRecordModel
 from compliance_api.models import InspectionRecordApproval as InspectionRecordApprovalModel
 from compliance_api.models import InspectionStatusEnum, IRApprovalStatusEnum
+from compliance_api.models.case_file import CaseFileOfficer
 from compliance_api.models.db import session_scope
 from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
+from compliance_api.models.staff_user import StaffUser
 from compliance_api.schemas import InspectionRecordPreviewSchema
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
 from compliance_api.services.service_utils import ServiceUtils
@@ -110,6 +112,11 @@ class InspectionRecordService:
                     inspection_id=inspection_id,
                     inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},
                     session=session,
+                )
+            if field_name == "record_prepared_by_id" and value:
+                # Validate the record prepared by id and add record_prepared_by_position_id to ir_update_data
+                _validate_record_prepared_by_value(
+                    inspection_record, value, ir_update_data
                 )
             updated_inspection_record = InspectionRecordModel.update_inspection_record(
                 inspection_record_id=inspection_record_id,
@@ -315,6 +322,8 @@ def _create_ir_object(ir_data, ir_status, inspection_id):
     return {
         "inspection_id": inspection_id,
         "ir_status_id": ir_status.value,
+        "record_prepared_by_id": ir_data.get("record_prepared_by_id"),
+        "record_prepared_by_position_id": ir_data.get("record_prepared_by_position_id"),
         "inspection_scope": ir_data.get("inspection_scope"),
         "finding_statement": ir_data.get("finding_statement"),
         "enforcement_summary": ir_data.get("enforcement_summary", None),
@@ -326,3 +335,56 @@ def _create_ir_object(ir_data, ir_status, inspection_id):
             "finding_statement_changed": False,
         },
     }
+
+
+def _validate_record_prepared_by_value(
+    inspection_record, record_prepared_by_id, ir_update_data
+):
+    """
+    Validate that the provided staff member is authorized to prepare the inspection record.
+
+    Authorized staff includes:
+    - Primary officer on inspection
+    - Primary officer on case file
+    - Other officers on case file
+
+    Also updates the position ID of the record prepared by staff.
+    """
+    # Get the inspection and case file
+    inspection = inspection_record.inspection
+    case_file = inspection.case_file
+
+    # Get the staff member
+    staff_member = StaffUser.find_by_id(record_prepared_by_id)
+    if not staff_member:
+        raise UnprocessableEntityError(
+            f"Staff member with id {record_prepared_by_id} not found"
+        )
+
+    # Check if staff member is authorized
+    authorized_officer_ids = set()
+
+    # Add primary officer on inspection
+    if inspection.primary_officer_id:
+        authorized_officer_ids.add(inspection.primary_officer_id)
+
+    # Add primary officer on case file
+    if case_file.primary_officer_id:
+        authorized_officer_ids.add(case_file.primary_officer_id)
+
+    # Add other officers on case file
+    case_file_officers = CaseFileOfficer.get_all_by_case_file_id(case_file.id)
+    for case_file_officer in case_file_officers:
+        authorized_officer_ids.add(case_file_officer.officer_id)
+
+    # Validate the staff member is authorized
+    if int(record_prepared_by_id) not in authorized_officer_ids:
+        raise UnprocessableEntityError(
+            "The selected staff member is not authorized to prepare this inspection record. "
+            "Only the primary officer on inspection, primary officer on case file, "
+            "or other officers on case file are allowed."
+        )
+
+    # Set the position ID of the record prepared by staff
+    if staff_member.position_id:
+        ir_update_data["record_prepared_by_position_id"] = staff_member.position_id
