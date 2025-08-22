@@ -24,7 +24,7 @@ def test_create_staff_user_mandatory(
     )
     firstname = fake.word()
     lastname = fake.word()
-    username = fake.word()
+    username = f"{fake.word()}{datetime.now().timestamp()}"
     mock_get_user_by_guid.return_value = {
         "first_name": firstname,
         "last_name": lastname,
@@ -54,7 +54,7 @@ def test_create_staff_user_all_fields(
 ):
     """Create staff user."""
     user_data = StaffScenario.default_data.value
-    auth_user_guid = fake.word()
+    auth_user_guid = f"{fake.word()}{datetime.now().timestamp()}"
     user_data["auth_user_guid"] = auth_user_guid
     new_user = StaffScenario.create(user_data)
     url = urljoin(API_BASE_URL, "staff-users")
@@ -63,7 +63,7 @@ def test_create_staff_user_all_fields(
     )
     firstname = fake.word()
     lastname = fake.word()
-    username = fake.word()
+    username = f"{fake.word()}{datetime.now().timestamp()}"
     mock_get_user_by_guid.return_value = {
         "first_name": firstname,
         "last_name": lastname,
@@ -97,11 +97,11 @@ def test_create_staff_user_with_non_super_user(
 ):
     """Create staff user."""
     user_data = StaffScenario.default_data.value
-    auth_user_guid = fake.word()
+    auth_user_guid = f"{fake.word()}{datetime.now().timestamp()}"
     user_data["auth_user_guid"] = auth_user_guid
     new_user = StaffScenario.create(user_data)
     url = urljoin(API_BASE_URL, "staff-users")
-    username = fake.word()
+    username = f"{fake.word()}{datetime.now().timestamp()}"
     staff_user_data = {
         "auth_user_guid": username,
         "permission": "USER",

@@ -8,6 +8,7 @@ from compliance_api.models.db import session_scope
 from compliance_api.models.department_detail import DepartmentDetail as DepartmentDetailModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
+from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
@@ -236,7 +237,8 @@ class WarningLetterService:
         ]
 
         # Regenerate content using the existing method
-        new_content = _create_content(inspection, requirement_ids)
+        issuing_officer_id = warning_letter.issuing_officer_id
+        new_content = _create_content(inspection, requirement_ids, issuing_officer_id)
 
         # Update the warning letter with the new content
         with session_scope() as session:
@@ -310,7 +312,12 @@ def _create_warning_letter_obj(inspection, warning_letter_data: dict) -> dict:
         )
     content = warning_letter_data.get("content")
     if not content:
-        generated_content = _create_content(inspection, requirement_ids)
+        issuing_officer_id = warning_letter_data.get(
+            "issuing_officer_id", inspection.primary_officer_id
+        )
+        generated_content = _create_content(
+            inspection, requirement_ids, issuing_officer_id
+        )
         content = content or generated_content
     return {
         "warning_letter_number": warning_letter_number,
@@ -325,13 +332,14 @@ def _create_warning_letter_obj(inspection, warning_letter_data: dict) -> dict:
     }
 
 
-def _create_content(inspection, requirement_ids):
+def _create_content(inspection, requirement_ids, issuing_officer_id):
     """Create where_as and now_therefore."""
     department_details = DepartmentDetailModel.query.filter_by(
         is_active=True, is_deleted=False
     ).first()
     requirements = InspectionRequirementModel.get_requirement_by_ids(requirement_ids)
     requirement_details = ServiceUtils.get_formatted_requirement_details(requirements)
+    issuing_officer = StaffUserModel.find_by_id(issuing_officer_id)
     requirements = []
     for requirement in requirement_details:
         if len(requirement["requirement_source_details"]) > 0:
@@ -381,8 +389,8 @@ def _create_content(inspection, requirement_ids):
                 else ""
             ),
             "ir_number": ServiceUtils.strip_project_code(inspection.ir_number),
-            "officer_name": f"{inspection.primary_officer.first_name} {inspection.primary_officer.last_name}",
-            "officer_position": inspection.primary_officer.position.name,
+            "officer_name": f"{issuing_officer.first_name} {issuing_officer.last_name}",
+            "officer_position": issuing_officer.position.name,
         },
         "department_details": {
             "email": department_details.email,
