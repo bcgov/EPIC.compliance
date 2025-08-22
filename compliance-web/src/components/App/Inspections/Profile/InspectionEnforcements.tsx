@@ -243,20 +243,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionViolationTicketsData]);
 
-  const nonProceededRestorativeJusticeRequirements = useMemo(() => {
-    if (!requirementEnforcements) return [];
-    const rjReqIds = inspectionRestorativeJusticeData?.map(
-      (restorativeJustice) =>
-        restorativeJustice.restorative_justice_requirement_maps?.map(
-          (map) => map.inspection_requirement_id
-        )
-    );
-    return prepNonProceededRequirements({
-      requirements: requirementEnforcements,
-      reqIds: rjReqIds,
-      enforcementActionType: EnforcementActionEnum.RESTORATIVE_JUSTICE,
-    });
-  }, [requirementEnforcements, inspectionRestorativeJusticeData]);
 
   const allRequirementsForRestorativeJustice = useMemo(() => {
   if (!requirementEnforcements) return [];
@@ -546,8 +532,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
              ...nonProceededWarningLetterRequirements,
              ...nonProceededAPRequirements,
              ...nonProceededChargeRecommendationRequirements,
-             ...nonProceededVTRequirements,
-             ...nonProceededRestorativeJusticeRequirements,
+             ...nonProceededVTRequirements
             ].map((requirement,index) => (
               <EnforcementNotificationCard
                 key={index}
