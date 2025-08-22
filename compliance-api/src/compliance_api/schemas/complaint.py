@@ -77,7 +77,9 @@ class ContactCreateSchema(BaseSchema):
     full_name = fields.Str(
         metadata={"description": "The full name of the contact person"}, allow_none=True
     )
-
+    title = fields.Str(
+        metadata={"description": "The title of the contact person"}, allow_none=True
+    )
     email = fields.Str(
         metadata={"description": "The email address of the contact person"},
         allow_none=True,

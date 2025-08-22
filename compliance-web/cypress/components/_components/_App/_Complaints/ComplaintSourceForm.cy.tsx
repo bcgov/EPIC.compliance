@@ -40,6 +40,7 @@ describe("ComplaintSourceForm Component", () => {
           firstNation: null,
           otherDescription: "",
           contactFullName: "",
+          contactTitle: "",
           contactEmail: "",
           contactPhoneNumber: "",
           contactComments: "",
@@ -117,6 +118,7 @@ describe("ComplaintSourceForm Component", () => {
 
     // Check if contact form fields appear
     cy.get('input[name="contactFullName"]').should("exist");
+    cy.get('input[name="contactTitle"]').should("exist");
     cy.get('input[name="contactEmail"]').should("exist");
     cy.get('input[name="contactPhoneNumber"]').should("exist");
     cy.get('textarea[name="contactComments"]').should("exist");
@@ -161,12 +163,14 @@ describe("ComplaintSourceForm Component", () => {
 
     // Enter contact information
     cy.get('input[name="contactFullName"]').type("John Doe");
+    cy.get('input[name="contactTitle"]').type("Mr.");
     cy.get('input[name="contactEmail"]').type("john@example.com");
     cy.get('input[name="contactPhoneNumber"]').type("123-456-7890");
     cy.get('textarea[name="contactComments"]').type("Test comment");
 
     // Verify entered values
     cy.get('input[name="contactFullName"]').should("have.value", "John Doe");
+    cy.get('input[name="contactTitle"]').should("have.value", "Mr.");
     cy.get('input[name="contactEmail"]').should(
       "have.value",
       "john@example.com"
