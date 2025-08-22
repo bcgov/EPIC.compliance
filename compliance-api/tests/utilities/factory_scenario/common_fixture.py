@@ -121,6 +121,7 @@ def created_staff(mocker):
 # Global counter for unique case file numbers
 _case_file_counter = 0
 
+
 @pytest.fixture
 def created_case_file(created_staff):
     """Create a case file for testing."""
