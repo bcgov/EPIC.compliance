@@ -88,6 +88,10 @@ const ComplaintGeneralInformation: React.FC<
         name: "Full Name",
         value: complaintData.source_contact?.full_name ?? "",
       },
+      {
+        name: "Title",
+        value: complaintData.source_contact?.title ?? "",
+      },
       { name: "Email", value: complaintData.source_contact?.email ?? "" },
       {
         name: "Phone Number",
