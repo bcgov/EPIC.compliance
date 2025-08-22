@@ -61,11 +61,7 @@ class ChargeRecommendationService:
         requirement_ids = charge_recommendation_data.get(
             "inspection_requirement_ids", []
         )
-        ServiceUtils.check_requirement_for_enforcement_action(
-            requirement_ids,
-            EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value,
-        )
-
+        
         # Check if charge recommendation already exists for the given requirements
         if ChargeRecommendation.does_charge_recommendation_exists_by_requirement_ids(
             charge_recommendation_data.get("inspection_requirement_ids", []),
@@ -101,9 +97,7 @@ class ChargeRecommendationService:
         ServiceUtils.access_check_update_for_inspection(inspection)
         ServiceUtils.inspection_status_check(inspection)
         requirement_ids = update_data.get("inspection_requirement_ids", [])
-        ServiceUtils.check_requirement_for_enforcement_action(
-            requirement_ids, EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
-        )
+        
         if ChargeRecommendation.does_charge_recommendation_exists_by_requirement_ids(
             requirement_ids, charge_recommendation_id
         ):
