@@ -244,8 +244,7 @@ class ComplaintService:
                         else ""
                     ),
                     "Status": complaint.status.value if complaint.status else "",
-                    "Resolution": getattr(resolution, "name", "") or "",
-                    "Resolution Agency": getattr(resolution_agency, "name", "") or "",
+                    "Complaint Resolution": getattr(resolution, "name", "") or "",
                     "Case File #": (
                         complaint.case_file.case_file_number
                         if complaint.case_file

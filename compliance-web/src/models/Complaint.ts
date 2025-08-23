@@ -57,7 +57,8 @@ export interface ComplaintGridQueryParams extends BaseTableQueryParams {
   primary_officer_ids?: string;
   statuses?: string;
   case_file_number?: string;
-  case_file_id?: string;
+  case_file_id?: string;  
+  resolution_ids?: string;
 }
 
 export interface ComplaintGridItems {
