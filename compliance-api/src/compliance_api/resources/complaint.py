@@ -139,6 +139,11 @@ class Complaints(Resource):
                 "type": "integer",
                 "required": False,
             },
+            "resolution_ids": {
+                "description": "Filter by resolution ID(s). Can be a single value or comma-separated list",
+                "type": "string",
+                "required": False,
+            },
             "page_no": {
                 "description": "Page number for pagination",
                 "type": "integer",
@@ -335,10 +340,12 @@ class ComplaintStatus(Resource):
     @API.expect(complaint_status_model)
     @API.response(400, "Bad Request")
     @API.response(404, "Not Found")
-    @ApiHelper.swagger_decorators(API, endpoint_description="Close the complaint")
-    @API.response(code=204, description="Complaint Closed")
+    @ApiHelper.swagger_decorators(API, endpoint_description="Change the complaint status")
+    @API.response(code=204, description="Complaint status updated successfully")
     def patch(complaint_id):
-        """Close complaint."""
+        """Change complaint status. When status is 'Closed', 
+        resolution_id and resolution_agency_id can be provided. 
+        When status is 'Open', these fields are automatically cleared."""
         status = ComplaintStatusSchema().load(API.payload)
         ComplaintService.change_complaint_status(complaint_id, status)
         return {}, HTTPStatus.NO_CONTENT

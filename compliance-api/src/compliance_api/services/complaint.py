@@ -180,7 +180,21 @@ class ComplaintService:
                 f"The complaint is already in {status_enum.value} status."
             )
 
-        ComplaintModel.change_status(complaint_id, status_enum)
+        # Prepare update data
+        update_data = {"status": status_enum}
+        
+        if status_enum == ComplaintStatusEnum.CLOSED:
+            # When closing, set resolution fields if provided
+            if "resolution_id" in status_data:
+                update_data["resolution_id"] = status_data.get("resolution_id")
+            if "resolution_agency_id" in status_data:
+                update_data["resolution_agency_id"] = status_data.get("resolution_agency_id")
+        elif status_enum == ComplaintStatusEnum.OPEN:
+            # When opening, clear resolution fields
+            update_data["resolution_id"] = None
+            update_data["resolution_agency_id"] = None
+
+        ComplaintModel.change_status(complaint_id, update_data)
 
     @classmethod
     def get_complaints_paginated(cls, args):
@@ -211,6 +225,8 @@ class ComplaintService:
         for complaint in complaints:
             topic = complaint.topic
             complaint_source = complaint.source_type
+            resolution = complaint.resolution
+            resolution_agency = complaint.resolution_agency
             excel_data.append(
                 {
                     "Complaint #": complaint.complaint_number or "",
@@ -228,6 +244,8 @@ class ComplaintService:
                         else ""
                     ),
                     "Status": complaint.status.value if complaint.status else "",
+                    "Resolution": getattr(resolution, "name", "") or "",
+                    "Resolution Agency": getattr(resolution_agency, "name", "") or "",
                     "Case File #": (
                         complaint.case_file.case_file_number
                         if complaint.case_file
@@ -476,6 +494,18 @@ def _apply_complaints_filters(query, args):
             int(id_str.strip()) for id_str in args["primary_officer_ids"].split(",")
         ]
         filters.append(ComplaintModel.primary_officer_id.in_(primary_officer_ids))
+
+    if args.get("resolution_ids"):
+        resolution_ids = [
+            int(id_str.strip()) for id_str in args["resolution_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.resolution_id.in_(resolution_ids))
+
+    if args.get("resolution_agency_ids"):
+        resolution_agency_ids = [
+            int(id_str.strip()) for id_str in args["resolution_agency_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.resolution_agency_id.in_(resolution_agency_ids))
 
     # Handle special cases that need custom logic
     filters.extend(_get_special_complaint_filters(args))
