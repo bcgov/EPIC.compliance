@@ -14,6 +14,7 @@ import {
 import { OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
+import { ComplaintResolution } from "@/models/ComplaintResolution";
 
 const fetchRequirementSources = (): Promise<RequirementSource[]> => {
   return request({ url: "/requirement-sources" });
@@ -21,6 +22,10 @@ const fetchRequirementSources = (): Promise<RequirementSource[]> => {
 
 const fetchComplaintSources = (): Promise<ComplaintSource[]> => {
   return request({ url: "/complaints/sources" });
+};
+
+const fetchComplaintResolutions = (): Promise<ComplaintResolution[]> => {
+  return request({ url: "/complaints/resolutions" });
 };
 
 const fetchComplaints = (
@@ -101,6 +106,13 @@ export const useComplaintSourcesData = () => {
   return useStaticQuery({
     queryKey: ["complaint-sources"],
     queryFn: fetchComplaintSources,
+  });
+};
+
+export const useComplaintResolutionsData = () => {
+  return useStaticQuery({
+    queryKey: ["complaint-resolutions"],
+    queryFn: fetchComplaintResolutions,
   });
 };
 
