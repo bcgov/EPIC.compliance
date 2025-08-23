@@ -12,6 +12,7 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintReqOrderDetail as ComplaintReqOrderDetailModel
 from compliance_api.models.complaint import ComplaintRequirementSourceEnum
+from compliance_api.models.complaint import ComplaintResolution as ComplaintResolutionModel
 from compliance_api.models.complaint import ComplaintSource as ComplaintSourceModel
 from compliance_api.models.complaint import ComplaintSourceContact as ComplaintSourceContactModel
 from compliance_api.models.complaint import ComplaintStatusEnum
@@ -31,6 +32,11 @@ class ComplaintService:
     def get_complaint_sources(cls):
         """Get complaint sources."""
         return ComplaintSourceModel.get_all(sort_by="sort_order")
+
+    @classmethod
+    def get_complaint_resolutions(cls):
+        """Get complaint resolutions."""
+        return ComplaintResolutionModel.get_all(sort_by="sort_order")
 
     @classmethod
     def get_all(cls):
