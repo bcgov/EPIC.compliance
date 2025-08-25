@@ -29,6 +29,7 @@ from .apihelper import Api
 from .appendix import API as APPENDIX_API
 from .case_file import API as CASE_FILE_API
 from .complaint import API as COMPLAINT_API
+
 from .compliance_finding import API as COMPLIANCE_FINDING_API
 from .continuation_report import API as CONTINUATION_REPORT_API
 from .document_type import API as DOCUMENT_TYPE_API
@@ -91,6 +92,7 @@ API.add_namespace(INSPECTION_API)
 API.add_namespace(PROJECT_STATUS_API)
 API.add_namespace(TOPIC_API)
 API.add_namespace(COMPLAINT_API)
+
 API.add_namespace(REQUIREMENT_SOURCE_API)
 API.add_namespace(CONTINUATION_REPORT_API)
 API.add_namespace(ENFORCEMENT_ACTION_API)

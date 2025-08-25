@@ -56,6 +56,20 @@ const ComplaintGeneralInformation: React.FC<
     }
   }
 
+  if (complaintData.resolution) {
+    generalProperties.push({
+      name: "Resolution",
+      value: complaintData.resolution?.name,
+    });
+  }
+
+  if (complaintData.resolution_agency) {
+    generalProperties.push({
+      name: "Resolution Agency",
+      value: complaintData.resolution_agency?.name,
+    });
+  }
+
   let complaintProperties = [
     { name: "Complaint Source", value: complaintData.source_type?.name },
   ];

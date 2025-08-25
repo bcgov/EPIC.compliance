@@ -20,7 +20,9 @@ from .agency import Agency
 from .appendix import Appendix
 from .case_file import (
     CaseFile, CaseFileInitiationEnum, CaseFileInitiationOption, CaseFileLink, CaseFileOfficer, CaseFileStatusEnum)
-from .complaint import Complaint, ComplaintReqOrderDetail, ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum
+from .complaint import (
+    Complaint, ComplaintReqOrderDetail, ComplaintRequirementSourceEnum, ComplaintResolution, ComplaintResolutionEnum,
+    ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum)
 from .compliance_finding import ComplianceFindingOption, ComplianceFindingOptionEnum
 from .continuation_report import ContinuationReport, ContinuationReportKey
 from .db import db, ma, migrate

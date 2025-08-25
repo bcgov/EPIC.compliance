@@ -9,6 +9,7 @@ import { Topic } from "@/models/Topic";
 import { ComplaintSource } from "@/models/ComplaintSource";
 import { StaffUser } from "@/models/Staff";
 import { ComplaintStatusEnum } from "@/utils/constants";
+import { ComplaintResolution } from "@/models/ComplaintResolution";
 
 // Types for the data dependencies
 export interface ComplaintsGridDataDependencies {
@@ -16,6 +17,7 @@ export interface ComplaintsGridDataDependencies {
   topicList?: Topic[];
   complaintSourceList?: ComplaintSource[];
   staffUserList?: StaffUser[];
+  complaintResolutionList?: ComplaintResolution[];
 }
 
 // Convert column filters to API query parameters
@@ -66,6 +68,11 @@ export const useConvertFiltersToQueryParams = (
               params.statuses = filter.value.join(",");
             }
             break;
+          case "resolution_ids":
+            if (Array.isArray(filter.value) && filter.value.length > 0) {
+              params.resolution_ids = filter.value.join(",");
+            }
+            break;
           case "case_file_number":
             if (typeof filter.value === "string" && filter.value.trim()) {
               params.case_file_number = filter.value.trim();
@@ -112,6 +119,7 @@ export const useComplaintsGridColumns = (
     topicList,
     complaintSourceList,
     staffUserList,
+    complaintResolutionList,
   } = dataDependencies;
 
   const statusOptions = [
@@ -175,7 +183,7 @@ export const useComplaintsGridColumns = (
           text: source.name,
           value: source.id.toString(),
         })) ?? [],
-      size: 150,
+      size: 120,
     },
     {
       accessorFn: (row) => row.primary_officer?.name,
@@ -211,6 +219,18 @@ export const useComplaintsGridColumns = (
       filterVariant: "multi-select",
       filterSelectOptions: statusOptions,
       size: 80,
+    },
+    {
+      accessorFn: (row) => row.resolution?.name,
+      id: "resolution_ids",
+      header: "Complaint Resolution",
+      filterVariant: "multi-select",
+      filterSelectOptions:
+        complaintResolutionList?.map((resolution) => ({
+          text: resolution.name,
+          value: resolution.id.toString(),
+        })) ?? [],
+      size: 220,
     },
     {
       accessorFn: (row) => row.case_file?.case_file_number,

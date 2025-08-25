@@ -21,6 +21,10 @@ export enum ComplaintSourceEnum {
   OTHER = "4",
 }
 
+export enum ComplaintResolutionEnum {
+  AGENCY = "2",
+}
+
 export const ComplaintFormSchema = yup.object().shape({
   concernDescription: yup
     .string()

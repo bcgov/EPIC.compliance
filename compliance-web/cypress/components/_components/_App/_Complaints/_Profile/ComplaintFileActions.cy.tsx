@@ -59,6 +59,10 @@ describe("ComplaintFileActions Component", () => {
       requirement_source: undefined,
       source_contact: undefined,
       requirement_detail: undefined,
+      topic: {
+        id: 1,
+        name: "Topic 1",
+      },
     };
 
     // Set the mock complaint data in the query client
@@ -112,11 +116,12 @@ describe("ComplaintFileActions Component", () => {
 
     // Check if confirmation modal appears
     cy.contains("Close Complaint?").should("exist");
-    cy.contains("Are you sure you want to close this complaint?").should(
-      "exist"
-    );
-    cy.contains("button", "Close Complaint").should("exist").click();
-    cy.contains("button", "Cancel").should("exist").click();
+    cy.contains("You are about to close complaint").should("exist");
+    cy.contains("COMP-2023-001").should("exist");
+    
+    // Test the close button
+    cy.get("button[aria-label='close']").should("exist").click();
+    cy.contains("Close Complaint?").should("not.exist");
   });
 
   it("opens confirmation modal when clicking 'Reopen Complaint'", () => {
@@ -126,11 +131,11 @@ describe("ComplaintFileActions Component", () => {
 
     // Check if confirmation modal appears
     cy.contains("Reopen Complaint?").should("exist");
-    cy.contains("Are you sure you want to reopen this complaint?").should(
-      "exist"
-    );
-    cy.contains("button", "Reopen Complaint").should("exist").click();
-    cy.contains("button", "Cancel").should("exist").click();
+    cy.contains("Are you sure you want to reopen this complaint?").should("exist");
+    
+    // Test the close button
+    cy.get("button[aria-label='close']").should("exist").click();
+    cy.contains("Reopen Complaint?").should("not.exist");
   });
 
   it("opens confirmation modal when clicking 'Delete Complaint'", () => {
@@ -140,8 +145,10 @@ describe("ComplaintFileActions Component", () => {
 
     // Check if confirmation modal appears
     cy.contains("Delete Complaint?").should("exist");
-    cy.contains("You are about to delete this complaint").should("exist");
-    cy.contains("button", "Delete").should("exist").click();
-    cy.contains("button", "Cancel").should("exist").click();
+    cy.contains("You are about to delete this complaint. Are you sure?").should("exist");
+    
+    // Test the close button
+    cy.get("button[aria-label='close']").should("exist").click();
+    cy.contains("Delete Complaint?").should("not.exist");
   });
 });
