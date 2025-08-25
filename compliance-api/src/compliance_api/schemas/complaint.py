@@ -310,11 +310,11 @@ class ComplaintFilterSchema(BaseSchema):
 
 class ComplaintStatusSchema(BaseSchema):
     """Schema for changing complaint status.
-    
+
     When status is 'Closed':
     - resolution_id: Required if you want to specify a resolution
     - resolution_agency_id: Optional, used when resolution type is AGENCY
-    
+
     When status is 'Open':
     - Both resolution fields are automatically cleared
     - No need to provide these fields in the request
@@ -332,15 +332,15 @@ class ComplaintStatusSchema(BaseSchema):
     )
     resolution_id = fields.Int(
         metadata={
-            "description": """Provide resolution id when changing status to 'Closed'. 
+            "description": """Provide resolution id when changing status to 'Closed'.
             This field will be automatically cleared when status is changed to 'Open'.""",
         },
         allow_none=True,
     )
     resolution_agency_id = fields.Int(
         metadata={
-            "description": """Provide agency id when changing status to 'Closed' and 
-            resolution type is AGENCY. This field will be automatically cleared when 
+            "description": """Provide agency id when changing status to 'Closed' and
+            resolution type is AGENCY. This field will be automatically cleared when
             status is changed to 'Open'.""",
         },
         allow_none=True,

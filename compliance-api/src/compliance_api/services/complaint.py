@@ -182,7 +182,7 @@ class ComplaintService:
 
         # Prepare update data
         update_data = {"status": status_enum}
-        
+
         if status_enum == ComplaintStatusEnum.CLOSED:
             # When closing, set resolution fields if provided
             if "resolution_id" in status_data:
@@ -226,7 +226,6 @@ class ComplaintService:
             topic = complaint.topic
             complaint_source = complaint.source_type
             resolution = complaint.resolution
-            resolution_agency = complaint.resolution_agency
             excel_data.append(
                 {
                     "Complaint #": complaint.complaint_number or "",
