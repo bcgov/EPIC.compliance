@@ -13,6 +13,7 @@ from compliance_api.schemas import (
 from compliance_api.services import ComplaintService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.util import cors_preflight
+from compliance_api.utils.schema_utils import get_pagination_schema
 
 from .apihelper import Api as ApiHelper
 
@@ -144,30 +145,7 @@ class Complaints(Resource):
                 "type": "string",
                 "required": False,
             },
-            "page_no": {
-                "description": "Page number for pagination",
-                "type": "integer",
-                "required": False,
-                "default": 1,
-            },
-            "page_size": {
-                "description": "Number of items per page",
-                "type": "integer",
-                "required": False,
-                "default": 15,
-            },
-            "sort_by": {
-                "description": "Field to sort by",
-                "type": "string",
-                "required": False,
-                "default": "complaint_number",
-            },
-            "sort_order": {
-                "description": "Sort order (asc/desc)",
-                "type": "string",
-                "required": False,
-                "default": "asc",
-            },
+            **get_pagination_schema("complaint_number"),
         }
     )
     @ApiHelper.swagger_decorators(
