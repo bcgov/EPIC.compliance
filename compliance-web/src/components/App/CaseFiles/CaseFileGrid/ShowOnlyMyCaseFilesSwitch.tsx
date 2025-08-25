@@ -67,14 +67,12 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
       if (!isChecked || !currentStaff?.id) {
         return {
           primary_officer_ids: [],
-          statuses: [],
         };
       }
 
-      // For regular users, filter by primary officer and status 'open'
+      // For regular users, filter by primary officer only
       return {
         primary_officer_ids: [currentStaff.id.toString()],
-        statuses: ["Open"],
       };
     },
     [currentStaff?.id]
@@ -94,10 +92,6 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
         {
           id: "primary_officer",
           value: [currentUserStaff?.name || ""],
-        },
-        {
-          id: "status",
-          value: ["Open"],
         },
       ];
     },

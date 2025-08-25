@@ -43,7 +43,7 @@ export function CaseFiles() {
   });
   const { isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
-    { id: "case_file_number", desc: true },
+    { id: "date_created", desc: true },
   ]);
 
   const [pagination, setPagination] = useState({
@@ -77,7 +77,7 @@ export function CaseFiles() {
     columnFilters: [],
     externalFilters: {},
     globalFilter: "",
-    sorting: [{ id: "case_file_number", desc: true }],
+    sorting: [{ id: "date_created", desc: true }],
     myFilesChecked: false,
   });
 
