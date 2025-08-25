@@ -3,10 +3,10 @@
 
 def get_pagination_schema(default_sort_by="id"):
     """Get a reusable pagination schema dictionary.
-    
+
     Args:
         default_sort_by (str): The default field to sort by
-        
+
     Returns:
         dict: Pagination schema parameters
     """
