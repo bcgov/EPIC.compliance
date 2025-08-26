@@ -8,6 +8,7 @@ so this utility converts unsupported properties to equivalent supported ones.
 
 import re
 from typing import Dict
+
 from bs4 import BeautifulSoup
 
 
@@ -16,52 +17,82 @@ class PDFStyleConverter:
 
     # Map of unsupported CSS properties to their PDF-compatible equivalents
     PROPERTY_MAP = {
-        'padding-inline-start': 'margin-left',
-        'padding-inline-end': 'margin-right',
-        'padding-block-start': 'margin-top',
-        'padding-block-end': 'margin-bottom',
-        'margin-inline-start': 'margin-left',
-        'margin-inline-end': 'margin-right',
-        'margin-block-start': 'margin-top',
-        'margin-block-end': 'margin-bottom',
-        'border-inline-start': 'border-left',
-        'border-inline-end': 'border-right',
-        'border-block-start': 'border-top',
-        'border-block-end': 'border-bottom',
+        "padding-inline-start": "margin-left",
+        "padding-inline-end": "margin-right",
+        "padding-block-start": "margin-top",
+        "padding-block-end": "margin-bottom",
+        "margin-inline-start": "margin-left",
+        "margin-inline-end": "margin-right",
+        "margin-block-start": "margin-top",
+        "margin-block-end": "margin-bottom",
+        "border-inline-start": "border-left",
+        "border-inline-end": "border-right",
+        "border-block-start": "border-top",
+        "border-block-end": "border-bottom",
     }
 
     # CSS properties that are generally well-supported in PDF
     SUPPORTED_PROPERTIES = {
-        'margin', 'margin-left', 'margin-right', 'margin-top', 'margin-bottom',
-        'padding', 'padding-left', 'padding-right', 'padding-top', 'padding-bottom',
-        'font-family', 'font-size', 'font-weight', 'font-style',
-        'color', 'background-color',
-        'text-align', 'text-decoration', 'text-transform',
-        'line-height', 'letter-spacing', 'word-spacing',
-        'border', 'border-left', 'border-right', 'border-top', 'border-bottom',
-        'border-color', 'border-style', 'border-width',
-        'width', 'height', 'max-width', 'max-height', 'min-width', 'min-height',
-        'display', 'position', 'float', 'clear',
-        'vertical-align',
+        "margin",
+        "margin-left",
+        "margin-right",
+        "margin-top",
+        "margin-bottom",
+        "padding",
+        "padding-left",
+        "padding-right",
+        "padding-top",
+        "padding-bottom",
+        "font-family",
+        "font-size",
+        "font-weight",
+        "font-style",
+        "color",
+        "background-color",
+        "text-align",
+        "text-decoration",
+        "text-transform",
+        "line-height",
+        "letter-spacing",
+        "word-spacing",
+        "border",
+        "border-left",
+        "border-right",
+        "border-top",
+        "border-bottom",
+        "border-color",
+        "border-style",
+        "border-width",
+        "width",
+        "height",
+        "max-width",
+        "max-height",
+        "min-width",
+        "min-height",
+        "display",
+        "position",
+        "float",
+        "clear",
+        "vertical-align",
     }
 
     # Properties that should be removed as they cause issues in PDF
     PROBLEMATIC_PROPERTIES = {
-        'white-space': ['pre-wrap', 'pre-line'],  # Specific values that cause issues
-        'overflow': True,
-        'overflow-x': True,
-        'overflow-y': True,
-        'box-shadow': True,
-        'text-shadow': True,
-        'transform': True,
-        'transition': True,
-        'animation': True,
-        'filter': True,
-        'backdrop-filter': True,
-        'resize': True,
-        'user-select': True,
-        'pointer-events': True,
-        'cursor': True,
+        "white-space": ["pre-wrap", "pre-line"],  # Specific values that cause issues
+        "overflow": True,
+        "overflow-x": True,
+        "overflow-y": True,
+        "box-shadow": True,
+        "text-shadow": True,
+        "transform": True,
+        "transition": True,
+        "animation": True,
+        "filter": True,
+        "backdrop-filter": True,
+        "resize": True,
+        "user-select": True,
+        "pointer-events": True,
+        "cursor": True,
     }
 
     @classmethod
@@ -91,7 +122,7 @@ class PDFStyleConverter:
                 return f'style="{converted_styles}"'
             else:
                 # Remove empty style attribute completely
-                return ''
+                return ""
 
         # Process all style attributes
         result = re.sub(r'style="([^"]*?)"', style_replacer, html_content)
@@ -112,14 +143,14 @@ class PDFStyleConverter:
             return html_content
 
         try:
-            soup = BeautifulSoup(html_content, 'html.parser')
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Process all ordered lists
-            for ol in soup.find_all('ol', class_='editor-list-ol'):
+            for ol in soup.find_all("ol", class_="editor-list-ol"):
                 cls._fix_ordered_list(ol)
 
             # Process all unordered lists
-            for ul in soup.find_all('ul', class_='editor-list-ul'):
+            for ul in soup.find_all("ul", class_="editor-list-ul"):
                 cls._fix_unordered_list(ul)
 
             return str(soup)
@@ -134,8 +165,8 @@ class PDFStyleConverter:
             return
 
         # Get the list level from class names
-        for class_name in ol_element.get('class', []):
-            if class_name.startswith('editor-list-ol') and len(class_name) > 13:
+        for class_name in ol_element.get("class", []):
+            if class_name.startswith("editor-list-ol") and len(class_name) > 13:
                 try:
                     level_str = class_name[13:]  # Extract number after 'editor-list-ol'
                     int(level_str)  # Validate it's a number
@@ -147,24 +178,24 @@ class PDFStyleConverter:
         counter = 1
 
         # Process list items
-        for li in ol_element.find_all('li', recursive=False):
+        for li in ol_element.find_all("li", recursive=False):
             # Check if this is a nested list item that should not be numbered
-            if 'editor-nested-listitem' in li.get('class', []):
+            if "editor-nested-listitem" in li.get("class", []):
                 # Remove the value attribute and add a special class for styling
-                if li.has_attr('value'):
-                    del li['value']
-                li['class'] = li.get('class', []) + ['no-numbering']
+                if li.has_attr("value"):
+                    del li["value"]
+                li["class"] = li.get("class", []) + ["no-numbering"]
             else:
                 # This is a regular list item that should be numbered
-                li['value'] = str(counter)
+                li["value"] = str(counter)
                 counter += 1
 
             # Recursively process nested lists
-            nested_ol = li.find('ol', class_='editor-list-ol')
+            nested_ol = li.find("ol", class_="editor-list-ol")
             if nested_ol:
                 cls._fix_ordered_list(nested_ol)
 
-            nested_ul = li.find('ul', class_='editor-list-ul')
+            nested_ul = li.find("ul", class_="editor-list-ul")
             if nested_ul:
                 cls._fix_unordered_list(nested_ul)
 
@@ -175,17 +206,17 @@ class PDFStyleConverter:
             return
 
         # Process list items
-        for li in ul_element.find_all('li', recursive=False):
+        for li in ul_element.find_all("li", recursive=False):
             # Remove value attributes from unordered list items
-            if li.has_attr('value'):
-                del li['value']
+            if li.has_attr("value"):
+                del li["value"]
 
             # Recursively process nested lists
-            nested_ol = li.find('ol', class_='editor-list-ol')
+            nested_ol = li.find("ol", class_="editor-list-ol")
             if nested_ol:
                 cls._fix_ordered_list(nested_ol)
 
-            nested_ul = li.find('ul', class_='editor-list-ul')
+            nested_ul = li.find("ul", class_="editor-list-ul")
             if nested_ul:
                 cls._fix_unordered_list(nested_ul)
 
@@ -238,10 +269,10 @@ class PDFStyleConverter:
         declarations = {}
 
         # Split by semicolon and process each declaration
-        for declaration in style_string.split(';'):
+        for declaration in style_string.split(";"):
             declaration = declaration.strip()
-            if ':' in declaration:
-                prop, value = declaration.split(':', 1)
+            if ":" in declaration:
+                prop, value = declaration.split(":", 1)
                 prop = prop.strip().lower()
                 value = value.strip()
                 if prop and value:
@@ -258,7 +289,7 @@ class PDFStyleConverter:
 
         # Check prefixes (e.g., border-left-width matches border-)
         for supported in cls.SUPPORTED_PROPERTIES:
-            if prop.startswith(supported + '-'):
+            if prop.startswith(supported + "-"):
                 return True
 
         return False
