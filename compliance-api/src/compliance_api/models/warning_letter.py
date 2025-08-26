@@ -5,8 +5,8 @@ from enum import Enum
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Index, Integer, String
-from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -65,6 +65,13 @@ class WarningLetterInspectionRequirementMap(BaseModelVersioned):
         return cls.query.filter_by(
             warning_letter_id=warning_letter_id, is_deleted=False, is_active=True
         ).all()
+
+    @classmethod
+    def get_by_requirement_id(cls, requirement_id):
+        """Get inspection requirements by requirement id."""
+        return cls.query.filter_by(
+            inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
+        ).first()
 
     @classmethod
     @with_session
