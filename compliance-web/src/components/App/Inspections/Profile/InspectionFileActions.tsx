@@ -3,7 +3,9 @@ import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import {
   useDeleteInspection,
   useUpdateInspectionStatus,
+  useInspectionByNumber,
 } from "@/hooks/useInspections";
+import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { Inspection } from "@/models/Inspection";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
@@ -24,10 +26,16 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
 
-  const inspectionData = queryClient.getQueryData<Inspection>([
-    "inspection",
-    fileNumber,
-  ]);
+  const { data: inspectionData } = useInspectionByNumber(fileNumber);
+  
+  
+  const { data: caseFileData } = useCaseFileByNumber(
+    inspectionData?.case_file?.case_file_number || ""
+  );
+
+  
+  const isCaseFileClosed = caseFileData?.case_file_status?.toLowerCase() === "closed" || 
+                          inspectionData?.case_file?.case_file_status?.toLowerCase() === "closed";
 
   const onUpdateStatusSuccess = useCallback(() => {
     queryClient.invalidateQueries({
@@ -39,6 +47,12 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["inspection-requirements", inspectionData?.id],
     });
+  
+    if (inspectionData?.case_file_id) {
+      queryClient.invalidateQueries({
+        queryKey: ["case-file", inspectionData.case_file_id],
+      });
+    }
     notify.success("Inspection status updated");
     setClose();
   }, [fileNumber, inspectionData, queryClient, setClose]);
@@ -171,6 +185,11 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
       hidden: false,
     },
   ];
+
+  
+  if (isCaseFileClosed) {
+    return null;
+  }
 
   return <MenuActionDropdown actions={actionsList} />;
 };

@@ -81,11 +81,12 @@ type ChargeRecommendationUpdateModalProps = {
   chargeRecommendationData: ChargeRecommendation;
   inspectionData: Inspection;
   onSubmit: (data: ChargeRecommendation) => void;
+  isReadonlyMode?: boolean;
 };
 
 const ChargeRecommendationUpdateModal: FC<
   ChargeRecommendationUpdateModalProps
-> = ({ chargeRecommendationData, inspectionData, onSubmit }) => {
+> = ({ chargeRecommendationData, inspectionData, onSubmit, isReadonlyMode = false }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
 
@@ -257,17 +258,20 @@ const ChargeRecommendationUpdateModal: FC<
               getOptionLabel={(option) => option?.name || ""}
               isOptionEqualToValue={(option, value) => option?.id === value?.id}
               isRequired={true}
+              disabled={isReadonlyMode}
             />
 
             <Box sx={{ display: "flex", gap: 2 }}>
               <ControlledDateField
                 name="date_to_crown_counsel"
                 label="Date to Crown Counsel"
+                disabled={isReadonlyMode}
               />
               <ControlledTextField
                 name="court_file_number"
                 label="Court File #"
                 fullWidth
+                disabled={isReadonlyMode}
               />
             </Box>
 
@@ -281,10 +285,12 @@ const ChargeRecommendationUpdateModal: FC<
                   option?.id === value?.id
                 }
                 fullWidth
+                disabled={isReadonlyMode}
               />
               <ControlledDateField
                 name="charge_decision_date"
                 label="Charge Decision Date"
+                disabled={isReadonlyMode}
               />
             </Box>
 
@@ -294,6 +300,7 @@ const ChargeRecommendationUpdateModal: FC<
               multiline
               rows={1}
               fullWidth
+              disabled={isReadonlyMode}
             />
 
             <Box sx={{ display: "flex", gap: 2 }}>
@@ -306,30 +313,35 @@ const ChargeRecommendationUpdateModal: FC<
                   option?.id === value?.id
                 }
                 fullWidth
+                disabled={isReadonlyMode}
               />
               <ControlledDateField
                 name="judgment_date"
                 label="Judgment Date"
                 sx={{ flex: 1 }}
+                disabled={isReadonlyMode}
               />
             </Box>
-            <ControlledDateField name="sentence_date" label="Sentence Date" />
+            <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
             <ControlledTextField
               name="sentence_type"
               label="Sentence Type"
               fullWidth
+              disabled={isReadonlyMode}
             />
           </Box>
         </DialogContent>
-        <ModalActions
-          onSecondaryAction={setModalClose}
-          onPrimaryAction={methods.handleSubmit(handleSubmit)}
-          isLoading={isUpdating}
-          primaryActionButtonText="Save"
-          secondaryActionButtonText="Cancel"
-          onDeleteAction={handleDelete}
-          isDeleteActionLoading={isDeleting}
-        />
+        {!isReadonlyMode && (
+          <ModalActions
+            onSecondaryAction={setModalClose}
+            onPrimaryAction={methods.handleSubmit(handleSubmit)}
+            isLoading={isUpdating}
+            primaryActionButtonText="Save"
+            secondaryActionButtonText="Cancel"
+            onDeleteAction={handleDelete}
+            isDeleteActionLoading={isDeleting}
+          />
+        )}
       </form>
     </FormProvider>
   );
