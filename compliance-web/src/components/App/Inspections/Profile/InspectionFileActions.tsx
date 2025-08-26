@@ -6,7 +6,6 @@ import {
   useInspectionByNumber,
 } from "@/hooks/useInspections";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
-import { Inspection } from "@/models/Inspection";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
