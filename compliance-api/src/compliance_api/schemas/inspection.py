@@ -332,6 +332,13 @@ class InspectionEnforcementActionSchema(
             "type": "object",
         },
     )
+    status = fields.Nested(
+        KeyValueSchema,
+        metadata={
+            "description": "The status of the enforcement action",
+            "type": "object",
+        },
+    )
     number = fields.Str(
         metadata={
             "description": "The number of the enforcement action",
