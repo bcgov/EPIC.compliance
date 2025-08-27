@@ -1,3 +1,5 @@
+import { StaffUser } from "@/models/Staff";
+
 export const formatAuthorization = (eaCertifcate: string | undefined, typeOnly?: boolean): string => {
   if (!eaCertifcate) return "n/a";
   return eaCertifcate[0].toLowerCase() === "x"
@@ -33,4 +35,9 @@ export const downloadFile = (blob: Blob, filename: string) => {
 
   // Release the blob URL
   URL.revokeObjectURL(url);
+};
+
+export const renderStaffNameWithPosition = (staffUser: StaffUser | undefined) => {
+  if (!staffUser) return "";
+  return [staffUser.name, staffUser.position?.name].filter(Boolean).join(", ");
 };

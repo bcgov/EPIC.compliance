@@ -16,6 +16,7 @@ import {
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { ViolationTicket } from "@/models/ViolationTicket";
+import { RestorativeJustice } from "@/models/RestorativeJustice";
 
 const EnforcementCard = ({
   order,
@@ -24,6 +25,7 @@ const EnforcementCard = ({
   administrativePenalty,
   chargeRecommendation,
   violationTicket,
+  restorativeJustice,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
@@ -31,6 +33,7 @@ const EnforcementCard = ({
   administrativePenalty?: AdministrativePenalty;
   chargeRecommendation?: ChargeRecommendation;
   violationTicket?: ViolationTicket;
+  restorativeJustice?: RestorativeJustice;
 }) => {
   // console.log(chargeRecommendation)
   const requirementSummaryFormatted = formatRequirementSummary(
@@ -38,7 +41,8 @@ const EnforcementCard = ({
     warningLetter,
     administrativePenalty,
     chargeRecommendation,
-    violationTicket
+    violationTicket,
+    restorativeJustice
   );
   const requirementSourcesFormatted = formatRequirementSources(
     requirementEnforcements,
@@ -46,7 +50,8 @@ const EnforcementCard = ({
     warningLetter,
     administrativePenalty,
     chargeRecommendation,
-    violationTicket
+    violationTicket,
+    restorativeJustice
   );
   const sentForReviewDate = getSentForReviewDate(order, warningLetter);
   const approvedByDate = getApprovedByDate(order, warningLetter);
@@ -83,7 +88,8 @@ const EnforcementCard = ({
               warningLetter?.warning_letter_number ??
               administrativePenalty?.administrative_penalty_number ??
               chargeRecommendation?.charge_recommendation_number ??
-              violationTicket?.vt_number}
+              violationTicket?.vt_number ??
+              restorativeJustice?.restorative_justice_number}
           </Typography>
           <EnforcementStatusFlag
             order={order}
@@ -91,6 +97,7 @@ const EnforcementCard = ({
             administrativePenalty={administrativePenalty}
             chargeRecommendation={chargeRecommendation}
             violationTicket={violationTicket}
+            restorativeJustice={restorativeJustice}
           />
         </Stack>
         <Stack>
@@ -135,8 +142,8 @@ const EnforcementCard = ({
                 value={
                   (order || warningLetter)?.date_issued
                     ? dateUtils.formatDate(
-                        (order || warningLetter)?.date_issued ?? ""
-                      )
+                      (order || warningLetter)?.date_issued ?? ""
+                    )
                     : ""
                 }
                 gridProps={{ xs: 6 }}
@@ -258,18 +265,37 @@ const EnforcementCard = ({
                 }
                 gridProps={{ xs: 6 }}
               />
-             
+
               <GridLabelValuePair
                 label="Fine Amount"
                 value={`$${violationTicket.fine_amount || 0}`}
                 gridProps={{ xs: 6 }}
               />
-               <GridLabelValuePair
+              <GridLabelValuePair
                 label="Status Date"
-                value={ violationTicket.status_date
-                    ? dateUtils.formatDate(violationTicket.status_date)
-                    : ""}
+                value={violationTicket.status_date
+                  ? dateUtils.formatDate(violationTicket.status_date)
+                  : ""}
                 gridProps={{ xs: 6 }}
+              />
+            </>
+          )}
+          {restorativeJustice && (
+            <>
+              <GridLabelValuePair
+                label="Restitution Details"
+                value={restorativeJustice.restitution_details || ""}
+                multiline
+                gridProps={{ xs: 12 }}
+              />
+              <GridLabelValuePair
+                label="Date Restitution Complete"
+                value={
+                  restorativeJustice.date_restitution_complete
+                    ? dateUtils.formatDate(restorativeJustice.date_restitution_complete)
+                    : ""
+                }
+                gridProps={{ xs: 12 }}
               />
             </>
           )}

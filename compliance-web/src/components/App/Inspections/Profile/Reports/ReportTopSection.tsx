@@ -291,7 +291,7 @@ export default function ReportTopSection() {
           alignItems: "center",
         }}
       >
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
           <Box display={"flex"} gap={1} alignItems={"center"}>
             <Typography variant="h6">
               {inspectionReportsData?.ir_status?.name} IR

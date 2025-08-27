@@ -30,7 +30,7 @@ from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models.order import OrderProgressEnum
+from compliance_api.models.order import OrderProgressEnum, OrderStatusEnum
 from compliance_api.models.order_approval import OrderApproval as OrderApprovalModel
 from compliance_api.models.requirement_source import RequirementSource as RequirementSourceOptionModel
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
@@ -85,58 +85,7 @@ class InspectionRequirementService:
         data_frame = pd.json_normalize(requirements_data)
 
         # Create Excel file
-        return cls._create_excel_from_dataframe(data_frame)
-
-    @classmethod
-    def _create_excel_from_dataframe(cls, data_frame):
-        """Create Excel file from DataFrame with proper column formatting."""
-        # Print columns for debugging
-        print(f"Available columns: {data_frame.columns.tolist()}")
-
-        # Get existing columns and headers
-        existing_columns, headers = cls._get_excel_columns_and_headers(data_frame)
-
-        # Create Excel file in memory
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            data_frame.to_excel(
-                writer,
-                sheet_name="Inspection Requirements",
-                columns=existing_columns,
-                header=headers,
-                index=False,
-            )
-        output.seek(0)
-        return output.getvalue()
-
-    @classmethod
-    def _get_excel_columns_and_headers(cls, data_frame):
-        """Get existing columns and their headers for Excel export."""
-        preferred_columns = [
-            ("topic.name", "Topic"),
-            ("summary", "Summary"),
-            ("compliance_finding.name", "Compliance Finding"),
-            ("enforcement_action.name", "Enforcement Action"),
-            ("approval_status.name", "Approval Status"),
-            ("requirement_number", "Condition #"),
-            ("requirement_source.name", "Requirement Source"),
-            ("ir_number", "IR Number"),
-            ("date_issued", "Date Issued"),
-            ("primary_officer.name", "Primary Officer"),
-            ("approved_by.name", "Approved By"),
-            ("project.name", "Project"),
-            ("inspection_status.name", "Inspection Status"),
-        ]
-
-        # Filter for columns that actually exist in the DataFrame
-        existing_columns = []
-        headers = []
-        for col, header in preferred_columns:
-            if col in data_frame.columns:
-                existing_columns.append(col)
-                headers.append(header)
-
-        return existing_columns, headers
+        return _create_excel_from_dataframe(data_frame)
 
     @classmethod
     def get_all(cls, inspection_id):
@@ -244,11 +193,11 @@ class InspectionRequirementService:
     @classmethod
     def delete(cls, inspection_id, requirement_id):
         """Delete the requirement."""
-        # TODO: CHECK ORDERS AND WARNING LETTERS BEFORE DELETING THE REUQIREMENT
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         ServiceUtils.inspection_status_check(inspection)
-        _requirement_check(requirement_id)
+        requirement = _requirement_check(requirement_id)
         ServiceUtils.access_check_update_for_inspection(inspection)
+        _check_orders_and_warning_letters(requirement)
         with session_scope() as session:
             InspectionRequirementModel.delete_requirement(requirement_id, session)
             InspectionReqSourceDetailModel.delete_by_requirement_id(
@@ -410,6 +359,57 @@ class InspectionRequirementService:
                         {"sort_order": image_data["sort_order"]},
                         session,
                     )
+
+
+def _create_excel_from_dataframe(data_frame):
+    """Create Excel file from DataFrame with proper column formatting."""
+    # Print columns for debugging
+    print(f"Available columns: {data_frame.columns.tolist()}")
+
+    # Get existing columns and headers
+    existing_columns, headers = _get_excel_columns_and_headers(data_frame)
+
+    # Create Excel file in memory
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        data_frame.to_excel(
+            writer,
+            sheet_name="Inspection Requirements",
+            columns=existing_columns,
+            header=headers,
+            index=False,
+        )
+    output.seek(0)
+    return output.getvalue()
+
+
+def _get_excel_columns_and_headers(data_frame):
+    """Get existing columns and their headers for Excel export."""
+    preferred_columns = [
+        ("topic.name", "Topic"),
+        ("summary", "Summary"),
+        ("compliance_finding.name", "Compliance Finding"),
+        ("enforcement_action.name", "Enforcement Action"),
+        ("approval_status.name", "Approval Status"),
+        ("requirement_number", "Condition #"),
+        ("requirement_source.name", "Requirement Source"),
+        ("ir_number", "IR Number"),
+        ("date_issued", "Date Issued"),
+        ("primary_officer.name", "Primary Officer"),
+        ("approved_by.name", "Approved By"),
+        ("project.name", "Project"),
+        ("inspection_status.name", "Inspection Status"),
+    ]
+
+    # Filter for columns that actually exist in the DataFrame
+    existing_columns = []
+    headers = []
+    for col, header in preferred_columns:
+        if col in data_frame.columns:
+            existing_columns.append(col)
+            headers.append(header)
+
+    return existing_columns, headers
 
 
 def _get_first_requirement_source_sub_query():
@@ -1519,3 +1519,44 @@ def _create_requirement_source_doc_obj(
         "section_title": requirement_source_doc_data.get("section_title", None),
         "description": requirement_source_doc_data.get("description", None),
     }
+
+
+def _check_orders_and_warning_letters(requirement):
+    """Check if the requirement has orders or warning letters with restricted statuses.
+
+    Prevents deletion if:
+    - Orders with progress: Deputy Review, Approved, or status: Open
+    - Warning Letters with progress: Issued
+
+    Args:
+        requirement_id (int): The inspection requirement ID to check
+
+    Raises:
+        UnprocessableEntityError: If enforcement actions prevent deletion
+    """
+    enforcement_actions = requirement.enforcement_actions
+    enforcement_action_ids = [
+        action.enforcement_action_id for action in enforcement_actions
+    ]
+    if EnforcementActionOptionEnum.ORDER.value in enforcement_action_ids:
+        order_map = OrderInspectionRequirementMapModel.get_by_requirement_id(
+            requirement.id
+        )
+        if order_map and (
+            order_map.order.order_progress
+            in [OrderProgressEnum.DEPUTY_REVIEW, OrderProgressEnum.APPROVED]
+            or order_map.order.order_status == OrderStatusEnum.OPEN
+        ):
+            raise UnprocessableEntityError("Active order found")
+    if EnforcementActionOptionEnum.WARNING_LETTER.value in enforcement_action_ids:
+        warning_letter_map = (
+            WarningLetterInspectionRequirementMapModel.get_by_requirement_id(
+                requirement.id
+            )
+        )
+        if warning_letter_map and warning_letter_map.warning_letter.progress in [
+            WarningLetterProgressEnum.ISSUED,
+            WarningLetterProgressEnum.APPROVED,
+            WarningLetterProgressEnum.DEPUTY_REVIEW,
+        ]:
+            raise UnprocessableEntityError("Active warning letter found")

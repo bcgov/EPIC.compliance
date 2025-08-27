@@ -30,6 +30,8 @@ import {
   InspectionFormSchema,
   InspectionSchemaType,
 } from "./InspectionFormUtils";
+import { Agency } from "@/models/Agency";
+import { FirstNation } from "@/models/FirstNation";
 
 type InspectionDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -48,6 +50,18 @@ const initFormData: InspectionFormData = {
   projectStatus: undefined,
   caseFileId: undefined,
   isHistory: false,
+  isIndependentEnvMonitor: false,
+  isCHRepresentatives: false,
+  officers: [],
+  inAttendance: [],
+  agencies: [],
+  firstNations: [],
+  municipal: "",
+  other: "",
+  projectDescription: "",
+  locationDescription: "",
+  utm: "",
+  debriefDate: undefined,
 };
 
 const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
@@ -65,7 +79,6 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
   const { data: firstNationsList } = useFirstNationsData();
   const { data: inattendanceOfficersList } = useStaffUsersData();
   const currentUser = useCurrentLoggedInUser();
-  console.log(caseFile)
   const staffUserList = useMemo(() => [
     caseFile?.primary_officer,
     ...(caseFile?.officers ?? []),
@@ -74,51 +87,69 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
   const defaultValues = useMemo<InspectionFormData>(() => {
     if (inspection) {
       return {
-        ...inspection,
-        projectDescription: inspection.project_description ?? "",
-        locationDescription: inspection.location_description,
-        primaryOfficer: inspection.primary_officer,
-        debriefDate: dayjs(inspection.debrief_date),
-        projectStatus: inspection.project_status,
-        irTypes: inspection.types,
+        project: inspection.project,
         startDate: dayjs(inspection.start_date),
         endDate: dayjs(inspection.end_date),
-        isHistory: inspection.is_history,
-        officers: inspection.inspectionAttendances?.find(
-          (item) =>
-            item.attendance_option_id === Number(AttendanceEnum.OFFICERS)
-        )?.data,
-        isIndependentEnvMonitor: inspection.inspectionAttendances?.some(
-          (item) =>
-            item.attendance_option_id ===
-            Number(AttendanceEnum.INDIVIDUAL_ENV_MONITOR)
-        ),
-        isCHRepresentatives: inspection.inspectionAttendances?.some(
-          (item) =>
-            item.attendance_option_id ===
-            Number(AttendanceEnum.CH_RP_REPRESENTATIVE)
-        ),
-        inAttendance: inspection.inspectionAttendances
-          ?.filter(
+        debriefDate: dayjs(inspection.debrief_date),
+        primaryOfficer: inspection.primary_officer,
+        initiation: inspection.initiation,
+        irTypes: inspection.types,
+        irStatus: inspection.ir_status,
+        projectStatus: inspection.project_status,
+        caseFileId: inspection.case_file_id?.toString(),
+        isHistory: inspection.is_history ?? false,
+        isIndependentEnvMonitor:
+          inspection.inspectionAttendances?.some(
             (item) =>
-              ![
-                AttendanceEnum.INDIVIDUAL_ENV_MONITOR,
-                AttendanceEnum.CH_RP_REPRESENTATIVE,
-                AttendanceEnum.OFFICERS,
-              ].includes(item.attendance_option_id.toString() as AttendanceEnum)
-          )
-          .map((item) => item.attendance_option),
-        agencies: inspection.inspectionAttendances?.find(
-          (item) =>
-            item.attendance_option_id === Number(AttendanceEnum.AGENCIES)
-        )?.data,
-        firstNations: inspection.inspectionAttendances?.find(
-          (item) =>
-            item.attendance_option_id === Number(AttendanceEnum.FIRST_NATIONS)
-        )?.data,
-        other: inspection.inspectionAttendances?.find(
-          (item) => item.attendance_option_id === Number(AttendanceEnum.OTHER)
-        )?.data,
+              item.attendance_option_id ===
+              Number(AttendanceEnum.INDIVIDUAL_ENV_MONITOR)
+          ) ?? false,
+        isCHRepresentatives:
+          inspection.inspectionAttendances?.some(
+            (item) =>
+              item.attendance_option_id ===
+              Number(AttendanceEnum.CH_RP_REPRESENTATIVE)
+          ) ?? false,
+        officers:
+          (inspection.inspectionAttendances?.find(
+            (item) =>
+              item.attendance_option_id === Number(AttendanceEnum.OFFICERS)
+          )?.data as StaffUser[]) ?? [],
+        inAttendance:
+          inspection.inspectionAttendances
+            ?.filter(
+              (item) =>
+                ![
+                  AttendanceEnum.INDIVIDUAL_ENV_MONITOR,
+                  AttendanceEnum.CH_RP_REPRESENTATIVE,
+                  AttendanceEnum.OFFICERS,
+                ].includes(
+                  item.attendance_option_id.toString() as AttendanceEnum
+                )
+            )
+            .map((item) => item.attendance_option) ?? [],
+        agencies:
+          (inspection.inspectionAttendances?.find(
+            (item) =>
+              item.attendance_option_id === Number(AttendanceEnum.AGENCIES)
+          )?.data as Agency[]) ?? [],
+        firstNations:
+          (inspection.inspectionAttendances?.find(
+            (item) =>
+              item.attendance_option_id === Number(AttendanceEnum.FIRST_NATIONS)
+          )?.data as FirstNation[]) ?? [],
+        municipal:
+          (inspection.inspectionAttendances?.find(
+            (item) =>
+              item.attendance_option_id === Number(AttendanceEnum.MUNICIPAL)
+          )?.data as string) ?? "",
+        other:
+          (inspection.inspectionAttendances?.find(
+            (item) => item.attendance_option_id === Number(AttendanceEnum.OTHER)
+          )?.data as string) ?? "",
+        projectDescription: inspection.project_description ?? "",
+        locationDescription: inspection.location_description ?? "",
+        utm: inspection.utm ?? "",
       };
     }
     const selectedOfficer = staffUserList.find(

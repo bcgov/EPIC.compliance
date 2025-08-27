@@ -167,7 +167,9 @@ class AdministrativePenaltyService:
 
         with session_scope() as session:
             AdministrativePenalty.update_administrative_penalty(
-                administrative_penalty_id, {"is_deleted": True}, session
+                administrative_penalty_id,
+                {"is_deleted": True, "is_active": False},
+                session,
             )
             AdministrativePenaltyInspectionRequirementMap.delete_by_administrative_penalty(
                 administrative_penalty_id, session

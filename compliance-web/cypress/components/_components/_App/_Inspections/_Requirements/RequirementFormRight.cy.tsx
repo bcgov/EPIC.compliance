@@ -65,14 +65,13 @@ describe("RequirementFormRight Component", () => {
 
   it("opens requirement source modal when add button is clicked", () => {
     cy.contains("button", "Requirement Source").click();
-    cy.get("[role='presentation']").should("exist");
     cy.contains("Add Requirement Source").should("exist");
 
     cy.get('[contenteditable="true"]').type("Test Description");
     cy.contains("button", "Add").should("exist").click();
 
     cy.get("button[aria-label='close']").should("exist").click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Add Requirement Source").should("not.exist");
   });
 
   it("displays requirement source card with correct data", () => {
@@ -82,10 +81,9 @@ describe("RequirementFormRight Component", () => {
 
   it("allows editing a requirement source", () => {
     cy.get("[data-testid='requirement-source-edit-0']").first().click();
-    cy.get("[role='presentation']").should("exist");
     cy.contains("Edit Requirement Source").should("exist");
     cy.get("button[aria-label='close']").should("exist").click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Edit Requirement Source").should("not.exist");
   });
 
   it("shows delete confirmation when trying to delete a requirement source", () => {
@@ -95,7 +93,7 @@ describe("RequirementFormRight Component", () => {
     cy.get("[data-testid='cancel-action-modal-button']")
       .should("exist")
       .click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Delete Requirement Source?").should("not.exist");
   });
 
   it("renders images containers", () => {
@@ -154,18 +152,16 @@ describe("RequirementFormRight Component with Related Documents", () => {
     cy.get(
       "[data-testid='requirement-related-document-add-section-0']"
     ).click();
-    cy.get("[role='presentation']").should("exist");
     cy.contains("Add Section").should("exist");
     cy.get("button[aria-label='close']").should("exist").click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Add Section").should("not.exist");
   });
 
   it("allows editing a document section", () => {
     cy.get("[data-testid='requirement-related-document-edit-0-0']").click();
-    cy.get("[role='presentation']").should("exist");
     cy.contains("Edit Related Document").should("exist");
     cy.get("button[aria-label='close']").should("exist").click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Edit Related Document").should("not.exist");
   });
 
   it("shows delete confirmation when trying to delete a section", () => {
@@ -177,6 +173,6 @@ describe("RequirementFormRight Component with Related Documents", () => {
     cy.get("[data-testid='cancel-action-modal-button']")
       .should("exist")
       .click();
-    cy.get("[role='presentation']").should("not.exist");
+    cy.contains("Delete Section?").should("not.exist");
   });
 });

@@ -1,66 +1,120 @@
 name: Deploy and Update Template
 
 on:
+  # Trigger 1: Auto - when template changes in develop branch (dev environment only)
   push:
     branches:
       - develop
     paths:
-      - 'compliance-api/src/compliance_api/templates/**'  # Only trigger on template changes
+      - 'compliance-api/src/compliance_api/templates/**'
+  
+  # Trigger 2: Manual - workflow dispatch with environment selection
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment (dev/test/prod)"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+  
+  # Trigger 3: Called from Deploy workflow
+  workflow_call:
+    inputs:
+      environment:
+        description: "Environment (test/prod)"
+        required: true
+        type: string
 
 env:
-  TEMPLATE_NAME: IR_TEMPLATE
+  TEMPLATE_DIR: compliance-api/src/compliance_api/templates
 
 jobs:
-  deploy-and-patch_ir_template:
+  update-template:
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        environment: [dev, test, prod]
-        include:
-          - environment: dev
-            api_host: docgen-api-c72cba-dev.apps.gold.devops.gov.bc.ca
-          - environment: test
-            api_host: docgen-api-c8b80a-test.apps.gold.devops.gov.bc.ca
-          - environment: prod
-            api_host: docgen-api-c8b80a-prod.apps.gold.devops.gov.bc.ca
-    
-    environment: ${{ matrix.environment }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
-      - name: Install html-minifier
-        run: npm install -g html-minifier
-
-      - name: Patch Template
-        env:
-          API_TOKEN: ${{ secrets.API_TOKEN }}  # You'll need to set this in your repository secrets
+      - name: Determine environment and API host
+        id: setup
         run: |
-          # Minify the template and escape quotes
-          TEMPLATE_CONTENT=$(html-minifier \
-            --collapse-whitespace \
-            --remove-comments \
-            --remove-optional-tags \
-            --remove-redundant-attributes \
-            --remove-script-type-attributes \
-            --remove-tag-whitespace \
-            --use-short-doctype \
-            --minify-css true \
-            --minify-js true \
-            compliance-api/src/compliance_api/templates/ir_template.html | sed 's/"/\\"/g')
+          # Determine environment based on trigger type
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # Auto trigger - always dev environment
+            ENVIRONMENT="dev"
+            echo "Triggered by push to develop - using dev environment"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            # Manual trigger - use selected environment
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+            echo "Manual trigger - using $ENVIRONMENT environment"
+          elif [[ "${{ github.event_name }}" == "workflow_call" ]]; then
+            # Called from Deploy workflow - use passed environment
+            ENVIRONMENT="${{ inputs.environment }}"
+            echo "Called from Deploy workflow - using $ENVIRONMENT environment"
+          else
+            echo "Unknown trigger type"
+            exit 1
+          fi
           
-          # Make the API call to patch the template
-          curl -X PATCH \
-            "https://${{ matrix.api_host }}/api/templates/${TEMPLATE_NAME}" \
-            -H "Authorization: Bearer ${API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"template\":\"${TEMPLATE_CONTENT}\"}"
+          # Set API host based on environment
+          case $ENVIRONMENT in
+            dev)
+              API_HOST="docgen-api-c8b80a-dev.apps.gold.devops.gov.bc.ca"
+              ;;
+            test)
+              API_HOST="docgen-api-c8b80a-test.apps.gold.devops.gov.bc.ca"
+              ;;
+            prod)
+              API_HOST="docgen-api-c8b80a-prod.apps.gold.devops.gov.bc.ca"
+              ;;
+            *)
+              echo "Invalid environment: $ENVIRONMENT"
+              exit 1
+              ;;
+          esac
+          
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "api_host=$API_HOST" >> $GITHUB_OUTPUT
+          echo "Using API host: $API_HOST"
 
-          echo "Template updated for ${{ matrix.environment }} environment"
+      - name: Update Templates
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ENVIRONMENT: ${{ steps.setup.outputs.environment }}
+          API_HOST: ${{ steps.setup.outputs.api_host }}
+        run: |
+          echo "Updating templates in: ${TEMPLATE_DIR}"
+          
+          for file_path in ${TEMPLATE_DIR}/*.html; do
+            template_name=$(basename "$file_path" .html)
+            template_name_upper=${template_name^^}   # convert to caps
+            echo "Processing: $template_name"
+            
+            template_base64=$(base64 -w 0 "$file_path")
+            echo "Base64 length: ${#template_base64} characters"
+            echo "$template_base64"
+            
+            response=$(curl -s -w "\n%{http_code}" -X PATCH \
+              "https://${API_HOST}/api/templates/${template_name_upper}" \
+              -H "X-API-Key: ${API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"template_content\":\"${template_base64}\",\"app\":\"COMPLIANCE\"}")
+            
+            http_code=$(echo "$response" | tail -n1)
+            
+            if [[ $http_code -ge 200 && $http_code -lt 300 ]]; then
+              echo "Updated $template_name successfully"
+            else
+              echo "Failed to update $template_name (HTTP: $http_code)"
+              echo "$response" | head -n -1
+              exit 1
+            fi
+            echo "---"
+          done
+          
+          echo "All templates updated for $ENVIRONMENT environment"
