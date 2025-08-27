@@ -85,6 +85,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
         dateReceived: dayjs(complaint.date_received),
         complaintSource: complaint.source_type,
         contactFullName: complaint.source_contact.full_name ?? "",
+        contactTitle: complaint.source_contact.title ?? "",
         contactEmail: complaint.source_contact.email ?? "",
         contactPhoneNumber: complaint.source_contact.phone ?? "",
         contactComments: complaint.source_contact.comment ?? "",

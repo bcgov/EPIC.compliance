@@ -54,6 +54,7 @@ const ComplaintSourceForm: FC<ComplaintSourceProps> = ({
 
     const fieldNames: string[] = [
       "contactFullName",
+      "contactTitle",
       "contactEmail",
       "contactPhoneNumber",
       "contactComments",

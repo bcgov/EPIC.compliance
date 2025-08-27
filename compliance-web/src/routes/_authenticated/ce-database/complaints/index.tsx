@@ -1,5 +1,8 @@
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
-import { useComplaintsData } from "@/hooks/useComplaints";
+import {
+  useComplaintResolutionsData,
+  useComplaintsData,
+} from "@/hooks/useComplaints";
 import { useStaffUsersData } from "@/hooks/useStaff";
 import { useProjectsData } from "@/hooks/useProjects";
 import { useTopicsData } from "@/hooks/useTopics";
@@ -21,9 +24,9 @@ import ComplaintsGridExport from "@/components/App/Complaints/ComplaintsGrid/Com
 import ShowOnlyMyComplaintsSwitch from "@/components/App/Complaints/ComplaintsGrid/ShowOnlyMyComplaintsSwitch";
 import { AppConfig } from "@/utils/config";
 
-export const Route = createFileRoute(
-  "/_authenticated/ce-database/complaints/"
-)({ component: Complaints });
+export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
+  { component: Complaints }
+);
 
 const complaintsColumnFiltersCacheKey = "complaints-column-filters";
 
@@ -31,6 +34,7 @@ export function Complaints() {
   const { data: projects } = useProjectsData();
   const { data: topics } = useTopicsData();
   const { data: complaintSources } = useComplaintSourcesData();
+  const { data: complaintResolutions } = useComplaintResolutionsData();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
   const { isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
@@ -101,9 +105,11 @@ export function Complaints() {
       }
 
       // Restore "My Files" switch state if it was cached
-      if (restoredExternalFilters.primary_officer_id && 
-          Array.isArray(restoredExternalFilters.primary_officer_id) && 
-          restoredExternalFilters.primary_officer_id.length > 0) {
+      if (
+        restoredExternalFilters.primary_officer_id &&
+        Array.isArray(restoredExternalFilters.primary_officer_id) &&
+        restoredExternalFilters.primary_officer_id.length > 0
+      ) {
         setMyFilesChecked(true);
       }
     }
@@ -151,13 +157,7 @@ export function Complaints() {
         prevFilters.current = currentFilters;
       }
     }
-  }, [
-    columnFilters,
-    externalFilters,
-    globalFilter,
-    sorting,
-    myFilesChecked,
-  ]);
+  }, [columnFilters, externalFilters, globalFilter, sorting, myFilesChecked]);
 
   // Use the extracted utility function
   const convertFiltersToQueryParams =
@@ -276,7 +276,7 @@ export function Complaints() {
     }) => {
       setMyFilesChecked(filters.checked);
       setExternalFilters(filters.externalFilters);
-      
+
       // Reset pagination when filters change
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
     },
@@ -289,6 +289,7 @@ export function Complaints() {
     topicList: topics,
     complaintSourceList: complaintSources,
     staffUserList: staffList,
+    complaintResolutionList: complaintResolutions,
   });
 
   return authLoading || staffLoading || !isRestored ? (

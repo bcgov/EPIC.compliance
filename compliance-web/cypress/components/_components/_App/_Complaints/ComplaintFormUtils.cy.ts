@@ -157,6 +157,7 @@ describe("ComplaintFormUtils", () => {
         dateReceived: dayjs("2023-01-01"),
         complaintSource: { id: ComplaintSourceEnum.AGENCY, name: "Agency" },
         contactFullName: "Jane Smith",
+        contactTitle: "Test Title",
         contactEmail: "jane.smith@example.com",
         contactPhoneNumber: "250-123-4567",
         contactComments: "Test comments",
@@ -176,6 +177,7 @@ describe("ComplaintFormUtils", () => {
         requirement_source_id: RequirementSourceEnum.SCHEDULE_B,
         complaint_source_contact: {
           full_name: "Jane Smith",
+          title: "Test Title",
           email: "jane.smith@example.com",
           phone: "250-123-4567",
           comment: "Test comments"
@@ -197,6 +199,7 @@ describe("ComplaintFormUtils", () => {
         dateReceived: dayjs("2023-01-01"),
         complaintSource: { id: ComplaintSourceEnum.FIRST_NATION, name: "First Nation" },
         contactFullName: "Jane Smith",
+        contactTitle: "Test Title",
         contactEmail: "jane.smith@example.com",
         contactPhoneNumber: "250-123-4567",
         contactComments: "Test comments",
@@ -216,6 +219,7 @@ describe("ComplaintFormUtils", () => {
         requirement_source_id: RequirementSourceEnum.EAC,
         complaint_source_contact: {
           full_name: "Jane Smith",
+          title: "Test Title",
           email: "jane.smith@example.com",
           phone: "250-123-4567",
           comment: "Test comments"
@@ -237,6 +241,7 @@ describe("ComplaintFormUtils", () => {
         dateReceived: dayjs("2023-01-01"),
         complaintSource: { id: ComplaintSourceEnum.OTHER, name: "Other" },
         contactFullName: "Jane Smith",
+        contactTitle: "Test Title",
         contactEmail: "jane.smith@example.com",
         contactPhoneNumber: "250-123-4567",
         contactComments: "Test comments",
@@ -256,6 +261,7 @@ describe("ComplaintFormUtils", () => {
         requirement_source_id: RequirementSourceEnum.OTHER,
         complaint_source_contact: {
           full_name: "Jane Smith",
+          title: "Test Title",
           email: "jane.smith@example.com",
           phone: "250-123-4567",
           comment: "Test comments",
@@ -278,6 +284,7 @@ describe("ComplaintFormUtils", () => {
         complaintSource: { id: ComplaintSourceEnum.AGENCY, name: "Agency" },
         contactFullName: "Jane Smith",
         contactEmail: "jane.smith@example.com",
+        contactTitle: "Test Title",
         contactPhoneNumber: "250-123-4567",
         contactComments: "Test comments",
         agency: { id: 2, name: "Test Agency" },
@@ -298,6 +305,7 @@ describe("ComplaintFormUtils", () => {
           full_name: "Jane Smith",
           email: "jane.smith@example.com",
           phone: "250-123-4567",
+          title: "Test Title",
           comment: "Test comments"
         },
         source_agency_id: 2,
@@ -319,6 +327,7 @@ describe("ComplaintFormUtils", () => {
         dateReceived: dayjs("2023-01-01"),
         complaintSource: { id: ComplaintSourceEnum.AGENCY, name: "Agency" },
         contactFullName: null,
+        contactTitle: null,
         contactEmail: null,
         contactPhoneNumber: null,
         contactComments: null,
@@ -336,6 +345,7 @@ describe("ComplaintFormUtils", () => {
         requirement_source_id: undefined,
         complaint_source_contact: {
           full_name: "",
+          title: "",
           email: "",
           phone: "",
           comment: ""
