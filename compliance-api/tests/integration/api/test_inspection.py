@@ -602,7 +602,6 @@ def test_inspection_delete(
             "agency_attendance_ids": [agency1.id, agency2.id],
             "firstnation_attendance_ids": [1],
             "attending_officer_ids": [created_staff.id],
-            "attendance_municipal": "municipal",
             "attendance_other": "other",
         }
     )

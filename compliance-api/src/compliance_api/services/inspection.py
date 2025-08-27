@@ -20,7 +20,6 @@ from compliance_api.models import InspectionAttendanceOptionEnum
 from compliance_api.models import InspectionFirstnation as InspectionFirstnationModel
 from compliance_api.models import InspectionInitiationOption as InspectionInitiationOptionModel
 from compliance_api.models import InspectionOfficer as InspectionOfficerModel
-from compliance_api.models import InspectionOtherAttendance as InspectionOtherAttendanceModel
 from compliance_api.models import InspectionReqEnforcementMap as InspectionReqEnforcementMapModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models import InspectionStatusEnum
@@ -128,9 +127,6 @@ class InspectionService:
             inspection_id
         )
         if attendance_options:
-            other_attendances = InspectionOtherAttendanceModel.get_by_inspection(
-                inspection_id
-            )
             for option in attendance_options:
                 setattr(option, "data", [])
                 data = ""
@@ -176,8 +172,8 @@ class InspectionService:
                     option.attendance_option_id
                     == InspectionAttendanceOptionEnum.OTHER.value
                 ):
-                    if other_attendances:
-                        data = other_attendances.other
+                    if option.other:
+                        data = option.other
                 setattr(option, "data", data)
         return attendance_options
 
@@ -234,15 +230,13 @@ class InspectionService:
                 "type_id",
                 session,
             )
-            if {
-                InspectionAttendanceOptionEnum.OTHER.value,
-            }.intersection(attendance_option_ids):
-                other_attendance_obj = _create_inspection_other_attendance_object(
-                    inspection_data, created_inspection.id
-                )
-                InspectionOtherAttendanceModel.create_attendance(
-                    other_attendance_obj, session
-                )
+            if InspectionAttendanceOptionEnum.OTHER.value in attendance_option_ids:
+                other_text = inspection_data.get("attendance_other")
+                if other_text:
+                    # Update the other field for the OTHER attendance option
+                    InspectionAttendanceModel.update_other_attendance(
+                        created_inspection.id, other_text, session
+                    )
         return created_inspection
 
     @classmethod
@@ -287,15 +281,13 @@ class InspectionService:
                 "agency_id",
                 session,
             )
-            if {
-                InspectionAttendanceOptionEnum.OTHER.value,
-            }.intersection(attendance_option_ids):
-                other_attendance_obj = _create_inspection_other_attendance_object(
-                    inspection_data, inspection_id
-                )
-                InspectionOtherAttendanceModel.update_attendance(
-                    inspection_id, other_attendance_obj, session
-                )
+            if InspectionAttendanceOptionEnum.OTHER.value in attendance_option_ids:
+                other_text = inspection_data.get("attendance_other")
+                if other_text:
+                    # Update the other field for the OTHER attendance option
+                    InspectionAttendanceModel.update_other_attendance(
+                        inspection_id, other_text, session
+                    )
             _insert_or_update_inspection_relationship(
                 inspection_id,
                 inspection_data.get("firstnation_attendance_ids", []),
@@ -347,9 +339,6 @@ class InspectionService:
                 case_file_id, ho_session or session
             )
             InspectionTypeModel.delete_by_case_file(case_file_id, ho_session or session)
-            InspectionOtherAttendanceModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
 
     @classmethod
     def delete_inspection(cls, inspection_id):
@@ -361,9 +350,6 @@ class InspectionService:
         with session_scope() as session:
             InspectionModel.delete_inspection(inspection_id, session)
             InspectionTypeModel.delete_inspection_type(inspection_id, session)
-            InspectionOtherAttendanceModel.delete_inspection_attendance(
-                inspection_id, session
-            )
             InspectionOfficerModel.delete_inspection_officer(inspection_id, session)
             InspectionFirstnationModel.delete_inspection_firstnation(
                 inspection_id, session
@@ -768,17 +754,6 @@ def _create_inspection_record_number(
     )
     serial_number = f"{count + 1:03}"
     return f"{project_code}_{case_file.case_file_number}_IR{serial_number}"
-
-
-def _create_inspection_other_attendance_object(
-    inspection_data: dict, inspection_id: int
-):
-    """Return inspection other attendance object."""
-    return {
-        "inspection_id": inspection_id,
-        "municipal": inspection_data.get("attendance_municipal"),
-        "other": inspection_data.get("attendance_other"),
-    }
 
 
 def _build_inspections_paginated_query(args):

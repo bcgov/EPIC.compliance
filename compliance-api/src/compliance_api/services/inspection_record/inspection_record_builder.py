@@ -170,7 +170,7 @@ class InspectionRecordDataBuilder:
                         if isinstance(item, dict) and "name" in item:
                             attendance_list.append(item["name"])
                 elif isinstance(option.data, str):
-                    # For municipal and other attendance
+                    # For other attendance
                     attendance_list.append(option.data)
             else:
                 # If no data, use the attendance option name
