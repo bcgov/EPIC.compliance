@@ -171,6 +171,10 @@ export function CaseFiles() {
               id: "primary_officer",
               value: [currentStaff.id.toString()],
             },
+            {
+              id: "status",
+              value: ["Open"],
+            },
           ];
           
           setExternalFilters(defaultExternalFilters);
