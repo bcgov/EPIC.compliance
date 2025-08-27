@@ -15,21 +15,13 @@ interface ShowOnlyMyCaseFilesSwitchProps {
     columnFilters?: MRT_TableState<CaseFile>["columnFilters"];
   }) => void;
   initialChecked?: boolean;
-  onColumnFiltersChange?: (
-    updater:
-      | MRT_TableState<CaseFile>["columnFilters"]
-      | ((
-          old: MRT_TableState<CaseFile>["columnFilters"]
-        ) => MRT_TableState<CaseFile>["columnFilters"])
-  ) => void;
 }
 
 const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
   disabled = false,
   staffUsers,
   onFiltersChange,
-  initialChecked = true, // Default to true as per requirement #5
-  onColumnFiltersChange,
+  initialChecked = true, 
 }) => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
@@ -97,32 +89,11 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
         externalFilters,
         columnFilters,
       });
-
-      // Update column filters for UI display if callback provided
-      if (onColumnFiltersChange) {
-        if (newChecked) {
-          // When turning ON, replace any existing primary_officer filter with current user
-          onColumnFiltersChange((prevFilters) => {
-            const filteredFilters = prevFilters.filter(
-              (filter) => filter.id !== "primary_officer"
-            );
-            return [...filteredFilters, ...columnFilters];
-          });
-        } else {
-          // When turning OFF, remove the primary_officer filter but keep others
-          onColumnFiltersChange((prevFilters) => {
-            return prevFilters.filter(
-              (filter) => filter.id !== "primary_officer"
-            );
-          });
-        }
-      }
     },
     [
       generateExternalFilters,
       generateColumnFilters,
       onFiltersChange,
-      onColumnFiltersChange,
     ]
   );
 

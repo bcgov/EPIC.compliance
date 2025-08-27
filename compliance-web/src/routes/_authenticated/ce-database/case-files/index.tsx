@@ -377,8 +377,23 @@ export function CaseFiles() {
       }
 
       // Update column filters if provided
-      if (filters.columnFilters) {
-        handleColumnFiltersChange(filters.columnFilters);
+      if (filters.columnFilters !== undefined) {
+        if (filters.checked) {
+          // When turning ON, merge with existing filters, replacing primary_officer if it exists
+          handleColumnFiltersChange((prevFilters) => {
+            const filteredFilters = prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+            return [...filteredFilters, ...filters.columnFilters!];
+          });
+        } else {
+          // When turning OFF, remove primary_officer filter but keep others
+          handleColumnFiltersChange((prevFilters) => {
+            return prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+          });
+        }
       }
     },
     [externalFilters, myFilesChecked, handleColumnFiltersChange]
@@ -472,7 +487,6 @@ export function CaseFiles() {
               <ShowOnlyMyCaseFilesSwitch
                 staffUsers={staffList ?? []}
                 onFiltersChange={handleMyFilesSwitchChange}
-                onColumnFiltersChange={handleColumnFiltersChange}
                 initialChecked={myFilesChecked}
               />
               {showCreateCaseFileButton && (
