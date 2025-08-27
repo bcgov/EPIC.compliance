@@ -187,7 +187,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
 
   
   if (isCaseFileClosed) {
-    return null;
+    return <></>;
   }
 
   return <MenuActionDropdown actions={actionsList} />;
