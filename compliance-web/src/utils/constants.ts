@@ -149,7 +149,6 @@ export enum WarningLetterProgressEnum {
 export enum AttendanceEnum {
   AGENCIES = "1",
   FIRST_NATIONS = "2",
-  MUNICIPAL = "3",
   INDIVIDUAL_ENV_MONITOR = "4",
   CH_RP_REPRESENTATIVE = "5",
   OTHER = "7",

@@ -174,12 +174,6 @@ class InspectionService:
                     data = _set_first_nation_names(first_nations)
                 if (
                     option.attendance_option_id
-                    == InspectionAttendanceOptionEnum.MUNICIPAL.value
-                ):
-                    if other_attendances:
-                        data = other_attendances.municipal
-                if (
-                    option.attendance_option_id
                     == InspectionAttendanceOptionEnum.OTHER.value
                 ):
                     if other_attendances:
@@ -241,7 +235,6 @@ class InspectionService:
                 session,
             )
             if {
-                InspectionAttendanceOptionEnum.MUNICIPAL.value,
                 InspectionAttendanceOptionEnum.OTHER.value,
             }.intersection(attendance_option_ids):
                 other_attendance_obj = _create_inspection_other_attendance_object(
@@ -295,7 +288,6 @@ class InspectionService:
                 session,
             )
             if {
-                InspectionAttendanceOptionEnum.MUNICIPAL.value,
                 InspectionAttendanceOptionEnum.OTHER.value,
             }.intersection(attendance_option_ids):
                 other_attendance_obj = _create_inspection_other_attendance_object(

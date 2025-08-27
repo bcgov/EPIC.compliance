@@ -27,7 +27,6 @@ type InspectionFormRightProps = {
 type AttendanceDynamicField =
   | AttendanceEnum.AGENCIES
   | AttendanceEnum.FIRST_NATIONS
-  | AttendanceEnum.MUNICIPAL
   | AttendanceEnum.OTHER;
 
 const sectionPadding = "1rem 2rem 0rem 1rem";
@@ -120,12 +119,6 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
       label: "First Nations",
       options: firstNationsList,
       multiple: true,
-      required: true,
-    },
-    [AttendanceEnum.MUNICIPAL]: {
-      type: "text",
-      name: "municipal",
-      label: "Municipal",
       required: true,
     },
     [AttendanceEnum.OTHER]: {

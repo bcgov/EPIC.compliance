@@ -53,16 +53,6 @@ export const InspectionFormSchema = yup.object().shape({
 
   inAttendance: yup.array().of(yup.object<Attendance>()).nullable(),
   // Adding dynamic fields conditionally required based on `inAttendance` selection
-  municipal: yup
-    .string()
-    .nullable()
-    .when("inAttendance", {
-      is: (attendance: Attendance[]) =>
-        attendance?.some((item) => item.id === AttendanceEnum.MUNICIPAL),
-      then: (schema) => schema.required("Municipal is required"),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-
   other: yup
     .string()
     .nullable()
@@ -160,10 +150,6 @@ export const formatInspectionAPIData = (
     if (inAttendanceOptions.includes(AttendanceEnum.FIRST_NATIONS)) {
       attendanceData.firstnation_attendance_ids =
         (formData.firstNations as FirstNation[])?.map((item) => item.id) ?? [];
-    }
-
-    if (inAttendanceOptions.includes(AttendanceEnum.MUNICIPAL)) {
-      attendanceData.attendance_municipal = formData.municipal ?? "";
     }
 
     if (inAttendanceOptions.includes(AttendanceEnum.OTHER)) {

@@ -59,9 +59,9 @@ describe("InspectionDrawer Component", () => {
     end_date: dayjs("2023-01-02").toISOString(),
     inspectionAttendances: [
       {
-        attendance_option: { id: AttendanceEnum.MUNICIPAL, name: "Option1" },
-        attendance_option_id: AttendanceEnum.MUNICIPAL as unknown as number,
-        data: "Muni",
+        attendance_option: { id: AttendanceEnum.OTHER, name: "Option1" },
+        attendance_option_id: AttendanceEnum.OTHER as unknown as number,
+        data: "Other",
         id: 1,
         inspection_id: 1,
       },
