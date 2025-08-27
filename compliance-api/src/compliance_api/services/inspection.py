@@ -29,7 +29,7 @@ from compliance_api.models import InspectionTypeOption as InspectionTypeOptionMo
 from compliance_api.models import IRStatusOption as IRStatusOptionModel
 from compliance_api.models import Order as OrderModel
 from compliance_api.models import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models import OrderProgressEnum
+from compliance_api.models import OrderProgressEnum, OrderReplaceStatusEnum
 from compliance_api.models import WarningLetter as WarningLetterModel
 from compliance_api.models import db
 from compliance_api.models.case_file import CaseFile
@@ -84,6 +84,12 @@ class InspectionService:
         for inspection in inspections:
             requirement_details = []
             orders = OrderModel.get_by_inspection_id(inspection.id)
+            if orders:
+                orders = [
+                    order
+                    for order in orders
+                    if order.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
+                ]
             warning_letters = WarningLetterModel.get_by_inspection_id(inspection.id)
             requirements = inspection.inspection_requirements or []
             requirement_details = _make_requirement_detail_object(
