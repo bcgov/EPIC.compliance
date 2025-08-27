@@ -47,11 +47,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
       queryKey: ["inspection-requirements", inspectionData?.id],
     });
   
-    if (inspectionData?.case_file_id) {
-      queryClient.invalidateQueries({
-        queryKey: ["case-file", inspectionData.case_file_id],
-      });
-    }
+ 
     notify.success("Inspection status updated");
     setClose();
   }, [fileNumber, inspectionData, queryClient, setClose]);
