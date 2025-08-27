@@ -70,21 +70,6 @@ export const useConvertFiltersToQueryParams = (
                 ? value.join(",")
                 : value;
               break;
-            case "project_ids":
-              params.project_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-            case "initiation_ids":
-              params.initiation_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-            case "statuses":
-              params.statuses = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
           }
         }
       });

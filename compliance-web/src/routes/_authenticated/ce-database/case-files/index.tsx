@@ -38,10 +38,8 @@ const caseFilesColumnFiltersCacheKey = "case-files-column-filters";
 export function CaseFiles() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData({
-    isActive: true
-  });
-  const { isLoading: authLoading } = useAuth();
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
+  const { user: currentUser, isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "date_created", desc: true },
   ]);
@@ -59,8 +57,8 @@ export function CaseFiles() {
     Record<string, string[] | string>
   >({});
 
-  // State for "My Files" switch
-  const [myFilesChecked, setMyFilesChecked] = useState(false);
+  // State for "My Files" switch - default to true for first-time users
+  const [myFilesChecked, setMyFilesChecked] = useState(true);
 
   // Track if we're in the initial load phase to prevent caching during restoration
   const isInitialLoad = useRef(true);
@@ -78,7 +76,7 @@ export function CaseFiles() {
     externalFilters: {},
     globalFilter: "",
     sorting: [{ id: "date_created", desc: true }],
-    myFilesChecked: false,
+    myFilesChecked: true, // Default to true for first-time users
   });
 
   // Get cached filters store methods
@@ -97,6 +95,7 @@ export function CaseFiles() {
     if (cachedColumnFilters.length > 0) {
       setColumnFilters(cachedColumnFilters);
     }
+    
     if (cachedExternalFilters) {
       const restoredExternalFilters = cachedExternalFilters as Record<
         string,
@@ -110,13 +109,82 @@ export function CaseFiles() {
       }
 
       // Restore "My Files" switch state if it was cached
-      const primaryOfficerFilter = restoredExternalFilters.primary_officer_ids || restoredExternalFilters.primary_officer_id;
-      if (
-        primaryOfficerFilter &&
-        Array.isArray(primaryOfficerFilter) &&
-        primaryOfficerFilter.length > 0
-      ) {
-        setMyFilesChecked(true);
+      if (restoredExternalFilters.myFilesChecked !== undefined) {
+        // Use the explicitly stored switch state
+        const restoredSwitchState = Boolean(restoredExternalFilters.myFilesChecked);
+        setMyFilesChecked(restoredSwitchState);
+        
+        // If switch is ON, ensure column filters are set up for UI display
+        if (restoredSwitchState && currentUser?.profile?.preferred_username && staffList) {
+          const currentStaff = staffList.find(
+            (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters(prev => {
+              const filtered = prev.filter(filter => filter.id !== "primary_officer");
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
+        }
+      } else {
+        // Fallback: derive from primary_officer filter if switch state not stored
+        const primaryOfficerFilter =
+          restoredExternalFilters.primary_officer_ids || [];
+        const derivedSwitchState = !!(primaryOfficerFilter?.length > 0);
+        setMyFilesChecked(derivedSwitchState);
+        
+        // If derived state is ON, ensure column filters are set up
+        if (derivedSwitchState && currentUser?.profile?.preferred_username && staffList) {
+          const currentStaff = staffList.find(
+            (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters(prev => {
+              const filtered = prev.filter(filter => filter.id !== "primary_officer");
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
+        }
+      }
+    } else {
+      // No cached filters - apply default "My Files" filter for first-time users
+      if (currentUser?.profile?.preferred_username && staffList) {
+        const currentStaff = staffList.find(
+          (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
+        );
+        if (currentStaff) {
+          const defaultExternalFilters = {
+            primary_officer_ids: [currentStaff.id.toString()],
+          };
+          const defaultColumnFilters = [
+            {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            },
+          ];
+          
+          setExternalFilters(defaultExternalFilters);
+          setColumnFilters(defaultColumnFilters);
+          setMyFilesChecked(true);
+          
+          // Update prevFilters to prevent unnecessary caching during initial setup
+          prevFilters.current = {
+            ...prevFilters.current,
+            externalFilters: defaultExternalFilters,
+            columnFilters: defaultColumnFilters,
+            myFilesChecked: true,
+          };
+        }
       }
     }
 
@@ -131,7 +199,7 @@ export function CaseFiles() {
     // Mark restoration as complete and initial load as complete
     isInitialLoad.current = false;
     setIsRestored(true);
-  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting]);
+  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting, staffList, currentUser?.profile?.preferred_username]);
 
   // Cache all filters when they change (but not during initial load)
   useEffect(() => {
@@ -155,6 +223,7 @@ export function CaseFiles() {
           {
             ...externalFilters,
             globalFilter,
+            myFilesChecked, // Store the switch state explicitly
           },
           sorting
         );
@@ -166,11 +235,15 @@ export function CaseFiles() {
   }, [columnFilters, externalFilters, globalFilter, sorting, myFilesChecked]);
 
   // Memoize external filters to prevent unnecessary recreations
-  const memoizedExternalFilters = useMemo(() => externalFilters, [externalFilters]);
+  const memoizedExternalFilters = useMemo(
+    () => externalFilters,
+    [externalFilters]
+  );
 
   // Use the extracted utility function
-  const convertFiltersToQueryParams =
-    useConvertFiltersToQueryParams(memoizedExternalFilters);
+  const convertFiltersToQueryParams = useConvertFiltersToQueryParams(
+    memoizedExternalFilters
+  );
 
   const queryParams: CaseFileGridQueryParams = useMemo(() => {
     // Extract sorting information from the sorting state
@@ -284,7 +357,9 @@ export function CaseFiles() {
       columnFilters?: MRT_TableState<CaseFile>["columnFilters"];
     }) => {
       // Only update if the values have actually changed
-      const filtersChanged = JSON.stringify(filters.externalFilters) !== JSON.stringify(externalFilters);
+      const filtersChanged =
+        JSON.stringify(filters.externalFilters) !==
+        JSON.stringify(externalFilters);
       const checkedChanged = filters.checked !== myFilesChecked;
 
       if (checkedChanged) {
@@ -296,8 +371,13 @@ export function CaseFiles() {
         // Reset pagination when filters change
         setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       }
+
+      // Update column filters if provided
+      if (filters.columnFilters) {
+        handleColumnFiltersChange(filters.columnFilters);
+      }
     },
-    [externalFilters, myFilesChecked]
+    [externalFilters, myFilesChecked, handleColumnFiltersChange]
   );
 
   // Use the extracted utility function for columns
@@ -386,6 +466,7 @@ export function CaseFiles() {
             </Typography>
             <Box display="flex" alignItems="center" gap={2}>
               <ShowOnlyMyCaseFilesSwitch
+                staffUsers={staffList ?? []}
                 onFiltersChange={handleMyFilesSwitchChange}
                 onColumnFiltersChange={handleColumnFiltersChange}
                 initialChecked={myFilesChecked}
