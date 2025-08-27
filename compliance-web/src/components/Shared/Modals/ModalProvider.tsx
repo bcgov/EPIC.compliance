@@ -4,10 +4,17 @@ import { useModal } from "@/store/modalStore";
 import { theme } from "@/styles/theme";
 
 const ModalProvider: React.FC = () => {
-  const { modalContent, setClose, isOpen, modalWidth } = useModal();
+  const { modalContent, isOpen, modalWidth } = useModal();
 
   return (
-    <Modal open={isOpen} onClose={setClose}>
+    <Modal 
+      open={isOpen} 
+      keepMounted
+      disableEscapeKeyDown={true}
+      disableAutoFocus={true}
+      disableRestoreFocus={true}
+      disableScrollLock={false}
+    >
       <Box
         sx={{
           position: "absolute",

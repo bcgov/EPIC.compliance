@@ -3,6 +3,7 @@ import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { InspectionOrder } from "@/models/InspectionOrder";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import { ViolationTicket } from "@/models/ViolationTicket";
+import { RestorativeJustice } from "@/models/RestorativeJustice";
 import {
   APPROVAL_STATUS,
   OrderProgressEnum,
@@ -11,7 +12,8 @@ import {
   WarningLetterProgressEnum,
   ReferralStatus,
   CRStatus,
-  ViolationTicketStatus
+  ViolationTicketStatus,
+  RestorativeJusticeStatus
 } from "@/utils/constants";
 import { Chip } from "@mui/material";
 import { useMemo } from "react";
@@ -22,12 +24,14 @@ const EnforcementStatusFlag = ({
   administrativePenalty,
   chargeRecommendation,
   violationTicket,
+  restorativeJustice,
 }: {
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   administrativePenalty?: AdministrativePenalty;
   chargeRecommendation?: ChargeRecommendation;
   violationTicket?: ViolationTicket;
+  restorativeJustice?: RestorativeJustice;
 }) => {
   const flagStatus = useMemo(() => {
     let status: {
@@ -127,10 +131,21 @@ const EnforcementStatusFlag = ({
       } else if (violationTicket.status.id === ViolationTicketStatus.DISPUTED) {
         status.color = "error";
       }
+    } else if (restorativeJustice) {
+      status = {
+        name: restorativeJustice.status.name,
+      };
+      if (restorativeJustice.status.id === RestorativeJusticeStatus.DRAFTING) {
+        status.color = "warning";
+      } else if (restorativeJustice.status.id === RestorativeJusticeStatus.OPEN) {
+        status.color = "success";
+      } else if (restorativeJustice.status.id === RestorativeJusticeStatus.CLOSED) {
+        status.color = "error";
+      }
     }
 
     return status;
-  }, [order, warningLetter, administrativePenalty, chargeRecommendation,violationTicket]);
+  }, [order, warningLetter, administrativePenalty, chargeRecommendation, violationTicket, restorativeJustice]);
 
   return flagStatus.name ? (
     <Chip

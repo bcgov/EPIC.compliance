@@ -12,7 +12,6 @@ import { useModal } from "@/store/modalStore";
 const mockAttendanceList = [
   { id: "1", name: "Agency" },
   { id: "2", name: "First Nation" },
-  { id: "3", name: "Municipal" },
   { id: "7", name: "Other" },
 ];
 
@@ -136,23 +135,14 @@ describe("InspectionFormRight Component", () => {
     });
   });
 
-  it("allows entering values in text fields for 'Municipal' and 'Other'", () => {
-    // Select 'Municipal' and 'Other' attendance
+  it("allows entering values in text fields for 'Other'", () => {
+    // Select 'Other' attendance
     cy.get('input[name="inAttendance"]').click();
-    cy.get("li").contains("Municipal").click();
     cy.get("li").contains("Other").click();
 
     cy.get("body").click(0, 0);
 
     // Verify that text fields appear
-    cy.get('textarea[name="other"]')
-      .should("exist")
-      .type("Test Other Attendees");
-    cy.get('textarea[name="other"]').should(
-      "have.value",
-      "Test Other Attendees"
-    );
-
     cy.get('textarea[name="other"]')
       .should("exist")
       .type("Test Other Attendees");

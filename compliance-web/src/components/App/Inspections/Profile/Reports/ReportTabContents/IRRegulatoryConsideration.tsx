@@ -86,9 +86,6 @@ const IRRegulatoryConsideration = () => {
     >
       {inspectionRegulatoryConsideration ? (
         <>
-          <Typography variant="body1" fontWeight={"bold"} mb={0.5}>
-            {inspectionRegulatoryConsideration?.summary}
-          </Typography>
           <Typography
             variant="body1"
             component={"div"}

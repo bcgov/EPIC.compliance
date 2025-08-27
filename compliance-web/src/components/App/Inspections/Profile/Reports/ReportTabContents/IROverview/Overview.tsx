@@ -15,6 +15,7 @@ import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
 import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatInAttendance } from "@/components/App/Inspections/InspectionFormUtils";
+import { renderStaffNameWithPosition } from "@/utils/appUtils";
 
 const Overview = () => {
   const { inspectionData, caseFileData, isReportsReadOnly } = useReportStore();
@@ -73,11 +74,6 @@ const Overview = () => {
       width: DRAWER_WIDTHS.INSPECTION_DRAWER,
     });
   }, [setOpen, handleOnSubmit, inspectionData, caseFileData]);
-
-  const renderOfficerName = (officer: StaffUser | undefined) => {
-    if (!officer) return "";
-    return `${officer.name}${officer.position?.name ? ", " + officer.position?.name : ""}`;
-  };
 
   return (
     <>
@@ -141,16 +137,11 @@ const Overview = () => {
                 style={{ lineHeight: "normal", marginBottom: "4px" }}
                 key={`${value.id}-${index}`}
               >
-                {renderOfficerName(value)}
+                {renderStaffNameWithPosition(value)}
               </span>
             ))}
             hideTooltip
             multiline
-          />
-          <GridLabelValuePair
-            label="Record Prepared By"
-            value={renderOfficerName(inspectionData?.primary_officer)}
-            hideTooltip
           />
         </Grid>
       </IRBoxContainer>

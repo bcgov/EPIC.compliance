@@ -31,7 +31,7 @@ const ControlledSwitch: FC<IFormSwitchProps> = ({
           control={
             <CustomSwitch
               {...field}
-              checked={field.value}
+              checked={field.value ?? false}
               value={field.value}
               onChange={(event) => field.onChange(event.target.checked)}
             />

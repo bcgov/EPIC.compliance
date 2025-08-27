@@ -10,6 +10,7 @@ from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 from .base_schema import AutoSchemaBase, BaseSchema
 from .common import KeyValueSchema
 from .inspection import InspectionSchema
+from .staff_user import StaffUserSchema
 
 
 class InspectionRecordCreateSchema(BaseSchema):
@@ -35,6 +36,11 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
 
     inspection = fields.Nested(InspectionSchema)
     ir_status = fields.Nested(KeyValueSchema)
+    record_prepared_by = fields.Nested(
+        StaffUserSchema,
+        only=("id", "first_name", "last_name", "name", "auth_user_guid", "position"),
+    )
+    record_prepared_by_position = fields.Nested(KeyValueSchema, dump_only=True)
 
     @post_dump
     def post_dump_actions(
@@ -70,6 +76,7 @@ class UpdateInspectionRecordSchema(BaseSchema):
             "enforcement_summary": fields.Str(),
             "action_required_by_rp": fields.Str(),
             "record_prepared_by_id": fields.Int(),
+            "record_prepared_by_position_id": fields.Int(),
             "ir_progress": EnumField(IRProgressEnum, by_value=False),
             "date_issued": fields.DateTime(
                 format=INPUT_DATE_TIME_FORMAT,
