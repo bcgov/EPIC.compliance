@@ -148,9 +148,6 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         ),
         required=False,
     )
-    attendance_municipal = fields.Str(
-        metadata={"description": "The municipal attendance"}, allow_none=True
-    )
     attendance_other = fields.Str(
         metadata={"description": "Other attendance"}, allow_none=True
     )

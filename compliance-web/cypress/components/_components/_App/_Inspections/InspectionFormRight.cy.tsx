@@ -44,7 +44,6 @@ describe("InspectionFormRight Component", () => {
           inAttendance: [],
           agencies: [],
           firstNations: [],
-          municipal: "",
           other: "",
         },
       });
@@ -146,12 +145,12 @@ describe("InspectionFormRight Component", () => {
     cy.get("body").click(0, 0);
 
     // Verify that text fields appear
-    cy.get('textarea[name="municipal"]')
+    cy.get('textarea[name="other"]')
       .should("exist")
-      .type("Test Municipal Attendees");
-    cy.get('textarea[name="municipal"]').should(
+      .type("Test Other Attendees");
+    cy.get('textarea[name="other"]').should(
       "have.value",
-      "Test Municipal Attendees"
+      "Test Other Attendees"
     );
 
     cy.get('textarea[name="other"]')

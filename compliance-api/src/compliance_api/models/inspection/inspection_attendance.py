@@ -1,6 +1,6 @@
 """Model to manage the choosen attendance option for inspection."""
 
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -8,6 +8,7 @@ from compliance_api.utils.constant import DELETE_DIC_PARAMS
 from ..base_model import BaseModelVersioned
 from ..inspection.inspection import Inspection as InspectionModel
 from ..utils import with_session
+from .inspection_enum import InspectionAttendanceOptionEnum
 from .inspection_option import InspectionAttendanceOption as InspectionAttendanceOptionModel
 
 
@@ -44,6 +45,9 @@ class InspectionAttendance(BaseModelVersioned):
     )
     attendance_option = relationship(
         "InspectionAttendanceOption", foreign_keys=[attendance_option_id], lazy="select"
+    )
+    other = Column(
+        String, nullable=True, comment="Any other attendance for the inspection"
     )
 
     @classmethod
@@ -114,3 +118,26 @@ class InspectionAttendance(BaseModelVersioned):
         for att in attendances:
             att.update(DELETE_DIC_PARAMS, commit=False)
         session.flush()
+
+    @classmethod
+    def get_other_attendance_by_inspection(cls, inspection_id):
+        """Return other attendance information by inspection."""
+        return cls.query.filter_by(
+            inspection_id=inspection_id,
+            attendance_option_id=InspectionAttendanceOptionEnum.OTHER.value,
+            is_deleted=False
+        ).first()
+
+    @classmethod
+    @with_session
+    def update_other_attendance(cls, inspection_id, other_text, session=None):
+        """Update other attendance text for inspection."""
+        attendance = cls.query.filter_by(
+            inspection_id=inspection_id,
+            attendance_option_id=InspectionAttendanceOptionEnum.OTHER.value,
+            is_deleted=False
+        ).first()
+        if attendance:
+            attendance.update({"other": other_text}, commit=False)
+            session.flush()
+        return attendance
