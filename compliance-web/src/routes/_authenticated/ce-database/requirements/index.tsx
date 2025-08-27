@@ -14,7 +14,11 @@ import { APPROVAL_STATUS_TEXT } from "@/utils/constants";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { MRT_TableState, MRT_SortingState } from "material-react-table";
+import {
+  MRT_TableState,
+  MRT_SortingState,
+  MRT_TableInstance,
+} from "material-react-table";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
 import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
@@ -26,6 +30,7 @@ import {
 } from "@/components/App/RequirementsGrid/RequirementsGridUtils";
 import { useStaffUsersData } from "@/hooks/useStaff";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
+import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import { AppConfig } from "@/utils/config";
 
 export const Route = createFileRoute(
@@ -210,85 +215,21 @@ function Requirements() {
   const { data, isLoading } = useInspectionRequirementsGrid(queryParams);
   const requirementsList = useMemo(() => data?.items ?? [], [data]);
 
-  const handlePaginationChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<InspectionRequirementGrid>["pagination"]
-        | ((
-            old: MRT_TableState<InspectionRequirementGrid>["pagination"]
-          ) => MRT_TableState<InspectionRequirementGrid>["pagination"])
-    ) => {
-      setPagination(updater);
-    },
-    []
-  );
-
-  const handleSortingChange = useCallback(
-    (
-      updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
-    ) => {
-      const newSorting =
-        typeof updater === "function" ? updater(sorting) : updater;
-
-      // Only reset pagination if sorting actually changed
-      const sortingChanged =
-        JSON.stringify(newSorting) !== JSON.stringify(sorting);
-
-      setSorting(updater);
-
-      if (sortingChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [sorting]
-  );
-
-  const handleColumnFiltersChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<InspectionRequirementGrid>["columnFilters"]
-        | ((
-            old: MRT_TableState<InspectionRequirementGrid>["columnFilters"]
-          ) => MRT_TableState<InspectionRequirementGrid>["columnFilters"])
-    ) => {
-      const newFilters =
-        typeof updater === "function" ? updater(columnFilters) : updater;
-
-      // Only reset pagination if filters actually changed
-      const filtersChanged =
-        JSON.stringify(newFilters) !== JSON.stringify(columnFilters);
-
-      setColumnFilters(updater);
-
-      if (filtersChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [columnFilters]
-  );
-
-  const handleGlobalFilterChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<InspectionRequirementGrid>["globalFilter"]
-        | ((
-            old: MRT_TableState<InspectionRequirementGrid>["globalFilter"]
-          ) => MRT_TableState<InspectionRequirementGrid>["globalFilter"])
-    ) => {
-      const newGlobalFilter =
-        typeof updater === "function" ? updater(globalFilter) : updater;
-
-      // Only reset pagination if global filter actually changed
-      const globalFilterChanged = newGlobalFilter !== globalFilter;
-
-      setGlobalFilter(updater);
-
-      if (globalFilterChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [globalFilter]
-  );
+  // Use the custom hook for table handlers
+  const {
+    handlePaginationChange,
+    handleSortingChange,
+    handleColumnFiltersChange,
+    handleGlobalFilterChange,
+  } = useTableHandlers({
+    sorting,
+    columnFilters,
+    globalFilter,
+    setSorting,
+    setColumnFilters,
+    setGlobalFilter,
+    setPagination,
+  });
 
   const handleExternalFilterChange = useCallback(
     (filterId: string, value: string[] | string) => {
@@ -379,7 +320,11 @@ function Requirements() {
       enableSorting={true}
       enablePagination={false}
       hideFilterToggle={true}
-      renderTopToolbarCustomActions={({ table }) => (
+      renderTopToolbarCustomActions={({
+        table,
+      }: {
+        table: MRT_TableInstance<InspectionRequirementGrid>;
+      }) => (
         <Box
           sx={{
             display: "flex",
