@@ -31,7 +31,7 @@ def test_get_inspection_attendance_options(client, auth_header):
     """Get inspection attendance options."""
     url = urljoin(API_BASE_URL, "inspections/attendance-options")
     result = client.get(url, headers=auth_header)
-    assert len(result.json) == 7
+    assert len(result.json) == 6
     assert result.status_code == HTTPStatus.OK
 
 
@@ -596,7 +596,6 @@ def test_inspection_delete(
             "attendance_option_ids": [
                 InspectionAttendanceOptionEnum.ATTENDING_OFFICERS.value,
                 InspectionAttendanceOptionEnum.FIRSTNATIONS.value,
-                InspectionAttendanceOptionEnum.MUNICIPAL.value,
                 InspectionAttendanceOptionEnum.AGENCIES.value,
                 InspectionAttendanceOptionEnum.OTHER.value,
             ],

@@ -187,20 +187,6 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
             )
 
     @validates_schema
-    def validate_attendance_municipal(
-        self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
-        """Ensure that the municipal attendance info is entered is MUNICIPAL is chosen as attendance option."""
-        value = data.get("attendance_option_ids", [])
-        attendance_municipal = data.get("attendance_municipal", None)
-        municipal_in_option = InspectionAttendanceOptionEnum.MUNICIPAL.value in value
-        if not attendance_municipal and municipal_in_option:
-            raise ValidationError(
-                "Municipal attendance is required as MUNICIPAL is chosen in attendance",
-                field_name="attendance_municipal",
-            )
-
-    @validates_schema
     def validate_dates(
         self, data, **kwargs
     ):  # pylint: disable=no-self-use, unused-argument
