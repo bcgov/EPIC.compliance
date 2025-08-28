@@ -162,6 +162,24 @@ const updateOrderStatus = ({
   });
 };
 
+const replaceOrder = ({
+  inspectionOrderId,
+  replacementOrderNumber = "",
+}: {
+  inspectionOrderId: number;
+  replacementOrderNumber?: string;
+}) => {
+  return request({
+    url: `/orders/${inspectionOrderId}/replace`,
+    method: "post",
+    data: replacementOrderNumber
+      ? {
+          replacement_order_number: replacementOrderNumber,
+        }
+      : {},
+  });
+};
+
 const resetOrderTemplate = ({
   inspectionOrderId,
   fieldNames,
@@ -281,6 +299,13 @@ export const useDeleteInspectionOrder = (onSuccess: OnSuccessType) => {
 export const useUpdateOrderStatus = (onSuccess: OnSuccessType) => {
   return useMutation({
     mutationFn: updateOrderStatus,
+    onSuccess,
+  });
+};
+
+export const useReplaceOrder = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: replaceOrder,
     onSuccess,
   });
 };
