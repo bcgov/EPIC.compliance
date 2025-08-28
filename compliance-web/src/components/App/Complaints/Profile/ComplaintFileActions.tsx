@@ -1,5 +1,6 @@
 import MenuActionDropdown from "@/components/Shared/MenuActionDropdown";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
+import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import {
   useDeleteComplaint,
   useUpdateComplaintStatus,
@@ -28,6 +29,13 @@ const ComplaintFileActions: React.FC<ComplaintFileActionsProps> = ({
     "complaint",
     fileNumber,
   ]);
+
+  const { data: caseFileData } = useCaseFileByNumber(
+    complaintData?.case_file?.case_file_number || ""
+  );
+
+  const isCaseFileClosed = caseFileData?.case_file_status?.toLowerCase() === "closed" ||
+    complaintData?.case_file?.case_file_status?.toLowerCase() === "closed";
 
   const onUpdateStatusSuccess = useCallback(() => {
     queryClient.invalidateQueries({
@@ -121,6 +129,10 @@ const ComplaintFileActions: React.FC<ComplaintFileActionsProps> = ({
     },
   ];
 
+ if (isCaseFileClosed) {
+    return <></>;
+  }
+  
   return <MenuActionDropdown actions={actionsList} />;
 };
 
