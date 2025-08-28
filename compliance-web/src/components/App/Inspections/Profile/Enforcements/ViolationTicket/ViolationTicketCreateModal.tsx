@@ -3,33 +3,40 @@ import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useQueryClient } from "@tanstack/react-query";
-import { Box, DialogContent, Typography } from "@mui/material";
-import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
-import ModalActions from "@/components/Shared/Modals/ModalActions";
-import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
-import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
-import { InspectionRequirement } from "@/models/InspectionRequirement";
-import { BCDesignTokens } from "epic.theme";
-import { useModal } from "@/store/modalStore";
+import EnforcementModal from "@/components/App/Inspections/Profile/Enforcements/EnforcementModal";
 import {
   baseEnforcementSchema,
   getDefaultFormValues,
   ENFORCEMENT_MESSAGES,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
+import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { useCreateViolationTicket } from "@/hooks/useViolationTickets";
 import {
   ViolationTicket,
   ViolationTicketAPIData,
 } from "@/models/ViolationTicket";
 import { Inspection } from "@/models/Inspection";
+import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
-import ViolationTicketUpdateModal from "./ViolationTicketUpdateModal";
-import { MODAL_WIDTHS } from "@/utils/constants";
+
 const violationTicketSchema = baseEnforcementSchema.shape({
   ticket_number: yup.string().required("Ticket Number is required").trim(),
 });
 
 type ViolationTicketFormType = yup.InferType<typeof violationTicketSchema>;
+
+const ViolationTicketFormFields = () => {
+  return (
+    <ControlledTextField
+      name="ticket_number"
+      label="Ticket #"
+      placeholder="Enter ticket number"
+      type="text"
+      fullWidth
+      sx={{ mt: 2 }}
+    />
+  );
+};
 
 type ViolationTicketCreateModalProps = {
   inspectionData: Inspection;
@@ -45,13 +52,12 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
-  const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
 
   const defaultValues = useMemo(() => {
-    const baseValues = getDefaultFormValues(requirement, false);
+    const baseValues = getDefaultFormValues(requirement, false, undefined);
     return {
       ...baseValues,
-      ticket_number: undefined,
+      ticket_number: "",
     };
   }, [requirement]);
 
@@ -61,8 +67,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
     defaultValues,
   });
 
-  const { reset, handleSubmit, watch } = methods;
-  const selectedRequirements = watch("requirements") as InspectionRequirement[];
+  const { reset } = methods;
 
   useEffect(() => {
     reset(defaultValues);
@@ -72,123 +77,47 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["inspection-violation-tickets", inspectionData.id],
     });
+    notifyAndSubmit(data);
+  };
+
+  const notifyAndSubmit = (data: ViolationTicket) => {
     notify.success(ENFORCEMENT_MESSAGES.VIOLATION_TICKET_CREATED(data.vt_number || ""));
-
-    setModalClose();
-
-    setTimeout(() => {
-      setModalOpen({
-        content: (
-          <ViolationTicketUpdateModal
-            violationTicket={data}
-            inspectionData={inspectionData}
-            onSuccess={(updatedData) => {
-              onSubmit(updatedData);
-            }}
-          />
-        ),
-        width: MODAL_WIDTHS.VIOLATION_TICKET
-      });
-    }, 100);
+    onSubmit(data);
   };
 
   const { mutate: createViolationTicket, isPending: isPendingViolationTicket } =
     useCreateViolationTicket(onSuccess);
 
-  const handleSubmitForm = useCallback(
-    (data: ViolationTicketFormType) => {
-
+  const handleBaseSubmit = useCallback(
+    (data: any) => {
+      // Get the ticket number from the form context since EnforcementModal only handles base schema
+      const ticketNumber = methods.getValues("ticket_number") || "";
+      
       const violationTicketData: ViolationTicketAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids: (
           data.requirements as InspectionRequirement[]
         ).map((requirement) => requirement.id),
-        ticket_number: data.ticket_number || "", 
+        ticket_number: ticketNumber,
       };
 
       createViolationTicket({
         violationTicket: violationTicketData,
       });
     },
-    [createViolationTicket, inspectionData]
+    [createViolationTicket, inspectionData, methods]
   );
-
-  const handleCancel = () => {
-    setModalClose();
-  };
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Create Violation Ticket" />
-        <DialogContent dividers sx={{ p: 0 }}>
-          <Box sx={{ p: "1rem 1.5rem" }}>
-            <ControlledAutoComplete
-              name="requirements"
-              label="Select Requirements"
-              options={requirementsList ?? []}
-              getOptionLabel={(option) => {
-                return `Requirement ${option.sort_order}`;
-              }}
-              getOptionKey={(option) => option.id}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              fullWidth
-              multiple
-              disabled={!requirementsList?.length}
-              sx={{ mb: 2 }}
-            />
-            {selectedRequirements?.map((requirement) => (
-              <Box
-                key={requirement.id}
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1,
-                  p: 1.5,
-                  mb: 1.5,
-                  borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
-                  background: BCDesignTokens.surfaceColorBackgroundLightBlue,
-                }}
-              >
-                <Typography variant="caption" fontWeight={700}>
-                  Requirement {requirement.sort_order}
-                </Typography>
-                <Typography variant="subtitle2">
-                  {requirement.summary}
-                </Typography>
-              </Box>
-            ))}
-            <ControlledTextField
-              name="ticket_number"
-              label="Ticket #"
-              placeholder="Enter ticket number"
-              type="text"
-              fullWidth
-              sx={{ mb: 2 }}
-            />
-          </Box>
-          {selectedRequirements?.length > 1 && (
-            <Box
-              sx={{
-                p: "1rem 1.5rem",
-                backgroundColor: BCDesignTokens.supportSurfaceColorWarning,
-                borderTop: `1px solid ${BCDesignTokens.supportBorderColorWarning}`,
-              }}
-            >
-              <Typography variant="body2" color="warning.main">
-                <strong>Note:</strong> You have selected multiple requirements. A single Violation Ticket will be created for all selected requirements.
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <ModalActions
-          onSecondaryAction={handleCancel}
-          onPrimaryAction={handleSubmit(handleSubmitForm)}
-          isLoading={isPendingViolationTicket}
-          primaryActionButtonText="Create"
-          secondaryActionButtonText="Cancel"
-        />
-      </form>
+      <EnforcementModal
+        requirementsList={requirementsList}
+        requirement={requirement}
+        title="Create Violation Ticket"
+        onSubmit={handleBaseSubmit}
+        isLoading={isPendingViolationTicket}
+        additionalFormFields={<ViolationTicketFormFields />}
+      />
     </FormProvider>
   );
 };
