@@ -1,4 +1,5 @@
 import { Box, DialogContent } from "@mui/material";
+import { AttachMoneyRounded } from "@mui/icons-material";
 import { FC, useCallback, useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -176,7 +177,10 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
                   step: 0.01,
                 }}
                 InputProps={{
-                  startAdornment: <span style={{ color: 'rgba(0, 0, 0, 1)', marginRight: '2px' }}>$</span>,
+                  startAdornment: <AttachMoneyRounded sx={{
+                    mr: 0.2,
+                    color: "#9F9D9C",
+                  }} />,
                 }}
                 isRequired={true}
                 disabled={isReadonlyMode}
