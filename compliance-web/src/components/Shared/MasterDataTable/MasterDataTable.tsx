@@ -9,6 +9,7 @@ import {
   MRT_Column,
   MRT_Header,
   MRT_TableState,
+  MRT_SortingState,
 } from "material-react-table";
 import { Box, Button, IconButton, Tooltip, Typography } from "@mui/material";
 import { FiltersCache } from "./FiltersCache";
@@ -42,11 +43,7 @@ interface RemoteDataConfig<TData extends MRT_RowData> {
         ) => MRT_TableState<TData>["pagination"])
   ) => void;
   onSortingChange?: (
-    updater:
-      | MRT_TableState<TData>["sorting"]
-      | ((
-          old: MRT_TableState<TData>["sorting"]
-        ) => MRT_TableState<TData>["sorting"])
+    updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
   ) => void;
   onColumnFiltersChange?: (
     updater:

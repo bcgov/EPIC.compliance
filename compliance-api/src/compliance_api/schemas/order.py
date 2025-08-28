@@ -122,6 +122,11 @@ class OrderSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
                 "id": data["order_progress"].name,
                 "name": data["order_progress"].value,
             }
+        if "order_replace_status" in data and data["order_replace_status"] is not None:
+            data["order_replace_status"] = {
+                "id": data["order_replace_status"].name,
+                "name": data["order_replace_status"].value,
+            }
         return data
 
 
@@ -181,4 +186,16 @@ class ResetOrderFieldSchema(BaseSchema):
             ),
             metadata={"description": "The name of the field to reset"},
         )
+    )
+
+
+class OrderReplaceSchema(BaseSchema):
+    """Schema for order replacement."""
+
+    replacement_order_number = fields.String(
+        allow_none=True,
+        metadata={
+            "description": "The order number for the replacement order. "
+                           "If not provided, a new number will be generated."
+        },
     )

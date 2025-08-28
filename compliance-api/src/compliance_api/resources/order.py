@@ -12,8 +12,8 @@ from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
 
 from ..schemas import (
-    CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderSchema, OrderStatusSchema,
-    OrderUpdateSchema, ResetOrderFieldSchema, UpdateOrderApprovalStatusSchema)
+    CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderReplaceSchema,
+    OrderSchema, OrderStatusSchema, OrderUpdateSchema, ResetOrderFieldSchema, UpdateOrderApprovalStatusSchema)
 from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
@@ -48,6 +48,10 @@ order_approval_status_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 
 reset_order_field_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, ResetOrderFieldSchema(), "ResetOrderField"
+)
+
+order_replace_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, OrderReplaceSchema(), "OrderReplace"
 )
 
 
@@ -306,6 +310,30 @@ class OrderApprovals(Resource):
             OrderApprovalSchema().dump(created_aproval),
             HTTPStatus.CREATED,
         )
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/<int:order_id>/replace", methods=["POST", "OPTIONS"])
+@API.doc(params={"order_id": "The unique identifier for the order to replace"})
+class OrderReplace(Resource):
+    """Resource for replacing an order."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Create a replacement order"
+    )
+    @API.expect(order_replace_model)
+    @API.response(
+        code=201, model=order_list_model, description="Replacement order created"
+    )
+    @API.response(404, "Not Found")
+    @API.response(400, "Bad Request")
+    def post(order_id):
+        """Create a replacement order."""
+        replace_data = OrderReplaceSchema().load(API.payload or {})
+        replacement_order = OrderService.replace_order(order_id, replace_data)
+        return OrderSchema().dump(replacement_order), HTTPStatus.CREATED
 
 
 @cors_preflight("OPTIONS, PATCH, GET")

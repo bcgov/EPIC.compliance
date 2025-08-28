@@ -17,7 +17,7 @@ class AgencyService:
     @classmethod
     def get_all(cls):
         """Get all agencies."""
-        users = AgencyModel.get_all(default_filters=False)
+        users = AgencyModel.get_all(default_filters=False, sort_by="name")
         return users
 
     @classmethod

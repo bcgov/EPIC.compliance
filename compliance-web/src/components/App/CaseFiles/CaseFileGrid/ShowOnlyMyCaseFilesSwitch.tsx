@@ -1,51 +1,36 @@
 import { FormControlLabel, Typography, CircularProgress } from "@mui/material";
 import CustomSwitch from "@/components/Shared/Controlled/CustomSwitch";
 import { useAuth } from "react-oidc-context";
-import { useStaffUsersData } from "@/hooks/useStaff";
 import { useMemo, useCallback, useState, useEffect } from "react";
 import { MRT_TableState } from "material-react-table";
 import { CaseFile } from "@/models/CaseFile";
+import { StaffUser } from "@/models/Staff";
 
 interface ShowOnlyMyCaseFilesSwitchProps {
   disabled?: boolean;
+  staffUsers: StaffUser[];
   onFiltersChange?: (filters: {
     checked: boolean;
     externalFilters: Record<string, string[] | string>;
     columnFilters?: MRT_TableState<CaseFile>["columnFilters"];
   }) => void;
   initialChecked?: boolean;
-  onColumnFiltersChange?: (
-    updater:
-      | MRT_TableState<CaseFile>["columnFilters"]
-      | ((
-          old: MRT_TableState<CaseFile>["columnFilters"]
-        ) => MRT_TableState<CaseFile>["columnFilters"])
-  ) => void;
 }
 
-const ShowOnlyMyCaseFilesSwitch: React.FC<
-  ShowOnlyMyCaseFilesSwitchProps
-> = ({
+const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
   disabled = false,
+  staffUsers,
   onFiltersChange,
-  initialChecked = false,
-  onColumnFiltersChange,
+  initialChecked = true, 
 }) => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
-  const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
 
   // Internal state management
   const [checked, setChecked] = useState(initialChecked);
 
-  // Update internal state when initialChecked changes (for restoration)
-  useEffect(() => {
-    setChecked(initialChecked);
-  }, [initialChecked]);
-
   // Find current user in staff list
   const currentStaff = useMemo(() => {
-    if (!currentUser?.profile?.preferred_username || !staffUsers)
-      return undefined;
+    if (!currentUser?.profile?.preferred_username || !staffUsers) return undefined;
     return staffUsers.find(
       (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
     );
@@ -53,28 +38,22 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
 
   // Determine if switch should be disabled
   const isSwitchDisabled = useMemo(() => {
-    return disabled || authLoading || staffLoading || !currentStaff;
-  }, [disabled, authLoading, staffLoading, currentStaff]);
+    return disabled || authLoading || !currentStaff;
+  }, [disabled, authLoading, currentStaff]);
 
   // Get the appropriate label
-  const getSwitchLabel = useMemo(() => {
-    return `${currentUser?.profile?.given_name}'s Files`;
+  const switchLabel = useMemo(() => {
+    return `${currentUser?.profile?.given_name || 'My'} Files`;
   }, [currentUser?.profile?.given_name]);
 
-  // Generate external filters based on current state
+  // Generate external filters for API calls
   const generateExternalFilters = useCallback(
     (isChecked: boolean): Record<string, string[] | string> => {
       if (!isChecked || !currentStaff?.id) {
-        return {
-          primary_officer_ids: [],
-          statuses: [],
-        };
+        return {};
       }
-
-      // For regular users, filter by primary officer and status 'open'
       return {
         primary_officer_ids: [currentStaff.id.toString()],
-        statuses: ["Open"],
       };
     },
     [currentStaff?.id]
@@ -86,22 +65,14 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
       if (!isChecked || !currentStaff) {
         return [];
       }
-
-      const currentUserStaff = staffUsers?.find(
-        (staff) => staff.id === currentStaff.id
-      );
       return [
         {
           id: "primary_officer",
-          value: [currentUserStaff?.name || ""],
-        },
-        {
-          id: "status",
-          value: ["Open"],
+          value: [currentStaff.id.toString()],
         },
       ];
     },
-    [currentStaff, staffUsers]
+    [currentStaff]
   );
 
   // Handle switch change
@@ -118,36 +89,20 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
         externalFilters,
         columnFilters,
       });
-
-      // Update column filters for UI display if callback provided
-      if (onColumnFiltersChange) {
-        if (newChecked) {
-          // Remove existing user-specific filters and add new ones
-          const filteredFilters = columnFilters.filter(
-            (filter) => filter.id !== "primary_officer"
-          );
-          onColumnFiltersChange([
-            ...filteredFilters,
-            ...generateColumnFilters(true),
-          ]);
-        } else {
-          // Remove user-specific filters when turning off
-          const filteredFilters = columnFilters.filter(
-            (filter) => filter.id !== "primary_officer"
-          );
-          onColumnFiltersChange(filteredFilters);
-        }
-      }
     },
     [
       generateExternalFilters,
       generateColumnFilters,
       onFiltersChange,
-      onColumnFiltersChange,
     ]
   );
 
-  if (authLoading || staffLoading) {
+  // Update internal state when initialChecked changes (for restoration)
+  useEffect(() => {
+    setChecked(initialChecked);
+  }, [initialChecked]);
+
+  if (authLoading) {
     return <CircularProgress size={24} />;
   }
 
@@ -163,7 +118,7 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<
       }
       label={
         <Typography variant="body1" mr={1}>
-          <strong>{getSwitchLabel}</strong>
+          <strong>{switchLabel}</strong>
         </Typography>
       }
       labelPlacement="start"

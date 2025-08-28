@@ -33,13 +33,14 @@ import { useModal } from "@/store/modalStore";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import { useQueryClient } from "@tanstack/react-query";
 
-type OrderDrawerProps = {
-  onSubmit: (submitMsg: string, isCloseDrawer?: boolean) => void;
+interface OrderDrawerProps {
+  onSubmit: (message: string, isCloseDrawer?: boolean) => void;
   inspection: Inspection;
   enforcementOrder: InspectionOrder;
   staffUsersList: StaffUser[];
-  isReadonlyMode?: boolean;
-};
+  isReadonlyMode: boolean;
+  openEnforcementOrderDrawer?: (order: InspectionOrder) => void;
+}
 
 const enforcementSchema = yup.object().shape({
   whereAs: yup
@@ -64,7 +65,7 @@ const enforcementSchema = yup.object().shape({
 
 type EnforcementFormType = yup.InferType<typeof enforcementSchema>;
 
-const initFormData = {
+const initFormData = {  
   whereAs: { html: "", text: "" },
   nowTherefore: { html: "", text: "" },
   issuingOfficer: {} as StaffUser,
@@ -78,6 +79,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   enforcementOrder,
   staffUsersList,
   isReadonlyMode = false,
+  openEnforcementOrderDrawer,
 }) => {
   const queryClient = useQueryClient();
   const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
@@ -241,8 +243,9 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             {!isReadonlyMode && (
               <OrderApprovalButtons
                 inspectionOrder={enforcementOrder}
-                inspectionId={inspection.id}
+                inspection={inspection}
                 caseFileId={inspection.case_file_id ?? 0}
+                openEnforcementOrderDrawer={openEnforcementOrderDrawer}
               />
             )}
             <EnforcementDownloadPDFButton

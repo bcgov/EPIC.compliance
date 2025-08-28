@@ -31,6 +31,14 @@ class OrderProgressEnum(enum.Enum):
     ISSUED = "Issued"  # When the order is issued
 
 
+class OrderReplaceStatusEnum(enum.Enum):
+    """Order replace status enum."""
+
+    ORIGINAL = "Original"  # When the order is original
+    REPLACED = "Replaced"  # When the order is replaced
+    REPLACEMENT = "Replacement"  # When the order is replacement of another order
+
+
 class OrderInspectionRequirementMap(BaseModelVersioned):
     """OrderInspectionRequirementMap Model."""
 
@@ -134,6 +142,8 @@ class Order(BaseModelVersioned):
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="select")
     order_status = Column(Enum(OrderStatusEnum), nullable=True)
     order_progress = Column(Enum(OrderProgressEnum), nullable=True)
+    order_replace_status = Column(Enum(OrderReplaceStatusEnum), nullable=True)
+    replacement_for_order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
     order_requirement_maps = relationship(
         "OrderInspectionRequirementMap",
@@ -206,7 +216,7 @@ class Order(BaseModelVersioned):
 
     @classmethod
     def does_order_exists_by_requirement_ids(
-        cls, requirement_ids: list[int], order_id: int = None
+        cls, requirement_ids: list[int], order=None
     ):
         """Check if an order exists by requirement ids."""
         query = cls.query.join(
@@ -218,8 +228,13 @@ class Order(BaseModelVersioned):
             ),
             cls.is_deleted.is_(False),
         )
-        if order_id:
-            query = query.filter(cls.id != order_id)
+
+        # Only filter by order_replace_status if order is provided
+        if order and hasattr(order, 'order_replace_status'):
+            query = query.filter(cls.order_replace_status == order.order_replace_status)
+
+        if order and order.id:
+            query = query.filter(cls.id != order.id)
         return query.first()
 
     @classmethod
@@ -243,3 +258,22 @@ class Order(BaseModelVersioned):
         return cls.query.filter_by(
             inspection_id=inspection_id, is_deleted=False, is_active=True
         ).all()
+
+    @classmethod
+    def has_replacement_order(cls, original_order_id: int):
+        """Check if a replacement order already exists for the given original order."""
+        # First, get the original order to find its inspection
+        original_order = cls.query.filter_by(
+            id=original_order_id, is_deleted=False
+        ).first()
+        if not original_order:
+            return False
+
+        # Look for any replacement orders in the same inspection
+        replacement_order = cls.query.filter_by(
+            inspection_id=original_order.inspection_id,
+            order_replace_status=OrderReplaceStatusEnum.REPLACEMENT,
+            is_deleted=False,
+        ).first()
+
+        return replacement_order is not None

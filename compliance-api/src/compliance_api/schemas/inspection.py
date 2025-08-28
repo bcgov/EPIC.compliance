@@ -574,7 +574,7 @@ class InspectionFilterSchema(BaseSchema):
 
 
 class InspectionStatusSchema(BaseSchema):
-    """ComplaintStatusSchema."""
+    """InspectionStatusSchema."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Exclude unknown fields in the deserialized output."""
@@ -583,7 +583,7 @@ class InspectionStatusSchema(BaseSchema):
 
     status = EnumField(
         InspectionStatusEnum,
-        metadata={"description": "The status of the complaint"},
+        metadata={"description": "The status of the inspection"},
         required=True,
     )
 
