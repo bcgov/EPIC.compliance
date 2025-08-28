@@ -8,6 +8,7 @@ import {
   baseEnforcementSchema,
   getDefaultFormValues,
   ENFORCEMENT_MESSAGES,
+  BaseEnforcementFormType,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { useCreateViolationTicket } from "@/hooks/useViolationTickets";
@@ -89,15 +90,13 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
     useCreateViolationTicket(onSuccess);
 
   const handleBaseSubmit = useCallback(
-    (data: any) => {
+    (data: BaseEnforcementFormType) => {
       // Get the ticket number from the form context since EnforcementModal only handles base schema
       const ticketNumber = methods.getValues("ticket_number") || "";
       
       const violationTicketData: ViolationTicketAPIData = {
         inspection_id: inspectionData?.id ?? 0,
-        inspection_requirement_ids: (
-          data.requirements as InspectionRequirement[]
-        ).map((requirement) => requirement.id),
+        inspection_requirement_ids: (data.requirements as InspectionRequirement[]).map((requirement) => requirement.id),
         ticket_number: ticketNumber,
       };
 
