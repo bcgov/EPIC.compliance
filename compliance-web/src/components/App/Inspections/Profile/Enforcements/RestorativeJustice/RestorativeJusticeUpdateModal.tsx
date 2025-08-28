@@ -119,7 +119,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
                 type="text"
                 fullWidth
                 multiline
-                rows={1}
+                minRows={1}
                 disabled={isReadonlyMode}
               />
             </Box>
