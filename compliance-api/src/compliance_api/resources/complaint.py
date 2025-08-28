@@ -12,8 +12,8 @@ from compliance_api.schemas import (
     ComplaintUpdateSchema, KeyValueSchema, RequirementSourceDetailSchema)
 from compliance_api.services import ComplaintService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 from compliance_api.utils.schema_utils import get_pagination_schema
+from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 

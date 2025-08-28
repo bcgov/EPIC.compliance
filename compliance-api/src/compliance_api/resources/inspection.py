@@ -26,8 +26,8 @@ from compliance_api.schemas import (
     InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, StaffUserSchema)
 from compliance_api.services import InspectionRequirementService, InspectionService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 from compliance_api.utils.schema_utils import get_pagination_schema
+from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
