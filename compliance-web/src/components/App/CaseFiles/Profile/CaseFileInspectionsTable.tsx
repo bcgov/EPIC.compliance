@@ -30,7 +30,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import OrderDrawer from "@/components/App/Inspections/Profile/Enforcements/Orders/OrderDrawer";
 import { useDrawer } from "@/store/drawerStore";
 import { useStaffUsersData } from "@/hooks/useStaff";
@@ -49,7 +49,10 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   const { data: detailedInspections } = useInspectionsMoreDetailsByCaseFileId(
     caseFile.id
   );
-  const { data: inspectionsList } = useInspectionsData();
+  const { data: inspectionsListData } = useInspectionsData();
+  const inspectionsList = useMemo(() => {
+    return inspectionsListData?.items;
+  }, [inspectionsListData]);
   const { data: staffUsersList } = useStaffUsersData();
 
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(

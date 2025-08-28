@@ -227,8 +227,12 @@ class Order(BaseModelVersioned):
                 requirement_ids
             ),
             cls.is_deleted.is_(False),
-            cls.order_replace_status == order.order_replace_status,
         )
+        
+        # Only filter by order_replace_status if order is provided
+        if order and hasattr(order, 'order_replace_status'):
+            query = query.filter(cls.order_replace_status == order.order_replace_status)
+            
         if order and order.id:
             query = query.filter(cls.id != order.id)
         return query.first()
