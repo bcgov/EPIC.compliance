@@ -125,7 +125,7 @@ class InspectionAttendance(BaseModelVersioned):
         return cls.query.filter_by(
             inspection_id=inspection_id,
             attendance_option_id=InspectionAttendanceOptionEnum.OTHER.value,
-            is_deleted=False
+            is_deleted=False,
         ).first()
 
     @classmethod
@@ -135,7 +135,7 @@ class InspectionAttendance(BaseModelVersioned):
         attendance = cls.query.filter_by(
             inspection_id=inspection_id,
             attendance_option_id=InspectionAttendanceOptionEnum.OTHER.value,
-            is_deleted=False
+            is_deleted=False,
         ).first()
         if attendance:
             attendance.update({"other": other_text}, commit=False)
