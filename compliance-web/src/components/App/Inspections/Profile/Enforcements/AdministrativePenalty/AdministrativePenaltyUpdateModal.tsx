@@ -76,11 +76,12 @@ type AdministrativePenaltyUpdateModalProps = {
   administrativePenalty: AdministrativePenalty;
   inspectionData: Inspection;
   onSuccess?: (data: AdministrativePenalty) => void;
+  isReadonlyMode?: boolean;
 };
 
 const AdministrativePenaltyUpdateModal: FC<
   AdministrativePenaltyUpdateModalProps
-> = ({ administrativePenalty, inspectionData, onSuccess }) => {
+> = ({ administrativePenalty, inspectionData, onSuccess, isReadonlyMode = false }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
 
@@ -239,17 +240,20 @@ const AdministrativePenaltyUpdateModal: FC<
               isOptionEqualToValue={(option, value) => option.id === value.id}
               placeholder="Select referral status"
               fullWidth
+              disabled={isReadonlyMode}
             />
             <Box sx={{ display: "flex", gap: 1 }}>
               <ControlledDateField
                 name="date_referred"
                 label="Date Referred to Decision Maker"
                 sx={{ width: "100%" }}
+                disabled={isReadonlyMode}
               />
               <ControlledDateField
                 name="decision_date"
                 label="Decision Date"
                 sx={{ width: "100%" }}
+                disabled={isReadonlyMode}
               />
             </Box>
             <ControlledAutoComplete
@@ -260,6 +264,7 @@ const AdministrativePenaltyUpdateModal: FC<
               isOptionEqualToValue={(option, value) => option.id === value.id}
               placeholder="Select an option..."
               fullWidth
+              disabled={isReadonlyMode}
             />
             {decision?.id === "AP_ISSUED" && (
               <ControlledTextField
@@ -268,19 +273,22 @@ const AdministrativePenaltyUpdateModal: FC<
                 placeholder="Enter penalty amount"
                 type="number"
                 fullWidth
+                disabled={isReadonlyMode}
               />
             )}
           </Box>
         </DialogContent>
-        <ModalActions
-          onSecondaryAction={handleCancel}
-          onPrimaryAction={handleSubmit(handleSubmitForm)}
-          isLoading={isPendingUpdate}
-          primaryActionButtonText="Save"
-          secondaryActionButtonText="Cancel"
-          onDeleteAction={handleDelete}
-          isDeleteActionLoading={isPendingDelete}
-        />
+        {!isReadonlyMode && (
+          <ModalActions
+            onSecondaryAction={handleCancel}
+            onPrimaryAction={handleSubmit(handleSubmitForm)}
+            isLoading={isPendingUpdate}
+            primaryActionButtonText="Save"
+            secondaryActionButtonText="Cancel"
+            onDeleteAction={handleDelete}
+            isDeleteActionLoading={isPendingDelete}
+          />
+        )}
       </form>
     </FormProvider>
   );

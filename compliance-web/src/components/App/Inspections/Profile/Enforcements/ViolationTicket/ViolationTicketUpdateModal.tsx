@@ -49,12 +49,14 @@ type ViolationTicketUpdateModalProps = {
   violationTicket: ViolationTicket;
   inspectionData: Inspection;
   onSuccess?: (data: ViolationTicket) => void;
+  isReadonlyMode?: boolean;
 };
 
 const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   violationTicket,
   inspectionData,
   onSuccess,
+  isReadonlyMode = false,
 }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
@@ -152,6 +154,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               name="date_issued"
               label="Date Issued"
               sx={{ width: "50%" }}
+              disabled={isReadonlyMode}
             />
             <ControlledTextField
               name="ticket_number"
@@ -177,6 +180,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               InputProps={{
                 startAdornment: <span style={{ color: 'rgba(0, 0, 0, 0.38)', marginRight: '2px' }}>$</span>,
               }}
+              disabled={isReadonlyMode}
             />
             <ControlledAutoComplete
               name="status"
@@ -186,7 +190,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               isOptionEqualToValue={(option, value) => option.id === value.id}
               placeholder="Select status"
               sx={{ width: "100%" }}
-
+              disabled={isReadonlyMode}
             />
 
           </Box>
@@ -195,20 +199,23 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
               name="status_date"
               label="Status Date"
               sx={{ width: "100%" }}
+              disabled={isReadonlyMode}
             />
 
           </Box>
 
         </Box>
-        <ModalActions
-          onSecondaryAction={handleCancel}
-          onPrimaryAction={handleSubmit(handleSubmitForm)}
-          isLoading={isPendingUpdate}
-          primaryActionButtonText="Save"
-          secondaryActionButtonText="Cancel"
-          onDeleteAction={handleDelete}
-          isDeleteActionLoading={isPendingDelete}
-        />
+        {!isReadonlyMode && (
+          <ModalActions
+            onSecondaryAction={handleCancel}
+            onPrimaryAction={handleSubmit(handleSubmitForm)}
+            isLoading={isPendingUpdate}
+            primaryActionButtonText="Save"
+            secondaryActionButtonText="Cancel"
+            onDeleteAction={handleDelete}
+            isDeleteActionLoading={isPendingDelete}
+          />
+        )}
       </form>
     </FormProvider>
   );

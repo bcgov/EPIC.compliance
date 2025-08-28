@@ -29,12 +29,14 @@ type RestorativeJusticeUpdateModalProps = {
   restorativeJustice: RestorativeJustice;
   inspectionData: Inspection;
   onSuccess: (data: RestorativeJustice) => void;
+  isReadonlyMode?: boolean;
 };
 
 const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
   restorativeJustice,
   inspectionData,
   onSuccess,
+  isReadonlyMode = false,
 }) => {
   const queryClient = useQueryClient();
   const { setClose } = useModal();
@@ -118,26 +120,30 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
                 fullWidth
                 multiline
                 rows={1}
+                disabled={isReadonlyMode}
               />
             </Box>
             <Box sx={{ mb: 1, width: "50%" }}>
               <ControlledDateField
                 name="date_restitution_complete"
                 label="Date Restitution Complete"
+                disabled={isReadonlyMode}
               />
             </Box>
           </Box>
         </DialogContent>
-        <ModalActions
-          onSecondaryAction={handleCancel}
-          onPrimaryAction={handleSubmit(handleSubmitForm)}
-          isLoading={isPendingUpdate || isPendingDelete}
-          primaryActionButtonText="Save"
-          secondaryActionButtonText="Cancel"
-          onDeleteAction={() => {
-            deleteRestorativeJustice({ restorativeJusticeId: restorativeJustice.id });
-          }}
-        />
+        {!isReadonlyMode && (
+          <ModalActions
+            onSecondaryAction={handleCancel}
+            onPrimaryAction={handleSubmit(handleSubmitForm)}
+            isLoading={isPendingUpdate || isPendingDelete}
+            primaryActionButtonText="Save"
+            secondaryActionButtonText="Cancel"
+            onDeleteAction={() => {
+              deleteRestorativeJustice({ restorativeJusticeId: restorativeJustice.id });
+            }}
+          />
+        )}
       </form>
     </FormProvider>
   );

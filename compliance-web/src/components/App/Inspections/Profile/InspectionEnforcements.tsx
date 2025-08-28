@@ -436,6 +436,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["inspection-administrative-penalties", inspectionData.id],
             });
           }}
+          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
         width: MODAL_WIDTHS.ADMINISTRATIVE_PENALTY,
@@ -456,6 +457,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["charge-recommendations", inspectionData.id],
             });
           }}
+          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
         width: MODAL_WIDTHS.CHARGE_RECOMMENDATION,
@@ -476,6 +478,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["inspection-violation-tickets", inspectionData.id],
             });
           }}
+          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
         width: MODAL_WIDTHS.VIOLATION_TICKET,
@@ -496,6 +499,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["inspection-restorative-justice", inspectionData.id],
             });
           }}
+          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
         width: MODAL_WIDTHS.RESTORATIVE_JUSTICE,
