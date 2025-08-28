@@ -97,8 +97,9 @@ class WarningLetterService:
         warning_letter = ServiceUtils.warning_letter_exist_check(warning_letter_id)
         ServiceUtils.access_check_update_for_inspection(warning_letter.inspection)
         ServiceUtils.inspection_status_check(warning_letter.inspection)
+        issuing_officer_id = update_data.get("issuing_officer_id")
         ServiceUtils.officer_check(
-            update_data.get("issuing_officer_id"), warning_letter.inspection
+            issuing_officer_id, warning_letter.inspection
         )
         requirement_ids = update_data.get("inspection_requirement_ids", [])
         ServiceUtils.check_requirement_for_enforcement_action(
@@ -109,6 +110,13 @@ class WarningLetterService:
         ):
             raise UnprocessableEntityError(
                 "Warning letter already exists for these requirements."
+            )
+        #  If the issuing officer id is different from the existing one, regenerate the content
+        if issuing_officer_id != warning_letter.issuing_officer_id:
+            update_data["content"] = _create_content(
+                warning_letter.inspection,
+                requirement_ids,
+                issuing_officer_id,
             )
         with session_scope() as session:
             updated_warning_letter = WarningLetterModel.update_warning_letter(

@@ -36,9 +36,15 @@ const RequirementFormLeftEditSection: FC<
   const { data: agenciesList } = useAgenciesData();
 
   const enforcementActions = useMemo(() => {
+    // No need to show RESTORATIVE JUSTICE in the list of enforcement actions
+    const filteredEnforcementActions =
+      enforcementActionsList?.filter(
+        (enforcementAction) =>
+          enforcementAction.id !== EnforcementActionEnum.RESTORATIVE_JUSTICE
+      );
     return inspectionData?.is_history
-      ? enforcementActionsList
-      : enforcementActionsList?.filter(
+      ? filteredEnforcementActions
+      : filteredEnforcementActions?.filter(
           (enforcementAction) =>
             enforcementAction.id !== EnforcementActionEnum.ADVISORY &&
             enforcementAction.id !== EnforcementActionEnum.WARNING

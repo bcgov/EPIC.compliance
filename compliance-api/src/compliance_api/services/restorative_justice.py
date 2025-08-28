@@ -5,7 +5,9 @@ from http import HTTPStatus
 from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.db import session_scope
-from compliance_api.models.restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
+from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
+from compliance_api.models.restorative_justice import (
+    RestorativeJusticeInspectionRequirementMap, RestorativeJusticeStatusEnum)
 from compliance_api.services.service_utils import ServiceUtils
 
 
@@ -17,12 +19,12 @@ class RestorativeJusticeService:
         """Get all restorative justices for an inspection."""
         if not inspection_id:
             return []
-        return RestorativeJustice.get_by_inspection_id(inspection_id)
+        return RestorativeJusticeModel.get_by_inspection_id(inspection_id)
 
     @staticmethod
     def get_by_id(restorative_justice_id):
         """Get restorative justice by id."""
-        restorative_justice = RestorativeJustice.find_by_id(restorative_justice_id)
+        restorative_justice = RestorativeJusticeModel.find_by_id(restorative_justice_id)
         if not restorative_justice:
             raise ResourceNotFoundError(
                 f"Restorative justice with id: {restorative_justice_id} not found"
@@ -32,7 +34,7 @@ class RestorativeJusticeService:
     @staticmethod
     def get_by_number(restorative_justice_number):
         """Get restorative justice by number."""
-        restorative_justice = RestorativeJustice.get_by_restorative_justice_number(
+        restorative_justice = RestorativeJusticeModel.get_by_restorative_justice_number(
             restorative_justice_number
         )
         if not restorative_justice:
@@ -44,7 +46,7 @@ class RestorativeJusticeService:
     @classmethod
     def create_restorative_justice(
         cls, restorative_justice_data: dict
-    ) -> RestorativeJustice:
+    ) -> RestorativeJusticeModel:
         """Create a new restorative justice."""
         inspection_id = restorative_justice_data.get("inspection_id")
         inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
@@ -61,7 +63,7 @@ class RestorativeJusticeService:
         # Validate requirements if provided
         if inspection_requirement_ids is not None:
             exists = (
-                RestorativeJustice.does_restorative_justice_exists_by_requirement_ids(
+                RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
                     inspection_requirement_ids
                 )
             )
@@ -71,7 +73,7 @@ class RestorativeJusticeService:
                 )
         # Create restorative justice with session scope
         with session_scope() as session:
-            restorative_justice = RestorativeJustice.create_restorative_justice(
+            restorative_justice = RestorativeJusticeModel.create_restorative_justice(
                 restorative_justice_obj, session
             )
             cls.insert_or_update_inspection_requirements(
@@ -85,7 +87,7 @@ class RestorativeJusticeService:
     @classmethod
     def update_restorative_justice(
         cls, restorative_justice_id: int, update_data: dict
-    ) -> RestorativeJustice:
+    ) -> RestorativeJusticeModel:
         """Update an existing restorative justice."""
         # Check if restorative justice exists
         cls.get_by_id(restorative_justice_id)
@@ -96,7 +98,7 @@ class RestorativeJusticeService:
         # Validate requirements if provided
         if inspection_requirement_ids is not None:
             exists = (
-                RestorativeJustice.does_restorative_justice_exists_by_requirement_ids(
+                RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
                     inspection_requirement_ids, restorative_justice_id
                 )
             )
@@ -107,7 +109,7 @@ class RestorativeJusticeService:
 
         with session_scope() as session:
             # Update the restorative justice
-            updated_restorative_justice = RestorativeJustice.update_restorative_justice(
+            updated_restorative_justice = RestorativeJusticeModel.update_restorative_justice(
                 restorative_justice_id, update_data, session
             )
 
@@ -124,7 +126,7 @@ class RestorativeJusticeService:
     @classmethod
     def delete_restorative_justice(cls, restorative_justice_id: int):
         """Delete a restorative justice."""
-        restorative_justice = RestorativeJustice.find_by_id(restorative_justice_id)
+        restorative_justice = RestorativeJusticeModel.find_by_id(restorative_justice_id)
         if not restorative_justice:
             raise ResourceNotFoundError(
                 f"Restorative Justice with id: {restorative_justice_id} not found"
@@ -132,9 +134,12 @@ class RestorativeJusticeService:
 
         ServiceUtils.access_check_update_for_inspection(restorative_justice.inspection)
         ServiceUtils.inspection_status_check(restorative_justice.inspection)
-
+        if restorative_justice.status == RestorativeJusticeStatusEnum.CLOSED:
+            raise UnprocessableEntityError(
+                f"Restorative Justice cannot be deleted as it is {restorative_justice.status.value}"
+            )
         with session_scope() as session:
-            RestorativeJustice.update_restorative_justice(
+            RestorativeJusticeModel.update_restorative_justice(
                 restorative_justice_id,
                 {"is_deleted": True, "is_active": False},
                 session,
@@ -210,7 +215,7 @@ def _create_restorative_justice_number(project_id: int, case_file_id: int) -> st
     if case_file.project_id != project_id:
         raise UnprocessableEntityError("Given project and case file don't match")
 
-    count = RestorativeJustice.get_count_by_project_nd_case_file_id(
+    count = RestorativeJusticeModel.get_count_by_project_nd_case_file_id(
         project_id, case_file_id
     )
     serial_number = f"{count + 1:03}"
