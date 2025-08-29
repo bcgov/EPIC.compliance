@@ -93,8 +93,8 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
 
 
   const handleBaseSubmit = useCallback(
-    (data: BaseEnforcementFormType, additionalData?: Record<string, any>) => {
-      const ticketNumber = additionalData?.ticket_number || "";
+    (data: BaseEnforcementFormType, additionalData?: Record<string, unknown>) => {
+      const ticketNumber = (additionalData?.ticket_number as string) || "";
       
 
       if (!ticketNumber || ticketNumber.trim() === "") {
@@ -112,7 +112,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         violationTicket: violationTicketData,
       });
     },
-    [createViolationTicket, inspectionData, methods]
+    [createViolationTicket, inspectionData]
   );
 
   return (

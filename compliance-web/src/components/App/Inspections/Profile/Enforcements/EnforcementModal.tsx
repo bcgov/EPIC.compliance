@@ -18,7 +18,7 @@ type EnforcementModalProps = {
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
   title: string;
-  onSubmit: (data: BaseEnforcementFormType, additionalData?: Record<string, any>) => void;
+  onSubmit: (data: BaseEnforcementFormType, additionalData?: Record<string, unknown>) => void;
   isLoading?: boolean;
   children?: ReactNode;
   additionalFormFields?: ReactNode;
@@ -58,8 +58,8 @@ const EnforcementModal = ({
 
   const onSubmitHandler = useCallback(
     (data: BaseEnforcementFormType) => {
-      const formData = methods.getValues() as any;
-      const additionalData: Record<string, any> = {};
+      const formData = methods.getValues() as Record<string, unknown>;
+      const additionalData: Record<string, unknown> = {};
       
       Object.keys(formData).forEach(key => {
         if (key !== 'requirements') {
