@@ -13,6 +13,7 @@ from compliance_api.models.order import OrderInspectionRequirementMap as OrderIn
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
 from compliance_api.models.section import Section as SectionModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
+from compliance_api.services.order.order_approval import OrderApprovalService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME
 from compliance_api.utils.datetime import convert_to_full_month_format
@@ -145,10 +146,13 @@ class OrderService:
                 f"Order cannot be deleted as it is in {order.order_progress.value} progress"
             )
         with session_scope() as session:
+            approvals = OrderApprovalService.get_all_approvals(order_id)
+            for approval in approvals:
+                approval.update({"is_active": False, "is_deleted": True}, session)
+            OrderInspectionRequirementMapModel.delete_by_order(order_id, session)
             OrderModel.update_order(
                 order_id, {"is_deleted": True, "is_active": False}, session
             )
-            OrderInspectionRequirementMapModel.delete_by_order(order_id, session)
         return order
 
     @classmethod
