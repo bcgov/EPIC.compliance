@@ -24,8 +24,8 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
     CaseFileCreateSchema, CaseFileFilterSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema,
-    CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema,
-    KeyValueSchema, StaffUserSchema)
+    CaseFileOpenItemsSchema, CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema,
+    CaseFileUpdateSchema, KeyValueSchema, StaffUserSchema)
 from compliance_api.services import CaseFileService
 from compliance_api.services.case_file_aggregate import CaseFileAggregateService
 from compliance_api.utils.enum import PermissionEnum
@@ -71,6 +71,9 @@ case_file_unlink_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 case_file_filter_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, CaseFileFilterSchema(), "CaseFileFilter"
+)
+case_file_open_items_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, CaseFileOpenItemsSchema(), "CaseFileOpenItems"
 )
 
 
@@ -255,6 +258,25 @@ class CaseFileNumber(Resource):
                 f"CaseFile with case file number {case_file_number} not found"
             )
         return CaseFileSchema().dump(case_file), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route("/<int:case_file_id>/open-items", methods=["GET", "OPTIONS"])
+@API.doc(params={"case_file_id": "The unique identifier for the case file"})
+class CaseFileOpenItems(Resource):
+    """Resource for fetching open enforcement items for a case file."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Get all open enforcement items for a case file"
+    )
+    @API.response(code=200, model=case_file_open_items_model, description="Success")
+    @API.response(404, "Not Found")
+    def get(case_file_id):
+        """Get all open enforcement items for a case file."""
+        open_items = CaseFileService.get_open_enforcement_actions(case_file_id)
+        return CaseFileOpenItemsSchema().dump(open_items), HTTPStatus.OK
 
 
 @cors_preflight("GET, OPTIONS")

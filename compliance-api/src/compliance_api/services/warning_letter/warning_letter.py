@@ -98,9 +98,7 @@ class WarningLetterService:
         ServiceUtils.access_check_update_for_inspection(warning_letter.inspection)
         ServiceUtils.inspection_status_check(warning_letter.inspection)
         issuing_officer_id = update_data.get("issuing_officer_id")
-        ServiceUtils.officer_check(
-            issuing_officer_id, warning_letter.inspection
-        )
+        ServiceUtils.officer_check(issuing_officer_id, warning_letter.inspection)
         requirement_ids = update_data.get("inspection_requirement_ids", [])
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value

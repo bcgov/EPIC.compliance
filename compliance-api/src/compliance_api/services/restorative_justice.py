@@ -62,10 +62,8 @@ class RestorativeJusticeService:
         )
         # Validate requirements if provided
         if inspection_requirement_ids is not None:
-            exists = (
-                RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
-                    inspection_requirement_ids
-                )
+            exists = RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
+                inspection_requirement_ids
             )
             if exists:
                 raise BadRequestError(
@@ -97,10 +95,8 @@ class RestorativeJusticeService:
 
         # Validate requirements if provided
         if inspection_requirement_ids is not None:
-            exists = (
-                RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
-                    inspection_requirement_ids, restorative_justice_id
-                )
+            exists = RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
+                inspection_requirement_ids, restorative_justice_id
             )
             if exists:
                 raise BadRequestError(
@@ -109,8 +105,10 @@ class RestorativeJusticeService:
 
         with session_scope() as session:
             # Update the restorative justice
-            updated_restorative_justice = RestorativeJusticeModel.update_restorative_justice(
-                restorative_justice_id, update_data, session
+            updated_restorative_justice = (
+                RestorativeJusticeModel.update_restorative_justice(
+                    restorative_justice_id, update_data, session
+                )
             )
 
             # Handle requirement mappings if provided

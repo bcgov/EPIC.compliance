@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 from flask import g
-from sqlalchemy import String, and_, asc, case, cast, desc, func
+from sqlalchemy import String, and_, asc, case, cast, desc, func, or_
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -16,9 +16,27 @@ from compliance_api.models import CaseFileLink as CaseFileLinkModel
 from compliance_api.models import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import UnapprovedProject as UnapprovedProjectModel
+from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
+from compliance_api.models.administrative_penalty import ReferralStatusEnum
+from compliance_api.models.charge_recommendation import ChargeDecisionEnum
+from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
+from compliance_api.models.charge_recommendation import (
+    ChargeRecommendationInspectionRequirementMap, ChargeRecommendationStatusEnum)
+from compliance_api.models.complaint import Complaint as ComplaintModel
+from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
+from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.models.inspection import InspectionStatusEnum
+from compliance_api.models.order import Order as OrderModel
+from compliance_api.models.order import OrderStatusEnum
 from compliance_api.models.project import Project as ProjectModel
+from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
+from compliance_api.models.restorative_justice import RestorativeJusticeStatusEnum
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
+from compliance_api.models.violation_ticket import ViolationTicket as ViolationTicketModel
+from compliance_api.models.violation_ticket import ViolationTicketStatusEnum
+from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
+from compliance_api.models.warning_letter import WarningLetterProgressEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, UNAPPROVED_PROJECT_NAME
 from compliance_api.utils.enum import ContextEnum, PermissionEnum
 
@@ -329,41 +347,40 @@ class CaseFileService:
             _unlink(source=unlink_case_file, target=case_file, session=session)
 
     @classmethod
+    def get_open_enforcement_actions(cls, case_file_id: int) -> dict:
+        """
+        Check for any open enforcement actions for a given case file ID.
+
+        Returns a dictionary with lists of open items for each enforcement type.
+        """
+        # Verify case file exists
+        case_file = CaseFileModel.find_by_id(case_file_id)
+        if not case_file:
+            raise ResourceNotFoundError(f"Case file with id {case_file_id} not found")
+
+        # Initialize result structure
+        open_items = _initialize_open_items_structure()
+
+        # Get case file level items (inspections + complaints)
+        inspection_ids = _process_case_level_items(case_file_id, open_items)
+
+        # Get inspection-related enforcement actions
+        if inspection_ids:
+            _process_enforcement_actions(inspection_ids, open_items)
+
+        # Add summary flag
+        open_items["has_open_items"] = any(
+            len(items) > 0 for items in open_items.values()
+        )
+
+        return open_items
+
+    @classmethod
     def get_linked_case_files(cls, case_file_id):
         """Get all linked case files."""
         linked_case_files = CaseFileLinkModel.get_links_by_source_id(case_file_id)
         links = [link.target for link in linked_case_files]
         return links
-
-
-def _unlink(source, target, session):
-    """Unlink the case file."""
-    CaseFileLinkModel.delete_link(
-        source_id=source.id, taget_id=target.id, session=session
-    )
-
-
-def _create_link(source, target, session):
-    """Create case file link entry."""
-    created_link = CaseFileLinkModel.create_link(
-        {"source_case_id": source.id, "target_case_id": target.id}, session
-    )
-
-    return created_link
-
-
-def _link_case_file_checks(case_file, case_file_id):
-    """Validate case file link."""
-    if not case_file:
-        raise ResourceNotFoundError(f"Case file with ID: {case_file_id} not found.")
-    if case_file.is_active is False or case_file.is_deleted is True:
-        raise UnprocessableEntityError(
-            f"Case file should be active and non-deleted. Case file number {case_file.case_file_number}"
-        )
-    if case_file.case_file_status == CaseFileStatusEnum.CLOSED:
-        raise UnprocessableEntityError(
-            f"Closed case file cannot be linked. Case file number {case_file.case_file_number}"
-        )
 
 
 def _set_project_parameters(case_file):
@@ -598,3 +615,547 @@ def _apply_case_file_pagination(query, args):
     per_page = int(args.get("page_size", 15))
 
     return query.offset((page - 1) * per_page).limit(per_page)
+
+
+def _unlink(source, target, session):
+    """Unlink the case file."""
+    CaseFileLinkModel.delete_link(
+        source_id=source.id, taget_id=target.id, session=session
+    )
+
+
+def _create_link(source, target, session):
+    """Create case file link entry."""
+    created_link = CaseFileLinkModel.create_link(
+        {"source_case_id": source.id, "target_case_id": target.id}, session
+    )
+
+    return created_link
+
+
+def _link_case_file_checks(case_file, case_file_id):
+    """Validate case file link."""
+    if not case_file:
+        raise ResourceNotFoundError(f"Case file with ID: {case_file_id} not found.")
+    if case_file.is_active is False or case_file.is_deleted is True:
+        raise UnprocessableEntityError(
+            f"Case file should be active and non-deleted. Case file number {case_file.case_file_number}"
+        )
+    if case_file.case_file_status == CaseFileStatusEnum.CLOSED:
+        raise UnprocessableEntityError(
+            f"Closed case file cannot be linked. Case file number {case_file.case_file_number}"
+        )
+
+
+def _build_enforcement_item(item, item_type):
+    """Build a standardized enforcement action item dictionary."""
+    base_item = {"id": item.id, "inspection_id": getattr(item, "inspection_id", None)}
+
+    # Add type-specific fields using generic 'number' field
+    if item_type == "inspection":
+        base_item.update(
+            {
+                "number": item.ir_number,
+                "status": item.inspection_status.value,
+                "inspection_id": None,  # Inspections don't have inspection_id
+            }
+        )
+    elif item_type == "complaint":
+        status_obj = None
+        if item.status:
+            status_obj = {"id": item.status.name, "name": item.status.value}
+        base_item.update(
+            {
+                "number": item.complaint_number,
+                "status": status_obj,
+                "inspection_id": None,  # Complaints don't have inspection_id
+            }
+        )
+    elif item_type == "order":
+        base_item.update({"number": item.order_number, "status": item.status.value})
+    elif item_type == "warning_letter":
+        base_item.update(
+            {"number": item.warning_letter_number, "progress": item.progress.value}
+        )
+    elif item_type == "violation_ticket":
+        base_item.update(
+            {
+                "number": item.violation_ticket_number,
+                "status": item.status.value if item.status else "Issued",
+            }
+        )
+    elif item_type == "administrative_penalty":
+        base_item.update(
+            {
+                "number": item.administrative_penalty_number,
+                "referral_status": (
+                    item.referral_status.value if item.referral_status else "Drafting"
+                ),
+            }
+        )
+    elif item_type == "charge_recommendation":
+        base_item.update(
+            {"number": item.charge_recommendation_number, "status": item.status.value}
+        )
+    elif item_type == "restorative_justice":
+        base_item.update(
+            {"number": item.restorative_justice_number, "status": item.status.value}
+        )
+
+    return base_item
+
+
+# Local helper functions for get_open_enforcement_actions
+def _initialize_open_items_structure() -> dict:
+    """Initialize the open items result structure."""
+    return {
+        "inspections": [],
+        "complaints": [],
+        "orders": [],
+        "warning_letters": [],
+        "violation_tickets": [],
+        "administrative_penalties": [],
+        "charge_recommendations": [],
+        "restorative_justice": [],
+    }
+
+
+def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
+    """Process case file level items (inspections + complaints) and return inspection IDs."""
+    # Query for all inspections and open complaints
+    case_level_query = _build_case_level_query(case_file_id)
+
+    all_inspection_ids = []
+    processed_complaints = set()
+
+    # Process results
+    for row in case_level_query:
+        if row.inspection_id:
+            all_inspection_ids.append(row.inspection_id)
+            # Only add to open_items if inspection is not closed
+            if row.inspection_status != InspectionStatusEnum.CLOSED:
+                open_items["inspections"].append(_build_inspection_item(row))
+
+        if row.complaint_id and row.complaint_id not in processed_complaints:
+            processed_complaints.add(row.complaint_id)
+            open_items["complaints"].append(_build_complaint_item(row))
+
+    # Handle complaints-only case files
+    if not all_inspection_ids:
+        _process_complaints_only(case_file_id, processed_complaints, open_items)
+
+    return all_inspection_ids
+
+
+def _build_case_level_query(case_file_id: int):
+    """Build the case file level query for all inspections and open complaints."""
+    return (
+        db.session.query(
+            InspectionModel.id.label("inspection_id"),
+            InspectionModel.ir_number,
+            InspectionModel.inspection_status,
+            ComplaintModel.id.label("complaint_id"),
+            ComplaintModel.complaint_number,
+            ComplaintModel.status.label("complaint_status"),
+        )
+        .select_from(InspectionModel)
+        .outerjoin(
+            ComplaintModel,
+            and_(
+                ComplaintModel.case_file_id == case_file_id,
+                ComplaintModel.status != ComplaintStatusEnum.CLOSED,
+                ComplaintModel.is_active.is_(True),
+                ComplaintModel.is_deleted.is_(False),
+            ),
+        )
+        .filter(
+            and_(
+                InspectionModel.case_file_id == case_file_id,
+                InspectionModel.is_active.is_(True),
+                InspectionModel.is_deleted.is_(False),
+            )
+        )
+        .all()
+    )
+
+
+def _process_complaints_only(
+    case_file_id: int, processed_complaints: set, open_items: dict
+):
+    """Handle case files that have only complaints (no inspections)."""
+    complaints_only_query = ComplaintModel.query.filter(
+        and_(
+            ComplaintModel.case_file_id == case_file_id,
+            ComplaintModel.status != ComplaintStatusEnum.CLOSED,
+            ComplaintModel.is_active.is_(True),
+            ComplaintModel.is_deleted.is_(False),
+        )
+    ).all()
+
+    for complaint in complaints_only_query:
+        if complaint.id not in processed_complaints:
+            open_items["complaints"].append(
+                _build_enforcement_item(complaint, "complaint")
+            )
+
+
+def _build_inspection_item(row) -> dict:
+    """Build inspection item following schema."""
+    status_obj = None
+    if row.inspection_status:
+        status_obj = {
+            "id": row.inspection_status.name,
+            "name": row.inspection_status.value,
+        }
+
+    return {
+        "id": row.inspection_id,
+        "inspection_id": row.inspection_id,
+        "number": row.ir_number,
+        "status": status_obj,
+    }
+
+
+def _build_complaint_item(row) -> dict:
+    """Build complaint item following schema."""
+    status_obj = None
+    if row.complaint_status:
+        status_obj = {
+            "id": row.complaint_status.name,
+            "name": row.complaint_status.value,
+        }
+
+    return {
+        "id": row.complaint_id,
+        "inspection_id": None,
+        "number": row.complaint_number,
+        "status": status_obj,
+    }
+
+
+def _process_enforcement_actions(inspection_ids: list, open_items: dict):
+    """Process all inspection-related enforcement actions."""
+    enforcement_query = _build_enforcement_query(inspection_ids)
+
+    processed_items = {
+        "orders": set(),
+        "warning_letters": set(),
+        "violation_tickets": set(),
+        "administrative_penalties": set(),
+        "charge_recommendations": set(),
+        "restorative_justice": set(),
+    }
+
+    for row in enforcement_query:
+        _process_enforcement_row(row, processed_items, open_items)
+
+
+def _build_enforcement_query(inspection_ids: list):
+    """Build the enforcement actions query with all joins."""
+    return (
+        db.session.query(
+            # Orders
+            OrderModel.id.label("order_id"),
+            OrderModel.order_number,
+            OrderModel.order_status,
+            OrderModel.inspection_id.label("order_inspection_id"),
+            # Warning Letters
+            WarningLetterModel.id.label("warning_letter_id"),
+            WarningLetterModel.warning_letter_number,
+            WarningLetterModel.progress.label("warning_letter_progress"),
+            WarningLetterModel.inspection_id.label("warning_letter_inspection_id"),
+            # Violation Tickets
+            ViolationTicketModel.id.label("violation_ticket_id"),
+            ViolationTicketModel.vt_number,
+            ViolationTicketModel.status.label("violation_ticket_status"),
+            ViolationTicketModel.inspection_id.label("violation_ticket_inspection_id"),
+            # Administrative Penalties
+            AdministrativePenaltyModel.id.label("admin_penalty_id"),
+            AdministrativePenaltyModel.administrative_penalty_number,
+            AdministrativePenaltyModel.referral_status.label(
+                "admin_penalty_referral_status"
+            ),
+            AdministrativePenaltyModel.inspection_id.label(
+                "admin_penalty_inspection_id"
+            ),
+            # Charge Recommendations
+            ChargeRecommendationModel.id.label("charge_rec_id"),
+            ChargeRecommendationModel.charge_recommendation_number,
+            ChargeRecommendationModel.status.label("charge_rec_status"),
+            ChargeRecommendationModel.inspection_id.label("charge_rec_inspection_id"),
+            # Restorative Justice
+            RestorativeJusticeModel.id.label("restorative_justice_id"),
+            RestorativeJusticeModel.restorative_justice_number,
+            RestorativeJusticeModel.status.label("restorative_justice_status"),
+            RestorativeJusticeModel.inspection_id.label(
+                "restorative_justice_inspection_id"
+            ),
+        )
+        .select_from(InspectionModel)
+        .outerjoin(
+            OrderModel,
+            and_(
+                OrderModel.inspection_id == InspectionModel.id,
+                OrderModel.order_status.notin_(
+                    [OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED]
+                ),
+                OrderModel.is_active.is_(True),
+                OrderModel.is_deleted.is_(False),
+            ),
+        )
+        .outerjoin(
+            WarningLetterModel,
+            and_(
+                WarningLetterModel.inspection_id == InspectionModel.id,
+                WarningLetterModel.progress != WarningLetterProgressEnum.ISSUED,
+                WarningLetterModel.is_active.is_(True),
+                WarningLetterModel.is_deleted.is_(False),
+            ),
+        )
+        .outerjoin(
+            ViolationTicketModel,
+            and_(
+                ViolationTicketModel.inspection_id == InspectionModel.id,
+                ViolationTicketModel.status != ViolationTicketStatusEnum.PAID,
+                ViolationTicketModel.is_active.is_(True),
+                ViolationTicketModel.is_deleted.is_(False),
+            ),
+        )
+        .outerjoin(
+            AdministrativePenaltyModel,
+            and_(
+                AdministrativePenaltyModel.inspection_id == InspectionModel.id,
+                ~or_(
+                    AdministrativePenaltyModel.referral_status
+                    == ReferralStatusEnum.CEB_NOT_PROCEEDING,
+                    and_(
+                        AdministrativePenaltyModel.referral_status
+                        == ReferralStatusEnum.REFERRED_TO_DM,
+                        AdministrativePenaltyModel.decision.isnot(None),
+                    ),
+                ),
+                AdministrativePenaltyModel.is_active.is_(True),
+                AdministrativePenaltyModel.is_deleted.is_(False),
+            ),
+        )
+        .outerjoin(
+            ChargeRecommendationModel,
+            and_(
+                ChargeRecommendationModel.inspection_id == InspectionModel.id,
+                ~or_(
+                    ChargeRecommendationModel.status
+                    == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
+                    ChargeRecommendationModel.charge_decision
+                    == ChargeDecisionEnum.NOT_PROCEEDING,
+                    ChargeRecommendationModel.sentence_date.isnot(None),
+                ),
+                ChargeRecommendationModel.is_active.is_(True),
+                ChargeRecommendationModel.is_deleted.is_(False),
+            ),
+        )
+        .outerjoin(
+            RestorativeJusticeModel,
+            and_(
+                RestorativeJusticeModel.inspection_id == InspectionModel.id,
+                RestorativeJusticeModel.status != RestorativeJusticeStatusEnum.CLOSED,
+                RestorativeJusticeModel.is_active.is_(True),
+                RestorativeJusticeModel.is_deleted.is_(False),
+            ),
+        )
+        .filter(InspectionModel.id.in_(inspection_ids))
+        .all()
+    )
+
+
+def _process_enforcement_row(row, processed_items: dict, open_items: dict):
+    """Process a single row from the enforcement query."""
+    # Process Orders
+    if row.order_id and row.order_id not in processed_items["orders"]:
+        processed_items["orders"].add(row.order_id)
+        open_items["orders"].append(_build_order_item(row))
+
+    # Process Warning Letters
+    if (
+        row.warning_letter_id
+        and row.warning_letter_id not in processed_items["warning_letters"]
+    ):
+        processed_items["warning_letters"].add(row.warning_letter_id)
+        open_items["warning_letters"].append(_build_warning_letter_item(row))
+
+    # Process Violation Tickets
+    if (
+        row.violation_ticket_id
+        and row.violation_ticket_id not in processed_items["violation_tickets"]
+    ):
+        if _is_violation_ticket_open(row):
+            processed_items["violation_tickets"].add(row.violation_ticket_id)
+            open_items["violation_tickets"].append(_build_violation_ticket_item(row))
+
+    # Process Administrative Penalties
+    if (
+        row.admin_penalty_id
+        and row.admin_penalty_id not in processed_items["administrative_penalties"]
+    ):
+        processed_items["administrative_penalties"].add(row.admin_penalty_id)
+        open_items["administrative_penalties"].append(_build_admin_penalty_item(row))
+
+    # Process Charge Recommendations
+    if (
+        row.charge_rec_id
+        and row.charge_rec_id not in processed_items["charge_recommendations"]
+    ):
+        processed_items["charge_recommendations"].add(row.charge_rec_id)
+        open_items["charge_recommendations"].append(_build_charge_rec_item(row))
+
+    # Process Restorative Justice
+    if (
+        row.restorative_justice_id
+        and row.restorative_justice_id not in processed_items["restorative_justice"]
+    ):
+        processed_items["restorative_justice"].add(row.restorative_justice_id)
+        open_items["restorative_justice"].append(_build_restorative_justice_item(row))
+
+
+def _build_order_item(row) -> dict:
+    """Build order item following schema."""
+    status_obj = None
+    if row.order_status:
+        status_obj = {"id": row.order_status.name, "name": row.order_status.value}
+
+    return {
+        "id": row.order_id,
+        "inspection_id": row.order_inspection_id,
+        "number": row.order_number,
+        "status": status_obj,
+    }
+
+
+def _build_warning_letter_item(row) -> dict:
+    """Build warning letter item following schema."""
+    status_obj = None
+    if row.warning_letter_progress:
+        status_obj = {
+            "id": row.warning_letter_progress.name,
+            "name": row.warning_letter_progress.value,
+        }
+
+    return {
+        "id": row.warning_letter_id,
+        "inspection_id": row.warning_letter_inspection_id,
+        "number": row.warning_letter_number,
+        "status": status_obj,
+    }
+
+
+def _build_violation_ticket_item(row) -> dict:
+    """Build violation ticket item following schema."""
+    status_obj = None
+    if row.violation_ticket_status:
+        status_obj = {
+            "id": row.violation_ticket_status.name,
+            "name": row.violation_ticket_status.value,
+        }
+
+    return {
+        "id": row.violation_ticket_id,
+        "inspection_id": row.violation_ticket_inspection_id,
+        "number": row.vt_number,
+        "status": status_obj,
+    }
+
+
+def _build_admin_penalty_item(row) -> dict:
+    """Build administrative penalty item following schema."""
+    status_obj = None
+    if row.admin_penalty_referral_status:
+        status_obj = {
+            "id": row.admin_penalty_referral_status.name,
+            "name": row.admin_penalty_referral_status.value,
+        }
+
+    return {
+        "id": row.admin_penalty_id,
+        "inspection_id": row.admin_penalty_inspection_id,
+        "number": row.administrative_penalty_number,
+        "status": status_obj,
+    }
+
+
+def _build_charge_rec_item(row) -> dict:
+    """Build charge recommendation item following schema."""
+    status_obj = None
+    if row.charge_rec_status:
+        status_obj = {
+            "id": row.charge_rec_status.name,
+            "name": row.charge_rec_status.value,
+        }
+
+    return {
+        "id": row.charge_rec_id,
+        "inspection_id": row.charge_rec_inspection_id,
+        "number": row.charge_recommendation_number,
+        "status": status_obj,
+    }
+
+
+def _build_restorative_justice_item(row) -> dict:
+    """Build restorative justice item following schema."""
+    status_obj = None
+    if row.restorative_justice_status:
+        status_obj = {
+            "id": row.restorative_justice_status.name,
+            "name": row.restorative_justice_status.value,
+        }
+
+    return {
+        "id": row.restorative_justice_id,
+        "inspection_id": row.restorative_justice_inspection_id,
+        "number": row.restorative_justice_number,
+        "status": status_obj,
+    }
+
+
+def _is_violation_ticket_open(row) -> bool:
+    """Check if a violation ticket is open (handles DISPUTED status logic)."""
+    if row.violation_ticket_status != ViolationTicketStatusEnum.DISPUTED:
+        return True
+
+    # For DISPUTED tickets, check for closed charge recommendations
+    vt = ViolationTicketModel.query.get(row.violation_ticket_id)
+    if not vt:
+        return False
+
+    vt_requirement_ids = [
+        vt_req.inspection_requirement_id
+        for vt_req in vt.violation_ticket_requirement_maps
+    ]
+    if not vt_requirement_ids:
+        return True
+
+    closed_charge_rec_exists = (
+        ChargeRecommendationModel.query.join(
+            ChargeRecommendationInspectionRequirementMap,
+            ChargeRecommendationModel.id
+            == ChargeRecommendationInspectionRequirementMap.charge_recommendation_id,
+        )
+        .filter(
+            and_(
+                ChargeRecommendationModel.inspection_id == vt.inspection_id,
+                ChargeRecommendationInspectionRequirementMap.inspection_requirement_id.in_(
+                    vt_requirement_ids
+                ),
+                or_(
+                    ChargeRecommendationModel.status
+                    == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
+                    ChargeRecommendationModel.charge_decision
+                    == ChargeDecisionEnum.NOT_PROCEEDING,
+                    ChargeRecommendationModel.sentence_date.isnot(None),
+                ),
+                ChargeRecommendationModel.is_active.is_(True),
+                ChargeRecommendationModel.is_deleted.is_(False),
+            )
+        )
+        .first()
+    )
+
+    return not closed_charge_rec_exists

@@ -273,3 +273,65 @@ class CaseFileFilterSchema(Schema):
         required=False,
         metadata={"description": "Sort order (asc/desc)"},
     )
+
+
+class EnforcementItemSchema(BaseSchema):
+    """Schema for individual enforcement action items."""
+
+    id = fields.Integer(required=True, metadata={"description": "Unique identifier"})
+    inspection_id = fields.Integer(
+        allow_none=True, metadata={"description": "Associated inspection ID"}
+    )
+
+    # Generic number field for all enforcement item types
+    number = fields.String(
+        allow_none=True,
+        metadata={
+            "description": "Enforcement item number (IR, complaint, order, etc.)"
+        },
+    )
+
+    # Status field as key-value object
+    status = fields.Nested(
+        KeyValueSchema, allow_none=True, metadata={"description": "Item status"}
+    )
+
+
+class CaseFileOpenItemsSchema(BaseSchema):
+    """Schema for case file open enforcement items response."""
+
+    has_open_items = fields.Boolean(
+        required=True,
+        metadata={"description": "Indicates if any open enforcement items exist"},
+    )
+    inspections = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open inspections"},
+    )
+    complaints = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open complaints"},
+    )
+    orders = fields.List(
+        fields.Nested(EnforcementItemSchema), metadata={"description": "Open orders"}
+    )
+    warning_letters = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open warning letters"},
+    )
+    violation_tickets = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open violation tickets"},
+    )
+    administrative_penalties = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open administrative penalties"},
+    )
+    charge_recommendations = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open charge recommendations"},
+    )
+    restorative_justice = fields.List(
+        fields.Nested(EnforcementItemSchema),
+        metadata={"description": "Open restorative justice items"},
+    )

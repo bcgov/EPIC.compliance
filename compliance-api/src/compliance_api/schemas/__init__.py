@@ -19,7 +19,8 @@ from .agency import AgencyCreateSchema, AgencySchema
 from .appendix import AppendixCreateSchema, AppendixSchema
 from .case_file import (
     CaseFileCreateSchema, CaseFileFilterSchema, CaseFileLinkCreateSchema, CaseFileLinkSchema, CaseFileOfficerSchema,
-    CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema, CaseFileUpdateSchema)
+    CaseFileOpenItemsSchema, CaseFileOptionSchema, CaseFileSchema, CaseFileStatusSchema, CaseFileUnlinkSchema,
+    CaseFileUpdateSchema, EnforcementItemSchema)
 from .charge_recommendation import (
     ChargeRecommendationCreateSchema, ChargeRecommendationSchema, ChargeRecommendationUpdateSchema)
 from .common import KeyValueSchema
