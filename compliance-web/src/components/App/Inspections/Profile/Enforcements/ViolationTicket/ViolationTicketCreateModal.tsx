@@ -4,7 +4,6 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useQueryClient } from "@tanstack/react-query";
 import EnforcementModal from "@/components/App/Inspections/Profile/Enforcements/EnforcementModal";
-import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import {
   baseEnforcementSchema,
   getDefaultFormValues,
