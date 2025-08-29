@@ -14,6 +14,7 @@ from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnu
 from compliance_api.models.section import Section as SectionModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.epic_track_service.track_service import TrackService
+from compliance_api.services.order.order_approval import OrderApprovalService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, UNAPPROVED_PROJECT_CODE
 from compliance_api.utils.datetime import convert_to_full_month_format
@@ -149,6 +150,9 @@ class OrderService:
             OrderModel.update_order(
                 order_id, {"is_deleted": True, "is_active": False}, session
             )
+            approvals = OrderApprovalService.get_by_order_id(order_id)
+            for approval in approvals:
+                approval.update({"is_active": False, "is_deleted": True}, session)
             OrderInspectionRequirementMapModel.delete_by_order(order_id, session)
         return order
 
