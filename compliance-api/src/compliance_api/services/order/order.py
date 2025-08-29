@@ -147,13 +147,13 @@ class OrderService:
                 f"Order cannot be deleted as it is in {order.order_progress.value} progress"
             )
         with session_scope() as session:
-            OrderModel.update_order(
-                order_id, {"is_deleted": True, "is_active": False}, session
-            )
-            approvals = OrderApprovalService.get_by_order_id(order_id)
+            approvals = OrderApprovalService.get_all_approvals(order_id)
             for approval in approvals:
                 approval.update({"is_active": False, "is_deleted": True}, session)
             OrderInspectionRequirementMapModel.delete_by_order(order_id, session)
+            OrderModel.update_order(
+                order_id, {"is_deleted": True, "is_active": False}, session
+            )
         return order
 
     @classmethod

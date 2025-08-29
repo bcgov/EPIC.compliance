@@ -15,8 +15,8 @@ from compliance_api.models.warning_letter import \
 from compliance_api.models.warning_letter import WarningLetterProgressEnum, WarningLetterStatusEnum
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
 from compliance_api.services.warning_letter.warning_letter_template_constant import WARNING_LETTER_CONTENT
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, UNAPPROVED_PROJECT_CODE
 from compliance_api.utils.datetime import convert_to_full_month_format
@@ -140,18 +140,18 @@ class WarningLetterService:
         if warning_letter.status == WarningLetterStatusEnum.ISSUED:
             raise UnprocessableEntityError("Warning letter is in ISSUED status.")
         with session_scope() as session:
-            WarningLetterModel.update_warning_letter(
-                warning_letter_id,
-                {"is_active": False, "is_deleted": True},
-                session,
-            )
-            approvals = WarningLetterApprovalService.get_by_warning_letter_id(
+            approvals = WarningLetterApprovalService.get_all_approvals(
                 warning_letter_id
             )
             for approval in approvals:
                 approval.update({"is_active": False, "is_deleted": True}, session)
             WarningLetterInspectionRequirementMapModel.delete_by_warning_letter(
                 warning_letter_id, session
+            )
+            WarningLetterModel.update_warning_letter(
+                warning_letter_id,
+                {"is_active": False, "is_deleted": True},
+                session,
             )
 
     @classmethod
