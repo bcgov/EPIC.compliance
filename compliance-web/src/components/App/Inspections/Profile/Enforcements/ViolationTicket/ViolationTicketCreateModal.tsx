@@ -4,13 +4,13 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useQueryClient } from "@tanstack/react-query";
 import EnforcementModal from "@/components/App/Inspections/Profile/Enforcements/EnforcementModal";
+import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import {
   baseEnforcementSchema,
   getDefaultFormValues,
   ENFORCEMENT_MESSAGES,
   BaseEnforcementFormType,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
-import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { useCreateViolationTicket } from "@/hooks/useViolationTickets";
 import {
   ViolationTicket,
@@ -34,6 +34,7 @@ const ViolationTicketFormFields = () => {
       placeholder="Enter ticket number"
       type="text"
       fullWidth
+      isRequired={true}
       sx={{ mt: 2 }}
     />
   );
@@ -89,22 +90,29 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
   const { mutate: createViolationTicket, isPending: isPendingViolationTicket } =
     useCreateViolationTicket(onSuccess);
 
+
+
   const handleBaseSubmit = useCallback(
-    (data: BaseEnforcementFormType) => {
-      // Get the ticket number from the form context since EnforcementModal only handles base schema
-      const ticketNumber = methods.getValues("ticket_number") || "";
+    (data: BaseEnforcementFormType, additionalData?: Record<string, any>) => {
+      const ticketNumber = additionalData?.ticket_number || "";
+      
+
+      if (!ticketNumber || ticketNumber.trim() === "") {
+        notify.error("Ticket Number is required");
+        return;
+      }
       
       const violationTicketData: ViolationTicketAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids: (data.requirements as InspectionRequirement[]).map((requirement) => requirement.id),
-        ticket_number: ticketNumber,
+        ticket_number: ticketNumber.trim(),
       };
 
       createViolationTicket({
         violationTicket: violationTicketData,
       });
     },
-    [createViolationTicket, inspectionData, methods]
+    [createViolationTicket, inspectionData]
   );
 
   return (
