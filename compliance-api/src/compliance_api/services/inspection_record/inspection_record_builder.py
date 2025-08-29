@@ -110,15 +110,19 @@ class InspectionRecordDataBuilder:
 
     def build_officer_details(self):
         """Build the officer details for the inspection record."""
+        record_prepared_by = (
+            self.existing_ir.record_prepared_by if self.existing_ir
+            else self.inspection.primary_officer
+        )
         self.data["officer_details"] = {
             "primary_officer": {
                 "name": f"{self.inspection.primary_officer.first_name} {self.inspection.primary_officer.last_name}",
                 "position": self.inspection.primary_officer.position.name,
             },
             "record_prepared_by": {
-                "name": f"{self.existing_ir.record_prepared_by.first_name} "
-                f"{self.existing_ir.record_prepared_by.last_name}",
-                "position": self.existing_ir.record_prepared_by.position.name,
+                "name": f"{record_prepared_by.first_name} "
+                f"{record_prepared_by.last_name}",
+                "position": record_prepared_by.position.name,
             },
         }
 

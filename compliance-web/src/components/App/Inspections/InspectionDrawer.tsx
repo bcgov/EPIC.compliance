@@ -56,7 +56,6 @@ const initFormData: InspectionFormData = {
   inAttendance: [],
   agencies: [],
   firstNations: [],
-  municipal: "",
   other: "",
   projectDescription: "",
   locationDescription: "",
@@ -138,11 +137,6 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
             (item) =>
               item.attendance_option_id === Number(AttendanceEnum.FIRST_NATIONS)
           )?.data as FirstNation[]) ?? [],
-        municipal:
-          (inspection.inspectionAttendances?.find(
-            (item) =>
-              item.attendance_option_id === Number(AttendanceEnum.MUNICIPAL)
-          )?.data as string) ?? "",
         other:
           (inspection.inspectionAttendances?.find(
             (item) => item.attendance_option_id === Number(AttendanceEnum.OTHER)

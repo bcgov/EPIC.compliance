@@ -11,6 +11,7 @@ import {
   ENFORCEMENT_MESSAGES,
   BaseEnforcementFormType,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
+import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { useCreateViolationTicket } from "@/hooks/useViolationTickets";
 import {
   ViolationTicket,
@@ -112,7 +113,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         violationTicket: violationTicketData,
       });
     },
-    [createViolationTicket, inspectionData]
+    [createViolationTicket, inspectionData, methods]
   );
 
   return (

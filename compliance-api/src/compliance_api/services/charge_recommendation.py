@@ -7,7 +7,6 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.charge_recommendation import (
     ChargeRecommendation, ChargeRecommendationInspectionRequirementMap)
 from compliance_api.models.db import session_scope
-
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.services.service_utils import ServiceUtils
 

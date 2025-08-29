@@ -29,9 +29,12 @@ from compliance_api.models import IRStatusOption as IRStatusOptionModel
 from compliance_api.models import Order as OrderModel
 from compliance_api.models import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models import OrderProgressEnum
+from compliance_api.models import ViolationTicket as ViolationTicketModel
 from compliance_api.models import WarningLetter as WarningLetterModel
 from compliance_api.models import db
+from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.case_file import CaseFile
+from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
@@ -39,6 +42,7 @@ from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
 from compliance_api.models.project import Project as ProjectModel
+from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
@@ -78,16 +82,30 @@ class InspectionService:
 
     @classmethod
     def get_inspection_details(cls, case_file_id):
-        """Get inspection details."""
+        """Get inspection details with optimized bulk fetching."""
         inspections = InspectionModel.get_by_params({"case_file_id": case_file_id})
+
+        if not inspections:
+            return []
+
+        # Get all inspection IDs for bulk fetching enforcement actions
+        inspection_ids = [inspection.id for inspection in inspections]
+
+        # Bulk fetch all enforcement actions for all inspections
+        enforcement_actions_data = _bulk_fetch_enforcement_actions(inspection_ids)
+
+        # Process each inspection
         for inspection in inspections:
-            requirement_details = []
-            orders = OrderModel.get_by_inspection_id(inspection.id)
-            warning_letters = WarningLetterModel.get_by_inspection_id(inspection.id)
             requirements = inspection.inspection_requirements or []
-            requirement_details = _make_requirement_detail_object(
-                requirements, orders, warning_letters
-            )
+            enforcement_actions = enforcement_actions_data.get(inspection.id, {
+                'orders': [],
+                'warning_letters': [],
+                'violation_tickets': [],
+                'administrative_penalties': [],
+                'charge_recommendations': [],
+                'restorative_justice': []
+            })
+            requirement_details = _make_requirement_detail_object(requirements, enforcement_actions)
             setattr(inspection, "requirement_details", requirement_details)
         return inspections
 
@@ -507,9 +525,7 @@ def _make_inspection_object(inspections):
     return results
 
 
-def _make_requirement_detail_object(
-    requirements: list, orders: list, warning_letters: list
-):
+def _make_requirement_detail_object(requirements: list, enforcement_actions: dict):
     """Make requirement detail object."""
     requirement_details = []
     for requirement in requirements:
@@ -545,13 +561,42 @@ def _make_requirement_detail_object(
             action_type = EnforcementActionOptionEnum(action.enforcement_action_id)
             if action_type == EnforcementActionOptionEnum.ORDER:
                 item["enforcement_action"] = _set_order_enforcement_action_object(
-                    item["enforcement_action"], orders, requirement
+                    item["enforcement_action"], enforcement_actions.get('orders', []), requirement
                 )
 
             elif action_type == EnforcementActionOptionEnum.WARNING_LETTER:
                 item["enforcement_action"] = (
                     _set_warning_letter_enforcement_action_object(
-                        item["enforcement_action"], warning_letters, requirement
+                        item["enforcement_action"], enforcement_actions.get('warning_letters', []), requirement
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.VIOLATION_TICKET:
+                item["enforcement_action"] = (
+                    _set_violation_ticket_enforcement_action_object(
+                        item["enforcement_action"], enforcement_actions.get('violation_tickets', []), requirement
+                    )
+                )
+            elif (
+                action_type
+                == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION
+            ):
+                item["enforcement_action"] = (
+                    _set_administrative_penalty_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions.get('administrative_penalties', []),
+                        requirement,
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION:
+                item["enforcement_action"] = (
+                    _set_charge_recommendation_enforcement_action_object(
+                        item["enforcement_action"], enforcement_actions.get('charge_recommendations', []), requirement
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE:
+                item["enforcement_action"] = (
+                    _set_restorative_justice_enforcement_action_object(
+                        item["enforcement_action"], enforcement_actions.get('restorative_justice', []), requirement
                     )
                 )
             requirement_details.append(item)
@@ -575,15 +620,19 @@ def _set_warning_letter_enforcement_action_object(
     ]
     if requirement_warning_letters:
         warning_letter = requirement_warning_letters[0]
+        enforcement_action["progress"] = {
+            "id": warning_letter.progress.name,
+            "name": warning_letter.progress.value,
+        }
+        enforcement_action["status"] = {
+            "id": warning_letter.status.name,
+            "name": warning_letter.status.value,
+        }
         if warning_letter.warning_letter_approvals:
             approval_status = warning_letter.warning_letter_approvals[0].approval_status
             enforcement_action["approval_status"] = {
                 "id": approval_status.name,
                 "name": approval_status.value,
-            }
-            enforcement_action["progress"] = {
-                "id": warning_letter.progress.name,
-                "name": warning_letter.progress.value,
             }
             enforcement_action["number"] = warning_letter.warning_letter_number
     return enforcement_action
@@ -602,19 +651,84 @@ def _set_order_enforcement_action_object(
             for req_map in order.order_requirement_maps
         ]
     ]
-    if requirement_orders and requirement_orders[0].order_approvals:
+    if requirement_orders:
         order = requirement_orders[0]
+        enforcement_action["progress"] = {
+            "id": order.order_progress.name,
+            "name": order.order_progress.value,
+        }
+        enforcement_action["status"] = {
+            "id": order.order_status.name,
+            "name": order.order_status.value,
+        }
         if order.order_approvals:
             approval_status = order.order_approvals[0].approval_status
             enforcement_action["approval_status"] = {
                 "id": approval_status.name,
                 "name": approval_status.value,
             }
-            enforcement_action["progress"] = {
-                "id": order.order_progress.name,
-                "name": order.order_progress.value,
-            }
             enforcement_action["number"] = order.order_number
+    return enforcement_action
+
+
+def _set_violation_ticket_enforcement_action_object(
+    enforcement_action: dict,
+    violation_tickets: list,
+    requirement: InspectionRequirementModel,
+):
+    """Make violation ticket detail object."""
+    requirement_violation_tickets = [
+        violation_ticket
+        for violation_ticket in violation_tickets
+        if requirement.id
+        in [
+            req_map.inspection_requirement_id
+            for req_map in violation_ticket.violation_ticket_requirement_maps
+        ]
+    ]
+    if requirement_violation_tickets:
+        violation_ticket = requirement_violation_tickets[0]
+        enforcement_action["status"] = (
+            {
+                "id": violation_ticket.status.name,
+                "name": violation_ticket.status.value,
+            }
+            if violation_ticket.status
+            else None
+        )
+        enforcement_action["number"] = violation_ticket.vt_number
+    return enforcement_action
+
+
+def _set_administrative_penalty_enforcement_action_object(
+    enforcement_action: dict,
+    administrative_penalties: list,
+    requirement: InspectionRequirementModel,
+):
+    """Make administrative penalty detail object."""
+    requirement_administrative_penalties = [
+        administrative_penalty
+        for administrative_penalty in administrative_penalties
+        if requirement.id
+        in [
+            req_map.inspection_requirement_id
+            for req_map in administrative_penalty.administrative_penalty_requirement_maps
+        ]
+    ]
+    if requirement_administrative_penalties:
+        administrative_penalty = requirement_administrative_penalties[0]
+        # Use referral status as status
+        enforcement_action["status"] = (
+            {
+                "id": administrative_penalty.referral_status.name,
+                "name": administrative_penalty.referral_status.value,
+            }
+            if administrative_penalty.referral_status
+            else None
+        )
+        enforcement_action["number"] = (
+            administrative_penalty.administrative_penalty_number
+        )
     return enforcement_action
 
 
@@ -1038,3 +1152,269 @@ def _get_project_abbreviation(
         project = TrackService.get_project_by_id(project_id)
         return project.get("abbreviation")
     return UNAPPROVED_PROJECT_CODE
+
+
+def _set_charge_recommendation_enforcement_action_object(
+    enforcement_action: dict,
+    charge_recommendations: list,
+    requirement: InspectionRequirementModel,
+):
+    """Make charge recommendation detail object."""
+    requirement_charge_recommendations = [
+        cr
+        for cr in charge_recommendations
+        if any(
+            cr_map.inspection_requirement_id == requirement.id
+            for cr_map in cr.charge_recommendation_requirement_maps
+        )
+    ]
+
+    if requirement_charge_recommendations:
+        charge_recommendation = requirement_charge_recommendations[0]
+        enforcement_action["status"] = (
+            {
+                "id": charge_recommendation.status.name,
+                "name": charge_recommendation.status.value,
+            }
+            if charge_recommendation.status
+            else None
+        )
+        enforcement_action["number"] = (
+            charge_recommendation.charge_recommendation_number
+        )
+
+    return enforcement_action
+
+
+def _set_restorative_justice_enforcement_action_object(
+    enforcement_action: dict,
+    restorative_justice: list,
+    requirement: InspectionRequirementModel,
+):
+    """Make restorative justice detail object."""
+    requirement_restorative_justice = [
+        rj
+        for rj in restorative_justice
+        if any(
+            rj_map.inspection_requirement_id == requirement.id
+            for rj_map in rj.restorative_justice_requirement_maps
+        )
+    ]
+
+    if requirement_restorative_justice:
+        restorative_justice_item = requirement_restorative_justice[0]
+        enforcement_action["status"] = (
+            {
+                "id": restorative_justice_item.status.name,
+                "name": restorative_justice_item.status.value,
+            }
+            if restorative_justice_item.status
+            else None
+        )
+        enforcement_action["number"] = restorative_justice_item.restorative_justice_number
+
+    return enforcement_action
+
+
+def _bulk_fetch_enforcement_actions(inspection_ids):
+    """Bulk fetch all enforcement actions for multiple inspections."""
+    enforcement_data = {}
+
+    # Initialize data structure for each inspection
+    for inspection_id in inspection_ids:
+        enforcement_data[inspection_id] = {
+            "orders": [],
+            "warning_letters": [],
+            "violation_tickets": [],
+            "administrative_penalties": [],
+            "charge_recommendations": [],
+            "restorative_justice": [],
+        }
+
+    # Bulk fetch each enforcement action type
+    if inspection_ids:
+        # Orders
+        orders = (
+            db.session.query(OrderModel)
+            .filter(
+                and_(
+                    OrderModel.inspection_id.in_(inspection_ids),
+                    OrderModel.is_active.is_(True),
+                    OrderModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for order in orders:
+            enforcement_data[order.inspection_id]["orders"].append(order)
+
+        # Warning Letters
+        warning_letters = (
+            db.session.query(WarningLetterModel)
+            .filter(
+                and_(
+                    WarningLetterModel.inspection_id.in_(inspection_ids),
+                    WarningLetterModel.is_active.is_(True),
+                    WarningLetterModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for warning_letter in warning_letters:
+            enforcement_data[warning_letter.inspection_id]["warning_letters"].append(warning_letter)
+
+        # Violation Tickets
+        violation_tickets = (
+            db.session.query(ViolationTicketModel)
+            .filter(
+                and_(
+                    ViolationTicketModel.inspection_id.in_(inspection_ids),
+                    ViolationTicketModel.is_active.is_(True),
+                    ViolationTicketModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for violation_ticket in violation_tickets:
+            enforcement_data[violation_ticket.inspection_id]["violation_tickets"].append(violation_ticket)
+
+        # Administrative Penalties
+        admin_penalties = (
+            db.session.query(AdministrativePenaltyModel)
+            .filter(
+                and_(
+                    AdministrativePenaltyModel.inspection_id.in_(inspection_ids),
+                    AdministrativePenaltyModel.is_active.is_(True),
+                    AdministrativePenaltyModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for admin_penalty in admin_penalties:
+            enforcement_data[admin_penalty.inspection_id]["administrative_penalties"].append(admin_penalty)
+
+        # Charge Recommendations
+        charge_recommendations = (
+            db.session.query(ChargeRecommendationModel)
+            .filter(
+                and_(
+                    ChargeRecommendationModel.inspection_id.in_(inspection_ids),
+                    ChargeRecommendationModel.is_active.is_(True),
+                    ChargeRecommendationModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for charge_recommendation in charge_recommendations:
+            enforcement_data[charge_recommendation.inspection_id]["charge_recommendations"].append(
+                charge_recommendation
+            )
+
+        # Restorative Justice
+        restorative_justice_items = (
+            db.session.query(RestorativeJusticeModel)
+            .filter(
+                and_(
+                    RestorativeJusticeModel.inspection_id.in_(inspection_ids),
+                    RestorativeJusticeModel.is_active.is_(True),
+                    RestorativeJusticeModel.is_deleted.is_(False),
+                )
+            )
+            .all()
+        )
+        for restorative_justice_item in restorative_justice_items:
+            enforcement_data[restorative_justice_item.inspection_id]["restorative_justice"].append(
+                restorative_justice_item
+            )
+
+    return enforcement_data
+
+
+def _make_requirement_detail_object_optimized(
+    requirements: list, enforcement_actions_data: dict
+):
+    """Make requirement detail object using pre-fetched enforcement actions data."""
+    requirement_details = []
+    for requirement in requirements:
+        if not requirement.enforcement_actions:
+            continue
+
+        for action in requirement.enforcement_actions:
+            item = {
+                "requirement_id": requirement.id,
+                "requirement_summary": requirement.summary,
+                "requirement_sort_order": requirement.sort_order,
+                "enforcement_action": {
+                    "id": EnforcementActionOptionModel.find_by_id(
+                        action.enforcement_action_id
+                    ).id,
+                    "name": EnforcementActionOptionModel.find_by_id(
+                        action.enforcement_action_id
+                    ).name,
+                },
+            }
+            if requirement.requirement_source_details:
+                first_requirement_details = requirement.requirement_source_details[0]
+                number_field = ServiceUtils.get_requirement_source_number_field(
+                    first_requirement_details
+                )
+                item["requirement_number"] = (
+                    number_field.split(" ")[1] if number_field else None
+                )
+                item["requirement_source_name"] = (
+                    first_requirement_details.requirement_source.name
+                )
+
+            action_type = EnforcementActionOptionEnum(action.enforcement_action_id)
+            if action_type == EnforcementActionOptionEnum.ORDER:
+                item["enforcement_action"] = _set_order_enforcement_action_object(
+                    item["enforcement_action"],
+                    enforcement_actions_data.get("orders", []),
+                    requirement,
+                )
+
+            elif action_type == EnforcementActionOptionEnum.WARNING_LETTER:
+                item["enforcement_action"] = (
+                    _set_warning_letter_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions_data.get("warning_letters", []),
+                        requirement,
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.VIOLATION_TICKET:
+                item["enforcement_action"] = (
+                    _set_violation_ticket_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions_data.get("violation_tickets", []),
+                        requirement,
+                    )
+                )
+            elif (
+                action_type
+                == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION
+            ):
+                item["enforcement_action"] = (
+                    _set_administrative_penalty_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions_data.get("administrative_penalties", []),
+                        requirement,
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION:
+                item["enforcement_action"] = (
+                    _set_charge_recommendation_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions_data.get("charge_recommendations", []),
+                        requirement,
+                    )
+                )
+            elif action_type == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE:
+                item["enforcement_action"] = (
+                    _set_restorative_justice_enforcement_action_object(
+                        item["enforcement_action"],
+                        enforcement_actions_data.get("restorative_justice", []),
+                        requirement,
+                    )
+                )
+            requirement_details.append(item)
+    return requirement_details
