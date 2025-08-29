@@ -10,7 +10,7 @@ from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models.order import OrderProgressEnum, OrderStatusEnum
+from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
 from compliance_api.models.section import Section as SectionModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.service_utils import ServiceUtils
@@ -106,7 +106,7 @@ class OrderService:
     @classmethod
     def update_order(cls, order_id: int, update_data: dict) -> OrderModel:
         """Update an existing order."""
-        ServiceUtils.order_exist_check(order_id)
+        order = ServiceUtils.order_exist_check(order_id)
         inspection = ServiceUtils.inspection_exist_check(
             inspection_id=update_data.get("inspection_id")
         )
@@ -117,7 +117,7 @@ class OrderService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.ORDER.value
         )
-        if OrderModel.does_order_exists_by_requirement_ids(requirement_ids, order_id):
+        if OrderModel.does_order_exists_by_requirement_ids(requirement_ids, order):
             raise UnprocessableEntityError(
                 "Order already exists for these requirements."
             )
@@ -213,14 +213,29 @@ class OrderService:
         )
         ServiceUtils.access_check_update_for_inspection(inspection)
         ServiceUtils.inspection_status_check(inspection)
-        OrderModel.update_order(
-            order_id,
-            {
+        with session_scope() as session:
+            update_data = {
                 "order_status": OrderStatusEnum.OPEN,
                 "order_progress": OrderProgressEnum.ISSUED,
                 "date_issued": issue.get("date_issued"),
-            },
-        )
+            }
+            # If the order is a replacement, update the replacement status in the current
+            # order and mark the status as REPLACED in the original order
+            if order.order_replace_status == OrderReplaceStatusEnum.REPLACEMENT:
+                update_data["order_replace_status"] = OrderReplaceStatusEnum.ORIGINAL
+                OrderModel.update_order(
+                    order.replacement_for_order_id,
+                    {
+                        "order_replace_status": OrderReplaceStatusEnum.REPLACED,
+                        "order_status": OrderStatusEnum.RESCINDED,
+                    },
+                    session,
+                )
+            OrderModel.update_order(
+                order_id,
+                update_data,
+                session,
+            )
         return order
 
     @classmethod
@@ -284,6 +299,89 @@ class OrderService:
         updated_order = OrderModel.update_order(order_id, update_data)
 
         return updated_order
+
+    @classmethod
+    def replace_order(cls, order_id: int, replace_data: dict = None) -> OrderModel:
+        """Create a replacement order by duplicating an existing order.
+
+        Args:
+            order_id: The ID of the order to replace
+            replace_data: Optional dict containing replacement_order_number
+
+        Returns:
+            OrderModel: The new replacement order
+
+        Raises:
+            ResourceNotFoundError: If the order is not found
+            UnprocessableEntityError: If the order cannot be replaced
+        """
+        replace_data = replace_data or {}
+
+        # Get the original order
+        original_order = ServiceUtils.order_exist_check(order_id)
+        inspection = ServiceUtils.inspection_exist_check(
+            inspection_id=original_order.inspection_id
+        )
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        ServiceUtils.inspection_status_check(inspection)
+
+        # Check if the original order can be replaced
+        if original_order.order_replace_status == OrderReplaceStatusEnum.REPLACED:
+            raise UnprocessableEntityError("Order has already been replaced")
+        if original_order.order_replace_status == OrderReplaceStatusEnum.REPLACEMENT:
+            raise UnprocessableEntityError(
+                "Cannot replace a replacement order. Replace the original order instead."
+            )
+
+        # Check if a replacement order already exists for this inspection
+        if OrderModel.has_replacement_order(order_id):
+            raise UnprocessableEntityError(
+                "A replacement order already exists for this order"
+            )
+
+        # Get the inspection requirements associated with the original order
+        requirement_maps = OrderInspectionRequirementMapModel.get_by_order_id(order_id)
+        requirement_ids = [req.inspection_requirement_id for req in requirement_maps]
+
+        # Use provided order number or generate a new one
+        new_order_number = replace_data.get("replacement_order_number")
+        if not new_order_number:
+            new_order_number = _create_order_number(
+                inspection.case_file.project_id, inspection.case_file.id
+            )
+
+        # Check if the provided order number already exists
+        if new_order_number and OrderModel.get_by_order_number(new_order_number):
+            raise UnprocessableEntityError(
+                f"Order number '{new_order_number}' already exists"
+            )
+
+        # Create the replacement order data
+        replacement_order_data = {
+            "order_number": new_order_number,
+            "inspection_id": original_order.inspection_id,
+            "issuing_officer_id": original_order.issuing_officer_id,
+            "section_id": original_order.section_id,
+            "where_as": original_order.where_as,
+            "now_therefore": original_order.now_therefore,
+            "intended_issuance_date": original_order.intended_issuance_date,
+            "replacement_for_order_id": original_order.id,
+            "order_status": OrderStatusEnum.CREATED,
+            "order_progress": OrderProgressEnum.DRAFTING,
+            "order_replace_status": OrderReplaceStatusEnum.REPLACEMENT,
+        }
+
+        with session_scope() as session:
+            # Create the replacement order
+            replacement_order = OrderModel.create(replacement_order_data, session)
+
+            # Copy the inspection requirements to the new order
+            if requirement_ids:
+                OrderInspectionRequirementMapModel.bulk_insert(
+                    replacement_order.id, requirement_ids, session
+                )
+
+        return replacement_order
 
 
 def _create_order_data(inspection, order):

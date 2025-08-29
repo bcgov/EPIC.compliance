@@ -94,6 +94,7 @@ API.add_namespace(INSPECTION_API)
 API.add_namespace(PROJECT_STATUS_API)
 API.add_namespace(TOPIC_API)
 API.add_namespace(COMPLAINT_API)
+
 API.add_namespace(REQUIREMENT_SOURCE_API)
 API.add_namespace(CONTINUATION_REPORT_API)
 API.add_namespace(ENFORCEMENT_ACTION_API)

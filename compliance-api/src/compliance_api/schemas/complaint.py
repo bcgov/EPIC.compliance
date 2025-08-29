@@ -77,7 +77,9 @@ class ContactCreateSchema(BaseSchema):
     full_name = fields.Str(
         metadata={"description": "The full name of the contact person"}, allow_none=True
     )
-
+    title = fields.Str(
+        metadata={"description": "The title of the contact person"}, allow_none=True
+    )
     email = fields.Str(
         metadata={"description": "The email address of the contact person"},
         allow_none=True,
@@ -214,6 +216,8 @@ class ComplaintSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     requirement_source = fields.Nested(KeyValueSchema)
     topic = fields.Nested(KeyValueSchema)
     requirement_detail = fields.Nested(RequirementSourceDetailSchema)
+    resolution = fields.Nested(KeyValueSchema)
+    resolution_agency = fields.Nested(KeyValueSchema)
 
     @post_dump
     def post_dump_actions(
@@ -276,6 +280,12 @@ class ComplaintFilterSchema(BaseSchema):
         metadata={"description": "Filter by case file ID"},
         required=False,
     )
+    resolution_ids = fields.Str(
+        metadata={
+            "description": "Filter by resolution ID(s). Can be a single value or comma-separated list"
+        },
+        required=False,
+    )
     page_no = fields.Int(
         metadata={"description": "Page number for pagination"},
         required=False,
@@ -299,7 +309,16 @@ class ComplaintFilterSchema(BaseSchema):
 
 
 class ComplaintStatusSchema(BaseSchema):
-    """ComplaintStatusSchema."""
+    """Schema for changing complaint status.
+
+    When status is 'Closed':
+    - resolution_id: Required if you want to specify a resolution
+    - resolution_agency_id: Optional, used when resolution type is AGENCY
+
+    When status is 'Open':
+    - Both resolution fields are automatically cleared
+    - No need to provide these fields in the request
+    """
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Exclude unknown fields in the deserialized output."""
@@ -310,6 +329,21 @@ class ComplaintStatusSchema(BaseSchema):
         ComplaintStatusEnum,
         metadata={"description": "The status of the complaint"},
         required=True,
+    )
+    resolution_id = fields.Int(
+        metadata={
+            "description": """Provide resolution id when changing status to 'Closed'.
+            This field will be automatically cleared when status is changed to 'Open'.""",
+        },
+        allow_none=True,
+    )
+    resolution_agency_id = fields.Int(
+        metadata={
+            "description": """Provide agency id when changing status to 'Closed' and
+            resolution type is AGENCY. This field will be automatically cleared when
+            status is changed to 'Open'.""",
+        },
+        allow_none=True,
     )
 
     @post_load

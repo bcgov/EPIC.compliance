@@ -40,6 +40,9 @@ class ComplaintSourceContact(BaseModelVersioned):
     phone = Column(
         EncryptedType(), nullable=True, comment="The phone number of the contact person"
     )
+    title = Column(
+        EncryptedType(), nullable=True, comment="The title of the complaint source"
+    )
     comment = Column(EncryptedType(), nullable=True, comment="The comments")
     complaint = relationship(
         "Complaint",

@@ -13,10 +13,15 @@ import {
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { MRT_TableState, MRT_SortingState } from "material-react-table";
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+  MRT_TableState,
+  MRT_SortingState,
+  MRT_TableInstance,
+} from "material-react-table";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import InspectionsGridPagination from "@/components/App/Inspections/InspectionsGrid/InspectionsGridPagination";
+import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
   useInspectionsGridColumns,
@@ -215,85 +220,21 @@ export function Inspections() {
   const { data, isLoading } = useInspectionsData(queryParams);
   const inspectionsList = useMemo(() => data?.items ?? [], [data]);
 
-  const handlePaginationChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<Inspection>["pagination"]
-        | ((
-            old: MRT_TableState<Inspection>["pagination"]
-          ) => MRT_TableState<Inspection>["pagination"])
-    ) => {
-      setPagination(updater);
-    },
-    []
-  );
-
-  const handleSortingChange = useCallback(
-    (
-      updater: MRT_SortingState | ((old: MRT_SortingState) => MRT_SortingState)
-    ) => {
-      const newSorting =
-        typeof updater === "function" ? updater(sorting) : updater;
-
-      // Only reset pagination if sorting actually changed
-      const sortingChanged =
-        JSON.stringify(newSorting) !== JSON.stringify(sorting);
-
-      setSorting(updater);
-
-      if (sortingChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [sorting]
-  );
-
-  const handleColumnFiltersChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<Inspection>["columnFilters"]
-        | ((
-            old: MRT_TableState<Inspection>["columnFilters"]
-          ) => MRT_TableState<Inspection>["columnFilters"])
-    ) => {
-      const newFilters =
-        typeof updater === "function" ? updater(columnFilters) : updater;
-
-      // Only reset pagination if filters actually changed
-      const filtersChanged =
-        JSON.stringify(newFilters) !== JSON.stringify(columnFilters);
-
-      setColumnFilters(updater);
-
-      if (filtersChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [columnFilters]
-  );
-
-  const handleGlobalFilterChange = useCallback(
-    (
-      updater:
-        | MRT_TableState<Inspection>["globalFilter"]
-        | ((
-            old: MRT_TableState<Inspection>["globalFilter"]
-          ) => MRT_TableState<Inspection>["globalFilter"])
-    ) => {
-      const newGlobalFilter =
-        typeof updater === "function" ? updater(globalFilter) : updater;
-
-      // Only reset pagination if global filter actually changed
-      const globalFilterChanged = newGlobalFilter !== globalFilter;
-
-      setGlobalFilter(updater);
-
-      if (globalFilterChanged) {
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-    },
-    [globalFilter]
-  );
+  // Use the custom hook for table handlers
+  const {
+    handlePaginationChange,
+    handleSortingChange,
+    handleColumnFiltersChange,
+    handleGlobalFilterChange,
+  } = useTableHandlers({
+    sorting,
+    columnFilters,
+    globalFilter,
+    setSorting,
+    setColumnFilters,
+    setGlobalFilter,
+    setPagination,
+  });
 
   // Use the extracted utility function for columns
   const columns = useInspectionsGridColumns({
@@ -337,7 +278,11 @@ export function Inspections() {
       enableSorting={true}
       enablePagination={false}
       hideFilterToggle={true}
-      renderTopToolbarCustomActions={({ table }) => (
+      renderTopToolbarCustomActions={({
+        table,
+      }: {
+        table: MRT_TableInstance<Inspection>;
+      }) => (
         <Box
           sx={{
             display: "flex",

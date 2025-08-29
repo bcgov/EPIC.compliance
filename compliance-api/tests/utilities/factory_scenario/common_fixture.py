@@ -118,12 +118,19 @@ def created_staff(mocker):
     return new_user
 
 
+# Global counter for unique case file numbers
+_case_file_counter = 0
+
+
 @pytest.fixture
 def created_case_file(created_staff):
     """Create a case file for testing."""
+    global _case_file_counter
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["primary_officer_id"] = created_staff.id
-    case_file_data["case_file_number"] = f"CF{fake.random_number(digits=4)}{int(datetime.now().timestamp())}"
+    # Use a counter to ensure unique case file numbers
+    _case_file_counter += 1
+    case_file_data["case_file_number"] = f"CF{_case_file_counter:04d}"
     case_file = CaseFileModel.create_case_file(case_file_data)
     return case_file
 

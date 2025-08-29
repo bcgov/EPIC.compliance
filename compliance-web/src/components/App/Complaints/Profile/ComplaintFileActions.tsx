@@ -11,6 +11,7 @@ import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import React, { useCallback } from "react";
+import CloseComplaintModal from "@/components/App/Complaints/Profile/CloseComplaintModal";
 
 interface ComplaintFileActionsProps {
   status: string;
@@ -70,16 +71,9 @@ const ComplaintFileActions: React.FC<ComplaintFileActionsProps> = ({
         // Handle closing complaint
         setOpen({
           content: (
-            <ConfirmationModal
-              title="Close Complaint?"
-              description="Are you sure you want to close this complaint? This action cannot be undone without reopening the complaint."
-              confirmButtonText="Close Complaint"
-              onConfirm={() => {
-                updateComplaintStatus({
-                  id: complaintData?.id ?? 0,
-                  complaintStatus: { status: "CLOSED" },
-                });
-              }}
+            <CloseComplaintModal
+              complaintData={complaintData ?? ({} as Complaint)}
+              onUpdateStatusSuccess={onUpdateStatusSuccess}
             />
           ),
         });

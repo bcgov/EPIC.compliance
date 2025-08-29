@@ -12,6 +12,7 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintReqOrderDetail as ComplaintReqOrderDetailModel
 from compliance_api.models.complaint import ComplaintRequirementSourceEnum
+from compliance_api.models.complaint import ComplaintResolution as ComplaintResolutionModel
 from compliance_api.models.complaint import ComplaintSource as ComplaintSourceModel
 from compliance_api.models.complaint import ComplaintSourceContact as ComplaintSourceContactModel
 from compliance_api.models.complaint import ComplaintStatusEnum
@@ -33,6 +34,11 @@ class ComplaintService:
     def get_complaint_sources(cls):
         """Get complaint sources."""
         return ComplaintSourceModel.get_all(sort_by="sort_order")
+
+    @classmethod
+    def get_complaint_resolutions(cls):
+        """Get complaint resolutions."""
+        return ComplaintResolutionModel.get_all(sort_by="sort_order")
 
     @classmethod
     def get_all(cls):
@@ -176,7 +182,99 @@ class ComplaintService:
                 f"The complaint is already in {status_enum.value} status."
             )
 
-        ComplaintModel.change_status(complaint_id, status_enum)
+        # Prepare update data
+        update_data = {"status": status_enum}
+
+        if status_enum == ComplaintStatusEnum.CLOSED:
+            # When closing, set resolution fields if provided
+            if "resolution_id" in status_data:
+                update_data["resolution_id"] = status_data.get("resolution_id")
+            if "resolution_agency_id" in status_data:
+                update_data["resolution_agency_id"] = status_data.get("resolution_agency_id")
+        elif status_enum == ComplaintStatusEnum.OPEN:
+            # When opening, clear resolution fields
+            update_data["resolution_id"] = None
+            update_data["resolution_agency_id"] = None
+
+        ComplaintModel.change_status(complaint_id, update_data)
+
+    @classmethod
+    def get_complaints_paginated(cls, args):
+        """Get paginated complaints with filtering and sorting."""
+        query = _build_complaints_paginated_query(args)
+
+        # Get total count
+        total_count = query.count()
+
+        # Apply pagination
+        query = _apply_complaints_pagination(query, args)
+
+        # Execute query and process results
+        results = query.all()
+        results = _make_complaint_object(results)
+        return results, total_count
+
+    @classmethod
+    def generate_complaints_excel(cls, args):
+        """Generate Excel file for complaints with filtering."""
+        query = _build_complaints_paginated_query(args)
+
+        # Get all results without pagination for export
+        complaints = query.all()
+        complaints = _make_complaint_object(complaints)
+        # Prepare data for Excel
+        excel_data = []
+        for complaint in complaints:
+            topic = complaint.topic
+            complaint_source = complaint.source_type
+            resolution = complaint.resolution
+            excel_data.append(
+                {
+                    "Complaint #": complaint.complaint_number or "",
+                    "Project": getattr(complaint, "project_name", "") or "",
+                    "Topic": getattr(topic, "name", "") or "",
+                    "Date Received": (
+                        complaint.date_received.strftime("%Y-%m-%d")
+                        if complaint.date_received
+                        else ""
+                    ),
+                    "Complaint Source": getattr(complaint_source, "name", "") or "",
+                    "Primary": (
+                        f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
+                        if complaint.primary_officer
+                        else ""
+                    ),
+                    "Status": complaint.status.value if complaint.status else "",
+                    "Complaint Resolution": getattr(resolution, "name", "") or "",
+                    "Case File #": (
+                        complaint.case_file.case_file_number
+                        if complaint.case_file
+                        else ""
+                    ),
+                }
+            )
+
+        # Create Excel file
+        data_frame = pd.DataFrame(excel_data)
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            data_frame.to_excel(writer, sheet_name="Complaints", index=False)
+        output.seek(0)
+
+        return output
+
+
+def _make_complaint_object(complaints):
+    """Make complaint object."""
+    results = []
+    for result in complaints:
+        complaint = result.Complaint
+        if complaint.case_file.project_id is not None:
+            complaint.project_name = complaint.case_file.project.name
+        else:
+            complaint.project_name = UNAPPROVED_PROJECT_NAME
+        results.append(complaint)
+    return results
 
     @classmethod
     def get_complaints_paginated(cls, args):
@@ -324,6 +422,7 @@ def _create_source_type_contact_object(complaint_data: dict, complaint_id):
     return {
         "complaint_id": complaint_id,
         "full_name": contact_info.get("full_name", None),
+        "title": contact_info.get("title", None),
         "email": contact_info.get("email", None),
         "phone": contact_info.get("phone", None),
         "comment": contact_info.get("comment", None),
@@ -461,6 +560,18 @@ def _apply_complaints_filters(query, args):
             int(id_str.strip()) for id_str in args["primary_officer_ids"].split(",")
         ]
         filters.append(ComplaintModel.primary_officer_id.in_(primary_officer_ids))
+
+    if args.get("resolution_ids"):
+        resolution_ids = [
+            int(id_str.strip()) for id_str in args["resolution_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.resolution_id.in_(resolution_ids))
+
+    if args.get("resolution_agency_ids"):
+        resolution_agency_ids = [
+            int(id_str.strip()) for id_str in args["resolution_agency_ids"].split(",")
+        ]
+        filters.append(ComplaintModel.resolution_agency_id.in_(resolution_agency_ids))
 
     # Handle special cases that need custom logic
     filters.extend(_get_special_complaint_filters(args))

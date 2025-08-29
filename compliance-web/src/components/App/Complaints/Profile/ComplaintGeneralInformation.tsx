@@ -56,6 +56,20 @@ const ComplaintGeneralInformation: React.FC<
     }
   }
 
+  if (complaintData.resolution) {
+    generalProperties.push({
+      name: "Resolution",
+      value: complaintData.resolution?.name,
+    });
+  }
+
+  if (complaintData.resolution_agency) {
+    generalProperties.push({
+      name: "Resolution Agency",
+      value: complaintData.resolution_agency?.name,
+    });
+  }
+
   let complaintProperties = [
     { name: "Complaint Source", value: complaintData.source_type?.name },
   ];
@@ -87,6 +101,10 @@ const ComplaintGeneralInformation: React.FC<
       {
         name: "Full Name",
         value: complaintData.source_contact?.full_name ?? "",
+      },
+      {
+        name: "Title",
+        value: complaintData.source_contact?.title ?? "",
       },
       { name: "Email", value: complaintData.source_contact?.email ?? "" },
       {

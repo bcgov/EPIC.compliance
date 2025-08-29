@@ -6,7 +6,6 @@ import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo } from "react";
-
 import ContinuationReport from "@/components/App/ContinuationReports/ContinuationReport";
 import FileProfileHeader from "@/components/App/FileProfileHeader";
 import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
