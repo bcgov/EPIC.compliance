@@ -13,25 +13,34 @@ import {
   ReferralStatus,
   CRStatus,
   ViolationTicketStatus,
-  RestorativeJusticeStatus
+  RestorativeJusticeStatus,
+  EnforcementActionEnum,
 } from "@/utils/constants";
 import { Chip } from "@mui/material";
 import { useMemo } from "react";
+import { InspectionMoreDetailsEnforcementAction } from "@/models/Inspection";
+import { FC } from "react";
 
-const EnforcementStatusFlag = ({
-  order,
-  warningLetter,
-  administrativePenalty,
-  chargeRecommendation,
-  violationTicket,
-  restorativeJustice,
-}: {
+interface EnforcementStatusFlagProps {
+  enforcementActionType: EnforcementActionEnum;
+  enforcementActionDetails?: InspectionMoreDetailsEnforcementAction;
   order?: InspectionOrder;
   warningLetter?: InspectionWarningLetter;
   administrativePenalty?: AdministrativePenalty;
   chargeRecommendation?: ChargeRecommendation;
   violationTicket?: ViolationTicket;
   restorativeJustice?: RestorativeJustice;
+}
+
+const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
+  enforcementActionType,
+  enforcementActionDetails,
+  order,
+  warningLetter,
+  administrativePenalty,
+  chargeRecommendation,
+  violationTicket,
+  restorativeJustice,
 }) => {
   const flagStatus = useMemo(() => {
     let status: {
@@ -41,111 +50,147 @@ const EnforcementStatusFlag = ({
       name: "",
       color: "default",
     };
-    if (order?.order_progress) {
+    if (enforcementActionType === EnforcementActionEnum.ORDER) {
+      const orderProgress =
+        enforcementActionDetails?.progress || order?.order_progress;
+      const orderStatus =
+        enforcementActionDetails?.status || order?.order_status;
+      const orderApprovals =
+        enforcementActionDetails?.approval_status ||
+        order?.order_approvals?.[0]?.approval_status;
       status = {
-        name: order.order_progress.name,
+        name: orderProgress?.name || "",
       };
-      if (order.order_progress.id === OrderProgressEnum.APPROVED) {
+      if (orderProgress?.id === OrderProgressEnum.APPROVED) {
         status.color = "success";
-      } else if (order.order_progress.id === OrderProgressEnum.DEPUTY_REVIEW) {
+      } else if (orderProgress?.id === OrderProgressEnum.DEPUTY_REVIEW) {
         status.color = "warning";
-      } else if (order.order_progress.id === OrderProgressEnum.ISSUED) {
+      } else if (orderProgress?.id === OrderProgressEnum.ISSUED) {
         status.name = "Open";
         status.color = "success";
         if (
-          order.order_status?.id === OrderStatusEnum.CLOSED ||
-          order.order_status?.id === OrderStatusEnum.RESCINDED
+          orderStatus?.id === OrderStatusEnum.CLOSED ||
+          orderStatus?.id === OrderStatusEnum.RESCINDED
         ) {
-          status.name = order.order_status.name;
+          status.name = orderStatus?.name || "";
           status.color = "error";
         }
       } else if (
-        order.order_progress.id === OrderProgressEnum.DRAFTING &&
-        order.order_approvals?.[0]?.approval_status.id ===
-          APPROVAL_STATUS.NOT_APPROVED
+        orderProgress?.id === OrderProgressEnum.DRAFTING &&
+        orderApprovals?.id === APPROVAL_STATUS.NOT_APPROVED
       ) {
         status.name = "Not Approved";
         status.color = "error";
       }
-    } else if (warningLetter?.progress) {
+    } else if (enforcementActionType === EnforcementActionEnum.WARNING_LETTER) {
+      const warningLetterProgress =
+        enforcementActionDetails?.progress || warningLetter?.progress;
+      const warningLetterApprovals =
+        enforcementActionDetails?.approval_status ||
+        warningLetter?.warning_letter_approvals?.[0]?.approval_status;
       status = {
-        name: warningLetter.progress.name,
+        name: warningLetterProgress?.name || "",
       };
-      if (warningLetter.progress.id === WarningLetterProgressEnum.APPROVED) {
+      if (warningLetterProgress?.id === WarningLetterProgressEnum.APPROVED) {
         status.color = "success";
       } else if (
-        warningLetter.progress.id === WarningLetterProgressEnum.DEPUTY_REVIEW
+        warningLetterProgress?.id === WarningLetterProgressEnum.DEPUTY_REVIEW
       ) {
         status.color = "warning";
       } else if (
-        warningLetter.progress.id === WarningLetterProgressEnum.ISSUED
+        warningLetterProgress?.id === WarningLetterProgressEnum.ISSUED
       ) {
         status.color = "success";
       } else if (
-        warningLetter.progress.id === WarningLetterProgressEnum.DRAFTING &&
-        warningLetter.warning_letter_approvals?.[0]?.approval_status.id ===
-          APPROVAL_STATUS.NOT_APPROVED
+        warningLetterProgress?.id === WarningLetterProgressEnum.DRAFTING &&
+        warningLetterApprovals?.id === APPROVAL_STATUS.NOT_APPROVED
       ) {
         status.name = "Not Approved";
         status.color = "error";
       }
-    } else if (administrativePenalty) {
+    } else if (
+      enforcementActionType === EnforcementActionEnum.AP_RECOMMENDATION
+    ) {
+      const administrativePenaltyStatus =
+        enforcementActionDetails?.status ||
+        administrativePenalty?.referral_status;
       status = {
-        name: administrativePenalty.referral_status.name,
+        name: administrativePenaltyStatus?.name || "",
+      };
+      if (administrativePenaltyStatus?.id === ReferralStatus.DEPUTY_REVIEW.id) {
+        status.color = "warning";
+      } else if (
+        administrativePenaltyStatus?.id === ReferralStatus.CEB_NOT_PROCEEDING.id
+      ) {
+        status.color = "error";
+      } else if (
+        administrativePenaltyStatus?.id === ReferralStatus.REFERRED_TO_DM.id
+      ) {
+        status.color = "success";
+      }
+    } else if (
+      enforcementActionType === EnforcementActionEnum.CHARGE_RECOMMENDATION
+    ) {
+      const chargeRecommendationStatus =
+        enforcementActionDetails?.status || chargeRecommendation?.status;
+      status = {
+        name: chargeRecommendationStatus?.name || CRStatus.DRAFTING.name,
       };
       if (
-        administrativePenalty.referral_status.id ===
-        ReferralStatus.DEPUTY_REVIEW.id
+        chargeRecommendationStatus?.id ===
+        CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id
       ) {
+        status.color = "success";
+      } else if (chargeRecommendationStatus?.id === CRStatus.DEPUTY_REVIEW.id) {
         status.color = "warning";
       } else if (
-        administrativePenalty.referral_status.id ===
-        ReferralStatus.CEB_NOT_PROCEEDING.id
+        chargeRecommendationStatus?.id === CRStatus.CEB_NOT_PROCEEDING.id
       ) {
         status.color = "error";
+      }
+    } else if (
+      enforcementActionType === EnforcementActionEnum.VIOLATION_TICKET
+    ) {
+      const violationTicketStatus =
+        enforcementActionDetails?.status || violationTicket?.status;
+      status = {
+        name: violationTicketStatus?.name || "",
+      };
+      if (violationTicketStatus?.id === ViolationTicketStatus.ISSUED) {
+        status.color = "success";
+      } else if (violationTicketStatus?.id === ViolationTicketStatus.PAID) {
+        status.color = "success";
+      } else if (violationTicketStatus?.id === ViolationTicketStatus.DISPUTED) {
+        status.color = "error";
+      }
+    } else if (
+      enforcementActionType === EnforcementActionEnum.RESTORATIVE_JUSTICE
+    ) {
+      const restorativeJusticeStatus =
+        enforcementActionDetails?.status || restorativeJustice?.status;
+      status = {
+        name: restorativeJusticeStatus?.name || "",
+      };
+      if (restorativeJusticeStatus?.id === RestorativeJusticeStatus.OPEN) {
+        status.color = "success";
       } else if (
-        administrativePenalty.referral_status.id ===
-        ReferralStatus.REFERRED_TO_DM.id
+        restorativeJusticeStatus?.id === RestorativeJusticeStatus.CLOSED
       ) {
-        status.color = "success";
-      }
-    } else if (chargeRecommendation) {
-      status = {
-        name: chargeRecommendation.status?.name || CRStatus.DRAFTING.name,
-      };
-      if (chargeRecommendation.status?.id === CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id) {
-        status.color = "success";
-      } else if (chargeRecommendation.status?.id === CRStatus.DEPUTY_REVIEW.id) {
-        status.color = "warning";
-      } else if (chargeRecommendation.status?.id === CRStatus.CEB_NOT_PROCEEDING.id) {
-        status.color = "error";
-      }
-    } else if (violationTicket) {
-      status = {
-        name: violationTicket.status.name,
-      };
-      if (violationTicket.status.id === ViolationTicketStatus.ISSUED) {
-        status.color = "success";
-      } else if (violationTicket.status.id === ViolationTicketStatus.PAID) {
-        status.color = "success";
-      } else if (violationTicket.status.id === ViolationTicketStatus.DISPUTED) {
-        status.color = "error";
-      }
-    } else if (restorativeJustice) {
-      status = {
-        name: restorativeJustice.status.name,
-      };
-      if (restorativeJustice.status.id === RestorativeJusticeStatus.DRAFTING) {
-        status.color = "warning";
-      } else if (restorativeJustice.status.id === RestorativeJusticeStatus.OPEN) {
-        status.color = "success";
-      } else if (restorativeJustice.status.id === RestorativeJusticeStatus.CLOSED) {
         status.color = "error";
       }
     }
 
     return status;
-  }, [order, warningLetter, administrativePenalty, chargeRecommendation, violationTicket, restorativeJustice]);
+  }, [
+    enforcementActionType,
+    enforcementActionDetails,
+    order,
+    warningLetter,
+    administrativePenalty,
+    chargeRecommendation,
+    violationTicket,
+    restorativeJustice,
+  ]);
 
   return flagStatus.name ? (
     <Chip

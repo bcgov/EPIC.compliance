@@ -134,7 +134,10 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
     [onSubmit, reset, formatFormData, queryClient, inspection.id]
   );
 
-  const { mutate: updateWarningLetter, isPending: isUpdateWarningLetterPending } = useUpdateWarningLetter(onSuccess);
+  const {
+    mutate: updateWarningLetter,
+    isPending: isUpdateWarningLetterPending,
+  } = useUpdateWarningLetter(onSuccess);
 
   const onSubmitHandler = useCallback(
     (formData: EnforcementFormType) => {
@@ -208,7 +211,12 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
         <DrawerTitleBar
           title={warningLetter.warning_letter_number || "Edit Warning Letter"}
           isFormDirtyCheck
-          statusFlag={<EnforcementStatusFlag warningLetter={warningLetter} />}
+          statusFlag={
+            <EnforcementStatusFlag
+              enforcementActionType={EnforcementActionEnum.WARNING_LETTER}
+              warningLetter={warningLetter}
+            />
+          }
         />
         <Box
           sx={{

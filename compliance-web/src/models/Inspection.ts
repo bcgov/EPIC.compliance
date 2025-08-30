@@ -12,6 +12,7 @@ import { IRProgress } from "./IRProgress";
 import { BaseTableQueryParams } from "./BaseTableQueryParams";
 import { Agency } from "./Agency";
 import { FirstNation } from "./FirstNation";
+import { Option } from "./common";
 
 export interface Inspection {
   id: number;
@@ -108,10 +109,8 @@ export interface InspectionMoreDetailsEnforcementAction {
   name: string;
   number?: string;
   approval_status?: ApprovalStatus;
-  progress?: {
-    id: string;
-    name: string;
-  } | null;
+  progress?: Option;
+  status?: Option;
 }
 
 export interface InspectionFormData {

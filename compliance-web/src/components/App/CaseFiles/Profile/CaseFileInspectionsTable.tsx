@@ -37,6 +37,7 @@ import { useStaffUsersData } from "@/hooks/useStaff";
 import { useFetchWarningLetterByNumber } from "@/hooks/useInspectionWarningLetters";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import WarningLetterDrawer from "@/components/App/Inspections/Profile/Enforcements/WarningLetters/WarningLetterDrawer";
+import EnforcementStatusFlag from "@/components/App/Inspections/Profile/Enforcements/EnforcementStatusFlag";
 
 const styleOverFlowClipped = {
   whiteSpace: "nowrap",
@@ -54,7 +55,7 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
     return inspectionsListData?.items;
   }, [inspectionsListData]);
   const { data: staffUsersList } = useStaffUsersData();
-  
+
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(
     new Set()
   );
@@ -69,20 +70,6 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
       }
       return newSet;
     });
-  };
-
-  const getStatusFlagColor = (progress: { id: string; name: string }) => {
-    switch (progress.id) {
-      case OrderProgressEnum.DRAFTING:
-        return "default";
-      case OrderProgressEnum.DEPUTY_REVIEW:
-        return "warning";
-      case OrderProgressEnum.APPROVED:
-      case OrderProgressEnum.ISSUED:
-        return "success";
-      default:
-        return "default";
-    }
   };
 
   const isEnforcementActionLink = (
@@ -366,16 +353,15 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                             )}
                           </Grid>
                           <Grid item xs={2}>
-                            {requirement.enforcement_action?.progress && (
-                              <Chip
-                                label={
-                                  requirement.enforcement_action?.progress?.name
+                            {requirement.enforcement_action && (
+                              <EnforcementStatusFlag
+                                enforcementActionType={
+                                  requirement.enforcement_action
+                                    .id as EnforcementActionEnum
                                 }
-                                color={getStatusFlagColor(
-                                  requirement.enforcement_action?.progress
-                                )}
-                                variant="outlined"
-                                size="small"
+                                enforcementActionDetails={
+                                  requirement.enforcement_action
+                                }
                               />
                             )}
                           </Grid>

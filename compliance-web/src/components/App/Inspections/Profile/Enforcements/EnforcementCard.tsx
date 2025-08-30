@@ -17,6 +17,8 @@ import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { ChargeRecommendation } from "@/models/ChargeRecommendation";
 import { ViolationTicket } from "@/models/ViolationTicket";
 import { RestorativeJustice } from "@/models/RestorativeJustice";
+import { useMemo } from "react";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 const EnforcementCard = ({
   order,
@@ -57,6 +59,28 @@ const EnforcementCard = ({
   const approvedByDate = getApprovedByDate(order, warningLetter);
   const approverName = getApproverName(order, warningLetter);
 
+  const enforcementActionType = useMemo(() => {
+    if (order) {
+      return EnforcementActionEnum.ORDER;
+    } else if (warningLetter) {
+      return EnforcementActionEnum.WARNING_LETTER;
+    } else if (administrativePenalty) {
+      return EnforcementActionEnum.AP_RECOMMENDATION;
+    } else if (chargeRecommendation) {
+      return EnforcementActionEnum.CHARGE_RECOMMENDATION;
+    } else if (violationTicket) {
+      return EnforcementActionEnum.VIOLATION_TICKET;
+    } else {
+      return EnforcementActionEnum.RESTORATIVE_JUSTICE;
+    }
+  }, [
+    administrativePenalty,
+    chargeRecommendation,
+    order,
+    violationTicket,
+    warningLetter,
+  ]);
+
   return (
     <Box
       sx={{
@@ -92,6 +116,7 @@ const EnforcementCard = ({
               restorativeJustice?.restorative_justice_number}
           </Typography>
           <EnforcementStatusFlag
+            enforcementActionType={enforcementActionType}
             order={order}
             warningLetter={warningLetter}
             administrativePenalty={administrativePenalty}
@@ -142,8 +167,8 @@ const EnforcementCard = ({
                 value={
                   (order || warningLetter)?.date_issued
                     ? dateUtils.formatDate(
-                      (order || warningLetter)?.date_issued ?? ""
-                    )
+                        (order || warningLetter)?.date_issued ?? ""
+                      )
                     : ""
                 }
                 gridProps={{ xs: 6 }}
@@ -190,7 +215,9 @@ const EnforcementCard = ({
                 label="Date to Crown Counsel"
                 value={
                   chargeRecommendation.date_to_crown_counsel
-                    ? dateUtils.formatDate(chargeRecommendation.date_to_crown_counsel)
+                    ? dateUtils.formatDate(
+                        chargeRecommendation.date_to_crown_counsel
+                      )
                     : ""
                 }
                 gridProps={{ xs: 6 }}
@@ -209,7 +236,9 @@ const EnforcementCard = ({
                 label="Charge Decision Date"
                 value={
                   chargeRecommendation.charge_decision_date
-                    ? dateUtils.formatDate(chargeRecommendation.charge_decision_date)
+                    ? dateUtils.formatDate(
+                        chargeRecommendation.charge_decision_date
+                      )
                     : ""
                 }
                 gridProps={{ xs: 6 }}
@@ -273,9 +302,11 @@ const EnforcementCard = ({
               />
               <GridLabelValuePair
                 label="Status Date"
-                value={violationTicket.status_date
-                  ? dateUtils.formatDate(violationTicket.status_date)
-                  : ""}
+                value={
+                  violationTicket.status_date
+                    ? dateUtils.formatDate(violationTicket.status_date)
+                    : ""
+                }
                 gridProps={{ xs: 6 }}
               />
             </>
@@ -292,7 +323,9 @@ const EnforcementCard = ({
                 label="Date Restitution Complete"
                 value={
                   restorativeJustice.date_restitution_complete
-                    ? dateUtils.formatDate(restorativeJustice.date_restitution_complete)
+                    ? dateUtils.formatDate(
+                        restorativeJustice.date_restitution_complete
+                      )
                     : ""
                 }
                 gridProps={{ xs: 12 }}
