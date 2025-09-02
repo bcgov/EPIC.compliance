@@ -276,6 +276,7 @@ def _make_complaint_object(complaints):
         results.append(complaint)
     return results
 
+
 @classmethod
 def get_complaints_paginated(cls, args):
     """Get paginated complaints with filtering and sorting."""
@@ -291,6 +292,7 @@ def get_complaints_paginated(cls, args):
     results = query.all()
     results = _make_complaint_object(results)
     return results, total_count
+
 
 @classmethod
 def generate_complaints_excel(cls, args):
