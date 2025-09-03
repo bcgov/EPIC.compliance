@@ -137,8 +137,9 @@ class AdministrativePenaltyService:
 
         # Update administrative penalty with session scope
         with session_scope() as session:
+            ap_data = _extract_ap_data(update_data)
             updated_penalty = AdministrativePenalty.update_administrative_penalty(
-                administrative_penalty_id, update_data, session
+                administrative_penalty_id, ap_data, session
             )
             if "inspection_requirement_ids" in update_data:
                 cls.insert_or_update_inspection_requirements(
@@ -214,17 +215,10 @@ class AdministrativePenaltyService:
                 )
 
 
-def _create_ap_object(inspection, administrative_penalty_data):
-    """Create administrative penalty object."""
-    # Generate administrative penalty number if not provided
-    ap_number = administrative_penalty_data.get("administrative_penalty_number")
-    if not ap_number:
-        project_id = inspection.case_file.project_id
-        case_file_id = inspection.case_file_id
-        ap_number = _create_administrative_penalty_number(project_id, case_file_id)
+def _extract_ap_data(administrative_penalty_data):
+    """Extract administrative penalty data."""
     return {
-        "administrative_penalty_number": ap_number,
-        "inspection_id": inspection.id,
+        "inspection_id": administrative_penalty_data.get("inspection_id", None),
         "referral_status": administrative_penalty_data.get(
             "referral_status", ReferralStatusEnum.DRAFTING
         ),
@@ -233,6 +227,18 @@ def _create_ap_object(inspection, administrative_penalty_data):
         "decision": administrative_penalty_data.get("decision", None),
         "penalty_amount": administrative_penalty_data.get("penalty_amount", None),
     }
+
+
+def _create_ap_object(inspection, administrative_penalty_data):
+    """Create administrative penalty object."""
+    # Generate administrative penalty number if not provided
+    ap_number = administrative_penalty_data.get("administrative_penalty_number")
+    if not ap_number:
+        project_id = inspection.case_file.project_id
+        case_file_id = inspection.case_file_id
+        ap_number = _create_administrative_penalty_number(project_id, case_file_id)
+    ap_data = _extract_ap_data(administrative_penalty_data)
+    return {"administrative_penalty_number": ap_number, **ap_data}
 
 
 def _create_administrative_penalty_number(project_id: int, case_file_id: int) -> str:

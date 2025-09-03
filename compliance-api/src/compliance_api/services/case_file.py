@@ -20,8 +20,7 @@ from compliance_api.models.administrative_penalty import AdministrativePenalty a
 from compliance_api.models.administrative_penalty import ReferralStatusEnum
 from compliance_api.models.charge_recommendation import ChargeDecisionEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
-from compliance_api.models.charge_recommendation import (
-    ChargeRecommendationInspectionRequirementMap, ChargeRecommendationStatusEnum)
+from compliance_api.models.charge_recommendation import ChargeRecommendationStatusEnum
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
@@ -896,9 +895,7 @@ def _build_enforcement_query(inspection_ids: list):
             OrderModel,
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
-                OrderModel.order_status.notin_(
-                    [OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED]
-                ),
+                OrderModel.order_status != OrderStatusEnum.OPEN,
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),
             ),
@@ -916,7 +913,9 @@ def _build_enforcement_query(inspection_ids: list):
             ViolationTicketModel,
             and_(
                 ViolationTicketModel.inspection_id == InspectionModel.id,
-                ViolationTicketModel.status != ViolationTicketStatusEnum.PAID,
+                ViolationTicketModel.status.notin_(
+                    [ViolationTicketStatusEnum.PAID, ViolationTicketStatusEnum.DISPUTED]
+                ),
                 ViolationTicketModel.is_active.is_(True),
                 ViolationTicketModel.is_deleted.is_(False),
             ),
@@ -945,8 +944,11 @@ def _build_enforcement_query(inspection_ids: list):
                 ~or_(
                     ChargeRecommendationModel.status
                     == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
-                    ChargeRecommendationModel.charge_decision
-                    == ChargeDecisionEnum.NOT_PROCEEDING,
+                    and_(
+                        ChargeRecommendationModel.charge_decision.isnot(None),
+                        ChargeRecommendationModel.charge_decision
+                        == ChargeDecisionEnum.NOT_PROCEEDING,
+                    ),
                     ChargeRecommendationModel.sentence_date.isnot(None),
                 ),
                 ChargeRecommendationModel.is_active.is_(True),
@@ -987,9 +989,7 @@ def _process_enforcement_row(row, processed_items: dict, open_items: dict):
         row.violation_ticket_id
         and row.violation_ticket_id not in processed_items["violation_tickets"]
     ):
-        if _is_violation_ticket_open(row):
-            processed_items["violation_tickets"].add(row.violation_ticket_id)
-            open_items["violation_tickets"].append(_build_violation_ticket_item(row))
+        open_items["violation_tickets"].append(_build_violation_ticket_item(row))
 
     # Process Administrative Penalties
     if (
@@ -1113,49 +1113,3 @@ def _build_restorative_justice_item(row) -> dict:
         "number": row.restorative_justice_number,
         "status": status_obj,
     }
-
-
-def _is_violation_ticket_open(row) -> bool:
-    """Check if a violation ticket is open (handles DISPUTED status logic)."""
-    if row.violation_ticket_status != ViolationTicketStatusEnum.DISPUTED:
-        return True
-
-    # For DISPUTED tickets, check for closed charge recommendations
-    vt = ViolationTicketModel.query.get(row.violation_ticket_id)
-    if not vt:
-        return False
-
-    vt_requirement_ids = [
-        vt_req.inspection_requirement_id
-        for vt_req in vt.violation_ticket_requirement_maps
-    ]
-    if not vt_requirement_ids:
-        return True
-
-    closed_charge_rec_exists = (
-        ChargeRecommendationModel.query.join(
-            ChargeRecommendationInspectionRequirementMap,
-            ChargeRecommendationModel.id
-            == ChargeRecommendationInspectionRequirementMap.charge_recommendation_id,
-        )
-        .filter(
-            and_(
-                ChargeRecommendationModel.inspection_id == vt.inspection_id,
-                ChargeRecommendationInspectionRequirementMap.inspection_requirement_id.in_(
-                    vt_requirement_ids
-                ),
-                or_(
-                    ChargeRecommendationModel.status
-                    == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
-                    ChargeRecommendationModel.charge_decision
-                    == ChargeDecisionEnum.NOT_PROCEEDING,
-                    ChargeRecommendationModel.sentence_date.isnot(None),
-                ),
-                ChargeRecommendationModel.is_active.is_(True),
-                ChargeRecommendationModel.is_deleted.is_(False),
-            )
-        )
-        .first()
-    )
-
-    return not closed_charge_rec_exists

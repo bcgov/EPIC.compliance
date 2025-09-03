@@ -100,6 +100,7 @@ class ChargeRecommendationService:
                 "Charge recommendation already exists for these requirements."
             )
         with session_scope() as session:
+            update_data = _extract_cr_data(update_data)
             updated_charge_recommendation = (
                 ChargeRecommendation.update_charge_recommendation(
                     charge_recommendation_id, update_data, session
@@ -204,17 +205,13 @@ class ChargeRecommendationService:
         return f"{project_code}_{case_file.case_file_number}_CR{serial_number}"
 
 
-def _create_cr_object(inspection, charge_recommendation_data):
-    """Create charge recommendation object."""
-    # Generate charge recommendation number if not provided
-    cr_number = charge_recommendation_data.get("charge_recommendation_number")
-    if not cr_number:
-        project_id = inspection.case_file.project_id
-        case_file_id = inspection.case_file_id
-        cr_number = _create_charge_recommendation_number(project_id, case_file_id)
+def _extract_cr_data(charge_recommendation_data):
+    """Extract charge recommendation data."""
     return {
-        "charge_recommendation_number": cr_number,
-        "inspection_id": inspection.id,
+        "charge_recommendation_number": charge_recommendation_data.get(
+            "charge_recommendation_number"
+        ),
+        "inspection_id": charge_recommendation_data.get("inspection_id"),
         "status": charge_recommendation_data.get("status", "DRAFTING"),
         "date_to_crown_counsel": charge_recommendation_data.get(
             "date_to_crown_counsel", None
@@ -229,6 +226,20 @@ def _create_cr_object(inspection, charge_recommendation_data):
         "judgment_date": charge_recommendation_data.get("judgment_date", None),
         "sentence_date": charge_recommendation_data.get("sentence_date", None),
         "sentence_type": charge_recommendation_data.get("sentence_type", None),
+    }
+
+
+def _create_cr_object(inspection, charge_recommendation_data):
+    """Create charge recommendation object."""
+    # Generate charge recommendation number if not provided
+    cr_number = charge_recommendation_data.get("charge_recommendation_number")
+    if not cr_number:
+        project_id = inspection.case_file.project_id
+        case_file_id = inspection.case_file_id
+        cr_number = _create_charge_recommendation_number(project_id, case_file_id)
+    return {
+        "charge_recommendation_number": cr_number,
+        **_extract_cr_data(charge_recommendation_data),
     }
 
 
