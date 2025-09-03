@@ -276,81 +276,70 @@ def _make_complaint_object(complaints):
         results.append(complaint)
     return results
 
-    @classmethod
-    def get_complaints_paginated(cls, args):
-        """Get paginated complaints with filtering and sorting."""
-        query = _build_complaints_paginated_query(args)
 
-        # Get total count
-        total_count = query.count()
+@classmethod
+def get_complaints_paginated(cls, args):
+    """Get paginated complaints with filtering and sorting."""
+    query = _build_complaints_paginated_query(args)
 
-        # Apply pagination
-        query = _apply_complaints_pagination(query, args)
+    # Get total count
+    total_count = query.count()
 
-        # Execute query and process results
-        results = query.all()
-        results = _make_complaint_object(results)
-        return results, total_count
+    # Apply pagination
+    query = _apply_complaints_pagination(query, args)
 
-    @classmethod
-    def generate_complaints_excel(cls, args):
-        """Generate Excel file for complaints with filtering."""
-        query = _build_complaints_paginated_query(args)
-
-        # Get all results without pagination for export
-        complaints = query.all()
-        complaints = _make_complaint_object(complaints)
-        # Prepare data for Excel
-        excel_data = []
-        for complaint in complaints:
-            topic = complaint.topic
-            complaint_source = complaint.source_type
-            excel_data.append(
-                {
-                    "Complaint #": complaint.complaint_number or "",
-                    "Project": getattr(complaint, "project_name", "") or "",
-                    "Topic": getattr(topic, "name", "") or "",
-                    "Date Received": (
-                        complaint.date_received.strftime("%Y-%m-%d")
-                        if complaint.date_received
-                        else ""
-                    ),
-                    "Complaint Source": getattr(complaint_source, "name", "") or "",
-                    "Primary": (
-                        f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
-                        if complaint.primary_officer
-                        else ""
-                    ),
-                    "Status": complaint.status.value if complaint.status else "",
-                    "Case File #": (
-                        complaint.case_file.case_file_number
-                        if complaint.case_file
-                        else ""
-                    ),
-                }
-            )
-
-        # Create Excel file
-        data_frame = pd.DataFrame(excel_data)
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            data_frame.to_excel(writer, sheet_name="Complaints", index=False)
-        output.seek(0)
-
-        return output
+    # Execute query and process results
+    results = query.all()
+    results = _make_complaint_object(results)
+    return results, total_count
 
 
-def _make_complaint_object(complaints):
-    """Make complaint object."""
-    results = []
-    for result in complaints:
-        complaint = result.Complaint
-        if complaint.case_file.project_id is not None:
-            complaint.project_name = complaint.case_file.project.name
-        else:
-            complaint.project_name = UNAPPROVED_PROJECT_NAME
-        results.append(complaint)
-    return results
+@classmethod
+def generate_complaints_excel(cls, args):
+    """Generate Excel file for complaints with filtering."""
+    query = _build_complaints_paginated_query(args)
+
+    # Get all results without pagination for export
+    complaints = query.all()
+    complaints = _make_complaint_object(complaints)
+    # Prepare data for Excel
+    excel_data = []
+    for complaint in complaints:
+        topic = complaint.topic
+        complaint_source = complaint.source_type
+        excel_data.append(
+            {
+                "Complaint #": complaint.complaint_number or "",
+                "Project": getattr(complaint, "project_name", "") or "",
+                "Topic": getattr(topic, "name", "") or "",
+                "Date Received": (
+                    complaint.date_received.strftime("%Y-%m-%d")
+                    if complaint.date_received
+                    else ""
+                ),
+                "Complaint Source": getattr(complaint_source, "name", "") or "",
+                "Primary": (
+                    f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
+                    if complaint.primary_officer
+                    else ""
+                ),
+                "Status": complaint.status.value if complaint.status else "",
+                "Case File #": (
+                    complaint.case_file.case_file_number
+                    if complaint.case_file
+                    else ""
+                ),
+            }
+        )
+
+    # Create Excel file
+    data_frame = pd.DataFrame(excel_data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        data_frame.to_excel(writer, sheet_name="Complaints", index=False)
+    output.seek(0)
+
+    return output
 
 
 def _create_or_update_requirement_details(

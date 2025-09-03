@@ -65,7 +65,7 @@ const enforcementSchema = yup.object().shape({
 
 type EnforcementFormType = yup.InferType<typeof enforcementSchema>;
 
-const initFormData = {
+const initFormData = {  
   whereAs: { html: "", text: "" },
   nowTherefore: { html: "", text: "" },
   issuingOfficer: {} as StaffUser,

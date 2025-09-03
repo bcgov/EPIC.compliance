@@ -97,14 +97,6 @@ class InspectionService:
         # Process each inspection
         for inspection in inspections:
             requirement_details = []
-            orders = OrderModel.get_by_inspection_id(inspection.id)
-            if orders:
-                orders = [
-                    order
-                    for order in orders
-                    if order.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
-                ]
-            warning_letters = WarningLetterModel.get_by_inspection_id(inspection.id)
             requirements = inspection.inspection_requirements or []
             enforcement_actions = enforcement_actions_data.get(inspection.id, {
                 'orders': [],
