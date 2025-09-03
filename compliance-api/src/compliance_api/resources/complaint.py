@@ -289,37 +289,6 @@ class ComplaintExport(Resource):
         return response
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/export", methods=["POST", "OPTIONS"])
-class ComplaintExport(Resource):
-    """Resource for exporting complaints to Excel."""
-
-    @staticmethod
-    @API.expect(complaint_filter_model)
-    @ApiHelper.swagger_decorators(
-        API, endpoint_description="Export complaints to Excel with filtering"
-    )
-    @auth.require
-    def post():
-        """Export complaints to Excel with filtering."""
-        # Get filter data from request body
-        filter_data = ComplaintFilterSchema().load(API.payload or {})
-
-        # Generate Excel file
-        excel_file = ComplaintService.generate_complaints_excel(filter_data)
-
-        # Create response
-        response = make_response(excel_file.getvalue())
-        response.headers["Content-Type"] = (
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        response.headers["Content-Disposition"] = (
-            "attachment; filename=complaints_export.xlsx"
-        )
-
-        return response
-
-
 @cors_preflight("GET, OPTIONS")
 @API.route("/complaint-numbers/<string:complaint_number>", methods=["GET", "OPTIONS"])
 class ComplaintByNumber(Resource):
