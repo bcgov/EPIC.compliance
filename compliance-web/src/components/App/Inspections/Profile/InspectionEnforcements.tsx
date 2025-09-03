@@ -393,6 +393,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
           enforcementOrder={order}
           staffUsersList={issuingOfficers || []}
           isReadonlyMode={!isEnforcementsAllowed}
+          openEnforcementOrderDrawer={openEnforcementOrderDrawer}
         />
       ),
       width: DRAWER_WIDTHS.ENFORCEMENT_DRAWER,

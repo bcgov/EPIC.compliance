@@ -23,7 +23,9 @@ from .case_file import (
 from .charge_recommendation import (
     ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationInspectionRequirementMap,
     ChargeRecommendationStatusEnum, JudgmentEnum)
-from .complaint import Complaint, ComplaintReqOrderDetail, ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum
+from .complaint import (
+    Complaint, ComplaintReqOrderDetail, ComplaintRequirementSourceEnum, ComplaintResolution, ComplaintResolutionEnum,
+    ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum)
 from .compliance_finding import ComplianceFindingOption, ComplianceFindingOptionEnum
 from .continuation_report import ContinuationReport, ContinuationReportKey
 from .db import db, ma, migrate
@@ -38,7 +40,7 @@ from .inspection import (
     InspectionTypeOption, IRStatusOption)
 from .inspection_record import InspectionRecord, IRProgressEnum
 from .inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
-from .order import Order, OrderInspectionRequirementMap, OrderProgressEnum, OrderStatusEnum
+from .order import Order, OrderInspectionRequirementMap, OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
 from .order_approval import OrderApproval, OrderApprovalStatusEnum
 from .position import Position
 from .project import Project

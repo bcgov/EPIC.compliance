@@ -26,6 +26,7 @@ from compliance_api.schemas import (
     InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, StaffUserSchema)
 from compliance_api.services import InspectionRequirementService, InspectionService
 from compliance_api.utils.enum import PermissionEnum
+from compliance_api.utils.schema_utils import get_pagination_schema
 from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
@@ -206,30 +207,7 @@ class Inspections(Resource):
                 "type": "string",
                 "required": False,
             },
-            "page_no": {
-                "description": "Page number for pagination",
-                "type": "integer",
-                "required": False,
-                "default": 1,
-            },
-            "page_size": {
-                "description": "Number of items per page",
-                "type": "integer",
-                "required": False,
-                "default": 15,
-            },
-            "sort_by": {
-                "description": "Field to sort by",
-                "type": "string",
-                "required": False,
-                "default": "ir_number",
-            },
-            "sort_order": {
-                "description": "Sort order (asc or desc)",
-                "type": "string",
-                "required": False,
-                "default": "asc",
-            },
+            **get_pagination_schema("ir_number"),
         }
     )
     @ApiHelper.swagger_decorators(

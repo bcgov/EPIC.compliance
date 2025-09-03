@@ -96,21 +96,17 @@ class InspectionService:
 
         # Process each inspection
         for inspection in inspections:
+            requirement_details = []
             requirements = inspection.inspection_requirements or []
-            enforcement_actions = enforcement_actions_data.get(
-                inspection.id,
-                {
-                    "orders": [],
-                    "warning_letters": [],
-                    "violation_tickets": [],
-                    "administrative_penalties": [],
-                    "charge_recommendations": [],
-                    "restorative_justice": [],
-                },
-            )
-            requirement_details = _make_requirement_detail_object(
-                requirements, enforcement_actions
-            )
+            enforcement_actions = enforcement_actions_data.get(inspection.id, {
+                'orders': [],
+                'warning_letters': [],
+                'violation_tickets': [],
+                'administrative_penalties': [],
+                'charge_recommendations': [],
+                'restorative_justice': []
+            })
+            requirement_details = _make_requirement_detail_object_optimized(requirements, enforcement_actions)
             setattr(inspection, "requirement_details", requirement_details)
         return inspections
 
@@ -528,94 +524,6 @@ def _make_inspection_object(inspections):
             inspection.project_name = UNAPPROVED_PROJECT_NAME
         results.append(inspection)
     return results
-
-
-def _make_requirement_detail_object(requirements: list, enforcement_actions: dict):
-    """Make requirement detail object."""
-    requirement_details = []
-    for requirement in requirements:
-        if not requirement.enforcement_actions:
-            continue
-
-        for action in requirement.enforcement_actions:
-            item = {
-                "requirement_id": requirement.id,
-                "requirement_summary": requirement.summary,
-                "requirement_sort_order": requirement.sort_order,
-                "enforcement_action": {
-                    "id": EnforcementActionOptionModel.find_by_id(
-                        action.enforcement_action_id
-                    ).id,
-                    "name": EnforcementActionOptionModel.find_by_id(
-                        action.enforcement_action_id
-                    ).name,
-                },
-            }
-            if requirement.requirement_source_details:
-                first_requirement_details = requirement.requirement_source_details[0]
-                number_field = ServiceUtils.get_requirement_source_number_field(
-                    first_requirement_details
-                )
-                item["requirement_number"] = (
-                    number_field.split(" ")[1] if number_field else None
-                )
-                item["requirement_source_name"] = (
-                    first_requirement_details.requirement_source.name
-                )
-
-            action_type = EnforcementActionOptionEnum(action.enforcement_action_id)
-            if action_type == EnforcementActionOptionEnum.ORDER:
-                item["enforcement_action"] = _set_order_enforcement_action_object(
-                    item["enforcement_action"],
-                    enforcement_actions.get("orders", []),
-                    requirement,
-                )
-
-            elif action_type == EnforcementActionOptionEnum.WARNING_LETTER:
-                item["enforcement_action"] = (
-                    _set_warning_letter_enforcement_action_object(
-                        item["enforcement_action"],
-                        enforcement_actions.get("warning_letters", []),
-                        requirement,
-                    )
-                )
-            elif action_type == EnforcementActionOptionEnum.VIOLATION_TICKET:
-                item["enforcement_action"] = (
-                    _set_violation_ticket_enforcement_action_object(
-                        item["enforcement_action"],
-                        enforcement_actions.get("violation_tickets", []),
-                        requirement,
-                    )
-                )
-            elif (
-                action_type
-                == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION
-            ):
-                item["enforcement_action"] = (
-                    _set_administrative_penalty_enforcement_action_object(
-                        item["enforcement_action"],
-                        enforcement_actions.get("administrative_penalties", []),
-                        requirement,
-                    )
-                )
-            elif action_type == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION:
-                item["enforcement_action"] = (
-                    _set_charge_recommendation_enforcement_action_object(
-                        item["enforcement_action"],
-                        enforcement_actions.get("charge_recommendations", []),
-                        requirement,
-                    )
-                )
-            elif action_type == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE:
-                item["enforcement_action"] = (
-                    _set_restorative_justice_enforcement_action_object(
-                        item["enforcement_action"],
-                        enforcement_actions.get("restorative_justice", []),
-                        requirement,
-                    )
-                )
-            requirement_details.append(item)
-    return requirement_details
 
 
 def _set_warning_letter_enforcement_action_object(

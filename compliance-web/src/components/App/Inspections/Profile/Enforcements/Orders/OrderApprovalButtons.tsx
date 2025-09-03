@@ -27,26 +27,33 @@ import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import { useQueryClient } from "@tanstack/react-query";
 import IssueEnforcementModal from "@/components/App/Inspections/Profile/Enforcements/IssueEnforcementModal";
 import { useDrawer } from "@/store/drawerStore";
+import OrderRecindModal from "./OrderRecindModal";
+import { Inspection } from "@/models/Inspection";
 
 const OrderApprovalButtons = ({
   inspectionOrder,
-  inspectionId,
+  inspection,
   caseFileId,
+  openEnforcementOrderDrawer,
 }: {
   inspectionOrder: InspectionOrder;
-  inspectionId: number;
+  inspection: Inspection;
   caseFileId: number;
+  openEnforcementOrderDrawer?: (order: InspectionOrder) => void;
 }) => {
   const { setOpen, setClose } = useModal();
   const { setClose: setDrawerClose } = useDrawer();
   const { data: staffData } = useStaffUsersData();
   const currentUser = useCurrentLoggedInUser();
   const queryClient = useQueryClient();
-  
+
   // Get the latest order data from cache to ensure buttons update immediately
-  const { data: ordersData } = useInspectionOrdersData(inspectionId);
+  const { data: ordersData } = useInspectionOrdersData(inspection.id);
   const latestOrder = useMemo(() => {
-    return ordersData?.find(order => order.id === inspectionOrder.id) || inspectionOrder;
+    return (
+      ordersData?.find((order) => order.id === inspectionOrder.id) ||
+      inspectionOrder
+    );
   }, [ordersData, inspectionOrder]);
 
   const { data: orderApprovalsData } = useFetchOrderApprovals(
@@ -78,7 +85,7 @@ const OrderApprovalButtons = ({
     (message: string) => {
       notify.success(message);
       queryClient.invalidateQueries({
-        queryKey: ["inspection-orders", inspectionId],
+        queryKey: ["inspection-orders", inspection.id],
       });
       queryClient.invalidateQueries({
         queryKey: ["inspection-orders-projectwise", caseFileId],
@@ -86,7 +93,7 @@ const OrderApprovalButtons = ({
       setClose();
       setDrawerClose();
     },
-    [queryClient, inspectionId, setClose, setDrawerClose, caseFileId]
+    [queryClient, inspection, setClose, setDrawerClose, caseFileId]
   );
 
   const onSuccess = useCallback(
@@ -154,8 +161,7 @@ const OrderApprovalButtons = ({
     useUpdateOrderStatus(refetchDataAndClose);
 
   const isInDeputyReview = useMemo(
-    () =>
-      latestOrder.order_progress?.id === OrderProgressEnum.DEPUTY_REVIEW,
+    () => latestOrder.order_progress?.id === OrderProgressEnum.DEPUTY_REVIEW,
     [latestOrder.order_progress]
   );
 
@@ -180,8 +186,7 @@ const OrderApprovalButtons = ({
   );
 
   const isShowIssueButton = useMemo(
-    () =>
-      latestOrder?.order_progress?.id === OrderProgressEnum.APPROVED,
+    () => latestOrder?.order_progress?.id === OrderProgressEnum.APPROVED,
     [latestOrder]
   );
 
@@ -266,10 +271,6 @@ const OrderApprovalButtons = ({
           Once closed, you can't inspect against it. In order to inspect, you need to reopen it again.
           Are you sure?`;
         confirmButtonText = "Close Order";
-      } else if (status === OrderStatusEnum.RESCINDED) {
-        title = "Rescind Order";
-        description = `You are about to rescind this Order ${latestOrder.order_number}. Are you sure?`;
-        confirmButtonText = "Rescind Order";
       } else if (status === OrderStatusEnum.OPEN) {
         title = "Reopen Order";
         description = `You are about to reopen Order ${latestOrder.order_number}. Once reopened, you can inspect against it. 
@@ -294,13 +295,31 @@ const OrderApprovalButtons = ({
         ),
       });
     },
-    [
-      setOpen,
-      latestOrder.order_number,
-      latestOrder.id,
-      updateOrderStatus,
-    ]
+    [setOpen, latestOrder.order_number, latestOrder.id, updateOrderStatus]
   );
+
+  const handleRecindButtonClick = useCallback(() => {
+    setOpen({
+      content: (
+        <OrderRecindModal
+          order={latestOrder}
+          onSuccess={(message, data) => {
+            refetchDataAndClose(message);
+            if (data) {
+              openEnforcementOrderDrawer?.(data);
+            }
+          }}
+          isHistoricalInspection={inspection.is_history}
+        />
+      ),
+    });
+  }, [
+    setOpen,
+    latestOrder,
+    inspection,
+    refetchDataAndClose,
+    openEnforcementOrderDrawer,
+  ]);
 
   return (
     <>
@@ -342,10 +361,7 @@ const OrderApprovalButtons = ({
       )}
       {isShowRescindCloseButton && (
         <Box sx={{ display: "inline-flex", gap: 2 }}>
-          <Button
-            color="secondary"
-            onClick={() => handleStatusButtonClick(OrderStatusEnum.RESCINDED)}
-          >
+          <Button color="secondary" onClick={handleRecindButtonClick}>
             Rescind Order
           </Button>
           <Button

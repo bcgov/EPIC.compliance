@@ -21,6 +21,10 @@ export enum ComplaintSourceEnum {
   OTHER = "4",
 }
 
+export enum ComplaintResolutionEnum {
+  AGENCY = "2",
+}
+
 export const ComplaintFormSchema = yup.object().shape({
   concernDescription: yup
     .string()
@@ -38,6 +42,7 @@ export const ComplaintFormSchema = yup.object().shape({
     .nullable()
     .required("Complaint Source is required"),
   contactFullName: yup.string().nullable(),
+  contactTitle: yup.string().nullable(),
   contactEmail: yup
     .string()
     .nullable()
@@ -105,6 +110,7 @@ export const formatComplaintData = (
   if (sourceId) {
     complaintData.complaint_source_contact = {
       full_name: formData.contactFullName ?? "",
+      title: formData.contactTitle ?? "",
       email: formData.contactEmail ?? "",
       phone: formData.contactPhoneNumber ?? "",
       comment: formData.contactComments ?? "",

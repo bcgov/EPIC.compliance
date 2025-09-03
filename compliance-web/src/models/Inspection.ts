@@ -73,6 +73,25 @@ export interface InspectionGridItems {
   total: number;
 }
 
+export interface InspectionGridQueryParams extends BaseTableQueryParams {
+  case_file_id?: string;
+  ir_number?: string;
+  project_ids?: string;
+  start_date?: string;
+  initiation_ids?: string;
+  ir_progresses?: string;
+  approval_statuses?: string;
+  primary_officer_ids?: string;
+  statuses?: string;
+  case_file_number?: string;
+  approved_by_ids?: string;
+}
+
+export interface InspectionGridItems {
+  items: Inspection[];
+  total: number;
+}
+
 export interface InspectionMoreDetails extends Inspection {
   requirement_details?: {
     requirement_id: number;

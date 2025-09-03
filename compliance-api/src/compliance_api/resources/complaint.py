@@ -12,6 +12,7 @@ from compliance_api.schemas import (
     ComplaintUpdateSchema, KeyValueSchema, RequirementSourceDetailSchema)
 from compliance_api.services import ComplaintService
 from compliance_api.utils.enum import PermissionEnum
+from compliance_api.utils.schema_utils import get_pagination_schema
 from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
@@ -65,6 +66,24 @@ class ComplaintSources(Resource):
         complaint_sources = ComplaintService.get_complaint_sources()
         complaint_sources_schema = KeyValueSchema(many=True)
         return complaint_sources_schema.dump(complaint_sources), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route("/resolutions", methods=["GET", "OPTIONS"])
+class ComplaintResolutions(Resource):
+    """Resource for complaint resolutions."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=[keyvalue_list_schema])
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch all complaint resolutions"
+    )
+    @auth.require
+    def get():
+        """Fetch all complaint resolutions."""
+        complaint_resolutions = ComplaintService.get_complaint_resolutions()
+        complaint_resolutions_schema = KeyValueSchema(many=True)
+        return complaint_resolutions_schema.dump(complaint_resolutions), HTTPStatus.OK
 
 
 @cors_preflight("GET, OPTIONS, POST")
@@ -121,30 +140,12 @@ class Complaints(Resource):
                 "type": "integer",
                 "required": False,
             },
-            "page_no": {
-                "description": "Page number for pagination",
-                "type": "integer",
-                "required": False,
-                "default": 1,
-            },
-            "page_size": {
-                "description": "Number of items per page",
-                "type": "integer",
-                "required": False,
-                "default": 15,
-            },
-            "sort_by": {
-                "description": "Field to sort by",
+            "resolution_ids": {
+                "description": "Filter by resolution ID(s). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
-                "default": "complaint_number",
             },
-            "sort_order": {
-                "description": "Sort order (asc/desc)",
-                "type": "string",
-                "required": False,
-                "default": "asc",
-            },
+            **get_pagination_schema("complaint_number"),
         }
     )
     @ApiHelper.swagger_decorators(
@@ -317,10 +318,14 @@ class ComplaintStatus(Resource):
     @API.expect(complaint_status_model)
     @API.response(400, "Bad Request")
     @API.response(404, "Not Found")
-    @ApiHelper.swagger_decorators(API, endpoint_description="Close the complaint")
-    @API.response(code=204, description="Complaint Closed")
+    @ApiHelper.swagger_decorators(API, endpoint_description="Change the complaint status")
+    @API.response(code=204, description="Complaint status updated successfully")
     def patch(complaint_id):
-        """Close complaint."""
+        """Change complaint status.
+
+        When status is 'Closed', resolution_id and resolution_agency_id can be provided.
+        When status is 'Open', these fields are automatically cleared.
+        """
         status = ComplaintStatusSchema().load(API.payload)
         ComplaintService.change_complaint_status(complaint_id, status)
         return {}, HTTPStatus.NO_CONTENT

@@ -144,6 +144,13 @@ const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                       value={dateUtils.formatDate(complaint.date_received)}
                       gridProps={{ xs: 2 }}
                     />
+                    {complaint.resolution && (
+                      <GridLabelValuePair
+                        label="Complaint Resolution"
+                        value={complaint.resolution?.name}
+                        gridProps={{ xs: 12 }}
+                      />
+                    )}
                   </Grid>
                 </AccordionDetails>
               </Accordion>

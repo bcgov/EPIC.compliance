@@ -10,6 +10,11 @@ const ContactForm: FC = () => {
         fullWidth
       />
       <ControlledTextField
+        name="contactTitle"
+        label="Title"
+        fullWidth
+      />
+      <ControlledTextField
         name="contactEmail"
         label="Email"
         placeholder="example@example.com"

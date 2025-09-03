@@ -1943,6 +1943,7 @@
 				},
 				{
 					"name": "Change Status",
+					"description": "Change complaint status. When status is 'CLOSED', you can optionally provide resolution_id and resolution_agency_id. When status is 'OPEN', these fields are automatically cleared.",
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -1954,7 +1955,44 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"status\": \"CLOSED\"\r\n}",
+							"raw": "{\r\n    \"status\": \"CLOSED\",\r\n    \"resolution_id\": 123,\r\n    \"resolution_agency_id\": 456\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{protocol}}://{{api_server}}/api/complaints/150/status",
+							"protocol": "{{protocol}}",
+							"host": [
+								"{{api_server}}"
+							],
+							"path": [
+								"api",
+								"complaints",
+								"150",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Open Complaint",
+					"description": "Open a complaint. The resolution_id and resolution_agency_id fields will be automatically cleared.",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{web_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"status\": \"OPEN\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"

@@ -14,7 +14,7 @@ from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval as InspectionRecordApprovalModel
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models.order import OrderProgressEnum
+from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
@@ -572,6 +572,12 @@ class InspectionRecordDataBuilder:
             items = WarningLetterModel.get_by_inspection_id(self.inspection.id)
         if action == EnforcementActionOptionEnum.ORDER:
             items = OrderModel.get_by_inspection_id(self.inspection.id)
+            if items:
+                items = [
+                    item
+                    for item in items
+                    if item.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
+                ]
             if ir_status_id == IRStatusEnum.PRELIMINARY.value:
                 items = [
                     item

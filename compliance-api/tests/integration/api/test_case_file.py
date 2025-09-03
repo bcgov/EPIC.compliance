@@ -158,7 +158,7 @@ def test_create_case_file_with_existing_case_file_number(
 def test_get_case_files_by_project_id(client, auth_header):
     """Get case files by project id."""
     case_file_data = copy.copy(CasefileScenario.default_value.value)
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     CaseFileModel.create_case_file(case_file_data)
     url = urljoin(API_BASE_URL, "case-files?project_id=1")
     result = client.get(url, headers=auth_header)
@@ -173,7 +173,7 @@ def test_get_case_files(client, auth_header, mocker):
     contains_role.return_value = True
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["project_id"] = 2
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     created_case = CaseFileService.create(case_file_data)
     url = urljoin(API_BASE_URL, "case-files")
     result = client.get(url, headers=auth_header)
@@ -201,7 +201,7 @@ def test_get_case_file_by_id(client, auth_header, mocker):
     }
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["project_id"] = 2
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     case_file_data["case_file_status"] = CaseFileStatusEnum.OPEN
     created_case_file = CaseFileModel.create_case_file(case_file_data)
     url = urljoin(API_BASE_URL, f"case-files/{created_case_file.id}")
@@ -221,7 +221,7 @@ def test_get_case_file_officers(client, auth_header_super_user, mocker):
     user_data["auth_user_guid"] = auth_user_guid
     new_user = StaffScenario.create(user_data)
     case_file_data = copy.copy(CasefileScenario.default_value.value)
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     case_file_data["primary_officer_id"] = new_user.id
     case_file_data["officer_ids"] = [new_user.id]
     result = CaseFileService.create(case_file_data)
@@ -244,7 +244,7 @@ def test_get_case_file_by_number(client, auth_header_super_user, mocker):
         "proponent": {"name": fake.word()},
     }
     case_file_data = copy.copy(CasefileScenario.default_value.value)
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     result = CaseFileModel.create_case_file(case_file_data)
     url = urljoin(
         API_BASE_URL,
@@ -270,7 +270,7 @@ def test_case_file_update(client, auth_header_super_user, created_staff, mocker)
     }
     #  creating case file without officers or primary officer
     case_file_data = copy.copy(CasefileScenario.default_value.value)
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     case_file_data["primary_officer_id"] = created_staff.id
     case_file_data["project_description"] = "sample description"
     created_result = CaseFileModel.create_case_file(case_file_data)
@@ -320,7 +320,7 @@ def test_case_file_update(client, auth_header_super_user, created_staff, mocker)
 def test_case_file_update_viewer_fails(client, auth_header, created_staff):
     """Update as Viewer."""
     case_file_data = copy.copy(CasefileScenario.default_value.value)
-    case_file_data["case_file_number"] = fake.word()
+    case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     case_file_data["primary_officer_id"] = created_staff.id
     created_result = CaseFileModel.create_case_file(case_file_data)
     url = urljoin(API_BASE_URL, f"case-files/{created_result.id}")

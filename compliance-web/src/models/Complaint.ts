@@ -10,6 +10,7 @@ import { FirstNation } from "./FirstNation";
 import { Topic } from "./Topic";
 import { InspectionOrder } from "./InspectionOrder";
 import { BaseTableQueryParams } from "./BaseTableQueryParams";
+import { ComplaintResolution } from "./ComplaintResolution";
 
 export interface Complaint {
   id: number;
@@ -43,6 +44,8 @@ export interface Complaint {
   sub_type?: string;
   agency?: Agency;
   first_nation?: FirstNation;
+  resolution?: ComplaintResolution;
+  resolution_agency?: Agency;
 }
 
 export interface ComplaintGridQueryParams extends BaseTableQueryParams {
@@ -54,7 +57,8 @@ export interface ComplaintGridQueryParams extends BaseTableQueryParams {
   primary_officer_ids?: string;
   statuses?: string;
   case_file_number?: string;
-  case_file_id?: string;
+  case_file_id?: string;  
+  resolution_ids?: string;
 }
 
 export interface ComplaintGridItems {
@@ -99,4 +103,6 @@ export interface ComplaintAPIData {
 
 export interface ComplaintStatusAPIData {
   status: string;
+  resolution_id?: string;
+  resolution_agency_id?: string;
 }
