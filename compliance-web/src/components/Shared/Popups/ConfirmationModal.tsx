@@ -1,10 +1,12 @@
 import { DialogContent, DialogContentText } from "@mui/material";
+import { ReactNode } from "react";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import ModalActions from "@/components/Shared/Modals/ModalActions";
 
 type ConfirmationModalProps = {
   title: string;
-  description: string;
+  description?: string;
+  formattedDescription?: ReactNode;
   confirmButtonText?: string;
   cancelButtonText?: string;
   onConfirm: () => void;
@@ -14,6 +16,7 @@ type ConfirmationModalProps = {
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   title,
   description,
+  formattedDescription,
   confirmButtonText,
   cancelButtonText,
   onConfirm,
@@ -23,7 +26,11 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     <>
       <ModalTitleBar title={title} onClose={onCancel} />
       <DialogContent dividers>
-        <DialogContentText>{description}</DialogContentText>
+        {formattedDescription ? (
+          formattedDescription
+        ) : (
+          <DialogContentText>{description}</DialogContentText>
+        )}
       </DialogContent>
       <ModalActions
         primaryActionButtonText={confirmButtonText}

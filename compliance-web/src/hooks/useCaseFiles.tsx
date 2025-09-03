@@ -15,6 +15,7 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
 import { CaseFileOption } from "@/models/CaseFile";
+import { CaseFileOpenItems } from "@/models/CaseFileOpenItems";
 
 const fetchCaseFiles = (
   queryParams?: CaseFileGridQueryParams
@@ -40,6 +41,12 @@ const fetchInitiations = (): Promise<Initiation[]> => {
 
 const fetchCaseFileLinks = (caseFileId: number): Promise<CaseFile[]> => {
   return request({ url: `/case-files/${caseFileId}/links` });
+};
+
+const fetchCaseFileOpenItems = (
+  caseFileId: number
+): Promise<CaseFileOpenItems> => {
+  return request({ url: `/case-files/${caseFileId}/open-items` });
 };
 
 const createCaseFile = (caseFile: CaseFileAPIData) => {
@@ -144,8 +151,16 @@ export const useOfficersByCaseFileId = (caseFileId: number) => {
 export const useCaseFilesByProjectId = (projectId: number) => {
   return useQuery({
     queryKey: ["case-files-by-projectId", projectId],
-    queryFn: () => fetchCaseFiles({ project_id: projectId.toString()  }),
+    queryFn: () => fetchCaseFiles({ project_ids: projectId.toString() }),
     enabled: !!projectId,
+  });
+};
+
+export const useCaseFileOpenItems = (caseFileId: number) => {
+  return useQuery({
+    queryKey: ["case-file-open-items", caseFileId],
+    queryFn: () => fetchCaseFileOpenItems(caseFileId),
+    enabled: !!caseFileId,
   });
 };
 

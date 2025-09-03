@@ -52,7 +52,7 @@ const LinkCaseFileModal: FC<LinkCaseFileModalProps> = ({
           caseFileOption.name !== fileNumber &&
           !linkedCaseFiles?.some((linked) => linked.id === caseFileOption.id)
       )
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
   const caseFilesList = isEdit ? linkedCaseFilesOptions : filteredCaseFileList;
 

@@ -2,6 +2,7 @@ import LinkCaseFileModal from "@/components/App/CaseFiles/Profile/LinkCaseFileMo
 import MenuActionDropdown from "@/components/Shared/MenuActionDropdown";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import {
+  useCaseFileOpenItems,
   useDeleteCaseFile,
   useLinkCaseFile,
   useUnlinkCaseFile,
@@ -10,6 +11,7 @@ import {
 import { CaseFile } from "@/models/CaseFile";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
+import { Box, Typography } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import React, { useCallback } from "react";
@@ -31,6 +33,10 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
     "case-file",
     fileNumber,
   ]);
+
+  const { data: caseFileOpenItems } = useCaseFileOpenItems(
+    caseFileData?.id ?? 0
+  );
 
   const closeAndRefresh = useCallback(() => {
     queryClient.invalidateQueries({
@@ -67,6 +73,146 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
     onUpdateStatusSuccess
   );
   const { mutate: deleteCaseFile } = useDeleteCaseFile(onDeleteSuccess);
+
+  const closeCaseFile = useCallback(() => {
+    const formattedDescription = caseFileOpenItems?.has_open_items ? (
+      <Box sx={{ overflow: "auto", maxHeight: "570px" }}>
+        <Typography variant="body1" mb={2}>
+          This case file contains open items that must be closed before
+          proceeding:
+        </Typography>
+        {caseFileOpenItems?.inspections.length > 0 && (
+          <Box>
+            <strong>Inspections:</strong>
+            <ul>
+              {caseFileOpenItems.inspections.map((inspection, index) => (
+                <li key={index}>{inspection.number}</li>
+              ))}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.complaints.length > 0 && (
+          <Box>
+            <strong>Complaints:</strong>
+            <ul>
+              {caseFileOpenItems.complaints.map((complaint, index) => (
+                <li key={index}>{complaint.number}</li>
+              ))}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.orders.length > 0 && (
+          <Box>
+            <strong>Orders:</strong>
+            <ul>
+              {caseFileOpenItems.orders.map((order, index) => (
+                <li key={index}>{order.number}</li>
+              ))}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.warning_letters.length > 0 && (
+          <Box>
+            <strong>Warning Letters:</strong>
+            <ul>
+              {caseFileOpenItems.warning_letters.map((warningLetter, index) => (
+                <li key={index}>{warningLetter.number}</li>
+              ))}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.violation_tickets.length > 0 && (
+          <Box>
+            <strong>Violation Tickets:</strong>
+            <ul>
+              {caseFileOpenItems.violation_tickets.map(
+                (violationTicket, index) => (
+                  <li key={index}>{violationTicket.number}</li>
+                )
+              )}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.administrative_penalties.length > 0 && (
+          <Box>
+            <strong>Administrative Penalties:</strong>
+            <ul>
+              {caseFileOpenItems.administrative_penalties.map(
+                (administrativePenalty, index) => (
+                  <li key={index}>{administrativePenalty.number}</li>
+                )
+              )}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.charge_recommendations.length > 0 && (
+          <Box>
+            <strong>Charge Recommendations:</strong>
+            <ul>
+              {caseFileOpenItems.charge_recommendations.map(
+                (chargeRecommendation, index) => (
+                  <li key={index}>{chargeRecommendation.number}</li>
+                )
+              )}
+            </ul>
+          </Box>
+        )}
+        {caseFileOpenItems?.restorative_justice.length > 0 && (
+          <Box>
+            <strong>Restorative Justice:</strong>
+            <ul>
+              {caseFileOpenItems.restorative_justice.map(
+                (restorativeJustice, index) => (
+                  <li key={index}>{restorativeJustice.number}</li>
+                )
+              )}
+            </ul>
+          </Box>
+        )}
+        <Typography variant="body1" pt={1}>
+          Please close these items and try again.
+        </Typography>
+      </Box>
+    ) : (
+      <div>
+        Are you sure you want to close this case file? This action cannot be
+        undone without reopening the case file.
+      </div>
+    );
+    setOpen({
+      content: (
+        <ConfirmationModal
+          title={
+            caseFileOpenItems?.has_open_items
+              ? "Cannot Close Case File"
+              : "Close Case File?"
+          }
+          formattedDescription={formattedDescription}
+          confirmButtonText={
+            caseFileOpenItems?.has_open_items
+              ? "Return to Case File"
+              : "Close Case File"
+          }
+          onConfirm={() => {
+            if (caseFileOpenItems?.has_open_items) {
+              setClose();
+              return;
+            }
+            updateCaseFileStatus({
+              id: caseFileData?.id ?? 0,
+              caseFileStatus: { status: "CLOSED" },
+            });
+          }}
+        />
+      ),
+    });
+  }, [
+    caseFileData,
+    caseFileOpenItems,
+    setClose,
+    setOpen,
+    updateCaseFileStatus,
+  ]);
 
   const actionsList = [
     {
@@ -111,24 +257,7 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
     },
     {
       text: "Close Case File",
-      onClick: () => {
-        // Handle closing case file
-        setOpen({
-          content: (
-            <ConfirmationModal
-              title="Close Case File?"
-              description="Are you sure you want to close this case file? This action cannot be undone without reopening the case file."
-              confirmButtonText="Close Case File"
-              onConfirm={() => {
-                updateCaseFileStatus({
-                  id: caseFileData?.id ?? 0,
-                  caseFileStatus: { status: "CLOSED" },
-                });
-              }}
-            />
-          ),
-        });
-      },
+      onClick: closeCaseFile,
       hidden: status?.toLowerCase() === "closed",
     },
     {
