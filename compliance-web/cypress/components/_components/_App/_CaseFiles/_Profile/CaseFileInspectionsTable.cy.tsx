@@ -1,15 +1,15 @@
 import { mount } from "cypress/react18";
 import CaseFileInspectionsTable from "@/components/App/CaseFiles/Profile/CaseFileInspectionsTable";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { 
-  RouterProvider, 
+import {
+  RouterProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
-  createRouter
-} from '@tanstack/react-router';
+  createRouter,
+} from "@tanstack/react-router";
 import { CaseFile } from "@/models/CaseFile";
-import { INITIATION } from "@/utils/constants";
+import { EnforcementActionEnum, INITIATION } from "@/utils/constants";
 import { InspectionMoreDetails } from "@/models/Inspection";
 
 describe("CaseFileInspectionsTable", () => {
@@ -65,14 +65,16 @@ describe("CaseFileInspectionsTable", () => {
           requirement_number: "REQ_001",
           requirement_source_name: "Order",
           enforcement_action: {
-            id: "ORDER",
+            id: EnforcementActionEnum.ORDER,
             name: "Test Order",
             number: "ORDER_001",
+            approval_status: { id: "APPROVED", name: "Approved" },
+            status: { id: "OPEN", name: "Open" },
             progress: {
               id: "ISSUED",
-              name: "Issued"
-            }
-          }
+              name: "Issued",
+            },
+          },
         },
         {
           requirement_id: 2,
@@ -81,16 +83,17 @@ describe("CaseFileInspectionsTable", () => {
           requirement_number: "REQ_002",
           requirement_source_name: "Condition",
           enforcement_action: {
-            id: "WARNING_LETTER",
+            id: EnforcementActionEnum.WARNING_LETTER,
             name: "Test Warning Letter",
             number: "WL_001",
+            approval_status: { id: "APPROVED", name: "Approved" },
             progress: {
               id: "DRAFTING",
-              name: "Drafting"
-            }
-          }
-        }
-      ]
+              name: "Drafting",
+            },
+          },
+        },
+      ],
     },
     {
       id: 2,
@@ -123,53 +126,59 @@ describe("CaseFileInspectionsTable", () => {
           requirement_sort_order: 1,
           requirement_number: "REQ_003",
           requirement_source_name: "Section",
-          enforcement_action: undefined
-        }
-      ]
+          enforcement_action: undefined,
+        },
+      ],
     },
   ];
 
   beforeEach(() => {
     queryClient = new QueryClient();
-    
+
     // Set up the query data before mounting
-    queryClient.setQueryData(["inspections-details-by-caseFileId", 1], mockInspections);
+    queryClient.setQueryData(
+      ["inspections-details-by-caseFileId", 1],
+      mockInspections
+    );
     queryClient.setQueryData(["staff-users"], []);
 
     // Create a simple router for testing
     const rootRoute = createRootRoute();
-    
+
     const inspectionsRoute = createRoute({
       getParentRoute: () => rootRoute,
-      path: '/ce-database/inspections/$inspectionNumber',
-      component: () => <div>Inspection Detail Page</div>
+      path: "/ce-database/inspections/$inspectionNumber",
+      component: () => <div>Inspection Detail Page</div>,
     });
-    
+
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
-      path: '/',
+      path: "/",
       component: () => (
         <QueryClientProvider client={queryClient}>
           <CaseFileInspectionsTable caseFile={mockCaseFile} />
         </QueryClientProvider>
-      )
+      ),
     });
 
     const routeTree = rootRoute.addChildren([indexRoute, inspectionsRoute]);
-    
+
     const memoryHistory = createMemoryHistory({
-      initialEntries: ['/'],
+      initialEntries: ["/"],
     });
-    
+
     const router = createRouter({
       routeTree,
       history: memoryHistory,
     });
 
     // Debug: Log the query data to ensure it's set correctly
-    cy.log('Setting up test with inspections data:', JSON.stringify(mockInspections));
-    cy.log('Case file initiation ID:', mockCaseFile.initiation.id);
-    cy.log('INITIATION.INSPECTION_ID:', INITIATION.INSPECTION_ID);
+    cy.log(
+      "Setting up test with inspections data:",
+      JSON.stringify(mockInspections)
+    );
+    cy.log("Case file initiation ID:", mockCaseFile.initiation.id);
+    cy.log("INITIATION.INSPECTION_ID:", INITIATION.INSPECTION_ID);
 
     mount(<RouterProvider router={router as never} />);
   });
@@ -180,10 +189,10 @@ describe("CaseFileInspectionsTable", () => {
 
   it("displays inspection accordions with correct inspection numbers", () => {
     // Debug: Check what's actually rendered
-    cy.get('body').then(($body) => {
-      cy.log('Body content:', $body.html());
+    cy.get("body").then(($body) => {
+      cy.log("Body content:", $body.html());
     });
-    
+
     cy.contains("IR_123").should("exist");
     cy.contains("IR_124").should("exist");
   });
@@ -207,14 +216,14 @@ describe("CaseFileInspectionsTable", () => {
   it("expands accordion when clicked", () => {
     // Click on the first accordion to expand it
     cy.get('[role="button"]').first().click();
-    
+
     // Should show expanded content with requirement details
     cy.contains("Requirement Summary").should("exist");
     cy.contains("#").should("exist");
     cy.contains("Source").should("exist");
     cy.contains("Enforcement Action").should("exist");
     cy.contains("Enf. Status").should("exist");
-    
+
     // Should show ExpandLessRounded icon when expanded
     cy.get('[data-testid="ExpandLessRoundedIcon"]').should("exist");
   });
@@ -222,57 +231,61 @@ describe("CaseFileInspectionsTable", () => {
   it("displays requirement details when expanded", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Check for requirement summaries
     cy.contains("#1. Test Requirement 1").should("exist");
     cy.contains("#2. Test Requirement 2").should("exist");
-    
+
     // Check for requirement numbers
     cy.contains("001").should("exist"); // From REQ_001 split
     cy.contains("002").should("exist"); // From REQ_002 split
-    
+
     // Check for requirement sources
     cy.contains("Order").should("exist");
     cy.contains("Condition").should("exist");
-    
+
     // Check for enforcement actions
     cy.contains("Test Order").should("exist");
     cy.contains("Test Warning Letter").should("exist");
-    
+
     // Check for enforcement status chips
-    cy.contains("Issued").should("exist");
+    cy.contains("Open").should("exist");
     cy.contains("Drafting").should("exist");
   });
 
   it("shows inspection links with correct routing", () => {
-    cy.get('a').contains("IR_123").should("exist");
-    cy.get('a').contains("IR_124").should("exist");
+    cy.get("a").contains("IR_123").should("exist");
+    cy.get("a").contains("IR_124").should("exist");
   });
 
   it("has correct link to inspection detail", () => {
-    cy.get('a').contains("IR_123").should('have.attr', 'href')
-      .and('include', '/ce-database/inspections/');
+    cy.get("a")
+      .contains("IR_123")
+      .should("have.attr", "href")
+      .and("include", "/ce-database/inspections/");
   });
 
   it("navigates to inspection detail when link is clicked", () => {
     // Just check that the link has the correct href
-    cy.get('a').contains("IR_123").should('have.attr', 'href')
-      .and('include', '/ce-database/inspections/');
-    
+    cy.get("a")
+      .contains("IR_123")
+      .should("have.attr", "href")
+      .and("include", "/ce-database/inspections/");
+
     // And that clicking doesn't throw errors
-    cy.get('a').contains("IR_123").click();
+    cy.get("a").contains("IR_123").click();
   });
 
   it("collapses accordion when clicked again", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Verify it's expanded
     cy.contains("Requirement Summary").should("exist");
-    
+
     // Click again to collapse
     cy.get('[role="button"]').first().click();
-    
+
     // Verify it's collapsed (content should not be visible)
     cy.contains("Requirement Summary").should("not.be.visible");
   });
@@ -280,42 +293,44 @@ describe("CaseFileInspectionsTable", () => {
   it("shows no inspections message when there are no inspections", () => {
     // Set empty inspections data
     queryClient.setQueryData(["inspections-details-by-caseFileId", 1], []);
-    
+
     // Re-mount with empty data
     const rootRoute = createRootRoute();
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
-      path: '/',
+      path: "/",
       component: () => (
         <QueryClientProvider client={queryClient}>
           <CaseFileInspectionsTable caseFile={mockCaseFile} />
         </QueryClientProvider>
-      )
+      ),
     });
     const routeTree = rootRoute.addChildren([indexRoute]);
-    const memoryHistory = createMemoryHistory({ initialEntries: ['/'] });
+    const memoryHistory = createMemoryHistory({ initialEntries: ["/"] });
     const router = createRouter({ routeTree, history: memoryHistory });
-    
+
     mount(<RouterProvider router={router as never} />);
-    
-    cy.contains("You do not have any created inspections on this file.").should("exist");
+
+    cy.contains("You do not have any created inspections on this file.").should(
+      "exist"
+    );
   });
 
   it("handles requirement source links correctly", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Check that order requirement numbers are clickable links
-    cy.get('a').contains("001").should("exist");
-    cy.get('a').contains("002").should("not.exist");
+    cy.get("a").contains("001").should("exist");
+    cy.get("a").contains("002").should("not.exist");
   });
 
   it("displays enforcement action status chips with correct colors", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Check for enforcement status chips
-    cy.contains("Issued").should("exist");
+    cy.contains("Open").should("exist");
     cy.contains("Drafting").should("exist");
   });
 
@@ -328,35 +343,38 @@ describe("CaseFileInspectionsTable", () => {
         location_description: "Test Location 3",
         start_date: "2023-04-17T12:00:00Z",
         primary_officer: { name: "Bob Johnson" },
-        requirement_details: []
-      }
+        requirement_details: [],
+      },
     ];
 
-    queryClient.setQueryData(["inspections-details-by-caseFileId", 1], inspectionsWithoutRequirements);
-    
+    queryClient.setQueryData(
+      ["inspections-details-by-caseFileId", 1],
+      inspectionsWithoutRequirements
+    );
+
     // Re-mount with data without requirements
     const rootRoute = createRootRoute();
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
-      path: '/',
+      path: "/",
       component: () => (
         <QueryClientProvider client={queryClient}>
           <CaseFileInspectionsTable caseFile={mockCaseFile} />
         </QueryClientProvider>
-      )
+      ),
     });
     const routeTree = rootRoute.addChildren([indexRoute]);
-    const memoryHistory = createMemoryHistory({ initialEntries: ['/'] });
+    const memoryHistory = createMemoryHistory({ initialEntries: ["/"] });
     const router = createRouter({ routeTree, history: memoryHistory });
-    
+
     mount(<RouterProvider router={router as never} />);
-    
+
     // Should still show the inspection
     cy.contains("IR_125").should("exist");
-    
+
     // Expand the accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Should show headers but no requirement data
     cy.contains("Requirement Summary").should("exist");
     cy.contains("#").should("exist");
@@ -364,4 +382,4 @@ describe("CaseFileInspectionsTable", () => {
     cy.contains("Enforcement Action").should("exist");
     cy.contains("Enf. Status").should("exist");
   });
-}); 
+});

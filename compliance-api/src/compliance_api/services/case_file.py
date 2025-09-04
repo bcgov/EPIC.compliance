@@ -1,5 +1,7 @@
 """Service for handle CaseFile."""
 
+# pylint: disable=too-many-lines
+
 from datetime import datetime
 from io import BytesIO
 
