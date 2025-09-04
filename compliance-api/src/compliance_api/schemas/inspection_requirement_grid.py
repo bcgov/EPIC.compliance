@@ -32,13 +32,24 @@ class InspectionRequirementGridItemSchema(Schema):
     )
     approval_status = fields.Nested(
         KeyValueSchema,
-        metadata={"description": "The approval status of the inspection requirement"},
+        metadata={"description": "The approval status of the enforcement action"},
+        allow_none=True,
     )
     approved_by = fields.Nested(
         StaffUserSchema,
         metadata={
             "description": "The staff user who approved the inspection requirement"
         },
+        allow_none=True,
+    )
+    status = fields.Nested(
+        KeyValueSchema,
+        metadata={"description": "The status of the inspection requirement"},
+        allow_none=True,
+    )
+    progress = fields.Nested(
+        KeyValueSchema,
+        metadata={"description": "The progress of the inspection requirement"},
         allow_none=True,
     )
     sort_order = fields.Int(
@@ -94,10 +105,13 @@ class InspectionRequirementFilterSchema(BaseSchema):
             "description": "The comma separated list of enforcement action ids of the inspection requirement"
         },
     )
-    apprv_sts = fields.String(
+    enf_stats = fields.String(
         required=False,
         metadata={
-            "description": "The comma separated list of approval status ids of the inspection requirement"
+            "description": (
+                "The comma separated list of enforcement statuses "
+                "(status, progress, or approval status) of the inspection requirement"
+            )
         },
     )
     req_src_ids = fields.String(
@@ -149,7 +163,7 @@ class InspectionRequirementFilterSchema(BaseSchema):
                 "summary",
                 "cmd_fnd",
                 "enf_actn",
-                "apprv_sts",
+                "enf_stats",
                 "req_src",
                 "req_src_num",
                 "ir_no",

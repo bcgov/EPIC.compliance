@@ -318,7 +318,9 @@ class ComplaintStatus(Resource):
     @API.expect(complaint_status_model)
     @API.response(400, "Bad Request")
     @API.response(404, "Not Found")
-    @ApiHelper.swagger_decorators(API, endpoint_description="Change the complaint status")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Change the complaint status"
+    )
     @API.response(code=204, description="Complaint status updated successfully")
     def patch(complaint_id):
         """Change complaint status.

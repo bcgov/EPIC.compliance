@@ -58,8 +58,11 @@ class InspectionRequirements(Resource):
                 "type": "string",
                 "required": False,
             },
-            "apprv_sts": {
-                "description": "The comma separated list of approval statuses of the inspection requirement",
+            "enf_stats": {
+                "description": (
+                    "The comma separated list of enforcement statuses "
+                    "(status, progress, or approval status) of the inspection requirement"
+                ),
                 "type": "string",
                 "required": False,
             },

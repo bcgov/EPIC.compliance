@@ -5,7 +5,7 @@ from io import BytesIO
 
 import pandas as pd
 from flask import g
-from sqlalchemy import String, and_, asc, case, cast, desc, func, or_
+from sqlalchemy import String, and_, asc, case, cast, desc, func, not_, or_
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -924,14 +924,16 @@ def _build_enforcement_query(inspection_ids: list):
             AdministrativePenaltyModel,
             and_(
                 AdministrativePenaltyModel.inspection_id == InspectionModel.id,
-                ~or_(
-                    AdministrativePenaltyModel.referral_status
-                    == ReferralStatusEnum.CEB_NOT_PROCEEDING,
-                    and_(
+                not_(
+                    or_(
                         AdministrativePenaltyModel.referral_status
-                        == ReferralStatusEnum.REFERRED_TO_DM,
-                        AdministrativePenaltyModel.decision.isnot(None),
-                    ),
+                        == ReferralStatusEnum.CEB_NOT_PROCEEDING,
+                        and_(
+                            AdministrativePenaltyModel.referral_status
+                            == ReferralStatusEnum.REFERRED_TO_DM,
+                            AdministrativePenaltyModel.decision.isnot(None),
+                        ),
+                    )
                 ),
                 AdministrativePenaltyModel.is_active.is_(True),
                 AdministrativePenaltyModel.is_deleted.is_(False),
@@ -941,15 +943,17 @@ def _build_enforcement_query(inspection_ids: list):
             ChargeRecommendationModel,
             and_(
                 ChargeRecommendationModel.inspection_id == InspectionModel.id,
-                ~or_(
-                    ChargeRecommendationModel.status
-                    == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
-                    and_(
-                        ChargeRecommendationModel.charge_decision.isnot(None),
-                        ChargeRecommendationModel.charge_decision
-                        == ChargeDecisionEnum.NOT_PROCEEDING,
-                    ),
-                    ChargeRecommendationModel.sentence_date.isnot(None),
+                not_(
+                    or_(
+                        ChargeRecommendationModel.status
+                        == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
+                        and_(
+                            ChargeRecommendationModel.charge_decision.isnot(None),
+                            ChargeRecommendationModel.charge_decision
+                            == ChargeDecisionEnum.NOT_PROCEEDING,
+                        ),
+                        ChargeRecommendationModel.sentence_date.isnot(None),
+                    )
                 ),
                 ChargeRecommendationModel.is_active.is_(True),
                 ChargeRecommendationModel.is_deleted.is_(False),

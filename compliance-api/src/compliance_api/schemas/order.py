@@ -196,6 +196,6 @@ class OrderReplaceSchema(BaseSchema):
         allow_none=True,
         metadata={
             "description": "The order number for the replacement order. "
-                           "If not provided, a new number will be generated."
+            "If not provided, a new number will be generated."
         },
     )

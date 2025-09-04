@@ -118,7 +118,10 @@ class Complaint(BaseModelVersioned):
     status = Column(Enum(ComplaintStatusEnum), nullable=False)
     resolution_id = Column(
         Integer,
-        ForeignKey("complaint_resolutions.id", name="complaint_resolution_id_complaint_resolutions_id"),
+        ForeignKey(
+            "complaint_resolutions.id",
+            name="complaint_resolution_id_complaint_resolutions_id",
+        ),
         nullable=True,
         comment="The unique Id of the complaint resolution",
     )
@@ -149,8 +152,12 @@ class Complaint(BaseModelVersioned):
         uselist=False,
         cascade="all, delete-orphan",
     )
-    resolution = relationship("ComplaintResolution", foreign_keys=[resolution_id], lazy="joined")
-    resolution_agency = relationship("Agency", foreign_keys=[resolution_agency_id], lazy="joined")
+    resolution = relationship(
+        "ComplaintResolution", foreign_keys=[resolution_id], lazy="joined"
+    )
+    resolution_agency = relationship(
+        "Agency", foreign_keys=[resolution_agency_id], lazy="joined"
+    )
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
 
     __table_args__ = (
@@ -208,9 +215,7 @@ class Complaint(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def change_status(
-        cls, complaint_id, update_data, session=None
-    ):
+    def change_status(cls, complaint_id, update_data, session=None):
         """Update the complaint status and related fields."""
         complaint = cls.query.filter(cls.id == complaint_id).first()
         complaint.update(update_data, commit=False)

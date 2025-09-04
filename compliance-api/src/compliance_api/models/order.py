@@ -230,7 +230,7 @@ class Order(BaseModelVersioned):
         )
 
         # Only filter by order_replace_status if order is provided
-        if order and hasattr(order, 'order_replace_status'):
+        if order and hasattr(order, "order_replace_status"):
             query = query.filter(cls.order_replace_status == order.order_replace_status)
 
         if order and order.id:

@@ -98,15 +98,20 @@ class InspectionService:
         for inspection in inspections:
             requirement_details = []
             requirements = inspection.inspection_requirements or []
-            enforcement_actions = enforcement_actions_data.get(inspection.id, {
-                'orders': [],
-                'warning_letters': [],
-                'violation_tickets': [],
-                'administrative_penalties': [],
-                'charge_recommendations': [],
-                'restorative_justice': []
-            })
-            requirement_details = _make_requirement_detail_object_optimized(requirements, enforcement_actions)
+            enforcement_actions = enforcement_actions_data.get(
+                inspection.id,
+                {
+                    "orders": [],
+                    "warning_letters": [],
+                    "violation_tickets": [],
+                    "administrative_penalties": [],
+                    "charge_recommendations": [],
+                    "restorative_justice": [],
+                },
+            )
+            requirement_details = _make_requirement_detail_object_optimized(
+                requirements, enforcement_actions
+            )
             setattr(inspection, "requirement_details", requirement_details)
         return inspections
 
