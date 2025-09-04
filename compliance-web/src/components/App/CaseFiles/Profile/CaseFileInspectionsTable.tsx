@@ -90,7 +90,7 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   };
 
   const onOrderSuccess = (order: InspectionOrder) => {
-    const inspection = inspectionsList?.find(
+    const inspection = detailedInspections?.find(
       (inspection) => inspection.id === order.inspection_id
     );
     setOpen({
