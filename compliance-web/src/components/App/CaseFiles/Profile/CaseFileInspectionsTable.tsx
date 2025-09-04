@@ -50,10 +50,6 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   const { data: detailedInspections } = useInspectionsMoreDetailsByCaseFileId(
     caseFile.id
   );
-  const { data: inspectionsListData } = useInspectionsData();
-  const inspectionsList = useMemo(() => {
-    return inspectionsListData?.items;
-  }, [inspectionsListData]);
   const { data: staffUsersList } = useStaffUsersData();
 
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(
