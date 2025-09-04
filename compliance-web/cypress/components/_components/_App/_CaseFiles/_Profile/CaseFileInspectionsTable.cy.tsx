@@ -9,7 +9,7 @@ import {
   createRouter
 } from '@tanstack/react-router';
 import { CaseFile } from "@/models/CaseFile";
-import { INITIATION } from "@/utils/constants";
+import { INITIATION, EnforcementActionEnum } from "@/utils/constants";
 import { InspectionMoreDetails } from "@/models/Inspection";
 
 describe("CaseFileInspectionsTable", () => {
@@ -65,7 +65,7 @@ describe("CaseFileInspectionsTable", () => {
           requirement_number: "REQ_001",
           requirement_source_name: "Order",
           enforcement_action: {
-            id: "ORDER",
+            id: EnforcementActionEnum.ORDER,
             name: "Test Order",
             number: "ORDER_001",
             progress: {
@@ -81,7 +81,7 @@ describe("CaseFileInspectionsTable", () => {
           requirement_number: "REQ_002",
           requirement_source_name: "Condition",
           enforcement_action: {
-            id: "WARNING_LETTER",
+            id: EnforcementActionEnum.WARNING_LETTER,
             name: "Test Warning Letter",
             number: "WL_001",
             progress: {
@@ -240,7 +240,7 @@ describe("CaseFileInspectionsTable", () => {
     cy.contains("Test Warning Letter").should("exist");
     
     // Check for enforcement status chips
-    cy.contains("Issued").should("exist");
+    cy.contains("Open").should("exist");
     cy.contains("Drafting").should("exist");
   });
 
@@ -315,7 +315,7 @@ describe("CaseFileInspectionsTable", () => {
     cy.get('[role="button"]').first().click();
     
     // Check for enforcement status chips
-    cy.contains("Issued").should("exist");
+    cy.contains("Open").should("exist");
     cy.contains("Drafting").should("exist");
   });
 

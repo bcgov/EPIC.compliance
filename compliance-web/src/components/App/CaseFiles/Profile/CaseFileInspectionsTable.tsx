@@ -1,6 +1,5 @@
 import { useInspectionOrderByNumber } from "@/hooks/useInspectionOrders";
 import {
-  useInspectionsData,
   useInspectionsMoreDetailsByCaseFileId,
 } from "@/hooks/useInspections";
 import { CaseFile } from "@/models/CaseFile";
@@ -30,7 +29,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import OrderDrawer from "@/components/App/Inspections/Profile/Enforcements/Orders/OrderDrawer";
 import { useDrawer } from "@/store/drawerStore";
 import { useStaffUsersData } from "@/hooks/useStaff";
@@ -50,10 +49,6 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   const { data: detailedInspections } = useInspectionsMoreDetailsByCaseFileId(
     caseFile.id
   );
-  const { data: inspectionsListData } = useInspectionsData();
-  const inspectionsList = useMemo(() => {
-    return inspectionsListData?.items;
-  }, [inspectionsListData]);
   const { data: staffUsersList } = useStaffUsersData();
 
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(
@@ -90,7 +85,7 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   };
 
   const onOrderSuccess = (order: InspectionOrder) => {
-    const inspection = inspectionsList?.find(
+    const inspection = detailedInspections?.find(
       (inspection) => inspection.id === order.inspection_id
     );
     setOpen({
