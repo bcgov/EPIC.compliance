@@ -302,7 +302,6 @@ class CaseFileService:
         case_file = CaseFileModel.find_by_id(case_file_id)
         if not case_file:
             raise ResourceNotFoundError(f"CaseFile with {case_file_id} not found")
-        _case_file_close_check(case_file)
         _access_check_for_update(case_file_id)
         case_file = CaseFileModel.find_by_id(case_file_id)
         link_case_file_id = link.get("link_case_file_id")

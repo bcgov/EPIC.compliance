@@ -413,5 +413,5 @@ class CaseFileOptions(Resource):
     def get():
         """Fetch active case files as id-name pairs."""
         case_file_options = CaseFileService.get_case_file_options()
-        schema = CaseFileOptionSchema(many=True)
+        schema = KeyValueSchema(many=True)
         return schema.dump(case_file_options), HTTPStatus.OK
