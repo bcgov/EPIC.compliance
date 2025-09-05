@@ -8,7 +8,8 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.exceptions import BadRequestError
 from compliance_api.schemas.administrative_penalty import (
-    AdministrativePenaltyCreateSchema, AdministrativePenaltySchema, AdministrativePenaltyUpdateSchema)
+    AdministrativePenaltyCreateSchema, AdministrativePenaltyLinkCreateSchema, AdministrativePenaltySchema,
+    AdministrativePenaltyUpdateSchema)
 from compliance_api.services.administrative_penalty import AdministrativePenaltyService
 from compliance_api.utils.util import cors_preflight
 
@@ -30,6 +31,10 @@ administrative_penalty_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 
 administrative_penalty_update_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, AdministrativePenaltyUpdateSchema(), "AdministrativePenaltyUpdate"
+)
+
+administrative_penalty_link_create_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, AdministrativePenaltyLinkCreateSchema(), "AdministrativePenaltyLinkCreate"
 )
 
 
@@ -178,3 +183,30 @@ class AdministrativePenaltyByNumber(Resource):
             administrative_penalty_number
         )
         return AdministrativePenaltySchema().dump(administrative_penalty), HTTPStatus.OK
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/links", methods=["POST", "OPTIONS"])
+class AdministrativePenaltyLinks(Resource):
+    """Link the administrative penalty."""
+
+    @staticmethod
+    @auth.require
+    @API.expect(administrative_penalty_link_create_model)
+    @API.response(400, "Bad Request")
+    @API.response(404, "Not Found")
+    @API.response(
+        code=201, model=administrative_penalty_list_model, description="Success"
+    )
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Link an administrative penalty to inspection requirements",
+    )
+    def post():
+        """Link the administrative penalty to inspection requirements."""
+        link = AdministrativePenaltyLinkCreateSchema().load(API.payload)
+        administrative_penalty_id = link.get("administrative_penalty_id")
+        created_link = AdministrativePenaltyService.link(
+            administrative_penalty_id, link
+        )
+        return AdministrativePenaltySchema().dump(created_link), HTTPStatus.CREATED

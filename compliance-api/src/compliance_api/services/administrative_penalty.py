@@ -178,6 +178,69 @@ class AdministrativePenaltyService:
         return HTTPStatus.NO_CONTENT
 
     @classmethod
+    def link(cls, administrative_penalty_id, link):
+        """Link an existing administrative penalty to inspection requirements.
+
+        Args:
+            administrative_penalty_id: The ID of the administrative penalty to link
+            link: Dictionary containing inspection_id and inspection_requirement_ids
+
+        Returns:
+            The administrative penalty object
+        """
+        # Get the administrative penalty
+        administrative_penalty = AdministrativePenalty.find_by_id(
+            administrative_penalty_id
+        )
+        if not administrative_penalty:
+            raise ResourceNotFoundError(
+                f"Administrative Penalty with id: {administrative_penalty_id} not found"
+            )
+
+        # Get the inspection to link to
+        inspection_id = link.get("inspection_id")
+        inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
+
+        # Check that both the administrative penalty and inspection belong to the same project
+        ap_project_id = administrative_penalty.inspection.case_file.project_id
+        inspection_project_id = inspection.case_file.project_id
+
+        # Handle unapproved projects (project_id is null)
+        if ap_project_id is None and inspection_project_id is None:
+            # For unapproved projects, compare case_file_id
+            ap_case_file_id = administrative_penalty.inspection.case_file_id
+            inspection_case_file_id = inspection.case_file_id
+            if ap_case_file_id != inspection_case_file_id:
+                raise UnprocessableEntityError(
+                    "Administrative penalty and inspection must belong to the same case file for unapproved projects"
+                )
+        elif ap_project_id != inspection_project_id:
+            raise UnprocessableEntityError(
+                "Administrative penalty and inspection must belong to the same project to be linked"
+            )
+
+        # Perform access checks on the inspection
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        ServiceUtils.inspection_status_check(inspection)
+
+        # Validate inspection requirements
+        requirement_ids = link.get("inspection_requirement_ids", [])
+        ServiceUtils.check_requirement_for_enforcement_action(
+            requirement_ids,
+            EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
+        )
+
+        # Create the links in the database
+        with session_scope() as session:
+            cls.insert_or_update_inspection_requirements(
+                administrative_penalty_id,
+                requirement_ids,
+                session,
+            )
+
+        return administrative_penalty
+
+    @classmethod
     def insert_or_update_inspection_requirements(
         cls,
         administrative_penalty_id: int,

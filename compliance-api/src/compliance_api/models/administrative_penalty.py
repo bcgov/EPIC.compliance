@@ -215,9 +215,27 @@ class AdministrativePenalty(BaseModelVersioned):
 
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
-        """Find all administrative penalties by inspection id."""
+        """Find all administrative penalties that have entries in the requirement map for the given inspection."""
+        from compliance_api.models.inspection import InspectionRequirement
+
         return (
-            cls.query.filter_by(inspection_id=inspection_id, is_deleted=False)
+            cls.query.join(
+                AdministrativePenaltyInspectionRequirementMap,
+                AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id
+                == cls.id,
+            )
+            .join(
+                InspectionRequirement,
+                InspectionRequirement.id
+                == AdministrativePenaltyInspectionRequirementMap.inspection_requirement_id,
+            )
+            .filter(
+                InspectionRequirement.inspection_id == inspection_id,
+                AdministrativePenaltyInspectionRequirementMap.is_active.is_(True),
+                AdministrativePenaltyInspectionRequirementMap.is_deleted.is_(False),
+                cls.is_deleted.is_(False),
+            )
+            .distinct()
             .order_by(cls.created_date.desc())
             .all()
         )
