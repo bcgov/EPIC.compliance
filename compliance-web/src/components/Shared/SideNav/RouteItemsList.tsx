@@ -1,6 +1,7 @@
 import {
   FormatListBulletedRounded,
   SettingsRounded,
+  ViewKanbanRounded,
 } from "@mui/icons-material";
 
 export interface RouteMenuItem {
@@ -33,6 +34,11 @@ export default function RouteItemsList() {
           path: "/ce-database/requirements",
         },
       ],
+    },
+    {
+      routeName: "Review Board",
+      icon: <ViewKanbanRounded />,
+      path: "/review-board",
     },
     {
       routeName: "Admin",

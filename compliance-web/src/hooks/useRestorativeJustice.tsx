@@ -55,7 +55,7 @@ const deleteRestorativeJustice = ({
   restorativeJusticeId,
 }: {
   restorativeJusticeId: number;
-}): Promise<void> => {
+}) => {
   return request({
     url: `/restorative-justices/${restorativeJusticeId}`,
     method: "delete",

@@ -14,7 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as OidcCallbackImport } from './routes/oidc-callback'
 import { Route as AuthenticatedImport } from './routes/_authenticated'
 import { Route as IndexImport } from './routes/index'
-import { Route as AuthenticatedIrBoardImport } from './routes/_authenticated/ir-board'
+import { Route as AuthenticatedReviewBoardImport } from './routes/_authenticated/review-board'
 import { Route as AuthenticatedAdminTopicsImport } from './routes/_authenticated/admin/topics'
 import { Route as AuthenticatedAdminStaffImport } from './routes/_authenticated/admin/staff'
 import { Route as AuthenticatedAdminProponentsImport } from './routes/_authenticated/admin/proponents'
@@ -44,8 +44,8 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AuthenticatedIrBoardRoute = AuthenticatedIrBoardImport.update({
-  path: '/ir-board',
+const AuthenticatedReviewBoardRoute = AuthenticatedReviewBoardImport.update({
+  path: '/review-board',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 
@@ -139,11 +139,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OidcCallbackImport
       parentRoute: typeof rootRoute
     }
-    '/_authenticated/ir-board': {
-      id: '/_authenticated/ir-board'
-      path: '/ir-board'
-      fullPath: '/ir-board'
-      preLoaderRoute: typeof AuthenticatedIrBoardImport
+    '/_authenticated/review-board': {
+      id: '/_authenticated/review-board'
+      path: '/review-board'
+      fullPath: '/review-board'
+      preLoaderRoute: typeof AuthenticatedReviewBoardImport
       parentRoute: typeof AuthenticatedImport
     }
     '/_authenticated/admin/agencies': {
@@ -231,7 +231,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren({
   IndexRoute,
   AuthenticatedRoute: AuthenticatedRoute.addChildren({
-    AuthenticatedIrBoardRoute,
+    AuthenticatedReviewBoardRoute,
     AuthenticatedAdminAgenciesRoute,
     AuthenticatedAdminProponentsRoute,
     AuthenticatedAdminStaffRoute,
@@ -266,7 +266,7 @@ export const routeTree = rootRoute.addChildren({
     "/_authenticated": {
       "filePath": "_authenticated.tsx",
       "children": [
-        "/_authenticated/ir-board",
+        "/_authenticated/review-board",
         "/_authenticated/admin/agencies",
         "/_authenticated/admin/proponents",
         "/_authenticated/admin/staff",
@@ -283,8 +283,8 @@ export const routeTree = rootRoute.addChildren({
     "/oidc-callback": {
       "filePath": "oidc-callback.tsx"
     },
-    "/_authenticated/ir-board": {
-      "filePath": "_authenticated/ir-board.tsx",
+    "/_authenticated/review-board": {
+      "filePath": "_authenticated/review-board.tsx",
       "parent": "/_authenticated"
     },
     "/_authenticated/admin/agencies": {
