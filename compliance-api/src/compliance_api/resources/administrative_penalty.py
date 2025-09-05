@@ -95,6 +95,45 @@ class AdministrativePenalties(Resource):
         )
 
 
+@cors_preflight("GET, OPTIONS")
+@API.route("/projectwise", methods=["GET", "OPTIONS"])
+class ProjectwiseAdministrativePenalties(Resource):
+    """Resource for managing projectwise administrative penalties."""
+
+    @staticmethod
+    @auth.require
+    @API.response(
+        code=200, description="Success", model=[administrative_penalty_list_model]
+    )
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch all administrative penalties for a project"
+    )
+    @API.doc(
+        params={
+            "case_file_id": {
+                "description": "The unique identifier of the case file",
+                "type": "integer",
+                "required": True,
+            }
+        }
+    )
+    def get():
+        """Fetch all administrative penalties for the project associated to the case file."""
+        case_file_id = request.args.get("case_file_id")
+        if not case_file_id:
+            raise BadRequestError("case_file_id is required")
+        administrative_penalties = (
+            AdministrativePenaltyService.get_projectwise_administrative_penalties(
+                case_file_id
+            )
+        )
+        administrative_penalty_list_schema = AdministrativePenaltySchema(many=True)
+        return (
+            administrative_penalty_list_schema.dump(administrative_penalties),
+            HTTPStatus.OK,
+        )
+
+
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route(
     "/<int:administrative_penalty_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"]

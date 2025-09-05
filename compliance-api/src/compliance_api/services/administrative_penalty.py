@@ -34,6 +34,30 @@ class AdministrativePenaltyService:
         return administrative_penalty
 
     @staticmethod
+    def get_projectwise_administrative_penalties(case_file_id: int):
+        """Get all administrative penalties for the project associated to the case file.
+
+        Args:
+            case_file_id: int - The case file ID
+        Returns:
+            List[AdministrativePenalty] - List of administrative penalties
+        """
+        case_file = CaseFileModel.find_by_id(case_file_id)
+        if case_file is None:
+            raise ResourceNotFoundError(f"Case file with ID {case_file_id} not found")
+        case_file_ids_to_be_queried = [case_file.id]
+        if case_file.project_id is not None:
+            case_files = CaseFileModel.get_by_project(case_file.project_id)
+            case_file_ids_to_be_queried = [
+                case_file.id
+                for case_file in case_files
+                if case_file.is_active and not case_file.is_deleted
+            ]
+        return AdministrativePenalty.get_administrative_penalties_by_case_files(
+            case_file_ids_to_be_queried
+        )
+
+    @staticmethod
     def get_by_number(administrative_penalty_number):
         """Get administrative penalty by number."""
         administrative_penalty = (

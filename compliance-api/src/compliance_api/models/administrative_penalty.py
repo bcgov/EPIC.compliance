@@ -276,3 +276,25 @@ class AdministrativePenalty(BaseModelVersioned):
             query = query.filter(cls.id != administrative_penalty_id)
 
         return query.first() is not None
+
+    @classmethod
+    def get_administrative_penalties_by_case_files(cls, case_file_ids: list[int]):
+        """Get all administrative penalties by case file ids.
+
+        Args:
+            case_file_ids: List of case file IDs
+        Returns:
+            List of AdministrativePenalty objects
+        """
+        return (
+            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .filter(
+                InspectionModel.case_file_id.in_(case_file_ids),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+                InspectionModel.is_active.is_(True),
+                InspectionModel.is_deleted.is_(False),
+            )
+            .order_by(cls.created_date.desc())
+            .all()
+        )
