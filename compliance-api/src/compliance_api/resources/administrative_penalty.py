@@ -194,10 +194,26 @@ class AdministrativePenaltyById(Resource):
         API, endpoint_description="Delete an administrative penalty"
     )
     @API.response(code=204, description="NoContent")
+    @API.doc(
+        params={
+            "inspection_requirement_id": {
+                "description": "Optional inspection requirement ID to validate deletion scope",
+                "type": "integer",
+                "required": False,
+            }
+        }
+    )
     def delete(administrative_penalty_id):
         """Delete an administrative penalty."""
+        inspection_requirement_id = request.args.get("inspection_requirement_id")
+        if inspection_requirement_id:
+            try:
+                inspection_requirement_id = int(inspection_requirement_id)
+            except ValueError:
+                raise BadRequestError("inspection_requirement_id must be a valid integer")
+        
         return AdministrativePenaltyService.delete_administrative_penalty(
-            administrative_penalty_id
+            administrative_penalty_id, inspection_requirement_id
         )
 
 
