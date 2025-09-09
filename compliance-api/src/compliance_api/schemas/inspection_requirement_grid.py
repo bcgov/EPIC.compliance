@@ -30,6 +30,9 @@ class InspectionRequirementGridItemSchema(Schema):
             "description": "The enforcement action of the inspection requirement"
         },
     )
+    enforcement_number = fields.Str(
+        metadata={"description": "The enforcement number of the inspection requirement"}
+    )
     approval_status = fields.Nested(
         KeyValueSchema,
         metadata={"description": "The approval status of the enforcement action"},
@@ -114,6 +117,10 @@ class InspectionRequirementFilterSchema(BaseSchema):
             )
         },
     )
+    enf_number = fields.String(
+        required=False,
+        metadata={"description": "The enforcement number of the inspection requirement"},
+    )
     req_src_ids = fields.String(
         required=False,
         metadata={
@@ -163,6 +170,7 @@ class InspectionRequirementFilterSchema(BaseSchema):
                 "summary",
                 "cmd_fnd",
                 "enf_actn",
+                "enf_number",
                 "enf_stats",
                 "req_src",
                 "req_src_num",

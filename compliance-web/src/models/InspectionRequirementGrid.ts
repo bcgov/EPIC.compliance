@@ -23,6 +23,7 @@ export interface InspectionRequirementGrid {
   approved_by_id: number;
   progress?: Option;
   status?: Option;
+  enforcement_number?: string;
 }
 
 export interface InspectionRequirementGridQueryParams extends BaseTableQueryParams {
@@ -39,6 +40,7 @@ export interface InspectionRequirementGridQueryParams extends BaseTableQueryPara
   prm_offc_ids?: string;
   insp_sts?: string;
   project_ids?: string;
+  enf_number?: string;
 }
 
 export interface InspectionRequirementGridItems {

@@ -48,7 +48,7 @@ function Requirements() {
   const { data: requirementSources } = useRequirementSourcesData();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
-  
+
   // State for "My Requirements" switch - default to true for first-time users
   const [myRequirementsChecked, setMyRequirementsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
@@ -391,7 +391,6 @@ function Requirements() {
     complianceFindings,
     enforcementActions,
     requirementSources,
-    staffUsers,
   });
 
   return authLoading || staffLoading || !isRestored ? (

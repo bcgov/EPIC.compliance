@@ -20,7 +20,6 @@ import { Topic } from "@/models/Topic";
 import { ComplianceFinding } from "@/models/ComplianceFinding";
 import { EnforcementAction } from "@/models/EnforcementAction";
 import { RequirementSource } from "@/models/RequirementSource";
-import { StaffUser } from "@/models/Staff";
 import { InspectionMoreDetailsEnforcementAction } from "@/models/Inspection";
 import EnforcementStatusFlag from "@/components/App/Inspections/Profile/Enforcements/EnforcementStatusFlag";
 
@@ -30,7 +29,6 @@ export interface RequirementsGridDataDependencies {
   complianceFindings?: ComplianceFinding[];
   enforcementActions?: EnforcementAction[];
   requirementSources?: RequirementSource[];
-  staffUsers?: StaffUser[];
 }
 
 // Convert column filters to API query parameters
@@ -68,9 +66,9 @@ export const useConvertFiltersToQueryParams = (
               params.enf_stats = filter.value.join(",");
             }
             break;
-          case "approver":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.approver_ids = filter.value.join(",");
+          case "enf_number":
+            if (typeof filter.value === "string" && filter.value.trim()) {
+              params.enf_number = filter.value.trim();
             }
             break;
           case "req_src_num":
@@ -111,11 +109,6 @@ export const useConvertFiltersToQueryParams = (
                 ? value.join(",")
                 : value;
               break;
-            case "approver_ids":
-              params.approver_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
             case "enf_stats":
               params.enf_stats = Array.isArray(value) ? value.join(",") : value;
               break;
@@ -146,7 +139,6 @@ export const useRequirementsGridColumns = (
     complianceFindings,
     enforcementActions,
     requirementSources,
-    staffUsers,
   } = dataDependencies;
 
   return [
@@ -218,16 +210,14 @@ export const useRequirementsGridColumns = (
       size: 120,
     },
     {
-      accessorFn: (row) => row.approved_by?.name,
-      id: "approver",
-      header: "Reviewer",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        staffUsers?.map((staffUser) => ({
-          text: staffUser.name,
-          value: staffUser.id.toString(),
-        })) ?? [],
-      size: 100,
+      accessorFn: (row) => row.enforcement_number,
+      id: "enf_number",
+      header: "Enf. Document #",
+      filterFn: "contains",
+      enableSorting: true,
+      sortingFn: "alphanumeric",
+      sortDescFirst: false,
+      size: 80,
     },
     {
       accessorFn: (row) => row.requirement_number,
