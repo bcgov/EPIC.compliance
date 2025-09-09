@@ -11,6 +11,7 @@ from sqlalchemy.sql import func
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.models.inspection import InspectionRequirement
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
@@ -216,8 +217,6 @@ class AdministrativePenalty(BaseModelVersioned):
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
         """Find all administrative penalties that have entries in the requirement map for the given inspection."""
-        from compliance_api.models.inspection import InspectionRequirement
-
         return (
             cls.query.join(
                 AdministrativePenaltyInspectionRequirementMap,
