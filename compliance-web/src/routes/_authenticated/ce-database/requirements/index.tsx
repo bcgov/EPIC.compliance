@@ -10,7 +10,6 @@ import {
   InspectionRequirementGrid,
   InspectionRequirementGridQueryParams,
 } from "@/models/InspectionRequirementGrid";
-import { APPROVAL_STATUS_TEXT } from "@/utils/constants";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
@@ -52,12 +51,6 @@ function Requirements() {
     { id: "tpc", desc: false },
   ]);
 
-  const approvalStatusOptions = Object.entries(APPROVAL_STATUS_TEXT).map(
-    ([id, name]) => ({
-      id,
-      name,
-    })
-  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: AppConfig.defaultPageSize,
@@ -123,7 +116,7 @@ function Requirements() {
       } else if (
         restoredExternalFilters.primary_officer_id ||
         restoredExternalFilters.approver_ids ||
-        restoredExternalFilters.approval_status
+        restoredExternalFilters.enf_stats
       ) {
         // Legacy support - if primary_officer_id, approver_ids, or approval_status exists, set showOnlyMyRequirements to true
         setShowOnlyMyRequirements(true);
@@ -285,7 +278,6 @@ function Requirements() {
     complianceFindings,
     enforcementActions,
     requirementSources,
-    approvalStatusOptions,
     staffUsers,
   });
 

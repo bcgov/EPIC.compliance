@@ -2,7 +2,6 @@
 import { mount } from "cypress/react18";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Button } from "@mui/material";
-import { APPROVAL_STATUS } from "@/utils/constants";
 import { 
   useConvertFiltersToQueryParams, 
   useRequirementsGridColumns 
@@ -13,7 +12,7 @@ const TestComponent = () => {
   const externalFilters = {
     primary_officer_id: ["1", "2"],
     approver_ids: ["10", "20"],
-    approval_status: ["APPROVAL_PENDING"],
+    enf_stats: ["APPROVAL_PENDING"],
     inspection_status: ["OPEN"],
     project_id: ["100", "200"],
   };
@@ -39,11 +38,6 @@ const TestComponent = () => {
       { id: "2", name: "Order", source_title: "Order" },
       { id: "3", name: "EAC", source_title: "EAC" },
     ],
-    approvalStatusOptions: [
-      { id: APPROVAL_STATUS.APPROVAL_PENDING, name: "Approval Pending" },
-      { id: APPROVAL_STATUS.APPROVED, name: "Approved" },
-      { id: APPROVAL_STATUS.NOT_APPROVED, name: "Not Approved" },
-    ],
     staffUsers: [
       { id: 1, name: "John Officer", is_active: true },
       { id: 2, name: "Jane Officer", is_active: true },
@@ -58,7 +52,7 @@ const TestComponent = () => {
     const columnFilters = [
       { id: "tpc", value: ["1", "2"] },
       { id: "summary", value: "test requirement" },
-      { id: "apprv_sts", value: ["APPROVAL_PENDING"] },
+      { id: "enf_stats", value: ["APPROVAL_PENDING"] },
     ];
 
     // Test the filter conversion function

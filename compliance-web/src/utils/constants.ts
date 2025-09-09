@@ -185,7 +185,7 @@ export enum ComplaintStatusEnum {
   CLOSED = "Closed",
 }
 
-export const ReferralStatus = {
+export const APReferralStatus = {
   DRAFTING: { id: "DRAFTING", name: "Drafting" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
   CEB_NOT_PROCEEDING: { id: "CEB_NOT_PROCEEDING", name: "CEB Not Proceeding" },

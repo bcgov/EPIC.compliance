@@ -5,6 +5,7 @@ import { RequirementSource } from "./RequirementSource";
 import { Topic } from "./Topic";
 import { StaffUser } from "./Staff";
 import { BaseTableQueryParams } from "./BaseTableQueryParams";
+import { Option } from "./common";
 
 export interface InspectionRequirementGrid {
   id: number;
@@ -20,6 +21,8 @@ export interface InspectionRequirementGrid {
   requirement_source: RequirementSource;
   approved_by: StaffUser;
   approved_by_id: number;
+  progress?: Option;
+  status?: Option;
 }
 
 export interface InspectionRequirementGridQueryParams extends BaseTableQueryParams {
@@ -27,7 +30,7 @@ export interface InspectionRequirementGridQueryParams extends BaseTableQueryPara
   summary?: string;
   cmd_fnd_ids?: string;
   enf_actn_ids?: string;
-  apprv_sts?: string;
+  enf_stats?: string;
   approver_ids?: string;
   req_src_ids?: string;
   req_src_num?: string;
