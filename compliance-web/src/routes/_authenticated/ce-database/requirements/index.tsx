@@ -19,6 +19,7 @@ import {
   MRT_TableInstance,
 } from "material-react-table";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "react-oidc-context";
 import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
 import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
 import RequirementsGridPagination from "@/components/App/RequirementsGrid/RequirementsGridPagination";
@@ -45,8 +46,11 @@ function Requirements() {
   const { data: complianceFindings } = useComplianceFindingsData();
   const { data: enforcementActions } = useEnforcementActionsData();
   const { data: requirementSources } = useRequirementSourcesData();
-  const { data: staffUsers } = useStaffUsersData();
-  const [showOnlyMyRequirements, setShowOnlyMyRequirements] = useState(false);
+  const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
+  const { user: currentUser, isLoading: authLoading } = useAuth();
+  
+  // State for "My Requirements" switch - default to true for first-time users
+  const [myRequirementsChecked, setMyRequirementsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "tpc", desc: false },
   ]);
@@ -72,13 +76,13 @@ function Requirements() {
   const prevFilters = useRef<{
     columnFilters: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
     externalFilters: Record<string, string[] | string>;
-    showOnlyMyRequirements: boolean;
+    myRequirementsChecked: boolean;
     globalFilter: string;
     sorting: MRT_SortingState;
   }>({
     columnFilters: [],
     externalFilters: {},
-    showOnlyMyRequirements: false,
+    myRequirementsChecked: true, // Default to true for first-time users
     globalFilter: "",
     sorting: [{ id: "tpc", desc: false }],
   });
@@ -106,25 +110,105 @@ function Requirements() {
       >;
       setExternalFilters(restoredExternalFilters);
 
-      // Restore showOnlyMyRequirements state if it was cached
-      if (restoredExternalFilters.showOnlyMyRequirements !== undefined) {
-        const showOnlyMyRequirementsValue =
-          restoredExternalFilters.showOnlyMyRequirements;
-        if (typeof showOnlyMyRequirementsValue === "boolean") {
-          setShowOnlyMyRequirements(showOnlyMyRequirementsValue);
+      // Restore "My Requirements" switch state if it was cached
+      if (restoredExternalFilters.myRequirementsChecked !== undefined) {
+        // Use the explicitly stored switch state
+        const restoredSwitchState = Boolean(
+          restoredExternalFilters.myRequirementsChecked
+        );
+        setMyRequirementsChecked(restoredSwitchState);
+
+        // If switch is ON, ensure column filters are set up for UI display
+        if (
+          restoredSwitchState &&
+          currentUser?.profile?.preferred_username &&
+          staffUsers
+        ) {
+          const currentStaff = staffUsers.find(
+            (staff) =>
+              staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters((prev) => {
+              const filtered = prev.filter(
+                (filter) => filter.id !== "primary_officer"
+              );
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
         }
-      } else if (
-        restoredExternalFilters.primary_officer_id ||
-        restoredExternalFilters.approver_ids ||
-        restoredExternalFilters.enf_stats
-      ) {
-        // Legacy support - if primary_officer_id, approver_ids, or approval_status exists, set showOnlyMyRequirements to true
-        setShowOnlyMyRequirements(true);
+      } else {
+        // Fallback: derive from primary_officer filter if switch state not stored
+        const primaryOfficerFilter =
+          restoredExternalFilters.primary_officer_id || [];
+        const derivedSwitchState = !!(primaryOfficerFilter?.length > 0);
+        setMyRequirementsChecked(derivedSwitchState);
+
+        // If derived state is ON, ensure column filters are set up
+        if (
+          derivedSwitchState &&
+          currentUser?.profile?.preferred_username &&
+          staffUsers
+        ) {
+          const currentStaff = staffUsers.find(
+            (staff) =>
+              staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters((prev) => {
+              const filtered = prev.filter(
+                (filter) => filter.id !== "primary_officer"
+              );
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
+        }
       }
 
       // Restore global filter if it was cached
       if (restoredExternalFilters.globalFilter) {
         setGlobalFilter(restoredExternalFilters.globalFilter as string);
+      }
+    } else {
+      // No cached filters - apply default "My Requirements" filter for first-time users
+      if (currentUser?.profile?.preferred_username && staffUsers) {
+        const currentStaff = staffUsers.find(
+          (staff) =>
+            staff.auth_user_guid === currentUser.profile.preferred_username
+        );
+        if (currentStaff) {
+          const defaultExternalFilters = {
+            primary_officer_id: [currentStaff.id.toString()],
+          };
+          const defaultColumnFilters = [
+            {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            },
+          ];
+
+          setExternalFilters(defaultExternalFilters);
+          setColumnFilters(defaultColumnFilters);
+          setMyRequirementsChecked(true);
+
+          // Update prevFilters to prevent unnecessary caching during initial setup
+          prevFilters.current = {
+            ...prevFilters.current,
+            externalFilters: defaultExternalFilters,
+            columnFilters: defaultColumnFilters,
+            myRequirementsChecked: true,
+          };
+        }
       }
     }
 
@@ -139,7 +223,13 @@ function Requirements() {
     // Mark restoration as complete and initial load as complete
     isInitialLoad.current = false;
     setIsRestored(true);
-  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting]);
+  }, [
+    cachedColumnFilters,
+    cachedExternalFilters,
+    cachedSorting,
+    staffUsers,
+    currentUser,
+  ]);
 
   // Cache all filters when they change (but not during initial load)
   useEffect(() => {
@@ -148,7 +238,7 @@ function Requirements() {
       const currentFilters = {
         columnFilters,
         externalFilters,
-        showOnlyMyRequirements,
+        myRequirementsChecked,
         globalFilter,
         sorting,
       };
@@ -162,7 +252,7 @@ function Requirements() {
           columnFilters,
           {
             ...externalFilters,
-            showOnlyMyRequirements,
+            myRequirementsChecked, // Store the switch state explicitly
             globalFilter,
           },
           sorting
@@ -175,7 +265,7 @@ function Requirements() {
   }, [
     columnFilters,
     externalFilters,
-    showOnlyMyRequirements,
+    myRequirementsChecked,
     globalFilter,
     sorting,
   ]);
@@ -239,7 +329,7 @@ function Requirements() {
     setExternalFilters({});
     setColumnFilters([]);
     setGlobalFilter("");
-    setShowOnlyMyRequirements(false);
+    setMyRequirementsChecked(false);
     setSorting([{ id: "tpc", desc: false }]); // Reset to default sorting
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
@@ -249,27 +339,50 @@ function Requirements() {
       .clearFilters(requirementsColumnFiltersCacheKey);
   }, []);
 
-  // Handler for the switch filter changes
-  const handleShowOnlyMyRequirementsFiltersChange = useCallback(
+  // Handle "My Requirements" switch changes
+  const handleMyRequirementsSwitchChange = useCallback(
     (filters: {
       checked: boolean;
       externalFilters: Record<string, string[] | string>;
       columnFilters?: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
     }) => {
-      setShowOnlyMyRequirements(filters.checked);
+      // Only update if the values have actually changed
+      const filtersChanged =
+        JSON.stringify(filters.externalFilters) !==
+        JSON.stringify(externalFilters);
+      const checkedChanged = filters.checked !== myRequirementsChecked;
 
-      // Apply external filters
-      Object.entries(filters.externalFilters).forEach(([key, value]) => {
-        setExternalFilters((prev) => ({
-          ...prev,
-          [key]: value,
-        }));
-      });
+      if (checkedChanged) {
+        setMyRequirementsChecked(filters.checked);
+      }
 
-      // Reset pagination
-      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      if (filtersChanged) {
+        setExternalFilters(filters.externalFilters);
+        // Reset pagination when filters change
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+
+      // Update column filters if provided
+      if (filters.columnFilters !== undefined) {
+        if (filters.checked) {
+          // When turning ON, merge with existing filters, replacing primary_officer if it exists
+          handleColumnFiltersChange((prevFilters) => {
+            const filteredFilters = prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+            return [...filteredFilters, ...filters.columnFilters!];
+          });
+        } else {
+          // When turning OFF, remove primary_officer filter but keep others
+          handleColumnFiltersChange((prevFilters) => {
+            return prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+          });
+        }
+      }
     },
-    []
+    [externalFilters, handleColumnFiltersChange, myRequirementsChecked]
   );
 
   // Use the extracted utility function for columns
@@ -281,7 +394,7 @@ function Requirements() {
     staffUsers,
   });
 
-  return isLoading || !isRestored ? (
+  return authLoading || staffLoading || !isRestored ? (
     <Box
       display="flex"
       justifyContent="center"
@@ -342,10 +455,9 @@ function Requirements() {
               Requirements
             </Typography>
             <ShowOnlyMyRequirementsSwitch
-              initialChecked={showOnlyMyRequirements}
-              onFiltersChange={handleShowOnlyMyRequirementsFiltersChange}
-              disabled={isLoading}
-              onColumnFiltersChange={handleColumnFiltersChange}
+              staffUsers={staffUsers ?? []}
+              onFiltersChange={handleMyRequirementsSwitchChange}
+              initialChecked={myRequirementsChecked}
             />
           </Box>
 
