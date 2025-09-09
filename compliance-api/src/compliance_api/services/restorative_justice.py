@@ -189,9 +189,6 @@ class RestorativeJusticeService:
 def _extract_rj_data(restorative_justice_data):
     """Extract restorative justice data."""
     return {
-        "restorative_justice_number": restorative_justice_data.get(
-            "restorative_justice_number"
-        ),
         "inspection_id": restorative_justice_data.get("inspection_id"),
         "restitution_details": restorative_justice_data.get("restitution_details"),
         "date_restitution_complete": restorative_justice_data.get(
