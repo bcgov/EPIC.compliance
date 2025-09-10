@@ -223,6 +223,7 @@ const AdministrativePenaltyUpdateModal: FC<
   const handleDelete = () => {
     deleteAdministrativePenalty({
       administrativePenaltyId: administrativePenalty.id,
+      inspectionId: inspectionData.id,
     });
   };
 

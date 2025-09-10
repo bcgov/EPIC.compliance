@@ -226,3 +226,33 @@ class AdministrativePenaltyLinkCreateSchema(BaseSchema):
             "description": "List of inspection requirement IDs to link with the administrative penalty."
         },
     )
+
+
+class AdministrativePenaltyLinksResponseSchema(BaseSchema):
+    """Schema for administrative penalty links response."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Exclude unknown fields in the deserialized output."""
+
+        unknown = EXCLUDE
+
+    inspection = fields.Nested(
+        "InspectionSchema",
+        only=(
+            "id",
+            "ir_number",
+            "case_file",
+            "primary_officer",
+            "initiation",
+            "project_status",
+        ),
+        metadata={"description": "The inspection linked to the administrative penalty"},
+    )
+    requirements = fields.Nested(
+        InspectionRequirementSchema(),
+        many=True,
+        only=("id", "summary", "requirement_source", "requirement_type"),
+        metadata={
+            "description": "The inspection requirements linked to the administrative penalty"
+        },
+    )

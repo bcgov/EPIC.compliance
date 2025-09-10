@@ -119,7 +119,9 @@ class InspectionRequirementFilterSchema(BaseSchema):
     )
     enf_number = fields.String(
         required=False,
-        metadata={"description": "The enforcement number of the inspection requirement"},
+        metadata={
+            "description": "The enforcement number of the inspection requirement"
+        },
     )
     req_src_ids = fields.String(
         required=False,

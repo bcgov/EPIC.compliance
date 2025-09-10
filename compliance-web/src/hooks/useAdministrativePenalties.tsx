@@ -59,12 +59,15 @@ const updateAdministrativePenalty = ({
 
 const deleteAdministrativePenalty = ({
   administrativePenaltyId,
+  inspectionId,
 }: {
   administrativePenaltyId: number;
+  inspectionId: number;
 }) => {
   return request({
     url: `/administrative-penalties/${administrativePenaltyId}`,
     method: "delete",
+    params: { inspection_id: inspectionId },
   });
 };
 

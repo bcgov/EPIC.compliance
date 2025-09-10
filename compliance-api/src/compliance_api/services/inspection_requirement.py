@@ -1485,7 +1485,9 @@ def _process_inspection_requirement_query_results(query_results):
         item["status"] = result.status
         item["progress"] = result.progress
         item["approval_status"] = result.approval_status
-        item["enforcement_number"] = result.order_number or result.warning_letter_number or ""
+        item["enforcement_number"] = (
+            result.order_number or result.warning_letter_number or ""
+        )
 
         # Structure approved_by as a StaffUser object from individual fields
         approved_by_id = result.approver_id
