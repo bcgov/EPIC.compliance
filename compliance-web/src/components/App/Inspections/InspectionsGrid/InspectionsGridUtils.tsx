@@ -1,11 +1,9 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
 import { useCallback } from "react";
 import { Chip } from "@mui/material";
-import { APPROVAL_STATUS } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import PageLink from "@/components/Shared/PageLink";
 import { InspectionGridQueryParams } from "@/models/Inspection";
-import { ApprovalStatus } from "@/models/ApprovalStatus";
 import { StaffUser } from "@/models/Staff";
 import { Inspection } from "@/models/Inspection";
 import { Initiation } from "@/models/Initiation";
@@ -18,8 +16,6 @@ export interface InspectionsGridDataDependencies {
   projectList?: Project[];
   initiationList?: Initiation[];
   irProgressList?: IRProgress[];
-  approvalStatusList?: ApprovalStatus[];
-  reviewerList?: StaffUser[];
   staffUserList?: StaffUser[];
   inspectionStatusList?: IRStatus[];
 }
@@ -54,11 +50,6 @@ export const useConvertFiltersToQueryParams = (
               params.ir_progresses = filter.value.join(",");
             }
             break;
-          case "approval_status":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.approval_statuses = filter.value.join(",");
-            }
-            break;
           case "primary_officer":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.primary_officer_ids = filter.value.join(",");
@@ -72,12 +63,6 @@ export const useConvertFiltersToQueryParams = (
           case "case_file_number":
             if (typeof filter.value === "string" && filter.value.trim()) {
               params.case_file_number = filter.value.trim();
-            }
-            break;
-          case "reviewer":
-          case "approved_by":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.approved_by_ids = filter.value.join(",");
             }
             break;
           case "start_date":
@@ -103,16 +88,6 @@ export const useConvertFiltersToQueryParams = (
                 ? value.join(",")
                 : value;
               break;
-            case "approval_statuses":
-              params.approval_statuses = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-            case "approved_by_ids":
-              params.approved_by_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
           }
         }
       });
@@ -131,8 +106,6 @@ export const useInspectionsGridColumns = (
     projectList,
     initiationList,
     irProgressList,
-    approvalStatusList,
-    reviewerList,
     staffUserList,
     inspectionStatusList,
   } = dataDependencies;
@@ -193,49 +166,6 @@ export const useInspectionsGridColumns = (
       size: 120,
     },
     {
-      accessorFn: (row) => row.approval_status?.id,
-      id: "approval_status",
-      header: "Approval Status",
-      Cell: ({ row }) => {
-        return row.original.approval_status ? (
-          <Chip
-            label={row.original.approval_status?.name}
-            color={
-              row.original.approval_status?.id ===
-              APPROVAL_STATUS.APPROVAL_PENDING
-                ? "warning"
-                : row.original.approval_status?.id === APPROVAL_STATUS.APPROVED
-                  ? "success"
-                  : "error"
-            }
-            variant="outlined"
-            size="small"
-          />
-        ) : (
-          <></>
-        );
-      },
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        approvalStatusList?.map((approvalStatus) => ({
-          text: approvalStatus.name,
-          value: approvalStatus.id,
-        })) ?? [],
-      size: 100,
-    },
-    {
-      accessorFn: (row) => row.approved_by?.name,
-      id: "reviewer",
-      header: "Reviewer",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        reviewerList?.map((reviewer) => ({
-          text: reviewer.name,
-          value: reviewer.id.toString(),
-        })) ?? [],
-      size: 100,
-    },
-    {
       accessorFn: (row) => row.primary_officer?.name,
       id: "primary_officer",
       header: "Primary",
@@ -247,7 +177,6 @@ export const useInspectionsGridColumns = (
         })) ?? [],
       size: 100,
     },
-
     {
       accessorKey: "status",
       header: "Status",

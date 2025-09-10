@@ -40,7 +40,6 @@ from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
-from compliance_api.models.inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.staff_user import StaffUser
@@ -426,11 +425,6 @@ class InspectionService:
                     "IR Progress": (
                         inspection.ir_progress.value if inspection.ir_progress else ""
                     ),
-                    "Approval Status": (
-                        inspection.approval_status.value
-                        if inspection.approval_status
-                        else ""
-                    ),
                     "Primary": (
                         f"{inspection.primary_officer.first_name} {inspection.primary_officer.last_name}"
                         if inspection.primary_officer
@@ -515,14 +509,6 @@ def _make_inspection_object(inspections):
     for result in inspections:
         inspection = result.Inspection
         inspection.ir_progress = result.ir_progress
-        inspection.approval_status = result.approval_status
-        if result.approved_by_auth_user_guid is not None:
-            inspection.approved_by = {
-                "auth_user_guid": result.approved_by_auth_user_guid,
-                "first_name": result.approved_by_first_name,
-                "last_name": result.approved_by_last_name,
-                "id": result.approved_by_id,
-            }
         if inspection.project_id is not None:
             inspection.project_name = inspection.project.name
         else:
@@ -800,22 +786,7 @@ def _create_inspection_record_number(
 
 def _build_inspections_paginated_query(args):
     """Build the base query for paginated inspections with filtering and sorting."""
-    # Subquery to get the latest approval record for each inspection record
-    latest_approval_subquery = (
-        db.session.query(
-            InspectionRecordApproval.inspection_record_id,
-            func.max(InspectionRecordApproval.created_date).label("latest_date"),
-        )
-        .filter(
-            InspectionRecordApproval.is_active.is_(True),
-            InspectionRecordApproval.is_deleted.is_(False),
-        )
-        .group_by(InspectionRecordApproval.inspection_record_id)
-        .subquery()
-    )
-
     # Build base query similar to the model's get_all_inspections method
-    approved_by = aliased(StaffUser)
     query = (
         InspectionModel.query.outerjoin(
             InspectionRecord,
@@ -825,32 +796,11 @@ def _build_inspections_paginated_query(args):
                 InspectionRecord.is_active.is_(True),
             ),
         )
-        .outerjoin(
-            InspectionRecordApproval,
-            InspectionRecordApproval.inspection_record_id == InspectionRecord.id,
-        )
-        .outerjoin(
-            latest_approval_subquery,
-            and_(
-                latest_approval_subquery.c.inspection_record_id == InspectionRecord.id,
-                latest_approval_subquery.c.latest_date
-                == InspectionRecordApproval.created_date,
-            ),
-        )
-        .outerjoin(
-            approved_by,
-            InspectionRecordApproval.approved_by_id == approved_by.id,
-        )
         .filter(
             InspectionModel.is_deleted.is_(False), InspectionModel.is_active.is_(True)
         )
         .add_columns(
             InspectionRecord.ir_progress.label("ir_progress"),
-            InspectionRecordApproval.approval_status.label("approval_status"),
-            approved_by.auth_user_guid.label("approved_by_auth_user_guid"),
-            approved_by.first_name.label("approved_by_first_name"),
-            approved_by.last_name.label("approved_by_last_name"),
-            approved_by.id.label("approved_by_id"),
         )
     )
 
@@ -918,13 +868,6 @@ def _get_enum_filters(args):
         ]
         filters.append(InspectionRecord.ir_progress.in_(ir_progress_list))
 
-    # Approval status filter
-    if args.get("approval_statuses"):
-        approval_enum = [
-            IRApprovalStatusEnum[status.upper().strip()]
-            for status in args["approval_statuses"].split(",")
-        ]
-        filters.append(InspectionRecordApproval.approval_status.in_(approval_enum))
 
     # Status filter
     if args.get("statuses"):
@@ -937,18 +880,6 @@ def _get_enum_filters(args):
     return filters
 
 
-def _get_approved_by_filter(args):
-    """Get approved by filter using the existing query structure."""
-    if not args.get("approved_by_ids"):
-        return None
-
-    approved_by_ids = [
-        int(id_str.strip()) for id_str in args["approved_by_ids"].split(",")
-    ]
-
-    # Since the query already joins with the latest approval and approved_by (StaffUser),
-    # we can directly filter on the approved_by_id from InspectionRecordApproval
-    return InspectionRecordApproval.approved_by_id.in_(approved_by_ids)
 
 
 def _apply_inspections_filters(query, args):
@@ -966,10 +897,6 @@ def _apply_inspections_filters(query, args):
     # Get enum filters
     filters.extend(_get_enum_filters(args))
 
-    # Get approved by filter (requires subquery)
-    approved_by_filter = _get_approved_by_filter(args)
-    if approved_by_filter is not None:
-        filters.append(approved_by_filter)
 
     # Case file number filter (requires join)
     if args.get("case_file_number"):
@@ -1016,21 +943,6 @@ def _apply_inspections_sorting(query, args):
 
         custom_order = (
             ir_progress_case.asc() if sort_order == "asc" else ir_progress_case.desc()
-        )
-        return query.order_by(custom_order)
-    elif sort_by == "approval_status":
-        # Handle enum sorting for approval status
-        approval_order = list(reversed([e.name for e in IRApprovalStatusEnum]))
-        approval_status_case = case(
-            {status: idx for idx, status in enumerate(approval_order)},
-            value=cast(InspectionRecordApproval.approval_status, String),
-            else_=len(approval_order),
-        ).label("approval_status_order")
-
-        custom_order = (
-            approval_status_case.asc()
-            if sort_order == "asc"
-            else approval_status_case.desc()
         )
         return query.order_by(custom_order)
     elif sort_by == "primary_officer":

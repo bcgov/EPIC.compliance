@@ -5,11 +5,7 @@ import { useProjectsData } from "@/hooks/useProjects";
 import { useInitiationsData } from "@/hooks/useInspections";
 import { Inspection, InspectionGridQueryParams } from "@/models/Inspection";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
-import {
-  APPROVAL_STATUS_TEXT,
-  IRProgressEnumText,
-  InspectionStatusEnum,
-} from "@/utils/constants";
+import { IRProgressEnumText, InspectionStatusEnum } from "@/utils/constants";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
@@ -18,7 +14,7 @@ import {
   MRT_SortingState,
   MRT_TableInstance,
 } from "material-react-table";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useAuth } from "react-oidc-context";
 import InspectionsGridPagination from "@/components/App/Inspections/InspectionsGrid/InspectionsGridPagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
@@ -39,19 +35,13 @@ const inspectionsColumnFiltersCacheKey = "inspections-column-filters";
 export function Inspections() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading, user: currentUser } = useAuth();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
-  const [showOnlyMyInspections, setShowOnlyMyInspections] = useState(false);
+  // State for "My Inspections" switch - default to true for first-time users
+  const [myInspectionsChecked, setMyInspectionsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "ir_number", desc: false },
   ]);
-
-  const approvalStatusOptions = Object.entries(APPROVAL_STATUS_TEXT).map(
-    ([id, name]) => ({
-      id,
-      name,
-    })
-  );
 
   // Create static data for IR Progress and Inspection Status
   const irProgressOptions = Object.entries(IRProgressEnumText).map(
@@ -89,15 +79,15 @@ export function Inspections() {
   const prevFilters = useRef<{
     columnFilters: MRT_TableState<Inspection>["columnFilters"];
     externalFilters: Record<string, string[] | string>;
-    showOnlyMyInspections: boolean;
     globalFilter: string;
     sorting: MRT_SortingState;
+    myInspectionsChecked: boolean;
   }>({
     columnFilters: [],
     externalFilters: {},
-    showOnlyMyInspections: false,
     globalFilter: "",
     sorting: [{ id: "ir_number", desc: false }],
+    myInspectionsChecked: true, // Default to true for first-time users
   });
 
   // Get cached filters store methods
@@ -118,6 +108,7 @@ export function Inspections() {
     if (cachedColumnFilters.length > 0) {
       setColumnFilters(cachedColumnFilters);
     }
+
     if (cachedExternalFilters) {
       const restoredExternalFilters = cachedExternalFilters as Record<
         string,
@@ -125,18 +116,105 @@ export function Inspections() {
       >;
       setExternalFilters(restoredExternalFilters);
 
-      // Restore showOnlyMyInspections state if it was cached
-      if (restoredExternalFilters.showOnlyMyInspections !== undefined) {
-        const showOnlyMyInspectionsValue =
-          restoredExternalFilters.showOnlyMyInspections;
-        if (typeof showOnlyMyInspectionsValue === "boolean") {
-          setShowOnlyMyInspections(showOnlyMyInspectionsValue);
-        }
-      }
-
       // Restore global filter if it was cached
       if (restoredExternalFilters.globalFilter) {
         setGlobalFilter(restoredExternalFilters.globalFilter as string);
+      }
+
+      // Restore "My Inspections" switch state if it was cached
+      if (restoredExternalFilters.myInspectionsChecked !== undefined) {
+        // Use the explicitly stored switch state
+        const restoredSwitchState = Boolean(
+          restoredExternalFilters.myInspectionsChecked
+        );
+        setMyInspectionsChecked(restoredSwitchState);
+
+        // If switch is ON, ensure column filters are set up for UI display
+        if (
+          restoredSwitchState &&
+          currentUser?.profile?.preferred_username &&
+          staffList
+        ) {
+          const currentStaff = staffList.find(
+            (staff) =>
+              staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters((prev) => {
+              const filtered = prev.filter(
+                (filter) => filter.id !== "primary_officer"
+              );
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
+        }
+      } else {
+        // Fallback: derive from primary_officer filter if switch state not stored
+        const primaryOfficerFilter =
+          restoredExternalFilters.primary_officer_ids || [];
+        const derivedSwitchState = !!(primaryOfficerFilter?.length > 0);
+        setMyInspectionsChecked(derivedSwitchState);
+
+        // If derived state is ON, ensure column filters are set up
+        if (
+          derivedSwitchState &&
+          currentUser?.profile?.preferred_username &&
+          staffList
+        ) {
+          const currentStaff = staffList.find(
+            (staff) =>
+              staff.auth_user_guid === currentUser.profile.preferred_username
+          );
+          if (currentStaff) {
+            // Add primary_officer column filter for UI display
+            const primaryOfficerColumnFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            setColumnFilters((prev) => {
+              const filtered = prev.filter(
+                (filter) => filter.id !== "primary_officer"
+              );
+              return [...filtered, primaryOfficerColumnFilter];
+            });
+          }
+        }
+      }
+    } else {
+      // No cached filters - apply default "My Inspections" filter for first-time users
+      if (currentUser?.profile?.preferred_username && staffList) {
+        const currentStaff = staffList.find(
+          (staff) =>
+            staff.auth_user_guid === currentUser.profile.preferred_username
+        );
+        if (currentStaff) {
+          const defaultExternalFilters = {
+            primary_officer_ids: [currentStaff.id.toString()],
+          };
+          const defaultColumnFilters = [
+            {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            },
+          ];
+
+          setExternalFilters(defaultExternalFilters);
+          setColumnFilters(defaultColumnFilters);
+          setMyInspectionsChecked(true);
+
+          // Update prevFilters to prevent unnecessary caching during initial setup
+          prevFilters.current = {
+            ...prevFilters.current,
+            externalFilters: defaultExternalFilters,
+            columnFilters: defaultColumnFilters,
+            myInspectionsChecked: true,
+          };
+        }
       }
     }
 
@@ -151,7 +229,13 @@ export function Inspections() {
     // Mark restoration as complete and initial load as complete
     isInitialLoad.current = false;
     setIsRestored(true);
-  }, [cachedColumnFilters, cachedExternalFilters, cachedSorting]);
+  }, [
+    cachedColumnFilters,
+    cachedExternalFilters,
+    cachedSorting,
+    staffList,
+    currentUser,
+  ]);
 
   // Cache all filters when they change (but not during initial load)
   useEffect(() => {
@@ -160,9 +244,9 @@ export function Inspections() {
       const currentFilters = {
         columnFilters,
         externalFilters,
-        showOnlyMyInspections,
         globalFilter,
         sorting,
+        myInspectionsChecked,
       };
 
       const hasChanged =
@@ -174,8 +258,8 @@ export function Inspections() {
           columnFilters,
           {
             ...externalFilters,
-            showOnlyMyInspections,
             globalFilter,
+            myInspectionsChecked, // Store the switch state explicitly
           },
           sorting
         );
@@ -187,9 +271,9 @@ export function Inspections() {
   }, [
     columnFilters,
     externalFilters,
-    showOnlyMyInspections,
     globalFilter,
     sorting,
+    myInspectionsChecked,
   ]);
 
   // Use the extracted utility function
@@ -236,13 +320,57 @@ export function Inspections() {
     setPagination,
   });
 
+  // Handle "My Inspections" switch changes
+  const handleMyInspectionsSwitchChange = useCallback(
+    (filters: {
+      checked: boolean;
+      externalFilters: Record<string, string[] | string>;
+      columnFilters?: MRT_TableState<Inspection>["columnFilters"];
+    }) => {
+      // Only update if the values have actually changed
+      const filtersChanged =
+        JSON.stringify(filters.externalFilters) !==
+        JSON.stringify(externalFilters);
+      const checkedChanged = filters.checked !== myInspectionsChecked;
+
+      if (checkedChanged) {
+        setMyInspectionsChecked(filters.checked);
+      }
+
+      if (filtersChanged) {
+        setExternalFilters(filters.externalFilters);
+        // Reset pagination when filters change
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      }
+
+      // Update column filters if provided
+      if (filters.columnFilters !== undefined) {
+        if (filters.checked) {
+          // When turning ON, merge with existing filters, replacing primary_officer if it exists
+          handleColumnFiltersChange((prevFilters) => {
+            const filteredFilters = prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+            return [...filteredFilters, ...filters.columnFilters!];
+          });
+        } else {
+          // When turning OFF, remove primary_officer filter but keep others
+          handleColumnFiltersChange((prevFilters) => {
+            return prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
+            );
+          });
+        }
+      }
+    },
+    [externalFilters, handleColumnFiltersChange, myInspectionsChecked]
+  );
+
   // Use the extracted utility function for columns
   const columns = useInspectionsGridColumns({
     projectList: projects,
     initiationList: initiations,
     irProgressList: irProgressOptions,
-    approvalStatusList: approvalStatusOptions,
-    reviewerList: staffList,
     staffUserList: staffList,
     inspectionStatusList: inspectionStatusOptions,
   });
@@ -308,27 +436,9 @@ export function Inspections() {
               Inspections
             </Typography>
             <ShowOnlyMyInspectionsSwitch
-              initialChecked={showOnlyMyInspections}
-              onFiltersChange={({
-                checked,
-                externalFilters,
-                columnFilters,
-              }) => {
-                setShowOnlyMyInspections(checked);
-                if (externalFilters) {
-                  Object.entries(externalFilters).forEach(([key, value]) => {
-                    setExternalFilters((prev) => ({
-                      ...prev,
-                      [key]: value,
-                    }));
-                  });
-                }
-                if (columnFilters) {
-                  handleColumnFiltersChange(columnFilters);
-                }
-              }}
-              disabled={isLoading}
-              onColumnFiltersChange={handleColumnFiltersChange}
+              staffUsers={staffList ?? []}
+              onFiltersChange={handleMyInspectionsSwitchChange}
+              initialChecked={myInspectionsChecked}
             />
           </Box>
 
