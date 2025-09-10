@@ -208,9 +208,6 @@ class ChargeRecommendationService:
 def _extract_cr_data(charge_recommendation_data):
     """Extract charge recommendation data."""
     return {
-        "charge_recommendation_number": charge_recommendation_data.get(
-            "charge_recommendation_number"
-        ),
         "inspection_id": charge_recommendation_data.get("inspection_id"),
         "status": charge_recommendation_data.get("status", "DRAFTING"),
         "date_to_crown_counsel": charge_recommendation_data.get(
