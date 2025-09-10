@@ -6,6 +6,7 @@ from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntity
 from compliance_api.models.administrative_penalty import (
     AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, ReferralStatusEnum)
 from compliance_api.models.case_file import CaseFile as CaseFileModel
+from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.services.service_utils import ServiceUtils
@@ -182,7 +183,6 @@ class AdministrativePenaltyService:
             administrative_penalty_id: ID of the administrative penalty to delete
             inspection_requirement_id: Optional ID of the inspection requirement to check
         """
-        from compliance_api.models.inspection import InspectionRequirement
         
         administrative_penalty = AdministrativePenalty.find_by_id(
             administrative_penalty_id
@@ -197,55 +197,34 @@ class AdministrativePenaltyService:
         )
         ServiceUtils.inspection_status_check(administrative_penalty.inspection)
 
-        # If inspection_requirement_id is provided, perform additional validation
-        if inspection_requirement_id:
-            # Check if the inspection_requirement exists
-            inspection_requirement = InspectionRequirement.find_by_id(inspection_requirement_id)
-            if not inspection_requirement:
-                raise ResourceNotFoundError(
-                    f"Inspection requirement with id: {inspection_requirement_id} not found"
+        # Check if the inspection_requirement exists
+        inspection_requirement = InspectionRequirementModel.find_by_id(inspection_requirement_id)
+        if not inspection_requirement:
+            raise ResourceNotFoundError(
+                f"Inspection requirement with id: {inspection_requirement_id} not found"
+            )
+        
+        # Check if the inspection_requirement belongs to the same inspection as the AP
+        ap_inspection_id = administrative_penalty.inspection_id
+        req_inspection_id = inspection_requirement.inspection_id
+        
+        if req_inspection_id == ap_inspection_id:
+            # Same inspection - check if AP is used in other inspections
+            other_inspection_maps = AdministrativePenaltyInspectionRequirementMap.query.join(
+                InspectionRequirementModel
+            ).filter(
+                AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id == administrative_penalty_id,
+                InspectionRequirementModel.inspection_id != ap_inspection_id,
+                AdministrativePenaltyInspectionRequirementMap.is_active.is_(True),
+                AdministrativePenaltyInspectionRequirementMap.is_deleted.is_(False)
+            ).first()
+            
+            if other_inspection_maps:
+                raise UnprocessableEntityError(
+                    "The Administrative Penalty has been used in other inspections and cannot be deleted"
                 )
             
-            # Check if the inspection_requirement belongs to the same inspection as the AP
-            ap_inspection_id = administrative_penalty.inspection_id
-            req_inspection_id = inspection_requirement.inspection_id
-            
-            if req_inspection_id == ap_inspection_id:
-                # Same inspection - check if AP is used in other inspections
-                other_inspection_maps = AdministrativePenaltyInspectionRequirementMap.query.join(
-                    InspectionRequirement
-                ).filter(
-                    AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id == administrative_penalty_id,
-                    InspectionRequirement.inspection_id != ap_inspection_id,
-                    AdministrativePenaltyInspectionRequirementMap.is_active.is_(True),
-                    AdministrativePenaltyInspectionRequirementMap.is_deleted.is_(False)
-                ).first()
-                
-                if other_inspection_maps:
-                    raise UnprocessableEntityError(
-                        "The Administrative Penalty has been used in other inspections and cannot be deleted"
-                    )
-                
-                # Safe to delete the entire AP
-                with session_scope() as session:
-                    AdministrativePenalty.update_administrative_penalty(
-                        administrative_penalty_id,
-                        {"is_deleted": True, "is_active": False},
-                        session,
-                    )
-                    AdministrativePenaltyInspectionRequirementMap.delete_by_administrative_penalty(
-                        administrative_penalty_id, session
-                    )
-            else:
-                # Different inspection - only delete the reference from the map
-                with session_scope() as session:
-                    AdministrativePenaltyInspectionRequirementMap.bulk_delete(
-                        administrative_penalty_id,
-                        [inspection_requirement_id],
-                        session,
-                    )
-        else:
-            # No inspection_requirement_id provided - delete entire AP (original behavior)
+            # Safe to delete the entire AP
             with session_scope() as session:
                 AdministrativePenalty.update_administrative_penalty(
                     administrative_penalty_id,
@@ -254,6 +233,14 @@ class AdministrativePenaltyService:
                 )
                 AdministrativePenaltyInspectionRequirementMap.delete_by_administrative_penalty(
                     administrative_penalty_id, session
+                )
+        else:
+            # Different inspection - only delete the reference from the map
+            with session_scope() as session:
+                AdministrativePenaltyInspectionRequirementMap.bulk_delete(
+                    administrative_penalty_id,
+                    [inspection_requirement_id],
+                    session,
                 )
         
         return HTTPStatus.NO_CONTENT
