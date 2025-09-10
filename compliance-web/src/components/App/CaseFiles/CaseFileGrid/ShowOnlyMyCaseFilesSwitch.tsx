@@ -21,7 +21,7 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
   disabled = false,
   staffUsers,
   onFiltersChange,
-  initialChecked = true, 
+  initialChecked = true,
 }) => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
@@ -30,7 +30,8 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
 
   // Find current user in staff list
   const currentStaff = useMemo(() => {
-    if (!currentUser?.profile?.preferred_username || !staffUsers) return undefined;
+    if (!currentUser?.profile?.preferred_username || !staffUsers)
+      return undefined;
     return staffUsers.find(
       (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
     );
@@ -43,7 +44,7 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
 
   // Get the appropriate label
   const switchLabel = useMemo(() => {
-    return `${currentUser?.profile?.given_name || 'My'} Files`;
+    return `${currentUser?.profile?.given_name + "'s" || "My"} Files`;
   }, [currentUser?.profile?.given_name]);
 
   // Generate external filters for API calls
@@ -90,11 +91,7 @@ const ShowOnlyMyCaseFilesSwitch: React.FC<ShowOnlyMyCaseFilesSwitchProps> = ({
         columnFilters,
       });
     },
-    [
-      generateExternalFilters,
-      generateColumnFilters,
-      onFiltersChange,
-    ]
+    [generateExternalFilters, generateColumnFilters, onFiltersChange]
   );
 
   // Update internal state when initialChecked changes (for restoration)

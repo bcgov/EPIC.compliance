@@ -182,11 +182,6 @@ class Inspections(Resource):
                 "type": "string",
                 "required": False,
             },
-            "approval_statuses": {
-                "description": "Filter by approval status(es). Can be a single value or comma-separated list",
-                "type": "string",
-                "required": False,
-            },
             "primary_officer_ids": {
                 "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list",
                 "type": "string",
@@ -199,11 +194,6 @@ class Inspections(Resource):
             },
             "case_file_number": {
                 "description": "Filter by case file number",
-                "type": "string",
-                "required": False,
-            },
-            "approved_by_ids": {
-                "description": "Filter by reviewer/approver ID(s). Can be a single value or comma-separated list",
                 "type": "string",
                 "required": False,
             },

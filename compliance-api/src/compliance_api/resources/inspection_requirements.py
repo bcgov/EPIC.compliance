@@ -66,6 +66,11 @@ class InspectionRequirements(Resource):
                 "type": "string",
                 "required": False,
             },
+            "enf_number": {
+                "description": "The enforcement number of the inspection requirement",
+                "type": "string",
+                "required": False,
+            },
             "req_src_ids": {
                 "description": "The comma separated list of requirement source ids of the inspection requirement",
                 "type": "string",

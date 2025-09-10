@@ -21,7 +21,7 @@ import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import dayjs, { Dayjs } from "dayjs";
-import { ReferralStatus, APDecisionStatus } from "@/utils/constants";
+import { APReferralStatus, APDecisionStatus } from "@/utils/constants";
 
 const administrativePenaltyUpdateSchema = yup.object().shape({
   referral_status: yup
@@ -59,7 +59,7 @@ type DecisionOption = {
 };
 
 const referralStatusOptions: ReferralStatusOption[] = Object.values(
-  ReferralStatus
+  APReferralStatus
 ).map((status) => ({
   id: status.id,
   name: status.name,
