@@ -150,10 +150,6 @@ const AdministrativePenaltyCreateModal: FC<
           inspection_requirement_ids: requirementIds,
         };
 
-        console.log("Linking AP with data:", {
-          administrativePenaltyId: formData.existingAPId,
-          link: linkData
-        });
 
         linkAdministrativePenalty({
           administrativePenaltyId: formData.existingAPId!,

@@ -182,30 +182,42 @@ const AdministrativePenaltyCreationOptions: FC<AdministrativePenaltyCreationOpti
         {/* Existing AP Selection */}
         {creationMethod === "link_existing" && (
           <Box sx={{ mt: 0.25, ml: 2 }}>
-            <ControlledAutoComplete
-              name="existingAPId"
-              label="Select Existing AP #"
-              options={openAPs ?? []}
-              getOptionLabel={(option) => {
-                if (typeof option === 'number') {
-                  const foundOption = openAPs.find(ap => ap.id === option);
-                  return foundOption?.administrative_penalty_number || '';
+          <ControlledAutoComplete
+            name="existingAPId"
+            label="Select Existing AP #"
+            options={openAPs ?? []}
+            getOptionLabel={(option) => {
+              if (typeof option === 'number') {
+                const foundOption = openAPs.find(ap => ap.id === option);
+                return foundOption?.administrative_penalty_number || '';
+              }
+              return option.administrative_penalty_number;
+            }}
+            isOptionEqualToValue={(option, value) => {
+              if (typeof value === 'number') {
+                return option.id === value;
+              }
+              if (value && typeof value === 'object' && 'id' in value) {
+                return option.id === (value as { id: number }).id;
+              }
+              return false;
+            }}
+            placeholder="Select an option..."
+            isRequired={true}
+            noOptionsText="No open APs found for this project"
+            onChange={(_event, newValue) => {
+              // Store only the ID, not the entire object
+              let apId = null;
+              if (newValue) {
+                if (Array.isArray(newValue)) {
+                  apId = newValue.length > 0 ? newValue[0].id : null;
+                } else {
+                  apId = newValue.id;
                 }
-                return option.administrative_penalty_number;
-              }}
-              isOptionEqualToValue={(option, value) => {
-                if (typeof value === 'number') {
-                  return option.id === value;
-                }
-                if (value && typeof value === 'object' && 'id' in value) {
-                  return option.id === (value as any).id;
-                }
-                return false;
-              }}
-              placeholder="Select an option..."
-              isRequired={true}
-              noOptionsText="No open APs found for this project"
-            />
+              }
+              setValue("existingAPId", apId);
+            }}
+          />
           </Box>
         )}
         {errors.apCreationMethod && (
