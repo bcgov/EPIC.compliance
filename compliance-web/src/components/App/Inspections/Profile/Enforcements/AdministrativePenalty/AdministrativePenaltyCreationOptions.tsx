@@ -1,0 +1,221 @@
+import { FC, useState, useEffect } from "react";
+import {
+  Box,
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
+  Radio,
+  RadioGroup,
+  Typography,
+} from "@mui/material";
+import { useFormContext } from "react-hook-form";
+import { useAdministrativePenaltiesByCaseFileData } from "@/hooks/useAdministrativePenalties";
+import { Inspection } from "@/models/Inspection";
+import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
+import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
+
+export type APCreationMethod =
+  | "manual_entry"
+  | "create_new"
+  | "link_existing";
+
+interface AdministrativePenaltyCreationOptionsProps {
+  inspectionData: Inspection;
+  isHistorical: boolean;
+}
+
+const AdministrativePenaltyCreationOptions: FC<AdministrativePenaltyCreationOptionsProps> = ({
+  inspectionData,
+  isHistorical,
+}) => {
+  const { setValue, clearErrors, formState: { errors } } = useFormContext();
+  const [creationMethod, setCreationMethod] = useState<APCreationMethod>("create_new");
+  const { data: existingAPs } = useAdministrativePenaltiesByCaseFileData(inspectionData.case_file_id, {
+    isStaleInfinate: false,
+  });
+
+  const openAPs = existingAPs?.filter(ap =>
+    ap.referral_status?.id !== "CEB_NOT_PROCEEDING" &&
+    ap.referral_status?.id !== "REFERRED_TO_DM"
+  ) || [];
+
+
+
+  useEffect(() => {
+    const defaultMethod = isHistorical ? "manual_entry" : "create_new";
+    setCreationMethod(defaultMethod);
+    setValue("apCreationMethod", defaultMethod);
+  }, [isHistorical, setValue]);
+
+  const handleCreationMethodChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const method = event.target.value as APCreationMethod;
+    setCreationMethod(method);
+    setValue("apCreationMethod", method);
+    clearErrors("apCreationMethod");
+    clearErrors("manualAPNumber");
+    clearErrors("existingAPId");
+
+    if (method !== "manual_entry") {
+      setValue("manualAPNumber", "");
+    }
+    if (method !== "link_existing") {
+      setValue("existingAPId", null);
+    }
+  };
+
+
+
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Typography variant="body2" fontWeight={500} gutterBottom sx={{ fontWeight: 600 }}>
+        Select how do you want to add this AP
+      </Typography>
+
+      <FormControl component="fieldset" error={!!errors.apCreationMethod} sx={{ width: '100%', mb: 0 }}>
+        <RadioGroup
+          value={creationMethod}
+          onChange={handleCreationMethodChange}
+          sx={{
+            gap: 0.5,
+            '& .MuiFormControlLabel-root': {
+              alignItems: 'flex-start',
+              marginLeft: 0,
+              marginRight: 0,
+              marginBottom: 1
+            },
+            '& .MuiRadio-root': {
+              padding: '4px 8px',
+              alignSelf: 'flex-start'
+            }
+          }}
+        >
+          {isHistorical && (
+            <FormControlLabel
+              value="manual_entry"
+              control={<Radio />}
+              label={
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Typography variant="body2" fontWeight={500} sx={{ lineHeight: 1.2, mt: '0.4rem' }}>
+                    Enter Historical AP #
+                  </Typography>
+                  <FormHelperText sx={{
+                    fontSize: '12px',
+                    fontStyle: 'normal',
+                    fontWeight: 400,
+                    lineHeight: '18px',
+                    mt: 0,
+                    ml: 0
+                  }}>
+                    Select this if the AP was already issued outside the system and must be entered retroactively.
+                  </FormHelperText>
+                </Box>
+              }
+              sx={{ alignItems: 'flex-start' }}
+            />
+          )}
+          {/* Manual AP Number Entry */}
+          {creationMethod === "manual_entry" && (
+            <Box sx={{ mt: 1.5, ml: 2 }}>
+              <ControlledTextField
+                name="manualAPNumber"
+                fullWidth
+                label="Manual AP #"
+                placeholder="Enter existing AP number"
+                isRequired
+              />
+            </Box>
+          )}
+
+          <FormControlLabel
+            value="create_new"
+            control={<Radio />}
+            label={
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="body2" fontWeight={500} sx={{ lineHeight: 1.2, mt: '0.4rem' }}>
+                  Create New AP #
+                </Typography>
+                <FormHelperText sx={{
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: 400,
+                  lineHeight: '18px',
+                  mt: 0,
+                  ml: 0
+                }}>
+                  A new AP number will be automatically generated by the system
+                </FormHelperText>
+              </Box>
+            }
+            sx={{
+              mb: 2,
+              alignItems: 'flex-start'
+            }}
+          />
+
+          <FormControlLabel
+            value="link_existing"
+            control={<Radio />}
+            label={
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                <Typography variant="body2" fontWeight={500} sx={{ lineHeight: 1.2, mt: '0.4rem' }}>
+                  Link to Existing AP #
+                </Typography>
+                <FormHelperText sx={{
+                  fontSize: '12px',
+                  fontStyle: 'normal',
+                  fontWeight: 400,
+                  lineHeight: '18px',
+                  mt: 0,
+                  ml: 0
+                }}>
+                  Select this if the AP already exists in the system and applies across multiple inspections. Any updates will apply everywhere.
+                </FormHelperText>
+              </Box>
+            }
+            sx={{
+              mb: 2,
+              alignItems: 'flex-start'
+            }}
+          />
+        </RadioGroup>
+
+        {/* Existing AP Selection */}
+        {creationMethod === "link_existing" && (
+          <Box sx={{ mt: 0.25, ml: 2 }}>
+            <ControlledAutoComplete
+              name="existingAPId"
+              label="Select Existing AP #"
+              options={openAPs ?? []}
+              getOptionLabel={(option) => {
+                if (typeof option === 'number') {
+                  const foundOption = openAPs.find(ap => ap.id === option);
+                  return foundOption?.administrative_penalty_number || '';
+                }
+                return option.administrative_penalty_number;
+              }}
+              isOptionEqualToValue={(option, value) => {
+                if (typeof value === 'number') {
+                  return option.id === value;
+                }
+                if (value && typeof value === 'object' && 'id' in value) {
+                  return option.id === (value as any).id;
+                }
+                return false;
+              }}
+              placeholder="Select an option..."
+              isRequired={true}
+              noOptionsText="No open APs found for this project"
+            />
+          </Box>
+        )}
+        {errors.apCreationMethod && (
+          <FormHelperText>{errors.apCreationMethod.message as string}</FormHelperText>
+        )}
+      </FormControl>
+
+
+    </Box>
+  );
+};
+
+export default AdministrativePenaltyCreationOptions;
