@@ -5,7 +5,6 @@ from io import BytesIO
 
 import pandas as pd
 from sqlalchemy import String, and_, asc, case, cast, desc, func
-from sqlalchemy.orm import aliased
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -868,7 +867,6 @@ def _get_enum_filters(args):
         ]
         filters.append(InspectionRecord.ir_progress.in_(ir_progress_list))
 
-
     # Status filter
     if args.get("statuses"):
         status_enum = [
@@ -878,8 +876,6 @@ def _get_enum_filters(args):
         filters.append(InspectionModel.inspection_status.in_(status_enum))
 
     return filters
-
-
 
 
 def _apply_inspections_filters(query, args):
@@ -896,7 +892,6 @@ def _apply_inspections_filters(query, args):
 
     # Get enum filters
     filters.extend(_get_enum_filters(args))
-
 
     # Case file number filter (requires join)
     if args.get("case_file_number"):
