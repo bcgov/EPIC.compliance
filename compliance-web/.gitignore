@@ -29,3 +29,6 @@ dist-ssr
 
 /cypress/downloads/
 /cypress/screenshots/
+
+*storybook.log
+storybook-static
