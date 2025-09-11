@@ -84,17 +84,26 @@ def mock_doc_service(mocker):
 @pytest.fixture
 def mock_doc_gen_service(mocker):
     """Fixture to mock DocGenService methods."""
-    # Create a Mock object with a json method
-    mock_response = mocker.MagicMock()
-    mock_response.json.return_value = {
-        "content": "<html><body>Mock Document</body></html>"
-    }
+    def mock_render_template(template_name, data, output_format="html"):
+        """Mock render_template that returns appropriate format based on output_format."""
+        mock_response = mocker.MagicMock()
+        
+        if output_format == 'pdf':
+            # Return response object with .content attribute for PDF format
+            mock_response.content = b"Mock PDF content"
+        else:
+            # Return HTML content for HTML format
+            mock_response.json.return_value = {
+                "content": "<html><body>Mock Document</body></html>"
+            }
+        
+        return mock_response
 
     # Set up the mock render_template method
     mock_generate_doc = mocker.patch(
         "compliance_api.services.docgen_service.docgen_service.DocGenService.render_template"
     )
-    mock_generate_doc.return_value = mock_response
+    mock_generate_doc.side_effect = mock_render_template
 
     yield mock_generate_doc
 
@@ -161,6 +170,8 @@ def created_inspection_requirement(app, created_inspection, mocker):
     )
     access_check_fn.return_value = True
     requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
+    # Ensure the requirement has ORDER enforcement action (ID 5)
+    requirement_data["enforcement_action_ids"] = [5]
     requirement = InspectionRequirementService.create(
         created_inspection.id, requirement_data
     )

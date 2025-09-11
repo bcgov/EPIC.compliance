@@ -7,7 +7,7 @@ from flask import request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
-from compliance_api.exceptions import ResourceNotFoundError
+from compliance_api.exceptions import ResourceNotFoundError, BadRequestError
 from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
 
@@ -264,7 +264,9 @@ class OrderPreview(Resource):
     @auth.require
     def post(order_id):  # pylint: disable=no-self-use, unused-argument
         """Preview order."""
-        output_format = request.json.get("output_format", "html")
+        output_format = request.args.get("output_format", "html")
+        if output_format not in ["html", "pdf"]:
+            raise BadRequestError("Invalid output format")
         response, order = OrderService.render(order_id, output_format)
         if output_format == "pdf":
             return send_file(
