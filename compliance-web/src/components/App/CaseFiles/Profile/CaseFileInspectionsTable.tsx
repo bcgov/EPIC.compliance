@@ -327,24 +327,28 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                             {isEnforcementActionLink(
                               requirement.enforcement_action
                             ) ? (
-                              <Link
-                                underline="hover"
-                                sx={{ cursor: "pointer" }}
-                                onClick={() =>
-                                  handleEnforcementActionClick(
-                                    requirement.enforcement_action
-                                  )
-                                }
-                              >
-                                {requirement.enforcement_action?.name}
-                              </Link>
+                                <Tooltip title={requirement.enforcement_action?.name}>
+                                  <Link
+                                    underline="hover"
+                                    sx={{ cursor: "pointer" }}
+                                    onClick={() =>
+                                      handleEnforcementActionClick(
+                                        requirement.enforcement_action
+                                      )
+                                    }
+                                  >
+                                    {requirement.enforcement_action?.name}
+                                  </Link>
+                                </Tooltip>
                             ) : (
-                              <Typography
-                                variant="body2"
-                                sx={{ ...styleOverFlowClipped }}
-                              >
-                                {requirement.enforcement_action?.name}
-                              </Typography>
+                                <Tooltip title={requirement.enforcement_action?.name}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ ...styleOverFlowClipped }}
+                                  >
+                                    {requirement.enforcement_action?.name}
+                                  </Typography>
+                                </Tooltip>
                             )}
                           </Grid>
                           <Grid item xs={2}>
