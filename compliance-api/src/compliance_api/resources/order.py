@@ -7,7 +7,7 @@ from flask import request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
-from compliance_api.exceptions import ResourceNotFoundError, BadRequestError
+from compliance_api.exceptions import BadRequestError, ResourceNotFoundError
 from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
 

@@ -84,11 +84,12 @@ def mock_doc_service(mocker):
 @pytest.fixture
 def mock_doc_gen_service(mocker):
     """Fixture to mock DocGenService methods."""
+
     def mock_render_template(template_name, data, output_format="html"):
         """Mock render_template that returns appropriate format based on output_format."""
         mock_response = mocker.MagicMock()
-        
-        if output_format == 'pdf':
+
+        if output_format == "pdf":
             # Return response object with .content attribute for PDF format
             mock_response.content = b"Mock PDF content"
         else:
@@ -96,7 +97,7 @@ def mock_doc_gen_service(mocker):
             mock_response.json.return_value = {
                 "content": "<html><body>Mock Document</body></html>"
             }
-        
+
         return mock_response
 
     # Set up the mock render_template method
