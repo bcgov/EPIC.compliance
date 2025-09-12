@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FormDecorator } from "../../../decorators/FormDecorator";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
 import * as yup from "yup";
+import dayjs from "dayjs";
 
 const meta: Meta<typeof ControlledDateField> = {
   title: "Shared/Controlled/ControlledDateField",
@@ -92,7 +93,7 @@ export const MonthAndYear: Story = {
 export const WithPreSelectedDate: Story = {
   decorators: [
     (Story) => (
-      <FormDecorator defaultFormValues={{ dateField: new Date("2024-01-15") }}>
+      <FormDecorator defaultFormValues={{ dateField: dayjs("2024-01-15") }}>
         <Story />
       </FormDecorator>
     ),
@@ -111,7 +112,7 @@ export const WithValidation: Story = {
           dateField: yup
             .date()
             .required("Date is required")
-            .min(new Date(), "Date must be in the future"),
+            .min(dayjs(), "Date must be in the future"),
         })}
         defaultFormValues={{ dateField: null }}
       >

@@ -27,9 +27,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   render: () => (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white' }}>
-        <Typography variant="h5">Header Section</Typography>
-        <Typography variant="body2">This header takes up some space at the top</Typography>
+      <Box sx={{ p: 2, bgcolor: 'primary.main' }}>
+        <Typography variant="h5" color="white">Header Section</Typography>
+        <Typography variant="body2" color="white">This header takes up some space at the top</Typography>
       </Box>
       <DynamicHeightBox
         sx={{
@@ -62,7 +62,7 @@ export const Default: Story = {
 export const WithBottomOffset: Story = {
   render: () => (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, bgcolor: 'secondary.main', color: 'white' }}>
+      <Box sx={{ p: 2, bgcolor: 'secondary.main' }}>
         <Typography variant="h5">Header with Footer</Typography>
       </Box>
       <DynamicHeightBox

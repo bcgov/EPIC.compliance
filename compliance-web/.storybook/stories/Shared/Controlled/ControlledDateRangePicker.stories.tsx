@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { FormDecorator } from '../../../decorators/FormDecorator';
 import ControlledDateRangePicker from '@/components/Shared/Controlled/ControlledDateRangePicker';
 import * as yup from 'yup';
+import dayjs from 'dayjs';
 
 const meta: Meta<typeof ControlledDateRangePicker> = {
   title: 'Shared/Controlled/ControlledDateRangePicker',
@@ -56,8 +57,8 @@ export const WithPreSelectedRange: Story = {
       <FormDecorator
         defaultFormValues={{ 
           dateRangeField: {
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-01-31')
+            startDate: dayjs('2024-01-01'),
+            endDate: dayjs('2024-01-31')
           }
         }}
       >

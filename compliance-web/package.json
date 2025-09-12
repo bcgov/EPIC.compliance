@@ -11,7 +11,8 @@
     "cy:open": "cypress open",
     "cy:unit": "cypress run --component",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "chromatic": "npx chromatic --project-token=chpt_725abf107f71179"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -67,12 +68,16 @@
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "@vitejs/plugin-react-swc": "^3.7.0",
+    "@vitest/browser": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "chromatic": "^13.1.4",
     "cypress": "^13.17.0",
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.6",
     "eslint-plugin-storybook": "^9.1.5",
     "nyc": "^17.1.0",
+    "playwright": "^1.55.0",
     "sass": "^1.77.6",
     "storybook": "^9.1.5",
     "typescript": "^5.2.2",
@@ -80,9 +85,6 @@
     "vite-plugin-env-compatible": "^2.0.1",
     "vite-plugin-istanbul": "^6.0.2",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitest": "^3.2.4",
-    "@vitest/browser": "^3.2.4",
-    "playwright": "^1.55.0",
-    "@vitest/coverage-v8": "^3.2.4"
+    "vitest": "^3.2.4"
   }
 }
