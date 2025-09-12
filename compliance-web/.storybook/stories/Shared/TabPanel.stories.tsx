@@ -37,7 +37,7 @@ type Story = StoryObj<typeof meta>;
 const TabPanelDemo = ({ width = "75%" }: { width?: string }) => {
   const [value, setValue] = useState(0);
 
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleChange = (_e: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
 
@@ -94,7 +94,7 @@ export const WithFormContent: Story = {
   render: () => {
     const [value, setValue] = useState(0);
 
-    const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleChange = (_e: React.SyntheticEvent, newValue: number) => {
       setValue(newValue);
     };
 

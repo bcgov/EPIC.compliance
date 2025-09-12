@@ -9,13 +9,6 @@ import { usePopover } from "@/store/popoverStore";
 const PopoverProviderDemo = () => {
   const { setOpen } = usePopover();
 
-  const openPopover = (content: React.ReactNode, width?: string) => {
-    const button = document.getElementById("trigger-button");
-    if (button) {
-      setOpen({ anchorEl: button, content, width });
-    }
-  };
-
   const openBasicPopover = () => {
     const button = document.getElementById("trigger-button");
     if (button) {
@@ -144,11 +137,13 @@ const PopoverProviderDemo = () => {
                 Wide Popover
               </Typography>
               <Typography variant="body1" paragraph>
-                This is a wider popover that demonstrates how the component adapts to different widths.
-                It can contain more content and still maintain proper layout.
+                This is a wider popover that demonstrates how the component
+                adapts to different widths. It can contain more content and
+                still maintain proper layout.
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                The popover width is controlled by the width parameter in the setOpen function.
+                The popover width is controlled by the width parameter in the
+                setOpen function.
               </Typography>
             </DialogContent>
             <PopoverActions
@@ -170,7 +165,8 @@ const PopoverProviderDemo = () => {
         Popover Provider Examples
       </Typography>
       <Typography variant="body1" paragraph>
-        Click the buttons below to open different types of popovers. The popover will appear anchored to the trigger button.
+        Click the buttons below to open different types of popovers. The popover
+        will appear anchored to the trigger button.
       </Typography>
       <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", mb: 2 }}>
         <Button
@@ -180,28 +176,16 @@ const PopoverProviderDemo = () => {
         >
           Basic Popover
         </Button>
-        <Button
-          variant="contained"
-          onClick={openFormPopover}
-        >
+        <Button variant="contained" onClick={openFormPopover}>
           Form Popover
         </Button>
-        <Button
-          variant="contained"
-          onClick={openDeletePopover}
-        >
+        <Button variant="contained" onClick={openDeletePopover}>
           Delete Popover
         </Button>
-        <Button
-          variant="contained"
-          onClick={openLoadingPopover}
-        >
+        <Button variant="contained" onClick={openLoadingPopover}>
           Loading Popover
         </Button>
-        <Button
-          variant="contained"
-          onClick={openWidePopover}
-        >
+        <Button variant="contained" onClick={openWidePopover}>
           Wide Popover
         </Button>
       </Box>
@@ -211,7 +195,7 @@ const PopoverProviderDemo = () => {
 };
 
 const meta: Meta<typeof PopoverProvider> = {
-  title: "Shared/Popover/PopoverProvider",
+  title: "Shared/Popover",
   component: PopoverProvider,
   parameters: {
     layout: "fullscreen",
