@@ -153,6 +153,7 @@ class AdministrativePenaltyService:
             cls.insert_or_update_inspection_requirements(
                 administrative_penalty.id,
                 administrative_penalty_data.get("inspection_requirement_ids", []),
+                None,
                 session,
             )
 
@@ -215,6 +216,7 @@ class AdministrativePenaltyService:
                 cls.insert_or_update_inspection_requirements(
                     administrative_penalty_id,
                     update_data.get("inspection_requirement_ids", []),
+                    None,
                     session,
                 )
 

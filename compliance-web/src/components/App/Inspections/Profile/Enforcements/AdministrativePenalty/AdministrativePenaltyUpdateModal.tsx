@@ -161,6 +161,9 @@ const AdministrativePenaltyUpdateModal: FC<
   const { mutate: deleteAdministrativePenalty, isPending: isPendingDelete } =
     useDeleteAdministrativePenalty(onDeleteSuccess);
 
+  // Check if AP is linked to other inspections
+  const isLinkedToOtherInspections = administrativePenalty.inspection_id !== inspectionData.id;
+
   const handleSubmitForm = useCallback(
     (data: AdministrativePenaltyUpdateFormType) => {
       const updateData: AdministrativePenaltyAPIData = {
@@ -230,7 +233,7 @@ const AdministrativePenaltyUpdateModal: FC<
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Administrative Penalty Recommendation" />
+        <ModalTitleBar title={administrativePenalty.administrative_penalty_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <ControlledAutoComplete
@@ -288,6 +291,11 @@ const AdministrativePenaltyUpdateModal: FC<
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isPendingDelete}
+            onDeleteConfirmationText={
+              isLinkedToOtherInspections
+                ? "This AP is linked to other files. Deleting it will remove all linked APs."
+                : undefined
+            }
           />
         )}
       </form>
