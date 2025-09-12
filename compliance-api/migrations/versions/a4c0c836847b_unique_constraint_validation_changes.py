@@ -62,7 +62,7 @@ def upgrade():
                autoincrement=False)
         batch_op.alter_column('title_mod',
                existing_type=sa.BOOLEAN(),
-               nullable=False,
+               nullable=True,
                comment=None,
                existing_comment='Modification flag for title field')
     # Update unique constraints to include is_deleted = false condition for all auto-generated numbers
