@@ -4,8 +4,6 @@ import { ThemeProvider } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { theme } from '../src/styles/theme';
-import '../src/styles/App.scss';
-import '../src/styles/lexical.scss';
 
 const preview: Preview = {
   parameters: {
