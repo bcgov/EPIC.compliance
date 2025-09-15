@@ -73,6 +73,21 @@ class AdministrativePenaltyInspectionRequirementMap(BaseModelVersioned):
         ).all()
 
     @classmethod
+    def get_by_inspection_and_administrative_penalty_id(cls, inspection_id, administrative_penalty_id):
+        """Get inspection requirement maps by inspection id and administrative penalty id."""
+        return cls.query.join(
+            InspectionRequirement,
+            InspectionRequirement.id == cls.inspection_requirement_id
+        ).filter(
+            InspectionRequirement.inspection_id == inspection_id,
+            cls.administrative_penalty_id == administrative_penalty_id,
+            cls.is_deleted.is_(False),
+            cls.is_active.is_(True),
+            InspectionRequirement.is_deleted.is_(False),
+            InspectionRequirement.is_active.is_(True)
+        ).all()
+
+    @classmethod
     @with_session
     def bulk_delete(
         cls,

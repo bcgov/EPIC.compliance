@@ -151,10 +151,9 @@ class AdministrativePenaltyService:
                 )
             )
             cls.insert_or_update_inspection_requirements(
-                administrative_penalty.id,
-                administrative_penalty_data.get("inspection_requirement_ids", []),
-                None,
-                session,
+                administrative_penalty_id=administrative_penalty.id,
+                inspection_requirement_ids=administrative_penalty_data.get("inspection_requirement_ids", []),
+                session=session,
             )
 
         return administrative_penalty
@@ -214,10 +213,9 @@ class AdministrativePenaltyService:
             )
             if "inspection_requirement_ids" in update_data:
                 cls.insert_or_update_inspection_requirements(
-                    administrative_penalty_id,
-                    update_data.get("inspection_requirement_ids", []),
-                    None,
-                    session,
+                    administrative_penalty_id=administrative_penalty_id,
+                    inspection_requirement_ids=update_data.get("inspection_requirement_ids", []),
+                    session=session,
                 )
 
         return updated_penalty
@@ -328,8 +326,11 @@ class AdministrativePenaltyService:
             requirement_ids,
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
         )
-        existing_requirements = AdministrativePenaltyInspectionRequirementMap.get_by_administrative_penalty_id(
-            administrative_penalty_id
+        existing_requirements = (
+            AdministrativePenaltyInspectionRequirementMap
+            .get_by_inspection_and_administrative_penalty_id(
+                inspection_id, administrative_penalty_id
+            )
         )
         if existing_requirements:
             raise UnprocessableEntityError(
@@ -340,7 +341,6 @@ class AdministrativePenaltyService:
             cls.insert_or_update_inspection_requirements(
                 administrative_penalty_id,
                 requirement_ids,
-                existing_requirements,
                 session,
             )
 
@@ -351,18 +351,12 @@ class AdministrativePenaltyService:
         cls,
         administrative_penalty_id: int,
         inspection_requirement_ids: list[int],
-        existing_requirements: list[
-            AdministrativePenaltyInspectionRequirementMap
-        ] = None,
         session=None,
     ):
         """Insert/Update inspection requirements associated with a given administrative penalty."""
         if inspection_requirement_ids is not None:
-            existing_requirements = (
-                existing_requirements
-                or AdministrativePenaltyInspectionRequirementMap.get_by_administrative_penalty_id(
-                    administrative_penalty_id
-                )
+            existing_requirements = AdministrativePenaltyInspectionRequirementMap.get_by_administrative_penalty_id(
+                administrative_penalty_id
             )
             existing_requirement_ids = {
                 req.inspection_requirement_id for req in existing_requirements
