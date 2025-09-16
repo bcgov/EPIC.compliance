@@ -152,7 +152,9 @@ class AdministrativePenaltyService:
             )
             cls.insert_or_update_inspection_requirements(
                 administrative_penalty_id=administrative_penalty.id,
-                inspection_requirement_ids=administrative_penalty_data.get("inspection_requirement_ids", []),
+                inspection_requirement_ids=administrative_penalty_data.get(
+                    "inspection_requirement_ids", []
+                ),
                 session=session,
             )
 
@@ -214,7 +216,9 @@ class AdministrativePenaltyService:
             if "inspection_requirement_ids" in update_data:
                 cls.insert_or_update_inspection_requirements(
                     administrative_penalty_id=administrative_penalty_id,
-                    inspection_requirement_ids=update_data.get("inspection_requirement_ids", []),
+                    inspection_requirement_ids=update_data.get(
+                        "inspection_requirement_ids", []
+                    ),
                     session=session,
                 )
 
@@ -327,8 +331,7 @@ class AdministrativePenaltyService:
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
         )
         existing_requirements = (
-            AdministrativePenaltyInspectionRequirementMap
-            .get_by_inspection_and_administrative_penalty_id(
+            AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
                 inspection_id, administrative_penalty_id
             )
         )
