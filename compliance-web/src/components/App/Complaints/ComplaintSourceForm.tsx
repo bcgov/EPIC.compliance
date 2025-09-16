@@ -162,7 +162,6 @@ const ComplaintSourceForm: FC<ComplaintSourceProps> = ({
         <Box
           p={sectionPadding}
           mb={"1.5rem"}
-          bgcolor={BCDesignTokens.surfaceColorBackgroundLightBlue}
         >
           <DynamicInputField
             config={
