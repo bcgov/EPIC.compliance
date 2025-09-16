@@ -12,11 +12,13 @@ import { formatAuthorization } from "@/utils/appUtils";
 type ProjectDetailsFormProps = {
   projectList: Project[];
   isEditMode?: boolean;
+  caseFileProjectId?: number | null;
 };
 
 const ProjectDetailsForm: FC<ProjectDetailsFormProps> = ({
   projectList,
   isEditMode,
+  caseFileProjectId,
 }) => {
   const { isOpen } = useDrawer();
   const { setValue, resetField } = useFormContext();
@@ -86,21 +88,21 @@ const ProjectDetailsForm: FC<ProjectDetailsFormProps> = ({
         name="regulatedParty"
         label="Regulated Party"
         placeholder="Regulated Party"
-        disabled={!!selectedProjectId || isEditMode}
+        disabled={!!selectedProjectId || (isEditMode && caseFileProjectId !== null)}
         fullWidth
       />
       <ControlledTextField
         name="projectType"
         label="Project Type"
         placeholder="Project Type"
-        disabled={!!selectedProjectId || isEditMode}
+        disabled={!!selectedProjectId || (isEditMode && caseFileProjectId !== null)}
         fullWidth
       />
       <ControlledTextField
         name="projectSubType"
         label="Project Subtype"
         placeholder="Project Subtype"
-        disabled={!!selectedProjectId || isEditMode}
+        disabled={!!selectedProjectId || (isEditMode && caseFileProjectId !== null)}
         fullWidth
       />
     </Stack>

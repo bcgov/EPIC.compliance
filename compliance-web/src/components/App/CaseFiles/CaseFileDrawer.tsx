@@ -152,20 +152,18 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
         case_file_number: data.caseFileNumber ?? undefined,
         project_description: data.projectDescription ?? "",
       };
-
+      if (!projectId) {
+        caseFileData = {
+          ...caseFileData,
+          unapproved_project_authorization: data.authorization ?? "",
+          unapproved_project_regulated_party: data.regulatedParty ?? "",
+          unapproved_project_type: data.projectType ?? "",
+          unapproved_project_sub_type: data.projectSubType ?? "",
+        };
+      }
       if (caseFile) {
         updateCaseFile({ id: caseFile.id, caseFile: caseFileData });
       } else {
-        if (!projectId) {
-          // map the unapproved fields only during create mode
-          caseFileData = {
-            ...caseFileData,
-            unapproved_project_authorization: data.authorization ?? "",
-            unapproved_project_regulated_party: data.regulatedParty ?? "",
-            unapproved_project_type: data.projectType ?? "",
-            unapproved_project_sub_type: data.projectSubType ?? "",
-          };
-        }
         createCaseFile(caseFileData);
       }
     },
@@ -193,6 +191,7 @@ const CaseFileDrawer: React.FC<CaseFileDrawerProps> = ({
             staffUsersList={staffUserList ?? []}
             isEditMode={!!caseFile}
             isSuperUser={isSuperUser}
+            caseFileProjectId={caseFile?.project_id}
           />
         </Box>
         <DrawerActionBarBottom

@@ -15,6 +15,7 @@ type CaseFileFormProps = {
   staffUsersList: StaffUser[];
   isEditMode: boolean;
   isSuperUser: boolean;
+  caseFileProjectId?: number | null;
 };
 
 const CaseFileForm: React.FC<CaseFileFormProps> = ({
@@ -23,6 +24,7 @@ const CaseFileForm: React.FC<CaseFileFormProps> = ({
   staffUsersList,
   isEditMode,
   isSuperUser,
+  caseFileProjectId,
 }) => {
   return (
     <>
@@ -41,6 +43,7 @@ const CaseFileForm: React.FC<CaseFileFormProps> = ({
           <ProjectDetailsForm
             projectList={projectList}
             isEditMode={isEditMode}
+            caseFileProjectId={caseFileProjectId}
           />
           <Stack flex={1}>
             <ControlledAutoComplete
