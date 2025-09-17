@@ -175,6 +175,20 @@ export enum ViolationTicketStatus {
   PAID = "PAID",
   DISPUTED = "DISPUTED"
 }
+
+export enum AdministrativePenaltyStatus {
+  DRAFTING = "DRAFTING",
+  DEPUTY_REVIEW = "DEPUTY_REVIEW",
+  CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING",
+  REFERRED_TO_DM = "REFERRED_TO_DM"
+}
+
+export enum ChargeRecommendationStatus {
+  DRAFTING = "DRAFTING",
+  DEPUTY_REVIEW = "DEPUTY_REVIEW",
+  SUBMITTED_TO_CROWN_COUNSEL = "SUBMITTED_TO_CROWN_COUNSEL",
+  CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING"
+}
 export enum RestorativeJusticeStatus {
   DRAFTING = "DRAFTING",
   OPEN = "OPEN",
