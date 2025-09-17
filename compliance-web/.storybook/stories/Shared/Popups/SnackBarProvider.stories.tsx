@@ -1,9 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
 import { Box, Button, Typography, Paper, Alert, Chip } from "@mui/material";
-import { Info as InfoIcon, CheckCircle as CheckCircleIcon, Error as ErrorIcon, Warning as WarningIcon } from "@mui/icons-material";
+import {
+  Info as InfoIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Warning as WarningIcon,
+} from "@mui/icons-material";
 import SnackBarProvider from "@/components/Shared/Popups/SnackBarProvider";
-import { useSnackbar, notify } from "@/store/snackbarStore";
+import { useSnackbar } from "@/store/snackbarStore";
 
 // Demo component to show SnackBarProvider with different severities
 const SnackBarProviderDemo = () => {
@@ -26,7 +30,10 @@ const SnackBarProviderDemo = () => {
   };
 
   const showCustomMessage = () => {
-    setOpen("This is a custom message with detailed information about the current operation.", "info");
+    setOpen(
+      "This is a custom message with detailed information about the current operation.",
+      "info"
+    );
   };
 
   const showLongMessage = () => {
@@ -37,12 +44,13 @@ const SnackBarProviderDemo = () => {
   };
 
   return (
-    <Box sx={{ padding: "20px" }}>
+    <Box sx={{ padding: "20px", height: "200px" }}>
       <Typography variant="h6" gutterBottom>
         SnackBar Provider Examples
       </Typography>
       <Typography variant="body1" paragraph>
-        Click the buttons below to show different types of snackbar notifications. The snackbar will appear in the bottom-right corner.
+        Click the buttons below to show different types of snackbar
+        notifications. The snackbar will appear in the bottom-right corner.
       </Typography>
       <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap", mb: 2 }}>
         <Button variant="contained" color="success" onClick={showSuccess}>
@@ -71,61 +79,21 @@ const SnackBarProviderDemo = () => {
   );
 };
 
-// Demo component using the notify helper functions
-const NotifyHelperDemoComponent = () => {
-  const showSuccessNotify = () => {
-    notify.success("Data saved successfully!");
-  };
-
-  const showErrorNotify = () => {
-    notify.error("Failed to save data. Please try again.");
-  };
-
-  const showWarningNotify = () => {
-    notify.warning("Please check your internet connection.");
-  };
-
-  const showInfoNotify = () => {
-    notify.info("New features are now available!");
-  };
-
-  return (
-    <Box sx={{ padding: "20px" }}>
-      <Typography variant="h6" gutterBottom>
-        Notify Helper Examples
-      </Typography>
-      <Typography variant="body1" paragraph>
-        These examples use the notify helper functions for easier snackbar management.
-      </Typography>
-      <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        <Button variant="contained" color="success" onClick={showSuccessNotify}>
-          Success (notify.success)
-        </Button>
-        <Button variant="contained" color="error" onClick={showErrorNotify}>
-          Error (notify.error)
-        </Button>
-        <Button variant="contained" color="warning" onClick={showWarningNotify}>
-          Warning (notify.warning)
-        </Button>
-        <Button variant="contained" color="info" onClick={showInfoNotify}>
-          Info (notify.info)
-        </Button>
-      </Box>
-      <SnackBarProvider />
-    </Box>
-  );
-};
-
 const meta: Meta<typeof SnackBarProvider> = {
   title: "Shared/Popups/SnackBarProvider",
   component: SnackBarProvider,
   parameters: {
     layout: "fullscreen",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   decorators: [
-    (Story) => (
-      <div style={{ width: "100%", height: "100vh" }}>
+    (Story, context) => (
+      <div
+        style={{
+          width: "100%",
+          height: context.name === "Documentation" ? "100%" : "300px",
+        }}
+      >
         <Story />
       </div>
     ),
@@ -137,84 +105,46 @@ type Story = StoryObj<typeof SnackBarProvider>;
 
 export const InteractiveDemo: Story = {
   render: () => <SnackBarProviderDemo />,
-};
+  parameters: {
+    docs: {
+      source: {
+        code: `
+          import { notify } from '@/store/snackbarStore';
 
-export const NotifyHelperDemo: Story = {
-  render: () => <NotifyHelperDemoComponent />,
-};
+          const SnackBarProviderDemo = () => {
+            const showSuccess = () => {
+              notify.success("Operation completed successfully!");
+            };
 
-export const SuccessMessage: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
+            const showError = () => {
+              notify.error("An error occurred while processing your request.");
+            };
 
-    React.useEffect(() => {
-      setOpen("Operation completed successfully!", "success");
-    }, [setOpen]);
+            const showWarning = () => {
+              notify.warning("Please review your input before proceeding.");
+            };
 
-    return <SnackBarProvider />;
-  },
-};
+            const showInfo = () => {
+              notify.info("New updates are available for download.");
+            };
 
-export const ErrorMessage: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
+            const showCustomMessage = () => {
+              notify.info("This is a custom message with detailed information about the current operation.");
+            };
 
-    React.useEffect(() => {
-      setOpen("An error occurred while processing your request.", "error");
-    }, [setOpen]);
+            const showLongMessage = () => {
+              notify.warning("This is a very long message that demonstrates how the snackbar handles longer text content. It should wrap properly and maintain good readability.");
+            };
 
-    return <SnackBarProvider />;
-  },
-};
-
-export const WarningMessage: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
-
-    React.useEffect(() => {
-      setOpen("Please review your input before proceeding.", "warning");
-    }, [setOpen]);
-
-    return <SnackBarProvider />;
-  },
-};
-
-export const InfoMessage: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
-
-    React.useEffect(() => {
-      setOpen("New updates are available for download.", "info");
-    }, [setOpen]);
-
-    return <SnackBarProvider />;
-  },
-};
-
-export const LongMessage: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
-
-    React.useEffect(() => {
-      setOpen(
-        "This is a very long message that demonstrates how the snackbar handles longer text content. It should wrap properly and maintain good readability across different screen sizes.",
-        "info"
-      );
-    }, [setOpen]);
-
-    return <SnackBarProvider />;
-  },
-};
-
-export const CustomSeverity: Story = {
-  render: () => {
-    const { setOpen } = useSnackbar();
-
-    React.useEffect(() => {
-      setOpen("This is a custom severity message.", "primary");
-    }, [setOpen]);
-
-    return <SnackBarProvider />;
+            return (
+              <Box sx={{ padding: "20px", height: "200px" }}>
+                {/* UI components */}
+                <SnackBarProvider />
+              </Box>
+            );
+          };`,
+      },
+    },
   },
 };
 
@@ -227,53 +157,87 @@ const DocumentationSection = () => {
       </Typography>
 
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <InfoIcon color="primary" />
           Overview
         </Typography>
         <Typography variant="body1" paragraph>
-          The SnackBarProvider is a React component that provides a centralized notification system for displaying temporary messages to users. It uses Material-UI's Snackbar component and integrates with a global state management system to show notifications with different severity levels.
+          The SnackBarProvider is a React component that provides a centralized
+          notification system for displaying temporary messages to users. It
+          uses Material-UI's Snackbar component and integrates with a global
+          state management system to show notifications with different severity
+          levels.
         </Typography>
         <Typography variant="body1" paragraph>
-          This component is designed to be used throughout the application to provide user feedback for various actions such as form submissions, API calls, and general notifications.
+          This component is designed to be used throughout the application to
+          provide user feedback for various actions such as form submissions,
+          API calls, and general notifications.
         </Typography>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <CheckCircleIcon color="success" />
           Features
         </Typography>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Chip label="Multiple Severity Levels" color="primary" size="small" />
-            <Typography variant="body2">Success, Error, Warning, Info, and custom severities</Typography>
+            <Chip
+              label="Multiple Severity Levels"
+              color="primary"
+              size="small"
+            />
+            <Typography variant="body2">
+              Success, Error, Warning, Info, and custom severities
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip label="Auto-dismiss" color="primary" size="small" />
-            <Typography variant="body2">Configurable auto-dismiss timing</Typography>
+            <Typography variant="body2">
+              Configurable auto-dismiss timing
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip label="Manual Dismiss" color="primary" size="small" />
-            <Typography variant="body2">Users can manually close notifications</Typography>
+            <Typography variant="body2">
+              Users can manually close notifications
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip label="Global State" color="primary" size="small" />
-            <Typography variant="body2">Centralized state management with Zustand</Typography>
+            <Typography variant="body2">
+              Centralized state management with Zustand
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip label="Responsive Design" color="primary" size="small" />
-            <Typography variant="body2">Adapts to different screen sizes</Typography>
+            <Typography variant="body2">
+              Adapts to different screen sizes
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip label="Accessibility" color="primary" size="small" />
-            <Typography variant="body2">Built-in accessibility features</Typography>
+            <Typography variant="body2">
+              Built-in accessibility features
+            </Typography>
           </Box>
         </Box>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <ErrorIcon color="error" />
           Severity Types
         </Typography>
@@ -283,7 +247,8 @@ const DocumentationSection = () => {
               Success
             </Alert>
             <Typography variant="body2">
-              Used for successful operations, confirmations, and positive feedback
+              Used for successful operations, confirmations, and positive
+              feedback
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -291,7 +256,8 @@ const DocumentationSection = () => {
               Error
             </Alert>
             <Typography variant="body2">
-              Used for errors, failures, and critical issues that require attention
+              Used for errors, failures, and critical issues that require
+              attention
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -314,17 +280,29 @@ const DocumentationSection = () => {
       </Paper>
 
       <Paper sx={{ p: 3, mb: 4 }}>
-        <Typography variant="h5" gutterBottom sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
           <WarningIcon color="warning" />
           Usage Examples
         </Typography>
-        
+
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           Method 1: Using the useSnackbar Hook
         </Typography>
-        <Box sx={{ backgroundColor: "#f5f5f5", p: 2, borderRadius: 1, fontFamily: "monospace", mb: 2 }}>
+        <Box
+          sx={{
+            backgroundColor: "#f5f5f5",
+            p: 2,
+            borderRadius: 1,
+            fontFamily: "monospace",
+            mb: 2,
+          }}
+        >
           <Typography variant="body2" component="pre">
-{`import { useSnackbar } from '@/store/snackbarStore';
+            {`import { useSnackbar } from '@/store/snackbarStore';
 
 const MyComponent = () => {
   const { setOpen } = useSnackbar();
@@ -345,9 +323,17 @@ const MyComponent = () => {
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           Method 2: Using the notify Helper Functions
         </Typography>
-        <Box sx={{ backgroundColor: "#f5f5f5", p: 2, borderRadius: 1, fontFamily: "monospace", mb: 2 }}>
+        <Box
+          sx={{
+            backgroundColor: "#f5f5f5",
+            p: 2,
+            borderRadius: 1,
+            fontFamily: "monospace",
+            mb: 2,
+          }}
+        >
           <Typography variant="body2" component="pre">
-{`import { notify } from '@/store/snackbarStore';
+            {`import { notify } from '@/store/snackbarStore';
 
 const MyComponent = () => {
   const handleSave = async () => {
@@ -371,9 +357,16 @@ const MyComponent = () => {
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           Component Setup
         </Typography>
-        <Box sx={{ backgroundColor: "#f5f5f5", p: 2, borderRadius: 1, fontFamily: "monospace" }}>
+        <Box
+          sx={{
+            backgroundColor: "#f5f5f5",
+            p: 2,
+            borderRadius: 1,
+            fontFamily: "monospace",
+          }}
+        >
           <Typography variant="body2" component="pre">
-{`// In your main App component or layout
+            {`// In your main App component or layout
 import SnackBarProvider from '@/components/Shared/Popups/SnackBarProvider';
 
 const App = () => {
@@ -392,7 +385,7 @@ const App = () => {
         <Typography variant="h5" gutterBottom>
           API Reference
         </Typography>
-        
+
         <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
           useSnackbar Hook
         </Typography>
@@ -401,7 +394,8 @@ const App = () => {
         </Typography>
         <Box sx={{ ml: 2 }}>
           <Typography variant="body2" component="div">
-            • <strong>setOpen</strong>: (message: string, severity: SeverityType) =&gt; void
+            • <strong>setOpen</strong>: (message: string, severity:
+            SeverityType) =&gt; void
           </Typography>
           <Typography variant="body2" component="div">
             • <strong>closeSnackbar</strong>: () =&gt; void
@@ -413,16 +407,20 @@ const App = () => {
         </Typography>
         <Box sx={{ ml: 2 }}>
           <Typography variant="body2" component="div">
-            • <strong>notify.success(message: string)</strong>: Shows a success notification
+            • <strong>notify.success(message: string)</strong>: Shows a success
+            notification
           </Typography>
           <Typography variant="body2" component="div">
-            • <strong>notify.error(message: string)</strong>: Shows an error notification
+            • <strong>notify.error(message: string)</strong>: Shows an error
+            notification
           </Typography>
           <Typography variant="body2" component="div">
-            • <strong>notify.warning(message: string)</strong>: Shows a warning notification
+            • <strong>notify.warning(message: string)</strong>: Shows a warning
+            notification
           </Typography>
           <Typography variant="body2" component="div">
-            • <strong>notify.info(message: string)</strong>: Shows an info notification
+            • <strong>notify.info(message: string)</strong>: Shows an info
+            notification
           </Typography>
         </Box>
 
@@ -441,22 +439,26 @@ const App = () => {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Alert severity="info">
             <Typography variant="body2">
-              <strong>Keep messages concise:</strong> Use clear, brief messages that users can quickly understand.
+              <strong>Keep messages concise:</strong> Use clear, brief messages
+              that users can quickly understand.
             </Typography>
           </Alert>
           <Alert severity="info">
             <Typography variant="body2">
-              <strong>Choose appropriate severity:</strong> Match the severity level to the importance and nature of the message.
+              <strong>Choose appropriate severity:</strong> Match the severity
+              level to the importance and nature of the message.
             </Typography>
           </Alert>
           <Alert severity="info">
             <Typography variant="body2">
-              <strong>Provide actionable feedback:</strong> When possible, include next steps or context in your messages.
+              <strong>Provide actionable feedback:</strong> When possible,
+              include next steps or context in your messages.
             </Typography>
           </Alert>
           <Alert severity="info">
             <Typography variant="body2">
-              <strong>Don't overuse:</strong> Avoid showing too many notifications at once, as this can overwhelm users.
+              <strong>Don't overuse:</strong> Avoid showing too many
+              notifications at once, as this can overwhelm users.
             </Typography>
           </Alert>
         </Box>
@@ -470,8 +472,9 @@ export const Documentation: Story = {
   parameters: {
     docs: {
       description: {
-        component: "Comprehensive documentation for the SnackBarProvider component including usage examples, API reference, and best practices."
-      }
-    }
-  }
+        component:
+          "Comprehensive documentation for the SnackBarProvider component including usage examples, API reference, and best practices.",
+      },
+    },
+  },
 };

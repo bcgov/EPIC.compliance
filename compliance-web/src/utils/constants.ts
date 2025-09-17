@@ -216,4 +216,5 @@ export const CRJudgment = {
 
 export const DEFAULT_PAGE_SIZE = 15;
 
-export type VARIANT_COLORS = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+export type ALERT_SEVERITY_COLORS = "error" | "info" | "success" | "warning";
+export type VARIANT_COLORS = "default" | "primary" | "secondary" | ALERT_SEVERITY_COLORS;

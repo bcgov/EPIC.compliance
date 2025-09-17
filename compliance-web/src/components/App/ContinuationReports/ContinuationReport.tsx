@@ -1,13 +1,6 @@
-import {
-  Box,
-  Button,
-  InputAdornment,
-  SelectChangeEvent,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, SelectChangeEvent, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
-import { AddRounded, CloseRounded, SearchRounded } from "@mui/icons-material";
+import { AddRounded } from "@mui/icons-material";
 import ContinuationReportTimeline from "./ContinuationReportTimeline";
 import { useModal } from "@/store/modalStore";
 import ContinuationReportEntryModal from "./ContinuationReportEntryModal";
@@ -21,6 +14,7 @@ import ComingSoon from "@/components/Shared/ComingSoon";
 import { useCallback, useEffect, useState } from "react";
 import ContinuationReportPagination from "./ContinuationReportPagination";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
+import SearchTextField from "@/components/Shared/SearchTextField";
 
 export type ContinuationReportContextType = {
   caseFileId: number;
@@ -130,29 +124,10 @@ export default function ContinuationReport({
               </Button>
             )}
           </Box>
-          <TextField
-            id="searchTextField"
-            variant="outlined"
-            size="small"
-            placeholder="Search"
+          <SearchTextField
             value={searchText}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  {searchText ? (
-                    <CloseRounded
-                      fontSize="small"
-                      sx={{ cursor: "pointer" }}
-                      onClick={() => setSearchText("")} // Clear the input field
-                    />
-                  ) : (
-                    <SearchRounded />
-                  )}
-                </InputAdornment>
-              ),
-            }}
-            onChange={(event) => {
-              setSearchText(event.target.value);
+            onChange={(value) => {
+              setSearchText(value);
             }}
           />
           {!caseFileId || status === "pending" ? (
