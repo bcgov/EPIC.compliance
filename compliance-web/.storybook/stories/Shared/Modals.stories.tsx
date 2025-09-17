@@ -11,11 +11,11 @@ import ModalProvider from "@/components/Shared/Modals/ModalProvider";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import ModalActions from "@/components/Shared/Modals/ModalActions";
 import { useModal } from "@/store/modalStore";
-import { FormDecorator } from "../../../decorators/FormDecorator";
+import { FormDecorator } from "../../decorators/FormDecorator";
 import * as yup from "yup";
 
 // Complete modal content component
-const CompleteModalContent = ({
+const ModalContent = ({
   title,
   showDelete = false,
   isLoading = false,
@@ -37,7 +37,7 @@ const CompleteModalContent = ({
           This is a complete modal example that combines all three modal
           components: ModalTitleBar, ModalActions, and ModalProvider.
         </Typography>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", mt: 2 }}>
           <TextField
             label="Name"
             variant="outlined"
@@ -98,7 +98,7 @@ const ModalDemo = () => {
         <Button
           variant="contained"
           onClick={() =>
-            openModal(<CompleteModalContent title="Basic Modal" />, "500px")
+            openModal(<ModalContent title="Basic Modal" />, "500px")
           }
         >
           Basic Modal
@@ -107,7 +107,7 @@ const ModalDemo = () => {
           variant="contained"
           onClick={() =>
             openModal(
-              <CompleteModalContent
+              <ModalContent
                 title="Modal with Delete"
                 showDelete={true}
               />,
@@ -121,7 +121,7 @@ const ModalDemo = () => {
           variant="contained"
           onClick={() =>
             openModal(
-              <CompleteModalContent title="Loading Modal" isLoading={true} />,
+              <ModalContent title="Loading Modal" isLoading={true} />,
               "500px"
             )
           }
@@ -132,7 +132,7 @@ const ModalDemo = () => {
           variant="contained"
           onClick={() =>
             openModal(
-              <CompleteModalContent
+              <ModalContent
                 title="Delete Loading Modal"
                 showDelete={true}
                 isDeleteLoading={true}
@@ -147,7 +147,7 @@ const ModalDemo = () => {
           variant="contained"
           onClick={() =>
             openModal(
-              <CompleteModalContent
+              <ModalContent
                 title="Wide Modal with All Features"
                 showDelete={true}
                 isLoading={false}
@@ -165,7 +165,7 @@ const ModalDemo = () => {
 };
 
 const meta: Meta<typeof ModalProvider> = {
-  title: "Shared/Modals/Complete Example",
+  title: "Shared/Modals",
   component: ModalProvider,
   parameters: {
     layout: "fullscreen",
@@ -192,7 +192,7 @@ export const BasicModal: Story = {
 
     React.useEffect(() => {
       setOpen({
-        content: <CompleteModalContent title="Basic Modal Example" />,
+        content: <ModalContent title="Basic Modal Example" />,
         width: "500px",
       });
     }, [setOpen]);
@@ -208,7 +208,7 @@ export const ModalWithDelete: Story = {
     React.useEffect(() => {
       setOpen({
         content: (
-          <CompleteModalContent
+          <ModalContent
             title="Modal with Delete Action"
             showDelete={true}
           />
@@ -228,7 +228,7 @@ export const LoadingModal: Story = {
     React.useEffect(() => {
       setOpen({
         content: (
-          <CompleteModalContent title="Loading Modal" isLoading={true} />
+          <ModalContent title="Loading Modal" isLoading={true} />
         ),
         width: "500px",
       });
@@ -245,7 +245,7 @@ export const WideModal: Story = {
     React.useEffect(() => {
       setOpen({
         content: (
-          <CompleteModalContent
+          <ModalContent
             title="Wide Modal with All Features"
             showDelete={true}
             isLoading={false}
