@@ -22,6 +22,7 @@ class TokenJWTClaims(dict, Enum):
         "preferred_username": fake.user_name(),
         "groups": ["/COMPLIANCE/VIEWER"],
         "realm_access": {"roles": []},
+        "resource_access": {"epic-compliance": {"roles": ["viewer"]}},
     }
     super_user = {
         "iss": CONFIG.JWT_OIDC_TEST_ISSUER,
@@ -31,4 +32,5 @@ class TokenJWTClaims(dict, Enum):
         "preferred_username": fake.user_name(),
         "groups": ["/COMPLIANCE/SUPERUSER"],
         "realm_access": {"roles": []},
+        "resource_access": {"epic-compliance": {"roles": ["super_user"]}},
     }

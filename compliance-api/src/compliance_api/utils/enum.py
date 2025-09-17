@@ -37,7 +37,7 @@ class ContextEnum(Enum):
 class PermissionEnum(Enum):
     """Enum for Staff User Permissions."""
 
-    VIEWER = "Viewer"
-    USER = "User"
-    SUPERUSER = "Superuser"
-    ADMIN = "Admin"
+    VIEWER = "viewer"
+    USER = "user"
+    SUPERUSER = "super_user"
+    ADMIN = "admin"

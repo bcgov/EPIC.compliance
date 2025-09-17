@@ -59,3 +59,5 @@ export const OidcConfig = {
   automaticSilentRenew: false,
   revokeTokensOnSignout: true,
 };
+
+export { CLIENT_ID };
