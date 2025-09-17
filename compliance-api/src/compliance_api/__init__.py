@@ -130,7 +130,7 @@ def setup_jwt_manager(app_context, jwt_manager):
     def custom_role_callback(claims):
         """Return the roles from claims."""
         # Extract roles from the realm_access claim in the JWT token
-        return claims.get("resource_access").get(app_context.config["JWT_OIDC_AUDIENCE"], {}).get("roles", [])
+        return claims.get("resource_access").get("epic-compliance", {}).get("roles", [])
 
     app_context.config["JWT_ROLE_CALLBACK"] = custom_role_callback
     # if os.getenv("FLASK_ENV") == "development":

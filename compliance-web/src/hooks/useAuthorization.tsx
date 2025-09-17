@@ -1,7 +1,7 @@
 import { StaffUser } from "@/models/Staff";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { useAuth } from "react-oidc-context";
-import { CLIENT_ID } from "@/utils/config";
+import { OidcConfig } from "@/utils/config";
 
 interface CustomJwtPayload extends JwtPayload {
   resource_access?: {
@@ -31,7 +31,7 @@ export const useIsRolesAllowed = (
   const payload = jwtDecode<CustomJwtPayload>(authUser.access_token);
   
   // Get roles from resource_access if available
-  const resourceRoles = payload.resource_access?.[CLIENT_ID]?.roles || [];
+  const resourceRoles = payload.resource_access?.[OidcConfig.client_id]?.roles || [];
   
   // Check if the user has any of the required roles (from groups or resource_access)
   const isRoleAllowed = roles.some((role) => 
