@@ -1,4 +1,4 @@
-import { FC, memo, useEffect, useState } from "react";
+import { FC, memo, useCallback, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -49,7 +49,13 @@ type ImagesContainerProps = {
 };
 
 const ImagesContainer: FC<ImagesContainerProps> = memo(
-  ({ imageType, inspectionId, requirementId, isRegulatoryConsideration, isRequirementEditable }) => {
+  ({
+    imageType,
+    inspectionId,
+    requirementId,
+    isRegulatoryConsideration,
+    isRequirementEditable,
+  }) => {
     const isPhoto = imageType === ImageTypeEnum.PHOTO;
     const { setOpen, setClose } = useModal();
     const [isExpanded, setIsExpanded] = useState(true);
@@ -102,7 +108,7 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
       }
     }
 
-    const getImageIndex = () => {
+    const getImageIndex = useCallback(() => {
       if (!requirementId) {
         let reqImagesList = Array.from(
           isPhoto ? requirementPhotos.values() : requirementFigures.values()
@@ -122,9 +128,114 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
       return images.length > 0
         ? (images[images.length - 1].sort_order || 0) + 1
         : 1;
-    };
+    }, [
+      requirementId,
+      requirementPhotos,
+      requirementFigures,
+      isPhoto,
+      isRegulatoryConsideration,
+      requirementsList,
+      images,
+    ]);
 
-    const selectImage = () => {
+    const updateActiveLexicalEditor = useCallback(
+      (updatedImages: RequirementImage[], imagesType2: RequirementImage[]) => {
+        // Find all active Lexical editor instances on the page
+        const editorElements = document.querySelectorAll(".editor-input");
+
+        if (!editorElements.length) return;
+
+        // Flatten all images from all requirements into a single array
+        const allImages = [...updatedImages, ...imagesType2];
+
+        if (!allImages.length) return;
+
+        // For each editor instance, we need to update the mentions
+        editorElements.forEach((editorElement) => {
+          // Check if the editor is initialized and is accessible
+          if (!editorElement || !(editorElement instanceof HTMLElement)) return;
+
+          // Dispatch a custom event to update mentions in the Lexical editor
+          const event = new CustomEvent("lexical-command", {
+            bubbles: true,
+            cancelable: true,
+            detail: {
+              type: "update-mentions",
+              images: allImages,
+            },
+          });
+
+          editorElement.dispatchEvent(event);
+        });
+      },
+      []
+    );
+
+    const setImageLists = useCallback(
+      (imagesList: RequirementImage[]) => {
+        const sourceMap = isPhoto ? requirementPhotos : requirementFigures;
+        const updatedRequirementImages = new Map<number, RequirementImage[]>(
+          Array.from(sourceMap.entries())
+        );
+
+        updatedRequirementImages.set(
+          currentRequirementId,
+          imagesList.map((img) => ({ ...img }))
+        );
+
+        const updatedImagesWithSortOrder = updateImagesWithContinuousSortOrder(
+          updatedRequirementImages,
+          requirementsList
+        );
+
+        if (isPhoto) {
+          setRequirementPhotos(updatedImagesWithSortOrder);
+        } else {
+          setRequirementFigures(updatedImagesWithSortOrder);
+        }
+
+        /**
+         * updatedImagesWithSortOrder is the image map of current type of images (photos or figures)
+         * requirementImagesType2 is the image map of other type of images
+         * formatRequirementImagesInFindings will merge the two maps and return the updated requirements findings and list
+         */
+        const requirementImagesType2 = isPhoto
+          ? requirementFigures
+          : requirementPhotos;
+        const updatedRequirementsList = formatRequirementImagesInFindings(
+          requirementsList,
+          updatedImagesWithSortOrder,
+          requirementImagesType2
+        );
+        setRequirementsList(updatedRequirementsList);
+
+        // Update any active Lexical editor that might contain mentions related to these images
+
+        updateActiveLexicalEditor(
+          updatedImagesWithSortOrder.get(currentRequirementId) ?? [],
+          requirementImagesType2.get(currentRequirementId) ?? []
+        ); //TODO: Check if all images are needed here
+
+        setImages(updatedImagesWithSortOrder.get(currentRequirementId) ?? []);
+        setIsDataChanged(true);
+        setIsImageChanged(true);
+      },
+      [
+        isPhoto,
+        requirementPhotos,
+        requirementFigures,
+        currentRequirementId,
+        requirementsList,
+        setRequirementsList,
+        updateActiveLexicalEditor,
+        setIsDataChanged,
+        setIsImageChanged,
+        setRequirementPhotos,
+        setRequirementFigures,
+      ]
+    );
+
+    const selectImage = useCallback(() => {
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*";
@@ -150,110 +261,45 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
         }
       };
       input.click();
-    };
+    }, [
+      setOpen,
+      inspectionId,
+      imageType,
+      getImageIndex,
+      setClose,
+      images,
+      setImageLists,
+    ]);
 
-    const handleImageClick = (image: RequirementImage) => {
-      setOpen({
-        content: (
-          <ImageModal
-            onSubmit={(updatedImage) => {
-              const updatedImages = images.map((img) =>
-                img.id === updatedImage.id ? updatedImage : img
-              );
-              setImageLists(updatedImages);
-              setClose();
-            }}
-            onDelete={(imageId) => {
-              const updatedImages = images.filter((img) => img.id !== imageId);
-              setImageLists(updatedImages);
-              setClose();
-            }}
-            requirementImage={image}
-            inspectionId={inspectionId}
-            imageType={imageType}
-          />
-        ),
-        width: "640px",
-      });
-    };
-
-    const setImageLists = (imagesList: RequirementImage[]) => {
-      const updatedRequirementImages: Map<number, RequirementImage[]> = isPhoto
-        ? requirementPhotos
-        : requirementFigures;
-
-      updatedRequirementImages.set(currentRequirementId, imagesList);
-
-      const updatedImagesWithSortOrder = updateImagesWithContinuousSortOrder(
-        updatedRequirementImages,
-        requirementsList
-      );
-
-      if (isPhoto) {
-        setRequirementPhotos(updatedImagesWithSortOrder);
-      } else {
-        setRequirementFigures(updatedImagesWithSortOrder);
-      }
-
-      /**
-       * updatedImagesWithSortOrder is the image map of current type of images (photos or figures)
-       * requirementImagesType2 is the image map of other type of images
-       * formatRequirementImagesInFindings will merge the two maps and return the updated requirements findings and list
-       */
-      const requirementImagesType2 = isPhoto
-        ? requirementFigures
-        : requirementPhotos;
-      const updatedRequirementsList = formatRequirementImagesInFindings(
-        requirementsList,
-        updatedImagesWithSortOrder,
-        requirementImagesType2
-      );
-      setRequirementsList(updatedRequirementsList);
-
-      // Update any active Lexical editor that might contain mentions related to these images
-
-      updateActiveLexicalEditor(
-        updatedImagesWithSortOrder.get(currentRequirementId) ?? [],
-        requirementImagesType2.get(currentRequirementId) ?? []
-      ); //TODO: Check if all images are needed here
-
-      setImages(updatedImagesWithSortOrder.get(currentRequirementId) ?? []);
-      setIsDataChanged(true);
-      setIsImageChanged(true);
-    };
-
-    const updateActiveLexicalEditor = (
-      updatedImages: RequirementImage[],
-      imagesType2: RequirementImage[]
-    ) => {
-      // Find all active Lexical editor instances on the page
-      const editorElements = document.querySelectorAll(".editor-input");
-
-      if (!editorElements.length) return;
-
-      // Flatten all images from all requirements into a single array
-      const allImages = [...updatedImages, ...imagesType2];
-
-      if (!allImages.length) return;
-
-      // For each editor instance, we need to update the mentions
-      editorElements.forEach((editorElement) => {
-        // Check if the editor is initialized and is accessible
-        if (!editorElement || !(editorElement instanceof HTMLElement)) return;
-
-        // Dispatch a custom event to update mentions in the Lexical editor
-        const event = new CustomEvent("lexical-command", {
-          bubbles: true,
-          cancelable: true,
-          detail: {
-            type: "update-mentions",
-            images: allImages,
-          },
+    const handleImageClick = useCallback(
+      (image: RequirementImage) => {
+        setOpen({
+          content: (
+            <ImageModal
+              onSubmit={(updatedImage) => {
+                const updatedImages = images.map((img) =>
+                  img.id === updatedImage.id ? updatedImage : img
+                );
+                setImageLists(updatedImages);
+                setClose();
+              }}
+              onDelete={(imageId) => {
+                const updatedImages = images.filter(
+                  (img) => img.id !== imageId
+                );
+                setImageLists(updatedImages);
+                setClose();
+              }}
+              requirementImage={image}
+              inspectionId={inspectionId}
+              imageType={imageType}
+            />
+          ),
+          width: "640px",
         });
-
-        editorElement.dispatchEvent(event);
-      });
-    };
+      },
+      [setOpen, inspectionId, imageType, images, setImageLists, setClose]
+    );
 
     return (
       <Accordion

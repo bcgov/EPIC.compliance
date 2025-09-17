@@ -206,6 +206,17 @@ class CaseFileService:
                 case_file_data.get("officer_ids", []),
                 ho_session or session,
             )
+
+            if not case_file_data.get("project_id", None):
+                existing_unapproved_project = UnapprovedProjectModel.get_by_case_file_id(case_file_id)
+                if existing_unapproved_project:
+                    unapproved_project_update_data = {
+                        "regulated_party": case_file_data.get("unapproved_project_regulated_party"),
+                        "type": case_file_data.get("unapproved_project_type"),
+                        "sub_type": case_file_data.get("unapproved_project_sub_type"),
+                    }
+                    existing_unapproved_project.update(unapproved_project_update_data, commit=False)
+
         return updated_case_file
 
     @classmethod

@@ -52,7 +52,7 @@ staff_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, StaffUserSchema(), "StaffList"
 )
 case_file_update_model = ApiHelper.convert_ma_schema_to_restx_model(
-    API, CaseFileSchema(), "CaseFileUpdate"
+    API, CaseFileUpdateSchema(), "CaseFileUpdate"
 )
 case_file_status_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, CaseFileStatusSchema(), "CaseFileStatus"

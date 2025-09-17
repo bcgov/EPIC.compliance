@@ -341,6 +341,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
 
     setModalOpen({
       content,
+      width: '520px'
     });
   };
 

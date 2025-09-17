@@ -70,6 +70,10 @@ const fetchInspection = (inspectionNumber: string): Promise<Inspection> => {
   return request({ url: `/inspections/ir-numbers/${inspectionNumber}` });
 };
 
+export const fetchInspectionById = (inspectionId: number): Promise<Inspection> => {
+  return request({ url: `/inspections/${inspectionId}` });
+};
+
 const fetchInspectionAttendances = (
   inspectionId: number
 ): Promise<InspectionAttendance[]> => {
@@ -174,6 +178,15 @@ export const useInspectionByNumber = (inspectionNumber: string) => {
       return { ...inspection, inspectionAttendances };
     },
     enabled: !!inspectionNumber,
+    staleTime: Infinity,
+  });
+};
+
+export const useInspectionById = (inspectionId: number) => {
+  return useQuery({
+    queryKey: ["inspection", inspectionId],
+    queryFn: () => fetchInspectionById(inspectionId),
+    enabled: !!inspectionId,
     staleTime: Infinity,
   });
 };
