@@ -22,7 +22,6 @@ import {
 } from "material-react-table";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import CaseFileGridPagination from "@/components/App/CaseFiles/CaseFileGrid/CaseFileGridPagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
@@ -31,6 +30,7 @@ import {
 import CaseFileGridExport from "@/components/App/CaseFiles/CaseFileGrid/CaseFileGridExport";
 import ShowOnlyMyCaseFilesSwitch from "@/components/App/CaseFiles/CaseFileGrid/ShowOnlyMyCaseFilesSwitch";
 import { AddRounded } from "@mui/icons-material";
+import Pagination from "@/components/Shared/Pagination";
 
 export const Route = createFileRoute("/_authenticated/ce-database/case-files/")(
   {
@@ -477,9 +477,14 @@ export function CaseFiles() {
             {/* Left side - Export and Pagination */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <CaseFileGridExport queryParams={queryParams} />
-              <CaseFileGridPagination
-                table={table}
+              <Pagination
+                currentPage={pagination.pageIndex}
+                pageSize={pagination.pageSize}
                 totalCount={data?.total || 0}
+                onPreviousPage={() => table.previousPage()}
+                onNextPage={() => table.nextPage()}
+                canPreviousPage={table.getCanPreviousPage()}
+                canNextPage={table.getCanNextPage()}
               />
             </Box>
           </Box>

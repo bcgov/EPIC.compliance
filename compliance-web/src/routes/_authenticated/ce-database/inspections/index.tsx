@@ -16,7 +16,7 @@ import {
 } from "material-react-table";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useAuth } from "react-oidc-context";
-import InspectionsGridPagination from "@/components/App/Inspections/InspectionsGrid/InspectionsGridPagination";
+import Pagination from "@/components/Shared/Pagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
@@ -454,9 +454,14 @@ export function Inspections() {
             {/* Left side - Export and Pagination */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <InspectionsGridExport queryParams={queryParams} />
-              <InspectionsGridPagination
-                table={table}
+              <Pagination
+                currentPage={pagination.pageIndex}
+                pageSize={pagination.pageSize}
                 totalCount={data?.total || 0}
+                onPreviousPage={() => table.previousPage()}
+                onNextPage={() => table.nextPage()}
+                canPreviousPage={table.getCanPreviousPage()}
+                canNextPage={table.getCanNextPage()}
               />
             </Box>
           </Box>

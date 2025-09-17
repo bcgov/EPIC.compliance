@@ -22,7 +22,7 @@ import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
 import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
-import RequirementsGridPagination from "@/components/App/RequirementsGrid/RequirementsGridPagination";
+import Pagination from "@/components/Shared/Pagination";
 import RequirementsGridExport from "@/components/App/RequirementsGrid/RequirementsGridExport";
 import {
   useConvertFiltersToQueryParams,
@@ -472,9 +472,14 @@ function Requirements() {
             {/* Left side - Export button */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <RequirementsGridExport queryParams={queryParams} />
-              <RequirementsGridPagination
-                table={table}
+              <Pagination
+                currentPage={pagination.pageIndex}
+                pageSize={pagination.pageSize}
                 totalCount={data?.total || 0}
+                onPreviousPage={() => table.previousPage()}
+                onNextPage={() => table.nextPage()}
+                canPreviousPage={table.getCanPreviousPage()}
+                canNextPage={table.getCanNextPage()}
               />
             </Box>
 
