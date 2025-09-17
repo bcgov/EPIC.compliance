@@ -146,7 +146,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Violation Ticket" />
+        <ModalTitleBar title={violationTicket.vt_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <Box sx={{ display: "flex", gap: 1 }}>
