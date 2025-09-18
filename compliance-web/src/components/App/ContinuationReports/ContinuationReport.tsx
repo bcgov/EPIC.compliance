@@ -125,6 +125,7 @@ export default function ContinuationReport({
             )}
           </Box>
           <SearchTextField
+            id="searchTextField"
             value={searchText}
             onChange={(value) => {
               setSearchText(value);
