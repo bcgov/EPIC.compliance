@@ -1,31 +1,31 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
-import { Box, Tabs, Tab, Typography } from '@mui/material';
-import TabPanel from '../../../src/components/Shared/TabPanel';
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import { Box, Tabs, Tab, Typography } from "@mui/material";
+import TabPanel from "@/components/Shared/TabPanel";
 
 const meta: Meta<typeof TabPanel> = {
-  title: 'Shared/TabPanel',
+  title: "Shared/TabPanel",
   component: TabPanel,
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     index: {
-      control: 'number',
-      description: 'Tab index',
+      control: "number",
+      description: "Tab index",
     },
     value: {
-      control: 'number',
-      description: 'Current active tab value',
+      control: "number",
+      description: "Current active tab value",
     },
     id: {
-      control: 'text',
-      description: 'Unique identifier for the tab panel',
+      control: "text",
+      description: "Unique identifier for the tab panel",
     },
     width: {
-      control: 'text',
-      description: 'Width of the tab panel',
+      control: "text",
+      description: "Width of the tab panel",
     },
   },
 };
@@ -42,9 +42,13 @@ const TabPanelDemo = ({ width = "75%" }: { width?: string }) => {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={value}
+          onChange={handleChange}
+          aria-label="basic tabs example"
+        >
           <Tab label="Item One" />
           <Tab label="Item Two" />
           <Tab label="Item Three" />
@@ -55,7 +59,8 @@ const TabPanelDemo = ({ width = "75%" }: { width?: string }) => {
           Tab One Content
         </Typography>
         <Typography variant="body1">
-          This is the content for the first tab. It can contain any React components or elements.
+          This is the content for the first tab. It can contain any React
+          components or elements.
         </Typography>
       </TabPanel>
       <TabPanel value={value} index={1} id="demo-tabpanel" width={width}>
@@ -63,7 +68,8 @@ const TabPanelDemo = ({ width = "75%" }: { width?: string }) => {
           Tab Two Content
         </Typography>
         <Typography variant="body1">
-          This is the content for the second tab. Notice how the content changes when you switch tabs.
+          This is the content for the second tab. Notice how the content changes
+          when you switch tabs.
         </Typography>
       </TabPanel>
       <TabPanel value={value} index={2} id="demo-tabpanel" width={width}>
@@ -71,7 +77,8 @@ const TabPanelDemo = ({ width = "75%" }: { width?: string }) => {
           Tab Three Content
         </Typography>
         <Typography variant="body1">
-          This is the content for the third tab. The TabPanel component handles the visibility logic.
+          This is the content for the third tab. The TabPanel component handles
+          the visibility logic.
         </Typography>
       </TabPanel>
     </Box>
@@ -99,8 +106,8 @@ export const WithFormContent: Story = {
     };
 
     return (
-      <Box sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ width: "100%" }}>
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs value={value} onChange={handleChange}>
             <Tab label="Personal Info" />
             <Tab label="Contact Details" />
@@ -109,7 +116,9 @@ export const WithFormContent: Story = {
         </Box>
         <TabPanel value={value} index={0} id="form-tabpanel">
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Personal Information</Typography>
+            <Typography variant="h6" gutterBottom>
+              Personal Information
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               Enter your personal details here.
             </Typography>
@@ -117,7 +126,9 @@ export const WithFormContent: Story = {
         </TabPanel>
         <TabPanel value={value} index={1} id="form-tabpanel">
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Contact Details</Typography>
+            <Typography variant="h6" gutterBottom>
+              Contact Details
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               Provide your contact information.
             </Typography>
@@ -125,7 +136,9 @@ export const WithFormContent: Story = {
         </TabPanel>
         <TabPanel value={value} index={2} id="form-tabpanel">
           <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>Preferences</Typography>
+            <Typography variant="h6" gutterBottom>
+              Preferences
+            </Typography>
             <Typography variant="body2" color="text.secondary">
               Configure your application preferences.
             </Typography>

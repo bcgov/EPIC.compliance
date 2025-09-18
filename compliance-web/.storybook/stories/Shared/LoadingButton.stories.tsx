@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import LoadingButton from '../../../src/components/Shared/LoadingButton';
+import LoadingButton from '@/components/Shared/LoadingButton';
 
 const meta: Meta<typeof LoadingButton> = {
   title: 'Shared/LoadingButton',

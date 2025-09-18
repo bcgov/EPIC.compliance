@@ -1,8 +1,16 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import React, { useState, useMemo } from "react";
 import { Box, Typography, Chip, IconButton, Tooltip } from "@mui/material";
-import { MRT_ColumnDef, MRT_SortingState, MRT_ColumnFiltersState } from "material-react-table";
-import { EditRounded, DeleteRounded, VisibilityRounded } from "@mui/icons-material";
+import {
+  MRT_ColumnDef,
+  MRT_SortingState,
+  MRT_ColumnFiltersState,
+} from "material-react-table";
+import {
+  EditRounded,
+  DeleteRounded,
+  VisibilityRounded,
+} from "@mui/icons-material";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
 
 // Sample data types
@@ -246,7 +254,7 @@ const MasterDataTableDemo = () => {
     formatValue: (value: unknown) => unknown = (value) => String(value)
   ) {
     const optionsMap = new Map();
-    
+
     data.forEach((dataObject) => {
       if (
         !dataObject ||
@@ -256,13 +264,18 @@ const MasterDataTableDemo = () => {
         optionsMap.set("", "(Blanks)");
         return;
       }
-      optionsMap.set(formatValue(dataObject[key]), formatLabel(dataObject[key]));
+      optionsMap.set(
+        formatValue(dataObject[key]),
+        formatLabel(dataObject[key])
+      );
     });
 
-    const optionsArray = Array.from(optionsMap.entries()).map(([key, value]) => ({
-      text: value,
-      value: key,
-    }));
+    const optionsArray = Array.from(optionsMap.entries()).map(
+      ([key, value]) => ({
+        text: value,
+        value: key,
+      })
+    );
 
     optionsArray.sort((a, b) => {
       if (a.value === "") return -1;
@@ -275,7 +288,7 @@ const MasterDataTableDemo = () => {
 
   const handleAddRecord = () => {
     const newRecord: Person = {
-      id: Math.max(...data.map(p => p.id)) + 1,
+      id: Math.max(...data.map((p) => p.id)) + 1,
       firstName: "New",
       lastName: "User",
       email: "new.user@example.com",
@@ -283,7 +296,7 @@ const MasterDataTableDemo = () => {
       city: "Vancouver",
       state: "BC",
       status: "pending",
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate: new Date().toISOString().split("T")[0],
       salary: 50000,
       department: "Engineering",
     };
@@ -295,7 +308,7 @@ const MasterDataTableDemo = () => {
   };
 
   const handleDeleteRecord = (row: any) => {
-    setData(data.filter(p => p.id !== row.original.id));
+    setData(data.filter((p) => p.id !== row.original.id));
   };
 
   const handleViewRecord = (row: any) => {
@@ -308,9 +321,11 @@ const MasterDataTableDemo = () => {
         Master Data Table Examples
       </Typography>
       <Typography variant="body1" paragraph>
-        This comprehensive example demonstrates the MasterDataTable component with various features including filtering, sorting, pagination, and actions.
+        This comprehensive example demonstrates the MasterDataTable component
+        with various features including filtering, sorting, pagination, and
+        actions.
       </Typography>
-      
+
       <MasterDataTable
         columns={columns}
         data={data}
@@ -325,18 +340,12 @@ const MasterDataTableDemo = () => {
         renderRowActions={({ row }) => (
           <Box sx={{ display: "flex", gap: "0.5rem" }}>
             <Tooltip title="View">
-              <IconButton
-                size="small"
-                onClick={() => handleViewRecord(row)}
-              >
+              <IconButton size="small" onClick={() => handleViewRecord(row)}>
                 <VisibilityRounded />
               </IconButton>
             </Tooltip>
             <Tooltip title="Edit">
-              <IconButton
-                size="small"
-                onClick={() => handleEditRecord(row)}
-              >
+              <IconButton size="small" onClick={() => handleEditRecord(row)}>
                 <EditRounded />
               </IconButton>
             </Tooltip>
@@ -387,7 +396,9 @@ const RemoteDataDemoComponent = () => {
     pageSize: 10,
   });
   const [sorting, setSorting] = useState<MRT_SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>([]);
+  const [columnFilters, setColumnFilters] = useState<MRT_ColumnFiltersState>(
+    []
+  );
   const [globalFilter, setGlobalFilter] = useState("");
   const [rowCount, setRowCount] = useState(0);
 
@@ -395,12 +406,12 @@ const RemoteDataDemoComponent = () => {
   const fetchData = async () => {
     setLoading(true);
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     const start = pagination.pageIndex * pagination.pageSize;
     const end = start + pagination.pageSize;
     const filteredData = sampleData.slice(start, end);
-    
+
     setData(filteredData);
     setRowCount(sampleData.length);
     setLoading(false);
@@ -447,9 +458,10 @@ const RemoteDataDemoComponent = () => {
         Remote Data Table
       </Typography>
       <Typography variant="body1" paragraph>
-        This example demonstrates the table with remote data loading, pagination, and filtering.
+        This example demonstrates the table with remote data loading,
+        pagination, and filtering.
       </Typography>
-      
+
       <MasterDataTable
         columns={columns}
         data={data}
@@ -513,14 +525,6 @@ const meta: Meta<typeof MasterDataTable> = {
 export default meta;
 type Story = StoryObj<typeof MasterDataTable>;
 
-export const InteractiveDemo: Story = {
-  render: () => <MasterDataTableDemo />,
-};
-
-export const RemoteDataDemo: Story = {
-  render: () => <RemoteDataDemoComponent />,
-};
-
 export const BasicTable: Story = {
   render: () => {
     const [data] = useState<Person[]>(sampleData.slice(0, 5));
@@ -581,7 +585,7 @@ export const TableWithFilters: Story = {
       formatValue: (value: unknown) => unknown = (value) => String(value)
     ) {
       const optionsMap = new Map();
-      
+
       data.forEach((dataObject) => {
         if (
           !dataObject ||
@@ -591,13 +595,18 @@ export const TableWithFilters: Story = {
           optionsMap.set("", "(Blanks)");
           return;
         }
-        optionsMap.set(formatValue(dataObject[key]), formatLabel(dataObject[key]));
+        optionsMap.set(
+          formatValue(dataObject[key]),
+          formatLabel(dataObject[key])
+        );
       });
 
-      const optionsArray = Array.from(optionsMap.entries()).map(([key, value]) => ({
-        text: value,
-        value: key,
-      }));
+      const optionsArray = Array.from(optionsMap.entries()).map(
+        ([key, value]) => ({
+          text: value,
+          value: key,
+        })
+      );
 
       optionsArray.sort((a, b) => {
         if (a.value === "") return -1;
@@ -668,6 +677,14 @@ export const TableWithFilters: Story = {
   },
 };
 
+export const RemoteDataDemo: Story = {
+  render: () => <RemoteDataDemoComponent />,
+};
+
+export const InteractiveDemo: Story = {
+  render: () => <MasterDataTableDemo />,
+};
+
 export const StackedTables: Story = {
   render: () => {
     const [data] = useState<Person[]>(sampleData);
@@ -704,9 +721,10 @@ export const StackedTables: Story = {
           Stacked Tables Example
         </Typography>
         <Typography variant="body1" paragraph>
-          This example shows how tables look when stacked (isStackedTables=true).
+          This example shows how tables look when stacked
+          (isStackedTables=true).
         </Typography>
-        
+
         <MasterDataTable
           columns={columns}
           data={data}
@@ -720,7 +738,7 @@ export const StackedTables: Story = {
             tableAddRecordFunction: () => console.log("Add employee"),
           }}
         />
-        
+
         <Box sx={{ mt: 2 }}>
           <MasterDataTable
             columns={columns}

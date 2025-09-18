@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MoreVert, Settings, Delete } from '@mui/icons-material';
-import MenuActionDropdown from '../../../src/components/Shared/MenuActionDropdown';
+import MenuActionDropdown from '@/components/Shared/MenuActionDropdown';
 
 const meta: Meta<typeof MenuActionDropdown> = {
   title: 'Shared/MenuActionDropdown',

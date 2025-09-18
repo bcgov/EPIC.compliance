@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Typography, Box } from '@mui/material';
-import DynamicHeightBox from '../../../src/components/Shared/DynamicHeightBox';
+import DynamicHeightBox from '@/components/Shared/DynamicHeightBox';
 
 const meta: Meta<typeof DynamicHeightBox> = {
   title: 'Shared/DynamicHeightBox',

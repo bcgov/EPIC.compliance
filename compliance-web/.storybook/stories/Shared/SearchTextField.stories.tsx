@@ -1,52 +1,52 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { useState } from 'react';
-import SearchTextField from '../../../src/components/Shared/SearchTextField';
+import type { Meta, StoryObj } from "@storybook/react";
+import { useState } from "react";
+import SearchTextField from "@/components/Shared/SearchTextField";
 
 const meta: Meta<typeof SearchTextField> = {
-  title: 'Shared/SearchTextField',
+  title: "Shared/SearchTextField",
   component: SearchTextField,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     value: {
-      control: 'text',
-      description: 'The current search value',
+      control: "text",
+      description: "The current search value",
     },
     onChange: {
-      action: 'changed',
-      description: 'Callback fired when the search value changes',
+      action: "changed",
+      description: "Callback fired when the search value changes",
     },
     onClear: {
-      action: 'cleared',
-      description: 'Callback fired when the clear button is clicked',
+      action: "cleared",
+      description: "Callback fired when the clear button is clicked",
     },
     placeholder: {
-      control: 'text',
-      description: 'Placeholder text',
+      control: "text",
+      description: "Placeholder text",
     },
     showSearchIcon: {
-      control: 'boolean',
-      description: 'Whether to show the search icon',
+      control: "boolean",
+      description: "Whether to show the search icon",
     },
     showClearButton: {
-      control: 'boolean',
-      description: 'Whether to show the clear button when there\'s text',
+      control: "boolean",
+      description: "Whether to show the clear button when there's text",
     },
     disabled: {
-      control: 'boolean',
-      description: 'Whether the field is disabled',
+      control: "boolean",
+      description: "Whether the field is disabled",
     },
     variant: {
-      control: { type: 'select' },
-      options: ['outlined', 'filled', 'standard'],
-      description: 'TextField variant',
+      control: { type: "select" },
+      options: ["outlined", "filled", "standard"],
+      description: "TextField variant",
     },
     size: {
-      control: { type: 'select' },
-      options: ['small', 'medium'],
-      description: 'TextField size',
+      control: { type: "select" },
+      options: ["small", "medium"],
+      description: "TextField size",
     },
   },
 };
@@ -56,8 +56,8 @@ type Story = StoryObj<typeof meta>;
 
 // Wrapper component to handle state for interactive stories
 const SearchTextFieldWrapper = (args: any) => {
-  const [value, setValue] = useState(args.value || '');
-  
+  const [value, setValue] = useState(args.value || "");
+
   return (
     <SearchTextField
       {...args}
@@ -67,7 +67,7 @@ const SearchTextFieldWrapper = (args: any) => {
         args.onChange?.(newValue);
       }}
       onClear={() => {
-        setValue('');
+        setValue("");
         args.onClear?.();
       }}
     />
@@ -77,38 +77,38 @@ const SearchTextFieldWrapper = (args: any) => {
 export const Default: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    placeholder: 'Search',
+    placeholder: "Search",
   },
 };
 
 export const WithInitialValue: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    value: 'Initial search text',
-    placeholder: 'Search',
+    value: "Initial search text",
+    placeholder: "Search",
   },
 };
 
 export const CustomPlaceholder: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    placeholder: 'Search for cr entries...',
+    placeholder: "Search for cr entries...",
   },
 };
 
 export const MediumSize: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    size: 'medium',
-    placeholder: 'Search',
+    size: "medium",
+    placeholder: "Search",
   },
 };
 
 export const Disabled: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    value: 'Disabled search field',
-    placeholder: 'Search',
+    value: "Disabled search field",
+    placeholder: "Search",
     disabled: true,
   },
 };
@@ -116,7 +116,7 @@ export const Disabled: Story = {
 export const WithoutSearchIcon: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    placeholder: 'Search without icon',
+    placeholder: "Search without icon",
     showSearchIcon: false,
   },
 };
@@ -124,8 +124,8 @@ export const WithoutSearchIcon: Story = {
 export const WithoutClearButton: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    value: 'No clear button',
-    placeholder: 'Search',
+    value: "No clear button",
+    placeholder: "Search",
     showClearButton: false,
   },
 };
@@ -133,26 +133,26 @@ export const WithoutClearButton: Story = {
 export const FullWidth: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    placeholder: 'Full width search',
+    placeholder: "Full width search",
     fullWidth: true,
   },
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
 };
 
 export const WithLabel: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    label: 'Search Field',
-    placeholder: 'Enter search term',
+    label: "Search Field",
+    placeholder: "Enter search term",
   },
 };
 
 export const WithHelperText: Story = {
   render: SearchTextFieldWrapper,
   args: {
-    placeholder: 'Search',
-    helperText: 'Type to search through the data',
+    placeholder: "Search",
+    helperText: "Type to search through the data",
   },
 };

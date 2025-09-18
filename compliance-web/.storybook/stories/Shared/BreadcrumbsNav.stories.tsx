@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import BreadcrumbsNav from '../../../src/components/Shared/BreadcrumbsNav';
+import BreadcrumbsNav from '@/components/Shared/BreadcrumbsNav';
 import { RouterDecorator } from '../../decorators/RouterDecorator';
 
 const meta: Meta<typeof BreadcrumbsNav> = {

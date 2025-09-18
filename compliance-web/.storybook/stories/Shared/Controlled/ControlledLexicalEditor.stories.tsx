@@ -1,12 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { FormDecorator } from '../../../decorators/FormDecorator';
-import ControlledLexicalEditor from '@/components/Shared/Controlled/ControlledLexicalEditor';
+import type { Meta, StoryObj } from "@storybook/react";
+import { FormDecorator } from "../../../decorators/FormDecorator";
+import ControlledLexicalEditor from "@/components/Shared/Controlled/ControlledLexicalEditor";
 
 const meta: Meta<typeof ControlledLexicalEditor> = {
-  title: 'Shared/Controlled/ControlledLexicalEditor',
+  title: "Shared/Controlled/ControlledLexicalEditor",
   component: ControlledLexicalEditor,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
   decorators: [
     (Story) => (
@@ -17,32 +17,32 @@ const meta: Meta<typeof ControlledLexicalEditor> = {
   ],
   argTypes: {
     name: {
-      control: 'text',
-      description: 'Form field name',
+      control: "text",
+      description: "Form field name",
     },
     label: {
-      control: 'text',
-      description: 'Editor label',
+      control: "text",
+      description: "Editor label",
     },
     isRequired: {
-      control: 'boolean',
-      description: 'Whether the field is required',
+      control: "boolean",
+      description: "Whether the field is required",
     },
     disabled: {
-      control: 'boolean',
-      description: 'Whether the editor is disabled',
+      control: "boolean",
+      description: "Whether the editor is disabled",
     },
     placeholder: {
-      control: 'text',
-      description: 'Editor placeholder text',
+      control: "text",
+      description: "Editor placeholder text",
     },
     height: {
-      control: 'text',
+      control: "text",
       description: 'Height of the editor (e.g., "200px", "10rem")',
     },
     isAdvanced: {
-      control: 'boolean',
-      description: 'Whether to show advanced editor features',
+      control: "boolean",
+      description: "Whether to show advanced editor features",
     },
   },
 };
@@ -52,44 +52,44 @@ type Story = StoryObj<typeof ControlledLexicalEditor>;
 
 export const Default: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Rich Text Editor',
-    placeholder: 'Start typing...',
+    name: "lexicalField",
+    label: "Rich Text Editor",
+    placeholder: "Start typing...",
   },
 };
 
 export const Required: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Required Rich Text',
-    placeholder: 'This field is required',
+    name: "lexicalField",
+    label: "Required Rich Text",
+    placeholder: "This field is required",
     isRequired: true,
   },
 };
 
 export const Disabled: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Disabled Editor',
-    placeholder: 'This editor is disabled',
+    name: "lexicalField",
+    label: "Disabled Editor",
+    placeholder: "This editor is disabled",
     disabled: true,
   },
 };
 
 export const WithCustomHeight: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Custom Height Editor',
-    placeholder: 'This editor has a custom height',
-    height: '200px',
+    name: "lexicalField",
+    label: "Custom Height Editor",
+    placeholder: "This editor has a custom height",
+    height: "200px",
   },
 };
 
 export const AdvancedEditor: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Advanced Editor',
-    placeholder: 'This editor has advanced features',
+    name: "lexicalField",
+    label: "Advanced Editor",
+    placeholder: "This editor has advanced features",
     isAdvanced: true,
   },
 };
@@ -98,8 +98,9 @@ export const WithPreContent: Story = {
   decorators: [
     (Story) => (
       <FormDecorator
-        defaultFormValues={{ 
-          lexicalField: '<p>This is some <strong>pre-filled</strong> content with <em>formatting</em>.</p>' 
+        defaultFormValues={{
+          lexicalField:
+            "<p>This is some <strong>pre-filled</strong> content with <em>formatting</em>.</p>",
         }}
       >
         <Story />
@@ -107,17 +108,17 @@ export const WithPreContent: Story = {
     ),
   ],
   args: {
-    name: 'lexicalField',
-    label: 'Pre-filled Content',
-    placeholder: 'Editor with pre-filled content',
+    name: "lexicalField",
+    label: "Pre-filled Content",
+    placeholder: "Editor with pre-filled content",
   },
 };
 
 export const LargeEditor: Story = {
   args: {
-    name: 'lexicalField',
-    label: 'Large Editor',
-    placeholder: 'This is a large editor for longer content',
-    height: '300px',
+    name: "lexicalField",
+    label: "Large Editor",
+    placeholder: "This is a large editor for longer content",
+    height: "300px",
   },
 };

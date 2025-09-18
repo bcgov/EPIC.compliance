@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Grid, Box, Chip } from "@mui/material";
-import GridLabelValuePair from "../../../src/components/Shared/GridLabelValuePair";
+import GridLabelValuePair from "@/components/Shared/GridLabelValuePair";
 
 const meta: Meta<typeof GridLabelValuePair> = {
   title: "Shared/GridLabelValuePair",

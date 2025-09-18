@@ -4,11 +4,11 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { ThemeProvider } from "@mui/material/styles";
 import { createAppTheme } from "epic.theme";
-import FilterSelect from "../../../src/components/Shared/FilterSelect/FilterSelect";
-import TableFilter from "../../../src/components/Shared/FilterSelect/TableFilter";
-import ExternalTableFilter from "../../../src/components/Shared/FilterSelect/ExternalTableFilter";
-import DateFilter from "../../../src/components/Shared/FilterSelect/DateFilter";
-import { OptionType } from "../../../src/components/Shared/FilterSelect/type";
+import FilterSelect from "@/components/Shared/FilterSelect/FilterSelect";
+import TableFilter from "@/components/Shared/FilterSelect/TableFilter";
+import ExternalTableFilter from "@/components/Shared/FilterSelect/ExternalTableFilter";
+import DateFilter from "@/components/Shared/FilterSelect/DateFilter";
+import { OptionType } from "@/components/Shared/FilterSelect/type";
 
 // Mock data for stories
 const mockOptions: OptionType[] = [

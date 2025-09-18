@@ -1,15 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import OfficerStepper from '../../../src/components/App/Inspections/Profile/Reports/OfficerSteppr/OfficerStepper';
-import { useReportStore } from '../../../src/components/App/Inspections/Profile/Reports/reportStore';
-import { InspectionRecord } from '../../../src/models/InspectionRecord';
-import { IRApproval } from '../../../src/models/IRApproval';
-import { Inspection } from '../../../src/models/Inspection';
-import { IRProgress } from '../../../src/models/IRProgress';
-import { IRStatus } from '../../../src/models/IRStatus';
-import { ApprovalStatus } from '../../../src/models/ApprovalStatus';
-import { StaffUser } from '../../../src/models/Staff';
-import { Position } from '../../../src/models/Position';
+import OfficerStepper from '@/components/App/Inspections/Profile/Reports/OfficerSteppr/OfficerStepper';
+import { useReportStore } from '@/components/App/Inspections/Profile/Reports/reportStore';
+import { InspectionRecord } from '@/models/InspectionRecord';
+import { IRApproval } from '@/models/IRApproval';
+import { Inspection } from '@/models/Inspection';
+import { IRProgress } from '@/models/IRProgress';
+import { IRStatus } from '@/models/IRStatus';
+import { ApprovalStatus } from '@/models/ApprovalStatus';
+import { StaffUser } from '@/models/Staff';
+import { Position } from '@/models/Position';
 
 // Mock data
 const mockStaffUser: StaffUser = {

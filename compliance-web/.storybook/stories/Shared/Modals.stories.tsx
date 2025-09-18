@@ -107,10 +107,7 @@ const ModalDemo = () => {
           variant="contained"
           onClick={() =>
             openModal(
-              <ModalContent
-                title="Modal with Delete"
-                showDelete={true}
-              />,
+              <ModalContent title="Modal with Delete" showDelete={true} />,
               "500px"
             )
           }
@@ -208,10 +205,7 @@ export const ModalWithDelete: Story = {
     React.useEffect(() => {
       setOpen({
         content: (
-          <ModalContent
-            title="Modal with Delete Action"
-            showDelete={true}
-          />
+          <ModalContent title="Modal with Delete Action" showDelete={true} />
         ),
         width: "500px",
       });
@@ -227,9 +221,7 @@ export const LoadingModal: Story = {
 
     React.useEffect(() => {
       setOpen({
-        content: (
-          <ModalContent title="Loading Modal" isLoading={true} />
-        ),
+        content: <ModalContent title="Loading Modal" isLoading={true} />,
         width: "500px",
       });
     }, [setOpen]);

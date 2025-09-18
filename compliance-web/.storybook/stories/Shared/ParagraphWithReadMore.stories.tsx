@@ -1,26 +1,26 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import { Typography } from '@mui/material';
-import ParagraphWithReadMore from '../../../src/components/Shared/ParagraphWithReadMore';
+import type { Meta, StoryObj } from "@storybook/react";
+import { Typography } from "@mui/material";
+import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
 
 const meta: Meta<typeof ParagraphWithReadMore> = {
-  title: 'Shared/ParagraphWithReadMore',
+  title: "Shared/ParagraphWithReadMore",
   component: ParagraphWithReadMore,
   parameters: {
-    layout: 'padded',
+    layout: "padded",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     maxHeight: {
-      control: 'number',
-      description: 'Maximum height before showing read more',
+      control: "number",
+      description: "Maximum height before showing read more",
     },
     expand: {
-      control: 'boolean',
-      description: 'Whether to expand by default',
+      control: "boolean",
+      description: "Whether to expand by default",
     },
     isFormatted: {
-      control: 'boolean',
-      description: 'Whether the content is formatted HTML',
+      control: "boolean",
+      description: "Whether the content is formatted HTML",
     },
   },
 };
