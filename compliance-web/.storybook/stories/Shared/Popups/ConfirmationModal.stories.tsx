@@ -73,7 +73,8 @@ const ConfirmationModalDemo = () => {
         Confirmation Modal Examples
       </Typography>
       <Typography variant="body1" paragraph>
-        These examples demonstrate the ConfirmationModal component in different configurations.
+        These examples demonstrate the ConfirmationModal component in different
+        configurations.
       </Typography>
       <Box sx={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
         <Button
@@ -115,10 +116,7 @@ const ConfirmationModalDemo = () => {
         >
           Discard Confirmation
         </Button>
-        <Button
-          variant="contained"
-          onClick={openFormattedModal}
-        >
+        <Button variant="contained" onClick={openFormattedModal}>
           Formatted Description
         </Button>
       </Box>
