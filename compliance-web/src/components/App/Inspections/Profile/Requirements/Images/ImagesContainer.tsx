@@ -39,6 +39,7 @@ import {
   rectSwappingStrategy,
 } from "@dnd-kit/sortable";
 import { useRequirementStore } from "@/components/App/Inspections/Profile/Requirements/requirementStore";
+import { useInspectionById } from "@/hooks/useInspections";
 
 type ImagesContainerProps = {
   imageType: ImageTypeEnum;
@@ -57,6 +58,7 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
     isRequirementEditable,
   }) => {
     const isPhoto = imageType === ImageTypeEnum.PHOTO;
+    const { data: inspectionData } = useInspectionById(inspectionId);
     const { setOpen, setClose } = useModal();
     const [isExpanded, setIsExpanded] = useState(true);
     const [currentRequirementId, setCurrentRequirementId] = useState<number>(0);
@@ -254,6 +256,7 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
                 inspectionId={inspectionId}
                 imageType={imageType}
                 imageIndex={getImageIndex()}
+                primaryOfficer={inspectionData?.primary_officer}
               />
             ),
             width: "640px",
@@ -269,6 +272,7 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
       setClose,
       images,
       setImageLists,
+      inspectionData,
     ]);
 
     const handleImageClick = useCallback(
@@ -293,12 +297,13 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
               requirementImage={image}
               inspectionId={inspectionId}
               imageType={imageType}
+              primaryOfficer={inspectionData?.primary_officer}
             />
           ),
           width: "640px",
         });
       },
-      [setOpen, inspectionId, imageType, images, setImageLists, setClose]
+      [setOpen, inspectionId, imageType, images, setImageLists, setClose, inspectionData]
     );
 
     return (

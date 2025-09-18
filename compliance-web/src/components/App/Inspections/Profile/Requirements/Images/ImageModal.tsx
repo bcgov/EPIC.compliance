@@ -25,6 +25,7 @@ type ImageModalProps = {
   inspectionId: number;
   imageType: ImageTypeEnum;
   imageIndex?: number;
+  primaryOfficer?: StaffUser;
 };
 
 const imageFormSchema = yup.object().shape({
@@ -34,10 +35,10 @@ const imageFormSchema = yup.object().shape({
 
 type ImageSchemaType = yup.InferType<typeof imageFormSchema>;
 
-const initFormData: ImageFormData = {
-  takenBy: undefined,
+const getInitFormData = (primaryOfficer?: StaffUser): ImageFormData => ({
+  takenBy: primaryOfficer,
   caption: "",
-};
+});
 
 const ImageModal: React.FC<ImageModalProps> = ({
   file,
@@ -47,6 +48,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
   inspectionId,
   imageType,
   imageIndex,
+  primaryOfficer,
 }) => {
   const { data: staffUserList } = useStaffUsersData();
   const isPhoto = imageType === ImageTypeEnum.PHOTO;
@@ -57,8 +59,8 @@ const ImageModal: React.FC<ImageModalProps> = ({
           takenBy: requirementImage.taken_by,
           caption: requirementImage.caption,
         }
-      : initFormData;
-  }, [requirementImage]);
+      : getInitFormData(primaryOfficer);
+  }, [requirementImage, primaryOfficer]);
 
   const methods = useForm<ImageSchemaType>({
     resolver: yupResolver(imageFormSchema),
