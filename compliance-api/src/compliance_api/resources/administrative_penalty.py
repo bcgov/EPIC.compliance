@@ -218,9 +218,10 @@ class AdministrativePenaltyById(Resource):
         if not inspection_id:
             raise BadRequestError("inspection_id is required")
 
-        return AdministrativePenaltyService.delete_administrative_penalty(
+        AdministrativePenaltyService.delete_administrative_penalty(
             administrative_penalty_id, int(inspection_id)
         )
+        return {}, HTTPStatus.NO_CONTENT
 
 
 @cors_preflight("GET, OPTIONS")

@@ -28,7 +28,8 @@ from compliance_api.models import db as _db
 
 from .utilities.factory_scenario import TokenJWTClaims
 from .utilities.factory_scenario.administrative_penalty_fixture import (  # noqa: F401
-    created_administrative_penalty, created_administrative_penalty_requirement_map)
+    created_administrative_penalty, created_administrative_penalty_inspection_requirement,
+    created_administrative_penalty_requirement_map)
 from .utilities.factory_scenario.common_fixture import (  # noqa: F401
     created_case_file, created_inspection, created_inspection_requirement, created_staff, mock_auth_service,
     mock_doc_gen_service, mock_doc_service, mock_track_service)

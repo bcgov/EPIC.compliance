@@ -1,6 +1,4 @@
-"""Administrative Penalty Service."""
-
-from http import HTTPStatus
+"""Administrative penalty service."""
 
 from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.administrative_penalty import (
@@ -128,6 +126,10 @@ class AdministrativePenaltyService:
         requirement_ids = administrative_penalty_data.get(
             "inspection_requirement_ids", []
         )
+        if not requirement_ids:
+            raise UnprocessableEntityError(
+                "Inspection requirement IDs are required to create an administrative penalty."
+            )
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids,
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
@@ -276,8 +278,6 @@ class AdministrativePenaltyService:
                     session,
                 )
 
-        return HTTPStatus.NO_CONTENT
-
     @classmethod
     def link(cls, administrative_penalty_id, link):
         """Link an existing administrative penalty to inspection requirements.
@@ -330,6 +330,16 @@ class AdministrativePenaltyService:
             requirement_ids,
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
         )
+        # Check if administrative penalty already exists for the given requirements
+        if (
+            requirement_ids
+            and AdministrativePenalty.does_administrative_penalty_exists_by_requirement_ids(
+                requirement_ids, administrative_penalty_id
+            )
+        ):
+            raise UnprocessableEntityError(
+                "Administrative Penalty already exists for these requirements."
+            )
         existing_requirements = (
             AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
                 inspection_id, administrative_penalty_id
@@ -337,9 +347,8 @@ class AdministrativePenaltyService:
         )
         if existing_requirements:
             raise UnprocessableEntityError(
-                "Administrative penalty already linked to inspection requirements"
+                "Administrative penalty is already linked to inspection requirements for this inspection."
             )
-        # Create the links in the database
         with session_scope() as session:
             cls.insert_or_update_inspection_requirements(
                 administrative_penalty_id,
