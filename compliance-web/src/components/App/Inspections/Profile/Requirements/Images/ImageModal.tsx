@@ -28,12 +28,12 @@ type ImageModalProps = {
   primaryOfficer?: StaffUser;
 };
 
-const imageFormSchema = yup.object().shape({
-  takenBy: yup.object<StaffUser>().nullable().required("Taken By is required"),
+const imageFormSchema = (isPhoto: boolean) => yup.object().shape({
+  ...(isPhoto && { takenBy: yup.object<StaffUser>().nullable().required("Taken By is required") }),
   caption: yup.string().nullable().required("Caption is required"),
 });
 
-type ImageSchemaType = yup.InferType<typeof imageFormSchema>;
+type ImageSchemaType = yup.InferType<ReturnType<typeof imageFormSchema>>;
 
 const getInitFormData = (primaryOfficer?: StaffUser): ImageFormData => ({
   takenBy: primaryOfficer,
@@ -63,7 +63,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
   }, [requirementImage, primaryOfficer]);
 
   const methods = useForm<ImageSchemaType>({
-    resolver: yupResolver(imageFormSchema),
+    resolver: yupResolver(imageFormSchema(isPhoto)),
     mode: "onBlur",
     defaultValues,
   });
@@ -74,7 +74,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
     presigned_url: string;
     relative_url: string;
   }) => {
-    const takenBy = getValues("takenBy") as StaffUser;
+    const takenBy = isPhoto ? (getValues("takenBy") as StaffUser) : primaryOfficer;
     const imageFormData: RequirementImage = {
       id: Date.now(),
       relative_url: uploadedFile.relative_url,
@@ -102,11 +102,12 @@ const ImageModal: React.FC<ImageModalProps> = ({
   const onSubmitHandler = (data: ImageSchemaType) => {
     if (requirementImage) {
       const formData = data as ImageFormData;
+      const takenBy = isPhoto ? formData.takenBy : primaryOfficer;
       onSubmit({
         ...requirementImage,
         caption: formData.caption,
-        taken_by_id: formData.takenBy?.id,
-        taken_by: formData.takenBy,
+        taken_by_id: takenBy?.id,
+        taken_by: takenBy,
       });
     } else {
       uploadImage({
@@ -194,15 +195,17 @@ const ImageModal: React.FC<ImageModalProps> = ({
                 isBold
               />
             </Grid>
-            <ControlledAutoComplete
-              name="takenBy"
-              label="Taken By"
-              options={staffUserList ?? []}
-              getOptionLabel={(option) => option.name}
-              getOptionKey={(option) => option.id}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              isRequired={true}
-            />
+            {isPhoto && (
+              <ControlledAutoComplete
+                name="takenBy"
+                label="Taken By"
+                options={staffUserList ?? []}
+                getOptionLabel={(option) => option.name}
+                getOptionKey={(option) => option.id}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                isRequired={true}
+              />
+            )}
             <ControlledTextField
               name="caption"
               label="Caption"

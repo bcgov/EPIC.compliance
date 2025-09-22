@@ -10,7 +10,7 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
     """Schema for Review Board Inspection Record response."""
 
     # IR Number
-    ir_number = fields.Str(dump_only=True)
+    ir_number = fields.Str(dump_only=True, attribute="inspection.ir_number")
 
     # Project title from inspection
     project_title = fields.Method("get_project_title", dump_only=True)
@@ -140,6 +140,9 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
 class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
     """Schema for warning letter review board response."""
 
+    # IR Number
+    ir_number = fields.Str(dump_only=True, attribute="inspection.ir_number")
+
     # Warning Letter Number
     warning_letter_number = fields.Str(dump_only=True)
 
@@ -262,6 +265,9 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
 class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
     """Schema for Review Board Order response."""
 
+    # IR Number
+    ir_number = fields.Str(dump_only=True, attribute="inspection.ir_number")
+
     # Order number
     order_number = fields.Str(dump_only=True)
 
@@ -378,6 +384,9 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
 
 class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self-use
     """Schema for Review Board Administrative Penalty response."""
+
+    # IR Number
+    ir_number = fields.Str(dump_only=True, attribute="inspection.ir_number")
 
     # Administrative penalty number
     administrative_penalty_number = fields.Str(dump_only=True)
