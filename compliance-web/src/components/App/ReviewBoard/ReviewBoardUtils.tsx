@@ -137,7 +137,9 @@ export const createInitialSections = (): ReviewBoardSection[] => {
   ];
 };
 
-export const determineItemSection = (item: ReviewBoardItem): ReviewBoardCardType => {
+export const determineItemSection = (
+  item: ReviewBoardItem
+): ReviewBoardCardType => {
   let sectionIndex = ReviewBoardCardType.DRAFTING;
 
   if (item.card_type.name === "AP") {
@@ -170,10 +172,9 @@ export const determineItemSection = (item: ReviewBoardItem): ReviewBoardCardType
     sectionIndex = ReviewBoardCardType.HOLDER_REVIEW;
   } else if (
     item.card_type.name === "IR" &&
-    [
-      IRProgressEnum.FINALIZING_RECORD,
-      IRProgressEnum.FINAL_APPROVED,
-    ].includes(item.ir_progress?.id as IRProgressEnum)
+    [IRProgressEnum.FINALIZING_RECORD, IRProgressEnum.FINAL_APPROVED].includes(
+      item.ir_progress?.id as IRProgressEnum
+    )
   ) {
     // If the IR is in final record, move it to finalizing record section
     sectionIndex = ReviewBoardCardType.FINALIZING_RECORD;
@@ -205,7 +206,8 @@ export const generateDynamicSections = (
   inspectionRecords?: IRReviewBoardItem[],
   orderRecords?: OrderReviewBoardItem[],
   warningLetters?: WarningLetterReviewBoardItem[],
-  administrativePenalties?: APReviewBoardItem[]
+  administrativePenalties?: APReviewBoardItem[],
+  primaryOfficerFilter?: string[]
 ): ReviewBoardSection[] => {
   // Initialize the 6 sections with empty items
   const sections = createInitialSections();
@@ -215,21 +217,27 @@ export const generateDynamicSections = (
     ...(inspectionRecords
       ? formatInspectionRecordsToReviewBoardItems(inspectionRecords)
       : []),
-    ...(orderRecords
-      ? formatOrderRecordsToReviewBoardItems(orderRecords)
-      : []),
+    ...(orderRecords ? formatOrderRecordsToReviewBoardItems(orderRecords) : []),
     ...(warningLetters
       ? formatWarningLettersToReviewBoardItems(warningLetters)
       : []),
     ...(administrativePenalties
-      ? formatAdministrativePenaltiesToReviewBoardItems(
-          administrativePenalties
-        )
+      ? formatAdministrativePenaltiesToReviewBoardItems(administrativePenalties)
       : []),
   ];
 
+  // Apply primary officer filtering if filter is provided
+  const filteredItems =
+    primaryOfficerFilter && primaryOfficerFilter.length > 0
+      ? allItems.filter(
+          (item) =>
+            item.primary_officer &&
+            primaryOfficerFilter.includes(item.primary_officer.id.toString())
+        )
+      : allItems;
+
   // Distribute items across sections based on their status/progress and approval status
-  allItems.forEach((item) => {
+  filteredItems.forEach((item) => {
     const sectionIndex = determineItemSection(item);
     sections[sectionIndex - 1].items.push(item);
   });

@@ -29,25 +29,30 @@ function ReviewBoard() {
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
+  const [externalFilters, setExternalFilters] = useState<
+    Record<string, string[] | string>
+  >({});
+  const [initialChecked, setInitialChecked] = useState(false);
+
   // Create the exact 6 sections like mockReviewBoard and populate with dynamic data
   const dynamicSections = useMemo(() => {
+    // Extract primary officer filter from external filters
+    const primaryOfficerFilter = externalFilters.primary_officer_id as string[] | undefined;
+    
     return generateDynamicSections(
       inspectionRecords,
       orderRecords,
       warningLetters,
-      administrativePenalties
+      administrativePenalties,
+      primaryOfficerFilter
     );
   }, [
     inspectionRecords,
     orderRecords,
     warningLetters,
     administrativePenalties,
+    externalFilters.primary_officer_id,
   ]);
-
-  const [externalFilters, setExternalFilters] = useState<
-    Record<string, string[] | string>
-  >({});
-  const [initialChecked, setInitialChecked] = useState(false);
 
   // Track if we're in the initial load phase to prevent caching during restoration
   const isInitialLoad = useRef(true);
@@ -162,6 +167,10 @@ function ReviewBoard() {
     []
   );
 
+  const handleSwitchChange = useCallback((checked: boolean) => {
+    setInitialChecked(checked);
+  }, []);
+
   return authLoading || staffLoading || !isRestored ? (
     <Box
       display="flex"
@@ -193,6 +202,7 @@ function ReviewBoard() {
           onFilterChange={handleFilterChange}
           externalFilters={externalFilters}
           initialChecked={initialChecked}
+          onSwitchChange={handleSwitchChange}
         />
       </Box>
       <Box sx={{ display: "flex", gap: 1, overflow: "auto", flex: 1 }}>
