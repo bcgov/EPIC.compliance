@@ -16,6 +16,9 @@ import {
   EnforcementActionEnum,
   OrderProgressEnum,
   WarningLetterProgressEnum,
+  ViolationTicketStatus,
+  AdministrativePenaltyStatus,
+  ChargeRecommendationStatus,
 } from "@/utils/constants";
 import { useInspectionOrdersData } from "@/hooks/useInspectionOrders";
 import { useInspectionWarningLettersData } from "@/hooks/useInspectionWarningLetters";
@@ -204,7 +207,22 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
       const nonDraftWarningLetters = requirementsInWarningLetters.some(
         (letter) => letter.progress?.id !== WarningLetterProgressEnum.DRAFTING
       );
-      setDisableEnforcementAction(nonDraftOrders || nonDraftWarningLetters);
+      const nonIssuedViolationTickets = requirementsInViolationTickets.some(
+        (ticket) => ticket.status?.id !== ViolationTicketStatus.ISSUED
+      );
+      const nonDraftAdministrativePenalties = requirementsInAdministrativePenalties.some(
+        (penalty) => penalty.referral_status?.id !== AdministrativePenaltyStatus.DRAFTING
+      );
+      const nonDraftChargeRecommendations = requirementsInChargeRecommendations.some(
+        (charge) => charge.status?.id !== ChargeRecommendationStatus.DRAFTING
+      );
+      setDisableEnforcementAction(
+        nonDraftOrders || 
+        nonDraftWarningLetters || 
+        nonIssuedViolationTickets || 
+        nonDraftAdministrativePenalties || 
+        nonDraftChargeRecommendations
+      );
     } else {
       setDisableEnforcementAction(false);
     }
