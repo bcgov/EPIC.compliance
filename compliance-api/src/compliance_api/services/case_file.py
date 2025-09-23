@@ -324,7 +324,6 @@ class CaseFileService:
         if not link_to_case_file:
             raise ResourceNotFoundError(f"CaseFile with {link_case_file_id} not found")
         _link_case_file_checks(case_file, case_file_id)
-        _link_case_file_checks(link_to_case_file, link_case_file_id)
         source_link = CaseFileLinkModel.get_links_by_source_and_target(
             source_id=case_file_id, target_id=link_case_file_id
         )
@@ -917,7 +916,9 @@ def _build_enforcement_query(inspection_ids: list):
             OrderModel,
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
-                OrderModel.order_status != OrderStatusEnum.OPEN,
+                OrderModel.order_status.notin_(
+                    [OrderStatusEnum.OPEN, OrderStatusEnum.CLOSED]
+                ),
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),
             ),
