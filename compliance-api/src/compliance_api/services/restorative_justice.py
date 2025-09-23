@@ -1,7 +1,5 @@
 """Restorative Justice Service."""
 
-from http import HTTPStatus
-
 from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.db import session_scope
@@ -146,7 +144,6 @@ class RestorativeJusticeService:
             RestorativeJusticeInspectionRequirementMap.delete_by_restorative_justice_id(
                 restorative_justice_id, session
             )
-        return HTTPStatus.NO_CONTENT
 
     @classmethod
     def insert_or_update_inspection_requirements(
