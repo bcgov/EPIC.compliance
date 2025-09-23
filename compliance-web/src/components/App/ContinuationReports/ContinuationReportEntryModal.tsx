@@ -97,25 +97,10 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
     useDeleteContinuationReportEntry(onSuccess);
 
   const onSubmitHandler = (data: ContinuationReportSchemaType) => {
-    let dateToUse;
-    
-    if (data.dateOfEntry?.isValid()) {
-      if (data.dateOfEntry.hour() === 0 && data.dateOfEntry.minute() === 0) {
-        const currentTime = dayjs();
-        dateToUse = data.dateOfEntry
-          .hour(currentTime.hour())
-          .minute(currentTime.minute())
-      } else {
-        dateToUse = data.dateOfEntry;
-      }
-    } else {
-      dateToUse = dayjs();
-    }
-
     const crEntry: ContinuationReportAPIData = {
       text: data.entry.text,
       rich_text: data.entry.html,
-      date_created: dateUtils.dateToISO(dateToUse),
+      date_created: dateUtils.dateToISO(data.dateOfEntry),
     };
     if (continuationReportEntry) {
       updateEntry({
@@ -151,6 +136,7 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
               width="75%"
               maxDate={maxSelectableDate}
               isRequired={true}
+              useCurrentTimeOnEmpty ={true}
             />
             <ControlledLexicalEditor
               label="Entry"
