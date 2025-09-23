@@ -18,7 +18,8 @@ const ReviewBoardSection = ({
         backgroundColor: BCDesignTokens.surfaceColorBackgroundLightGray,
         borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         p: 1,
-        width: 208,
+        flex: 1,
+        minWidth: 0,
         height: "calc(100% - 1rem)", // 1rem is the margin bottom of the main page box
       }}
     >
