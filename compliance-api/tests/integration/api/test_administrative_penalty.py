@@ -350,30 +350,30 @@ def test_update_administrative_penalty_with_invalid_inspection_id(
     assert result.status_code == HTTPStatus.NOT_FOUND
 
 
-# def test_update_administrative_penalty_with_decision_but_no_penalty_amount(
-#     client,
-#     auth_header_super_user,
-#     created_administrative_penalty,
-#     created_administrative_penalty_inspection_requirement,
-# ):
-#     """Test updating administrative penalty with decision but no penalty amount."""
-#     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
-#     update_data = {
-#         "inspection_id": created_administrative_penalty.inspection_id,
-#         "decision": DecisionEnum.AP_ISSUED.name,
-#         "inspection_requirement_ids": [
-#             created_administrative_penalty_inspection_requirement.id
-#         ],
-#         # No penalty_amount provided
-#     }
+def test_update_administrative_penalty_with_decision_but_no_penalty_amount(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Test updating administrative penalty with decision but no penalty amount."""
+    url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
+    update_data = {
+        "inspection_id": created_administrative_penalty.inspection_id,
+        "decision": DecisionEnum.AP_ISSUED.name,
+        "inspection_requirement_ids": [
+            created_administrative_penalty_inspection_requirement.id
+        ],
+        # No penalty_amount provided
+    }
 
-#     headers = {**auth_header_super_user, "Content-Type": "application/json"}
-#     result = client.patch(
-#         url,
-#         data=json.dumps(update_data),
-#         headers=headers,
-#     )
-#     assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.patch(
+        url,
+        data=json.dumps(update_data),
+        headers=headers,
+    )
+    assert result.status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_delete_administrative_penalty(
@@ -408,47 +408,76 @@ def test_delete_administrative_penalty_without_inspection_id(
     assert result.status_code == HTTPStatus.BAD_REQUEST
 
 
-# def test_link_administrative_penalty_success(
-#     client,
-#     auth_header_super_user,
-#     created_administrative_penalty,
-#     created_inspection,
-#     session,
-#     mocker,
-# ):
-#     """Test successfully linking an administrative penalty to inspection requirements."""
-#     # Create a new requirement that's not already linked to the administrative penalty
-#     from compliance_api.services.inspection_requirement import InspectionRequirementService
-#     from tests.utilities.factory_scenario.inspection_requirement_scenario import InspectionRequirementScenario
+def test_link_administrative_penalty_success(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    session,
+    mocker,
+):
+    """Test successfully linking an administrative penalty to inspection requirements."""
+    from compliance_api.services.administrative_penalty import AdministrativePenaltyService
+    from compliance_api.services.inspection import InspectionService
+    from compliance_api.services.inspection_requirement import InspectionRequirementService
+    from tests.utilities.factory_scenario.administrative_penalty_scenario import AdministrativePenaltyScenario
+    from tests.utilities.factory_scenario.inspection_requirement_scenario import InspectionRequirementScenario
+    from tests.utilities.factory_scenario.inspection_scenario import InspectionScenario
 
-#     # Mock auth for requirement creation
-#     contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
-#     contains_role.return_value = True
+    # Mock auth for all operations
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    access_check_fn = mocker.patch(
+        "compliance_api.services.service_utils.ServiceUtils.access_check_update_for_inspection"
+    )
+    access_check_fn.return_value = True
+    inspection_status_check = mocker.patch(
+        "compliance_api.services.service_utils.ServiceUtils.inspection_status_check"
+    )
+    inspection_status_check.return_value = True
 
-#     # Create a new requirement with administrative penalty enforcement action
-#     requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
-#     requirement_data["enforcement_action_ids"] = [
-#         6
-#     ]  # Administrative Penalty Recommendation
-#     new_requirement = InspectionRequirementService.create(
-#         created_inspection.id, requirement_data
-#     )
+    # Create first inspection and requirement for the administrative penalty
+    ap_inspection_data = copy.copy(InspectionScenario.default_value.value)
+    ap_inspection_data["case_file_id"] = created_inspection.case_file_id
+    ap_inspection = InspectionService.create(ap_inspection_data)
 
-#     url = urljoin(API_BASE_URL, "links")
-#     link_data = {
-#         "administrative_penalty_id": created_administrative_penalty.id,
-#         "inspection_id": created_inspection.id,
-#         "inspection_requirement_ids": [new_requirement.id],
-#     }
+    ap_requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
+    ap_requirement_data["enforcement_action_ids"] = [6]  # Administrative Penalty Recommendation
+    ap_requirement = InspectionRequirementService.create(
+        ap_inspection.id, ap_requirement_data
+    )
 
-#     result = client.post(
-#         url,
-#         data=json.dumps(link_data),
-#         headers=auth_header_super_user,
-#     )
-#     print(result.json)
-#     assert result.status_code == HTTPStatus.CREATED
-#     assert result.json["id"] == created_administrative_penalty.id
+    # Create administrative penalty with the first requirement
+    ap_data = copy.copy(AdministrativePenaltyScenario.default_value.value)
+    ap_data["inspection_id"] = ap_inspection.id
+    ap_data["inspection_requirement_ids"] = [ap_requirement.id]
+    administrative_penalty = AdministrativePenaltyService.create_administrative_penalty(ap_data)
+
+    # Create second inspection and requirement for linking
+    link_inspection_data = copy.copy(InspectionScenario.default_value.value)
+    link_inspection_data["case_file_id"] = created_inspection.case_file_id
+    link_inspection = InspectionService.create(link_inspection_data)
+
+    link_requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
+    link_requirement_data["enforcement_action_ids"] = [6]  # Administrative Penalty Recommendation
+    link_requirement = InspectionRequirementService.create(
+        link_inspection.id, link_requirement_data
+    )
+
+    # Now test the linking
+    url = urljoin(API_BASE_URL, "links")
+    link_data = {
+        "administrative_penalty_id": administrative_penalty.id,
+        "inspection_id": link_inspection.id,
+        "inspection_requirement_ids": [link_requirement.id],
+    }
+
+    result = client.post(
+        url,
+        data=json.dumps(link_data),
+        headers=auth_header_super_user,
+    )
+    assert result.status_code == HTTPStatus.CREATED
+    assert result.json["id"] == administrative_penalty.id
 
 
 def test_link_administrative_penalty_with_invalid_ap_id(
