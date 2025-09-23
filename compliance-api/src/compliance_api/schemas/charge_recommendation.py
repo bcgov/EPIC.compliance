@@ -126,6 +126,7 @@ class ChargeRecommendationSchema(AutoSchemaBase):  # pylint: disable=too-many-an
 
         model = ChargeRecommendation
         load_instance = True
+        include_fk = True
 
     court_appearances = fields.String(
         allow_none=True,

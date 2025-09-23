@@ -30,6 +30,11 @@ from .utilities.factory_scenario import TokenJWTClaims
 from .utilities.factory_scenario.administrative_penalty_fixture import (  # noqa: F401
     created_administrative_penalty, created_administrative_penalty_inspection_requirement,
     created_administrative_penalty_requirement_map)
+from .utilities.factory_scenario.charge_recommendation_fixture import (  # noqa: F401
+    created_charge_recommendation, created_charge_recommendation_deputy_review, created_charge_recommendation_drafting,
+    created_charge_recommendation_inspection_requirement, created_charge_recommendation_not_proceeding,
+    created_charge_recommendation_requirement_map, created_charge_recommendation_submitted,
+    created_charge_recommendation_with_court_details)
 from .utilities.factory_scenario.common_fixture import (  # noqa: F401
     created_case_file, created_inspection, created_inspection_requirement, created_staff, mock_auth_service,
     mock_doc_gen_service, mock_doc_service, mock_track_service)
@@ -39,6 +44,11 @@ from .utilities.factory_scenario.restorative_justice_fixture import (  # noqa: F
     created_restorative_justice, created_restorative_justice_closed, created_restorative_justice_drafting,
     created_restorative_justice_inspection_requirement, created_restorative_justice_open,
     created_restorative_justice_requirement_map)
+from .utilities.factory_scenario.violation_ticket_fixture import (  # noqa: F401
+    created_violation_ticket, created_violation_ticket_disputed, created_violation_ticket_inspection_requirement,
+    created_violation_ticket_issued, created_violation_ticket_no_fine, created_violation_ticket_paid,
+    created_violation_ticket_requirement_map, created_violation_ticket_with_large_fine,
+    created_violation_ticket_zero_fine)
 from .utilities.factory_utils import factory_auth_header
 
 
