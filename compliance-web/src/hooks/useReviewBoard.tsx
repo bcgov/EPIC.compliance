@@ -1,4 +1,11 @@
-import { ReviewBoardSection } from "@/models/ReviewBoard";
+import {
+  APReviewBoardItem,
+  IRReviewBoardItem,
+  OrderReviewBoardItem,
+  ReviewBoardSection,
+  WarningLetterReviewBoardItem,
+} from "@/models/ReviewBoard";
+import { request } from "@/utils/axiosUtils";
 import { APPROVAL_STATUS, APPROVAL_STATUS_TEXT } from "@/utils/constants";
 import { useQuery } from "@tanstack/react-query";
 
@@ -10,7 +17,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 1,
         number: "BLAGOL_20250053_IR001_8787",
-        name: "Blackwater Gold",
+        project_name: "Blackwater Gold",
         card_date: "2025-08-22T04:38:49.113000+00:00",
         types: [
           { id: "1", name: "Field" },
@@ -43,7 +50,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 2,
         number: "EASTOB_20250035_IR001",
-        name: "East Coast Oil",
+        project_name: "East Coast Oil",
         card_date: "2025-07-15T09:22:15.450000+00:00",
         types: [
           { id: "1", name: "Field" },
@@ -68,7 +75,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 3,
         number: "CEDLNG_20250043_IR001",
-        name: "Cedar LNG",
+        project_name: "Cedar LNG",
         card_date: "2025-09-03T14:55:32.780000+00:00",
         types: [{ id: "1", name: "Field" }],
         primary_officer: {
@@ -85,7 +92,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 4,
         number: "WOOLNG_20250004_OR001",
-        name: "Woodfibre LNG",
+        project_name: "Woodfibre LNG",
         card_date: "2025-06-28T11:18:44.920000+00:00",
         types: [{ id: "2", name: "Admin" }],
         primary_officer: {
@@ -120,7 +127,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 5,
         number: "KITLNG_20250067_IR002",
-        name: "Kitimat LNG",
+        project_name: "Kitimat LNG",
         card_date: "2025-08-10T07:45:18.650000+00:00",
         types: [
           { id: "1", name: "Field" },
@@ -152,7 +159,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 6,
         number: "PACREF_20250012_OR003",
-        name: "Pacific Refinery",
+        project_name: "Pacific Refinery",
         card_date: "2025-09-12T13:22:55.890000+00:00",
         types: [{ id: "1", name: "Field" }],
         primary_officer: {
@@ -175,7 +182,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 7,
         number: "BALRID_20250040_IR001",
-        name: "Balrid Energy",
+        project_name: "Balrid Energy",
         card_date: "2025-07-30T16:40:25.340000+00:00",
         types: [{ id: "1", name: "Field" }],
         primary_officer: {
@@ -197,7 +204,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 8,
         number: "CEDLNG_20250043_IR001",
-        name: "Cedar LNG Gold",
+        project_name: "Cedar LNG Gold",
         card_date: "2025-08-05T12:15:42.180000+00:00",
         types: [{ id: "2", name: "Admin" }],
         primary_officer: {
@@ -227,7 +234,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 13,
         number: "GREENEN_20250130_OR006",
-        name: "Green Energy Corp",
+        project_name: "Green Energy Corp",
         card_date: "2025-09-25T11:50:41.780000+00:00",
         types: [
           { id: "1", name: "Field" },
@@ -265,7 +272,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 9,
         number: "NORGAS_20250078_OR004",
-        name: "Northern Gas",
+        project_name: "Northern Gas",
         card_date: "2025-09-18T08:30:12.450000+00:00",
         types: [{ id: "1", name: "Field" }],
         primary_officer: {
@@ -288,7 +295,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 10,
         number: "SOUPET_20250091_IR003",
-        name: "Southern Petroleum",
+        project_name: "Southern Petroleum",
         card_date: "2025-06-20T15:45:33.670000+00:00",
         types: [{ id: "2", name: "Admin" }],
         primary_officer: {
@@ -324,7 +331,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 11,
         number: "WESTMIN_20250104_OR005",
-        name: "Western Mining",
+        project_name: "Western Mining",
         card_date: "2025-08-14T10:12:28.910000+00:00",
         types: [
           { id: "1", name: "Field" },
@@ -344,7 +351,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
       {
         id: 12,
         number: "COALCR_20250117_IR004",
-        name: "Coal Creek Energy",
+        project_name: "Coal Creek Energy",
         card_date: "2025-07-08T14:35:19.560000+00:00",
         types: [{ id: "2", name: "Admin" }],
         primary_officer: {
@@ -375,5 +382,57 @@ export const useFetchReviewBoard = () => {
   return useQuery({
     queryKey: ["inspection-review-board"],
     queryFn: fetchReviewBoard,
+  });
+};
+
+const fetchInspectionRecords = (): Promise<IRReviewBoardItem[]> => {
+  return request({
+    url: `/review-board/inspection-records`,
+  });
+};
+
+const fetchOrderRecords = (): Promise<OrderReviewBoardItem[]> => {
+  return request({
+    url: `/review-board/orders`,
+  });
+};
+
+const fetchWarningLetters = (): Promise<WarningLetterReviewBoardItem[]> => {
+  return request({
+    url: `/review-board/warning-letters`,
+  });
+};
+
+const fetchAdminstrativePenalties = (): Promise<APReviewBoardItem[]> => {
+  return request({
+    url: `/review-board/administrative-penalties`,
+  });
+};
+
+export const useFetchInspectionRecords = () => {
+  return useQuery({
+    queryKey: ["review-board-inspection-records"],
+    queryFn: fetchInspectionRecords,
+  });
+};
+
+export const useFetchOrderRecords = () => {
+  return useQuery({
+    queryKey: ["review-board-order-records"],
+    queryFn: fetchOrderRecords,
+  });
+};
+
+export const useFetchWarningLetters = () => {
+  return useQuery({
+    queryKey: ["review-board-warning-letters"],
+    queryFn: fetchWarningLetters,
+  });
+};
+
+export const useFetchAdminstrativePenalties = () => {
+  return useQuery({
+    queryKey: ["review-board-administrative-penalties"],
+    queryFn: fetchAdminstrativePenalties,
   });
 };

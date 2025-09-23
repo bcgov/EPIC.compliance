@@ -4,8 +4,11 @@ import dateUtils from "@/utils/dateUtils";
 import { CalendarMonthRounded } from "@mui/icons-material";
 import { Box, Chip, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
+import { useRouter } from "@tanstack/react-router";
 
 const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
+  const router = useRouter();
+  
   const approvalCardColor = (approvalStatus: string) => {
     if (approvalStatus === APPROVAL_STATUS.APPROVED) {
       return "success";
@@ -27,8 +30,17 @@ const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
         backgroundColor: BCDesignTokens.surfaceColorBackgroundWhite,
         borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         border: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
-        // height: 400,
         flexShrink: 0,
+        cursor: "pointer",
+      }}
+      onClick={() => {
+        // All review board items navigate to their related inspection page
+        if (item.ir_number) {
+          router.navigate({
+            to: "/ce-database/inspections/$inspectionNumber",
+            params: { inspectionNumber: item.ir_number },
+          });
+        }
       }}
     >
       <Box
@@ -79,7 +91,7 @@ const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
         variant="caption"
         color={BCDesignTokens.typographyColorPlaceholder}
       >
-        {item.name}
+        {item.project_name}
       </Typography>
       <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
         <CalendarMonthRounded
@@ -115,7 +127,7 @@ const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
           borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         }}
       >
-        {item.primary_officer.last_name}
+        {item.primary_officer?.last_name }
       </Typography>
     </Box>
   );
