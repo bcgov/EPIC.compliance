@@ -26,6 +26,11 @@ export interface ReviewBoardItem {
   ir_progress?: IRProgress;
   ir_number?: string;
   intended_issuance_date?: string;
+  deputy_director_name?: string;
+  send_for_review_date?: string;
+  date_report_sent?: string;
+  expected_return_date?: string;
+  date_response?: string;
 }
 
 export interface ReviewBoardSection {
@@ -75,6 +80,7 @@ export interface WarningLetterReviewBoardItem {
   primary_officer: StaffUser,
   issuing_officer: StaffUser,
   approved_date: string,
+  deputy_director_name: string,
   review_requested_date: string,
   approved_by: StaffUser,
   intended_issuance_date: string,

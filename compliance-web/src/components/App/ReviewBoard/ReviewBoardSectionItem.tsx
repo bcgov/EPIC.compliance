@@ -1,18 +1,20 @@
 import { ReviewBoardItem } from "@/models/ReviewBoard";
-import { ReviewBoardCardType } from "@/components/App/ReviewBoard/ReviewBoardUtils";
+import { ReviewBoardCardTypeEnum } from "@/components/App/ReviewBoard/ReviewBoardUtils";
 import { APPROVAL_STATUS } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { CalendarMonthRounded } from "@mui/icons-material";
-import { Box, Chip, Typography } from "@mui/material";
+import { Box, Chip, Divider, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { useRouter } from "@tanstack/react-router";
+
+const reviewBoardDateFormat = "DD MMM. YYYY";
 
 const ReviewBoardSectionItem = ({
   item,
   sectionId,
 }: {
   item: ReviewBoardItem;
-  sectionId: ReviewBoardCardType;
+  sectionId: ReviewBoardCardTypeEnum;
 }) => {
   const router = useRouter();
 
@@ -25,6 +27,10 @@ const ReviewBoardSectionItem = ({
       return "error";
     }
     return "default";
+  };
+
+  const getFormattedDate = (date: string | undefined) => {
+    return date ? dateUtils.formatDate(date, reviewBoardDateFormat) : "N/A";
   };
 
   return (
@@ -69,8 +75,8 @@ const ReviewBoardSectionItem = ({
           }}
         />
         {item.approval_status &&
-        (sectionId === ReviewBoardCardType.DEPUTY_REVIEW ||
-          sectionId === ReviewBoardCardType.REVIEW_STATUS) ? (
+        (sectionId === ReviewBoardCardTypeEnum.DEPUTY_REVIEW ||
+          sectionId === ReviewBoardCardTypeEnum.REVIEW_STATUS) ? (
           <Chip
             variant="outlined"
             size="small"
@@ -111,7 +117,7 @@ const ReviewBoardSectionItem = ({
           }}
         />
         <Typography variant="caption">
-          {dateUtils.formatDate(item.card_date)}
+          {getFormattedDate(item.card_date)}
         </Typography>
         {item.types ? (
           <Typography
@@ -133,11 +139,124 @@ const ReviewBoardSectionItem = ({
           width: "fit-content",
           backgroundColor: BCDesignTokens.surfaceColorBackgroundLightBlue,
           padding: 0.5,
+          my: 0.5,
           borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         }}
       >
         {item.primary_officer?.last_name}
       </Typography>
+      {sectionId !== ReviewBoardCardTypeEnum.DRAFTING && (
+        <>
+          <Divider />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              mt: 1,
+            }}
+          >
+            {sectionId === ReviewBoardCardTypeEnum.REVIEW_STATUS && (
+              <Typography
+                variant="caption"
+                color={BCDesignTokens.typographyColorPlaceholder}
+              >
+                Review Date:
+                <Typography
+                  variant="caption"
+                  ml={0.25}
+                  fontWeight={BCDesignTokens.typographyFontWeightsBold}
+                >
+                  {getFormattedDate(item.review_date)}
+                </Typography>
+              </Typography>
+            )}
+            {(sectionId === ReviewBoardCardTypeEnum.DEPUTY_REVIEW ||
+              sectionId === ReviewBoardCardTypeEnum.REVIEW_STATUS) && (
+              <>
+                <Typography
+                  variant="caption"
+                  color={BCDesignTokens.typographyColorPlaceholder}
+                >
+                  Sent for Review:
+                  <Typography
+                    variant="caption"
+                    ml={0.25}
+                    fontWeight={
+                      sectionId === ReviewBoardCardTypeEnum.REVIEW_STATUS
+                        ? BCDesignTokens.typographyFontWeightsRegular
+                        : BCDesignTokens.typographyFontWeightsBold
+                    }
+                  >
+                    {getFormattedDate(item.send_for_review_date)}
+                  </Typography>
+                </Typography>
+                {item.deputy_director_name && (
+                  <Typography
+                    variant="caption"
+                    color={BCDesignTokens.typographyColorPlaceholder}
+                  >
+                    Deputy Director:
+                    <Typography variant="caption" ml={0.25}>
+                      {item.deputy_director_name.substring(
+                        item.deputy_director_name.indexOf(" ") + 1
+                      )}
+                    </Typography>
+                  </Typography>
+                )}
+              </>
+            )}
+            {sectionId === ReviewBoardCardTypeEnum.HOLDER_REVIEW && (
+              <>
+                <Typography
+                  variant="caption"
+                  color={BCDesignTokens.typographyColorPlaceholder}
+                >
+                  Due Date:
+                  <Typography
+                    variant="caption"
+                    ml={0.25}
+                    fontWeight={BCDesignTokens.typographyFontWeightsBold}
+                  >
+                    {getFormattedDate(item.expected_return_date)}
+                  </Typography>
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color={BCDesignTokens.typographyColorPlaceholder}
+                >
+                  Report Sent:
+                  <Typography variant="caption" ml={0.25}>
+                    {getFormattedDate(item.date_report_sent)}
+                  </Typography>
+                </Typography>
+              </>
+            )}
+            {sectionId === ReviewBoardCardTypeEnum.FINALIZING_RECORD && (
+              <Typography
+                variant="caption"
+                color={BCDesignTokens.typographyColorPlaceholder}
+              >
+                Response Date:
+                <Typography variant="caption" ml={0.25}>
+                  {getFormattedDate(item.date_response)}
+                </Typography>
+              </Typography>
+            )}
+            {sectionId === ReviewBoardCardTypeEnum.PENDING_ISSUANCE && (
+              <Typography
+                variant="caption"
+                color={BCDesignTokens.typographyColorPlaceholder}
+              >
+                Issuance Date:
+                <Typography variant="caption" ml={0.25}>
+                  {getFormattedDate(item.intended_issuance_date)}
+                </Typography>
+              </Typography>
+            )}
+          </Box>
+        </>
+      )}
     </Box>
   );
 };
