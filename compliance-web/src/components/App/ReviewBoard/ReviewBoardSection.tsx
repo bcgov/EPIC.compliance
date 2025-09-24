@@ -2,6 +2,7 @@ import { Box, Typography, Chip } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { ReviewBoardSection as ReviewBoardSectionType } from "@/models/ReviewBoard";
 import ReviewBoardSectionItem from "@/components/App/ReviewBoard/ReviewBoardSectionItem";
+import { ReviewBoardCardType } from "@/components/App/ReviewBoard/ReviewBoardUtils";
 
 const ReviewBoardSection = ({
   section,
@@ -29,7 +30,7 @@ const ReviewBoardSection = ({
           color={BCDesignTokens.typographyColorDisabled}
           fontWeight={BCDesignTokens.typographyFontWeightsBold}
         >
-          {section.section}
+          {section.sectionTitle}
         </Typography>
         <Chip
           size="small"
@@ -53,7 +54,11 @@ const ReviewBoardSection = ({
         }}
       >
         {section.items.map((item) => (
-          <ReviewBoardSectionItem key={item.id} item={item} />
+          <ReviewBoardSectionItem
+            key={item.id}
+            item={item}
+            sectionId={section.id as ReviewBoardCardType}
+          />
         ))}
       </Box>
     </Box>

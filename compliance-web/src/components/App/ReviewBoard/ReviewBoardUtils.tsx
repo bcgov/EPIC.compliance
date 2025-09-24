@@ -108,30 +108,30 @@ export const formatAdministrativePenaltiesToReviewBoardItems = (
 
 export const createInitialSections = (): ReviewBoardSection[] => {
   return [
-    { id: ReviewBoardCardType.DRAFTING, section: "Drafting", items: [] },
+    { id: ReviewBoardCardType.DRAFTING, sectionTitle: "Drafting", items: [] },
     {
       id: ReviewBoardCardType.DEPUTY_REVIEW,
-      section: "Deputy Review",
+      sectionTitle: "Deputy Review",
       items: [],
     },
     {
       id: ReviewBoardCardType.REVIEW_STATUS,
-      section: "Review Status",
+      sectionTitle: "Review Status",
       items: [],
     },
     {
       id: ReviewBoardCardType.HOLDER_REVIEW,
-      section: "Holder Review",
+      sectionTitle: "Holder Review",
       items: [],
     },
     {
       id: ReviewBoardCardType.FINALIZING_RECORD,
-      section: "Finalizing Record",
+      sectionTitle: "Finalizing Record",
       items: [],
     },
     {
       id: ReviewBoardCardType.PENDING_ISSUANCE,
-      section: "Pending Issuance",
+      sectionTitle: "Pending Issuance",
       items: [],
     },
   ];
@@ -172,14 +172,19 @@ export const determineItemSection = (
     sectionIndex = ReviewBoardCardType.HOLDER_REVIEW;
   } else if (
     item.card_type.name === "IR" &&
-    [IRProgressEnum.FINALIZING_RECORD, IRProgressEnum.FINAL_APPROVED].includes(
-      item.ir_progress?.id as IRProgressEnum
-    )
+    item.ir_progress?.id === IRProgressEnum.FINAL_APPROVED
+  ) {
+    // If the IR is final approved, move it to review status section
+    sectionIndex = ReviewBoardCardType.REVIEW_STATUS;
+  } else if (
+    item.card_type.name === "IR" &&
+    item.ir_progress?.id === IRProgressEnum.FINALIZING_RECORD
   ) {
     // If the IR is in final record, move it to finalizing record section
     sectionIndex = ReviewBoardCardType.FINALIZING_RECORD;
-    // If the IR has approval status and is not approved, move it to review status section
-    if (item.approval_status?.id === APPROVAL_STATUS.NOT_APPROVED) {
+    if (item.approval_status == null) {
+      sectionIndex = ReviewBoardCardType.DRAFTING;
+    } else if (item.approval_status?.id === APPROVAL_STATUS.NOT_APPROVED) {
       sectionIndex = ReviewBoardCardType.REVIEW_STATUS;
     }
   } else if (item.approval_status) {

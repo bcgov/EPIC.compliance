@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 const mockReviewBoard: ReviewBoardSection[] = [
   {
     id: 1,
-    section: "Drafting",
+    sectionTitle: "Drafting",
     items: [
       {
         id: 1,
@@ -122,7 +122,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
   },
   {
     id: 2,
-    section: "Deputy Review",
+    sectionTitle: "Deputy Review",
     items: [
       {
         id: 5,
@@ -177,7 +177,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
   },
   {
     id: 3,
-    section: "Review Status",
+    sectionTitle: "Review Status",
     items: [
       {
         id: 7,
@@ -267,7 +267,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
   },
   {
     id: 4,
-    section: "Holder Review",
+    sectionTitle: "Holder Review",
     items: [
       {
         id: 9,
@@ -290,7 +290,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
   },
   {
     id: 5,
-    section: "Finalizing Record",
+    sectionTitle: "Finalizing Record",
     items: [
       {
         id: 10,
@@ -326,7 +326,7 @@ const mockReviewBoard: ReviewBoardSection[] = [
   },
   {
     id: 6,
-    section: "Pending Issuance",
+    sectionTitle: "Pending Issuance",
     items: [
       {
         id: 11,

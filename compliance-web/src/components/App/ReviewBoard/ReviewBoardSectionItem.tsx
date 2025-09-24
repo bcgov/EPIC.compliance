@@ -1,4 +1,5 @@
 import { ReviewBoardItem } from "@/models/ReviewBoard";
+import { ReviewBoardCardType } from "@/components/App/ReviewBoard/ReviewBoardUtils";
 import { APPROVAL_STATUS } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { CalendarMonthRounded } from "@mui/icons-material";
@@ -6,9 +7,15 @@ import { Box, Chip, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { useRouter } from "@tanstack/react-router";
 
-const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
+const ReviewBoardSectionItem = ({
+  item,
+  sectionId,
+}: {
+  item: ReviewBoardItem;
+  sectionId: ReviewBoardCardType;
+}) => {
   const router = useRouter();
-  
+
   const approvalCardColor = (approvalStatus: string) => {
     if (approvalStatus === APPROVAL_STATUS.APPROVED) {
       return "success";
@@ -61,7 +68,9 @@ const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
             fontSize: "0.75rem",
           }}
         />
-        {item.approval_status ? (
+        {item.approval_status &&
+        (sectionId === ReviewBoardCardType.DEPUTY_REVIEW ||
+          sectionId === ReviewBoardCardType.REVIEW_STATUS) ? (
           <Chip
             variant="outlined"
             size="small"
@@ -127,7 +136,7 @@ const ReviewBoardSectionItem = ({ item }: { item: ReviewBoardItem }) => {
           borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         }}
       >
-        {item.primary_officer?.last_name }
+        {item.primary_officer?.last_name}
       </Typography>
     </Box>
   );

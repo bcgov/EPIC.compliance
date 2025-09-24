@@ -30,7 +30,7 @@ export interface ReviewBoardItem {
 
 export interface ReviewBoardSection {
   id: number;
-  section: string;
+  sectionTitle: string;
   items: ReviewBoardItem[];
 }
 
