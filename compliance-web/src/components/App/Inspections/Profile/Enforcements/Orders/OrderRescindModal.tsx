@@ -58,7 +58,6 @@ const OrderRescindModal: FC<OrderRescindModalProps> = ({
   const {
     handleSubmit,
     reset,
-    formState: { isValid },
   } = methods;
 
   useEffect(() => {
