@@ -1,7 +1,4 @@
 import {
-  Box,
-  Button,
-  DialogActions,
   DialogContent,
   Typography,
 } from "@mui/material";
@@ -17,14 +14,14 @@ import {
   useUpdateOrderStatus,
 } from "@/hooks/useInspectionOrders";
 import { OrderStatusEnum } from "@/utils/constants";
-import { useModal } from "@/store/modalStore";
-type OrderRecindModalProps = {
+import OrderRescindActions from "./OrderRescindActions";
+type OrderRescindModalProps = {
   order: InspectionOrder;
   onSuccess: (message: string, data?: InspectionOrder) => void;
   isHistoricalInspection?: boolean;
 };
 
-const createOrderRecindSchema = (isHistoricalInspection: boolean) =>
+const createOrderRescindSchema = (isHistoricalInspection: boolean) =>
   yup.object().shape({
     replacementOrderNumber: isHistoricalInspection
       ? yup
@@ -38,23 +35,22 @@ const initFormData = {
   replacementOrderNumber: undefined,
 };
 
-const OrderRecindModal: FC<OrderRecindModalProps> = ({
+const OrderRescindModal: FC<OrderRescindModalProps> = ({
   order,
   onSuccess,
   isHistoricalInspection,
 }) => {
-  const { setClose } = useModal();
 
-  const orderRecindSchema = createOrderRecindSchema(
+  const orderRescindSchema = createOrderRescindSchema(
     isHistoricalInspection ?? false
   );
 
-  type OrderRecindFormType = yup.InferType<
-    ReturnType<typeof createOrderRecindSchema>
+  type OrderRescindFormType = yup.InferType<
+    ReturnType<typeof createOrderRescindSchema>
   >;
 
-  const methods = useForm<OrderRecindFormType>({
-    resolver: yupResolver(orderRecindSchema),
+  const methods = useForm<OrderRescindFormType>({
+    resolver: yupResolver(orderRescindSchema),
     mode: "onBlur",
     defaultValues: initFormData,
   });
@@ -73,12 +69,12 @@ const OrderRecindModal: FC<OrderRecindModalProps> = ({
     onSuccess("Order replaced", data);
   };
 
-  const { mutate: updateOrderStatus } = useUpdateOrderStatus(() =>
+  const { mutate: updateOrderStatus, isPending: isRescindLoading } = useUpdateOrderStatus(() =>
     onSuccess("Order rescinded")
   );
-  const { mutate: replaceOrder } = useReplaceOrder(onReplaceSuccess);
+  const { mutate: replaceOrder, isPending: isReplaceLoading } = useReplaceOrder(onReplaceSuccess);
 
-  const onRecindHandler = () => {
+  const onRescindHandler = () => {
     updateOrderStatus({
       inspectionOrderId: order.id ?? 0,
       statusPayload: {
@@ -87,7 +83,7 @@ const OrderRecindModal: FC<OrderRecindModalProps> = ({
     });
   };
 
-  const onReplaceHandler = (data: OrderRecindFormType) => {
+  const onReplaceHandler = (data: OrderRescindFormType) => {
     const payload: {
       inspectionOrderId: number;
       replacementOrderNumber?: string;
@@ -103,7 +99,7 @@ const OrderRecindModal: FC<OrderRecindModalProps> = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onReplaceHandler)}>
-        <ModalTitleBar title={"Recind Order?"} />
+        <ModalTitleBar title={"Rescind Order?"} />
         <DialogContent dividers>
           <Typography variant="body1">
             You are about to rescind Order <strong>{order.order_number}</strong>
@@ -143,39 +139,17 @@ const OrderRecindModal: FC<OrderRecindModalProps> = ({
             />
           )}
         </DialogContent>
-        <DialogActions
-          sx={{
-            padding: "1rem 1.5rem",
-            justifyContent: "space-between",
-          }}
-        >
-          <Button
-            variant="text"
-            onClick={() => setClose()}
-            data-testid="recind-modal-button-cancel"
-          >
-            Cancel
-          </Button>
-          <Box sx={{ display: "flex", gap: "0.75rem" }}>
-            <Button
-              type="submit"
-              data-testid="recind-modal-button-replace"
-              disabled={!isValid}
-            >
-              Replace
-            </Button>
-            <Button
-              color="error"
-              onClick={onRecindHandler}
-              data-testid="recind-modal-button-recind"
-            >
-              Recind
-            </Button>
-          </Box>
-        </DialogActions>
+        <OrderRescindActions
+          onReplaceAction={() => handleSubmit(onReplaceHandler)()}
+          onRescindAction={onRescindHandler}
+          isButtonValidation={true}
+          onRescindConfirmationText={`Are you sure you want to rescind this?`}
+          isLoading={isReplaceLoading}
+          isRescindActionLoading={isRescindLoading}
+        />
       </form>
     </FormProvider>
   );
 };
 
-export default OrderRecindModal;
+export default OrderRescindModal;
