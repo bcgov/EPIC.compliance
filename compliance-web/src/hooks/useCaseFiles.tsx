@@ -160,6 +160,41 @@ export const useCaseFileOpenItems = (caseFileId: number) => {
   return useQuery({
     queryKey: ["case-file-open-items", caseFileId],
     queryFn: () => fetchCaseFileOpenItems(caseFileId),
+    select: (data) => {
+      const inspectionsList = data.inspections;
+      data.orders.forEach((order) => {
+        order.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === order.inspection_id
+        )?.number;
+      });
+      data.warning_letters.forEach((warningLetter) => {
+        warningLetter.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === warningLetter.inspection_id
+        )?.number;
+      });
+      data.violation_tickets.forEach((violationTicket) => {
+        violationTicket.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === violationTicket.inspection_id
+        )?.number;
+      });
+      data.administrative_penalties.forEach((administrativePenalty) => {
+        administrativePenalty.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === administrativePenalty.inspection_id
+        )?.number;
+      });
+      data.charge_recommendations.forEach((chargeRecommendation) => {
+        chargeRecommendation.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === chargeRecommendation.inspection_id
+        )?.number;
+      });
+      data.restorative_justice.forEach((restorativeJustice) => {
+        restorativeJustice.inspectionNumber = inspectionsList.find(
+          (inspection) => inspection.id === restorativeJustice.inspection_id
+        )?.number;
+      });
+
+      return data;
+    },
     enabled: !!caseFileId,
   });
 };
