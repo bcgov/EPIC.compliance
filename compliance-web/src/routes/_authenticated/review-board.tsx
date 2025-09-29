@@ -1,12 +1,18 @@
 import ReviewBoardFilters from "@/components/App/ReviewBoard/ReviewBoardFilters";
 import ReviewBoardSection from "@/components/App/ReviewBoard/ReviewBoardSection";
-import { useFetchReviewBoard } from "@/hooks/useReviewBoard";
+import {
+  useFetchAdminstrativePenalties,
+  useFetchInspectionRecords,
+  useFetchOrderRecords,
+  useFetchWarningLetters,
+} from "@/hooks/useReviewBoard";
+import { generateDynamicSections } from "@/components/App/ReviewBoard/ReviewBoardUtils";
 import { useStaffUsersData } from "@/hooks/useStaff";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { Box, Typography, CircularProgress } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "react-oidc-context";
 
 export const Route = createFileRoute("/_authenticated/review-board")({
@@ -16,7 +22,10 @@ export const Route = createFileRoute("/_authenticated/review-board")({
 const reviewBoardColumnFiltersCacheKey = "review-board-column-filters";
 
 function ReviewBoard() {
-  const { data: sectionList } = useFetchReviewBoard();
+  const { data: inspectionRecords } = useFetchInspectionRecords();
+  const { data: orderRecords } = useFetchOrderRecords();
+  const { data: warningLetters } = useFetchWarningLetters();
+  const { data: administrativePenalties } = useFetchAdminstrativePenalties();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
@@ -24,6 +33,26 @@ function ReviewBoard() {
     Record<string, string[] | string>
   >({});
   const [initialChecked, setInitialChecked] = useState(false);
+
+  // Create the exact 6 sections like mockReviewBoard and populate with dynamic data
+  const dynamicSections = useMemo(() => {
+    // Extract primary officer filter from external filters
+    const primaryOfficerFilter = externalFilters.primary_officer_id as string[] | undefined;
+    
+    return generateDynamicSections(
+      inspectionRecords,
+      orderRecords,
+      warningLetters,
+      administrativePenalties,
+      primaryOfficerFilter
+    );
+  }, [
+    inspectionRecords,
+    orderRecords,
+    warningLetters,
+    administrativePenalties,
+    externalFilters.primary_officer_id,
+  ]);
 
   // Track if we're in the initial load phase to prevent caching during restoration
   const isInitialLoad = useRef(true);
@@ -138,6 +167,10 @@ function ReviewBoard() {
     []
   );
 
+  const handleSwitchChange = useCallback((checked: boolean) => {
+    setInitialChecked(checked);
+  }, []);
+
   return authLoading || staffLoading || !isRestored ? (
     <Box
       display="flex"
@@ -169,10 +202,11 @@ function ReviewBoard() {
           onFilterChange={handleFilterChange}
           externalFilters={externalFilters}
           initialChecked={initialChecked}
+          onSwitchChange={handleSwitchChange}
         />
       </Box>
       <Box sx={{ display: "flex", gap: 1, overflow: "auto", flex: 1 }}>
-        {sectionList?.map((section) => (
+        {dynamicSections.map((section) => (
           <ReviewBoardSection key={section.id} section={section} />
         ))}
       </Box>

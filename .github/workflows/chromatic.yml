@@ -2,13 +2,22 @@
 name: "Chromatic Publish"
 
 # Event for the workflow
-on: push
+on:
+  push:
+    branches:
+      - develop
+    # Only run on the main repository, not forks
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
 
 # List of jobs
 jobs:
   test:
     # Operating System
     runs-on: ubuntu-latest
+    # Only run on the main repository (bcgov/EPIC.compliance), not forks
+    if: github.repository == 'bcgov/EPIC.compliance'
     # Job steps
     steps:
       - uses: actions/checkout@v4

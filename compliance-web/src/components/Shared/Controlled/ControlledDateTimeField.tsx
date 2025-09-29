@@ -10,6 +10,7 @@ type IFormDateInputProps = {
   placeHolder?: string;
   width?: string;
   isRequired?: boolean;
+  useCurrentTimeOnEmpty?: boolean;
 } & DatePickerProps<Dayjs>;
 
 const ControlledDateTimeField: FC<IFormDateInputProps> = ({
@@ -17,6 +18,7 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
   placeHolder = DATE_FORMAT,
   isRequired = false,
   width = "100%",
+  useCurrentTimeOnEmpty = false,
   ...otherProps
 }) => {
   const {
@@ -29,21 +31,38 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
   const dateValue = fieldValue ? dayjs(fieldValue) : null;
   // Format function to add leading zeros
   const formatTimeValue = (value: number | string): string => {
-    if (value === 0 || value === "") return "";
-    return typeof value === "number" ? value.toString().padStart(2, "0") : value;
+    if (value === "") return "";
+    const numValue = typeof value === "number" ? value : parseInt(value.toString());
+    return numValue.toString().padStart(2, "0");
   };
 
-  const [hour, setHour] = useState(dateValue && dateValue.hour() !== 0 ? formatTimeValue(dateValue.hour()) : "");
-  const [minute, setMinute] = useState(dateValue && dateValue.minute() !== 0 ? formatTimeValue(dateValue.minute()) : "");
+  const [hour, setHour] = useState(dateValue ? formatTimeValue(dateValue.hour()) : "");
+  const [minute, setMinute] = useState(dateValue ? formatTimeValue(dateValue.minute()) : "");
 
   // Sync local state with field value when it changes externally
   useEffect(() => {
     if (fieldValue) {
       const date = dayjs(fieldValue);
-      setHour(date.hour() === 0 ? "" : formatTimeValue(date.hour()));
-      setMinute(date.minute() === 0 ? "" : formatTimeValue(date.minute()));
+      if (useCurrentTimeOnEmpty) {
+        const now = dayjs();
+        const storedHour = date.hour();
+        const storedMinute = date.minute();
+        const currentHour = now.hour();
+        const currentMinute = now.minute();
+        
+        if (storedHour !== currentHour || storedMinute !== currentMinute) {
+          setHour(formatTimeValue(storedHour));
+          setMinute(formatTimeValue(storedMinute));
+        } else {
+          setHour("");
+          setMinute("");
+        }
+      } else {
+        setHour(formatTimeValue(date.hour()));
+        setMinute(formatTimeValue(date.minute()));
+      }
     }
-  }, [fieldValue]);
+  }, [fieldValue, useCurrentTimeOnEmpty]);
 
   return (
     <Controller
@@ -62,11 +81,30 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
             return;
           }
 
-          // Allow empty values in hour/minute fields
-          const hourNum = newHour === "" ? 0 : 
-            typeof newHour === "string" ? parseInt(newHour) : newHour;
-          const minuteNum = newMinute === "" ? 0 :
-            typeof newMinute === "string" ? parseInt(newMinute) : newMinute;
+          let hourNum: number;
+          let minuteNum: number;
+
+          if (useCurrentTimeOnEmpty && newHour === "" && newMinute === "") {
+            const now = dayjs();
+            hourNum = now.hour();
+            minuteNum = now.minute();
+          } else {
+
+            if (newHour === "") {
+              hourNum = 0;
+            } else if (typeof newHour === "string") {
+              hourNum = parseInt(newHour);
+            } else {
+              hourNum = newHour;
+            }
+            if (newMinute === "") {
+              minuteNum = 0;
+            } else if (typeof newMinute === "string") {
+              minuteNum = parseInt(newMinute);
+            } else {
+              minuteNum = newMinute;
+            }
+          }
 
           // Only proceed if we have valid numbers
           if (!isNaN(hourNum) && !isNaN(minuteNum)) {
@@ -90,13 +128,27 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
                 value={field.value ? dayjs(field.value) : null}
                 onChange={(date: Dayjs | null) => {
                   if (date) {
-                    // Get current hour and minute from the date
-                    const currentHour = date.hour();
-                    const currentMinute = date.minute();
-                    
-                    // Set empty string for 0 values, format others with padding
-                    setHour(currentHour === 0 ? "" : formatTimeValue(currentHour));
-                    setMinute(currentMinute === 0 ? "" : formatTimeValue(currentMinute));
+                    if (useCurrentTimeOnEmpty) {
+                      const dateHour = date.hour();
+                      const dateMinute = date.minute();
+                      const now = dayjs();
+                      const currentHour = now.hour();
+                      const currentMinute = now.minute();
+                      
+                      if (dateHour !== currentHour || dateMinute !== currentMinute) {
+                        setHour(formatTimeValue(dateHour));
+                        setMinute(formatTimeValue(dateMinute));
+                      } else {
+                        setHour("");
+                        setMinute("");
+                      }
+                    } else {
+                      const currentHour = date.hour();
+                      const currentMinute = date.minute();
+                      
+                      setHour(currentHour === 0 ? "" : formatTimeValue(currentHour));
+                      setMinute(currentMinute === 0 ? "" : formatTimeValue(currentMinute));
+                    }
                     
                     updateDateTime(date);
                   } else {
@@ -170,13 +222,13 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
                 onBlur={(e) => {
                   // Format on blur for padding zeros
                   if (e.target.value === "") {
+                    setHour("");
                     if (field.value) {
-                      updateDateTime(dayjs(field.value), 0, minute);
+                      updateDateTime(dayjs(field.value), "", minute);
                     }
                   } else {
                     const hourNum = parseInt(e.target.value);
-                    if (!isNaN(hourNum) && hourNum > 0) {
-                      // Apply padding only on blur
+                    if (!isNaN(hourNum) && hourNum >= 0) {
                       setHour(formatTimeValue(hourNum));
                     }
                   }
@@ -230,13 +282,13 @@ const ControlledDateTimeField: FC<IFormDateInputProps> = ({
                 onBlur={(e) => {
                   // Format on blur for padding zeros
                   if (e.target.value === "") {
+                    setMinute("");
                     if (field.value) {
-                      updateDateTime(dayjs(field.value), hour, 0);
+                      updateDateTime(dayjs(field.value), hour, "");
                     }
                   } else {
                     const minuteNum = parseInt(e.target.value);
-                    if (!isNaN(minuteNum) && minuteNum > 0) {
-                      // Apply padding only on blur
+                    if (!isNaN(minuteNum) && minuteNum >= 0) {
                       setMinute(formatTimeValue(minuteNum));
                     }
                   }
