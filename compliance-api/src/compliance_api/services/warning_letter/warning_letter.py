@@ -46,6 +46,8 @@ class WarningLetterService:
             warning_letter_data.get("issuing_officer_id"), inspection
         )
         requirement_ids = warning_letter_data.get("inspection_requirement_ids", [])
+        if len(requirement_ids) == 0:
+            raise UnprocessableEntityError("No requirement IDs provided.")
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value
         )

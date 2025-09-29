@@ -49,6 +49,11 @@ from .utilities.factory_scenario.violation_ticket_fixture import (  # noqa: F401
     created_violation_ticket_issued, created_violation_ticket_no_fine, created_violation_ticket_paid,
     created_violation_ticket_requirement_map, created_violation_ticket_with_large_fine,
     created_violation_ticket_zero_fine)
+from .utilities.factory_scenario.warning_letter_fixture import (  # noqa: F401
+    created_warning_letter, created_warning_letter_approved, created_warning_letter_created,
+    created_warning_letter_deputy_review, created_warning_letter_drafting,
+    created_warning_letter_inspection_requirement, created_warning_letter_issued, created_warning_letter_minimal,
+    created_warning_letter_requirement_map, created_warning_letter_with_content, created_warning_letter_with_officer)
 from .utilities.factory_utils import factory_auth_header
 
 
