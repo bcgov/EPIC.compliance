@@ -173,7 +173,8 @@ export enum EnforcementActionEnum {
 export enum ViolationTicketStatus {
   ISSUED = "ISSUED",
   PAID = "PAID",
-  DISPUTED = "DISPUTED"
+  DISPUTED = "DISPUTED",
+  DEEMED_GUILTY = "DEEMED_GUILTY",
 }
 
 export enum AdministrativePenaltyStatus {

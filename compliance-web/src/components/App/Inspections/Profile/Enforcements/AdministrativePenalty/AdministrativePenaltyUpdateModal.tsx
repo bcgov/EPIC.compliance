@@ -138,8 +138,10 @@ const AdministrativePenaltyUpdateModal: FC<
   }, [decision, methods]);
 
   const onUpdateSuccess = (data: AdministrativePenalty) => {
+    //  Invalidate all administrative penalties because of the AP can be linked to
+    //  other inspections
     queryClient.invalidateQueries({
-      queryKey: ["inspection-administrative-penalties", inspectionData.id],
+      queryKey: ["inspection-administrative-penalties"],
     });
     notify.success("Administrative Penalty updated successfully");
     onSuccess?.(data);
@@ -169,7 +171,9 @@ const AdministrativePenaltyUpdateModal: FC<
       const updateData: AdministrativePenaltyAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids:
-          administrativePenalty.administrative_penalty_requirement_maps.map(
+          administrativePenalty.administrative_penalty_requirement_maps
+          .filter((ap_map) => ap_map.inspection_requirement.inspection_id === inspectionData.id)
+          .map(
             (map) => map.inspection_requirement_id
           ),
         referral_status:

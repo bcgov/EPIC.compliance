@@ -44,6 +44,7 @@ const statusOptions: StatusOption[] = [
   { id: ViolationTicketStatus.ISSUED, name: "Issued" },
   { id: ViolationTicketStatus.PAID, name: "Paid" },
   { id: ViolationTicketStatus.DISPUTED, name: "Disputed" },
+  { id: ViolationTicketStatus.DEEMED_GUILTY, name: "Deemed Guilty" },
 ];
 
 type ViolationTicketUpdateModalProps = {
@@ -124,7 +125,6 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
         status: typeof data.status === 'string' ? data.status : data.status?.id || 'ISSUED',
         status_date: data.status_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]"),
       };
-
       updateViolationTicket({
         violationTicketId: violationTicket.id,
         violationTicket: updateData,

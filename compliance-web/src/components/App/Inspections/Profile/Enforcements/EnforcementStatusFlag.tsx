@@ -163,6 +163,9 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       } else if (violationTicketStatus?.id === ViolationTicketStatus.DISPUTED) {
         status.color = "error";
       }
+      else if (violationTicketStatus?.id === ViolationTicketStatus.DEEMED_GUILTY) {
+        status.color = "error";
+      }
     } else if (
       enforcementActionType === EnforcementActionEnum.RESTORATIVE_JUSTICE
     ) {

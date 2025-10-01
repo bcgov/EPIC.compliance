@@ -752,8 +752,12 @@ def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
     for row in case_level_query:
         if row.inspection_id:
             all_inspection_ids.append(row.inspection_id)
-            # Only add to open_items if inspection is not closed
-            if row.inspection_status != InspectionStatusEnum.CLOSED:
+            # Only add to open_items if inspection is not closed, canceled, or closed as note
+            if row.inspection_status not in [
+                InspectionStatusEnum.CLOSED,
+                InspectionStatusEnum.CANCELED,
+                InspectionStatusEnum.CLOSE_AS_NOTE,
+            ]:
                 open_items["inspections"].append(_build_inspection_item(row))
 
         if row.complaint_id and row.complaint_id not in processed_complaints:
@@ -937,7 +941,11 @@ def _build_enforcement_query(inspection_ids: list):
             and_(
                 ViolationTicketModel.inspection_id == InspectionModel.id,
                 ViolationTicketModel.status.notin_(
-                    [ViolationTicketStatusEnum.PAID, ViolationTicketStatusEnum.DISPUTED]
+                    [
+                        ViolationTicketStatusEnum.PAID,
+                        ViolationTicketStatusEnum.DISPUTED,
+                        ViolationTicketStatusEnum.DEEMED_GUILTY,
+                    ]
                 ),
                 ViolationTicketModel.is_active.is_(True),
                 ViolationTicketModel.is_deleted.is_(False),

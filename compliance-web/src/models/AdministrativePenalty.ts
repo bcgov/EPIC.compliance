@@ -20,6 +20,7 @@ interface AdministrativePenaltyRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    inspection_id: number;
   };
 }
 

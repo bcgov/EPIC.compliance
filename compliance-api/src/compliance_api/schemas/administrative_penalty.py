@@ -102,7 +102,7 @@ class AdministrativePenaltyInspectionRequirementMapSchema(
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),
-        only=("id", "summary"),
+        only=("id", "summary", "inspection_id"),
     )
 
 
