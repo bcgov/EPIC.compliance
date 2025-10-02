@@ -264,13 +264,14 @@ export const generateDynamicSections = (
   orderRecords?: OrderReviewBoardItem[],
   warningLetters?: WarningLetterReviewBoardItem[],
   administrativePenalties?: APReviewBoardItem[],
-  primaryOfficerFilter?: string[]
+  primaryOfficerFilter?: string[],
+  isDeputyDirectorFilter?: boolean
 ): ReviewBoardSection[] => {
   // Initialize the 6 sections with empty items
   const sections = createInitialSections();
 
   // Collect all formatted items from different data sources
-  const allItems = [
+  let allItems = [
     ...(inspectionRecords
       ? formatInspectionRecordsToReviewBoardItems(inspectionRecords)
       : []),
@@ -284,17 +285,23 @@ export const generateDynamicSections = (
   ];
 
   // Apply primary officer filtering if filter is provided
-  const filteredItems =
-    primaryOfficerFilter && primaryOfficerFilter.length > 0
-      ? allItems.filter(
-          (item) =>
-            item.primary_officer &&
-            primaryOfficerFilter.includes(item.primary_officer.id.toString())
-        )
-      : allItems;
+  if (primaryOfficerFilter && primaryOfficerFilter.length > 0) {
+    allItems = allItems.filter(
+      (item) =>
+        item.primary_officer &&
+        primaryOfficerFilter.includes(item.primary_officer.id.toString())
+    );
+  }
+  if (isDeputyDirectorFilter) {
+    allItems = allItems.filter(
+      (item) =>
+        item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING ||
+        item.approval_status?.id === AdministrativePenaltyStatus.DEPUTY_REVIEW
+    );
+  }
 
   // Distribute items across sections based on their status/progress and approval status
-  filteredItems.forEach((item) => {
+  allItems.forEach((item) => {
     const sectionIndex = determineItemSection(item);
     sections[sectionIndex - 1].items.push(item);
   });
