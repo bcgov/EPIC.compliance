@@ -309,7 +309,6 @@ class CaseFileService:
         if not link_to_case_file:
             raise ResourceNotFoundError(f"CaseFile with {link_case_file_id} not found")
         _link_case_file_checks(case_file, case_file_id)
-        _link_case_file_checks(link_to_case_file, link_case_file_id)
         source_link = CaseFileLinkModel.get_links_by_source_and_target(
             source_id=case_file_id, target_id=link_case_file_id
         )
