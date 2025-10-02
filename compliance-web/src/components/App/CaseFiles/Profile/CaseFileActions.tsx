@@ -9,7 +9,7 @@ import {
   useUnlinkCaseFile,
   useUpdateCaseFileStatus,
 } from "@/hooks/useCaseFiles";
-import { CaseFile } from "@/models/CaseFile";
+import { CaseFile, CaseFileLink } from "@/models/CaseFile";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -53,10 +53,13 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
     closeAndRefresh();
   }, [closeAndRefresh]);
 
-  const onLinkCaseFileSuccess = useCallback(() => {
+  const onLinkCaseFileSuccess = useCallback((response: CaseFileLink) => {
     notify.success("Case file link is updated");
     closeAndRefresh();
-  }, [closeAndRefresh]);
+    queryClient.invalidateQueries({
+      queryKey: ["case-file", response?.target?.case_file_number],
+    });
+  }, [closeAndRefresh, queryClient]);
 
   const onDeleteSuccess = useCallback(() => {
     notify.success("Case File deleted!");
