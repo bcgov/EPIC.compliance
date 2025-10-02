@@ -117,7 +117,11 @@ export const formatAdministrativePenaltiesToReviewBoardItems = (
 
 export const createInitialSections = (): ReviewBoardSection[] => {
   return [
-    { id: ReviewBoardCardTypeEnum.DRAFTING, sectionTitle: "Drafting", items: [] },
+    {
+      id: ReviewBoardCardTypeEnum.DRAFTING,
+      sectionTitle: "Drafting",
+      items: [],
+    },
     {
       id: ReviewBoardCardTypeEnum.DEPUTY_REVIEW,
       sectionTitle: "Deputy Review",
@@ -216,6 +220,45 @@ export const determineItemSection = (
   return sectionIndex;
 };
 
+const sortUsingDate = (items: ReviewBoardItem[], field: string): void => {
+  items.sort((a, b) => {
+    const aValue = a[field as keyof ReviewBoardItem];
+    const bValue = b[field as keyof ReviewBoardItem];
+    if (!aValue && !bValue) return 0;
+    if (!aValue) return 1;
+    if (!bValue) return -1;
+    return (
+      new Date(aValue as string).getTime() -
+      new Date(bValue as string).getTime()
+    );
+  });
+};
+
+const sortSections = (sections: ReviewBoardSection[]): void => {
+  sections.forEach((section) => {
+    switch (section.id) {
+      case ReviewBoardCardTypeEnum.DRAFTING:
+        sortUsingDate(section.items, "card_date");
+        break;
+      case ReviewBoardCardTypeEnum.DEPUTY_REVIEW:
+        sortUsingDate(section.items, "send_for_review_date");
+        break;
+      case ReviewBoardCardTypeEnum.REVIEW_STATUS:
+        sortUsingDate(section.items, "review_date");
+        break;
+      case ReviewBoardCardTypeEnum.HOLDER_REVIEW:
+        sortUsingDate(section.items, "expected_return_date");
+        break;
+      case ReviewBoardCardTypeEnum.FINALIZING_RECORD:
+        sortUsingDate(section.items, "date_response");
+        break;
+      case ReviewBoardCardTypeEnum.PENDING_ISSUANCE:
+        sortUsingDate(section.items, "intended_issuance_date");
+        break;
+    }
+  });
+};
+
 export const generateDynamicSections = (
   inspectionRecords?: IRReviewBoardItem[],
   orderRecords?: OrderReviewBoardItem[],
@@ -255,6 +298,8 @@ export const generateDynamicSections = (
     const sectionIndex = determineItemSection(item);
     sections[sectionIndex - 1].items.push(item);
   });
+
+  sortSections(sections);
 
   return sections;
 };
