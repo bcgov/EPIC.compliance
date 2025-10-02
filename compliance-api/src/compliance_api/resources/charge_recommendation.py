@@ -152,9 +152,10 @@ class ChargeRecommendationById(Resource):
     @API.response(code=204, description="NoContent")
     def delete(charge_recommendation_id):
         """Delete a charge recommendation."""
-        return ChargeRecommendationService.delete_charge_recommendation(
+        ChargeRecommendationService.delete_charge_recommendation(
             charge_recommendation_id
         )
+        return {}, HTTPStatus.NO_CONTENT
 
 
 @cors_preflight("GET, OPTIONS")

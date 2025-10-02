@@ -10,7 +10,7 @@ import {
   OrderStatusEnum,
   VARIANT_COLORS,
   WarningLetterProgressEnum,
-  ReferralStatus,
+  APReferralStatus,
   CRStatus,
   ViolationTicketStatus,
   RestorativeJusticeStatus,
@@ -117,14 +117,14 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       status = {
         name: administrativePenaltyStatus?.name || "",
       };
-      if (administrativePenaltyStatus?.id === ReferralStatus.DEPUTY_REVIEW.id) {
+      if (administrativePenaltyStatus?.id === APReferralStatus.DEPUTY_REVIEW.id) {
         status.color = "warning";
       } else if (
-        administrativePenaltyStatus?.id === ReferralStatus.CEB_NOT_PROCEEDING.id
+        administrativePenaltyStatus?.id === APReferralStatus.CEB_NOT_PROCEEDING.id
       ) {
         status.color = "error";
       } else if (
-        administrativePenaltyStatus?.id === ReferralStatus.REFERRED_TO_DM.id
+        administrativePenaltyStatus?.id === APReferralStatus.REFERRED_TO_DM.id
       ) {
         status.color = "success";
       }
@@ -161,6 +161,9 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       } else if (violationTicketStatus?.id === ViolationTicketStatus.PAID) {
         status.color = "success";
       } else if (violationTicketStatus?.id === ViolationTicketStatus.DISPUTED) {
+        status.color = "error";
+      }
+      else if (violationTicketStatus?.id === ViolationTicketStatus.DEEMED_GUILTY) {
         status.color = "error";
       }
     } else if (

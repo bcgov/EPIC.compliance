@@ -245,7 +245,7 @@ const ChargeRecommendationUpdateModal: FC<
     <FormProvider {...methods}>
       <form onSubmit={methods.handleSubmit(handleSubmit)}>
         <ModalTitleBar
-          title={`Charge Recommendation ${chargeRecommendationData.charge_recommendation_number}`}
+          title={`${chargeRecommendationData.charge_recommendation_number}`}
           onClose={setModalClose}
           titleVariant="h6"
         />

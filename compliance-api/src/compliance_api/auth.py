@@ -19,7 +19,6 @@ from flask import g, request
 from flask_jwt_oidc import JwtManager
 
 from compliance_api.exceptions import PermissionDeniedError
-from compliance_api.utils.constant import GROUP_MAP
 
 
 jwt = (
@@ -56,8 +55,8 @@ class Auth:  # pylint: disable=too-few-public-methods
             @Auth.require
             @wraps(f)
             def wrapper(*args, **kwargs):
-                mapped_groups = _map_permission_to_groups(permissions)
-                if jwt.contains_role(roles=mapped_groups):
+                mapped_permissions = Auth.map_permission_to_groups(permissions)
+                if jwt.contains_role(roles=mapped_permissions):
                     return f(*args, **kwargs)
 
                 raise PermissionDeniedError(
@@ -77,13 +76,13 @@ class Auth:  # pylint: disable=too-few-public-methods
     @classmethod
     def has_permission(cls, permissions):
         """Check to see if the user has right permissions."""
-        mapped_groups = _map_permission_to_groups(permissions)
-        return jwt.contains_role(roles=mapped_groups)
+        mapped_permissions = Auth.map_permission_to_groups(permissions)
+        return jwt.contains_role(roles=mapped_permissions)
 
-
-def _map_permission_to_groups(permissions):
-    """Map the permissions to user groups in keycloak."""
-    return [GROUP_MAP[role] for role in permissions]
+    @staticmethod
+    def map_permission_to_groups(permissions):
+        """Map the permissions to user groups in keycloak."""
+        return [role.value for role in permissions]
 
 
 auth = Auth()

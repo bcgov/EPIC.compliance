@@ -206,6 +206,23 @@ class CaseFileService:
                 case_file_data.get("officer_ids", []),
                 ho_session or session,
             )
+
+            if not case_file_data.get("project_id", None):
+                existing_unapproved_project = (
+                    UnapprovedProjectModel.get_by_case_file_id(case_file_id)
+                )
+                if existing_unapproved_project:
+                    unapproved_project_update_data = {
+                        "regulated_party": case_file_data.get(
+                            "unapproved_project_regulated_party"
+                        ),
+                        "type": case_file_data.get("unapproved_project_type"),
+                        "sub_type": case_file_data.get("unapproved_project_sub_type"),
+                    }
+                    existing_unapproved_project.update(
+                        unapproved_project_update_data, commit=False
+                    )
+
         return updated_case_file
 
     @classmethod
@@ -277,9 +294,7 @@ class CaseFileService:
         if status_enum == CaseFileStatusEnum.CLOSED:
             close_check = cls.get_open_enforcement_actions(case_file_id)
             if close_check and close_check.get("has_open_items"):
-                raise UnprocessableEntityError(
-                    "The case file contains open items."
-                )
+                raise UnprocessableEntityError("The case file contains open items.")
         if status_enum == case_file.case_file_status:
             raise UnprocessableEntityError(
                 f"The case file is already in {status_enum.value} status."
@@ -737,8 +752,12 @@ def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
     for row in case_level_query:
         if row.inspection_id:
             all_inspection_ids.append(row.inspection_id)
-            # Only add to open_items if inspection is not closed
-            if row.inspection_status != InspectionStatusEnum.CLOSED:
+            # Only add to open_items if inspection is not closed, canceled, or closed as note
+            if row.inspection_status not in [
+                InspectionStatusEnum.CLOSED,
+                InspectionStatusEnum.CANCELED,
+                InspectionStatusEnum.CLOSE_AS_NOTE,
+            ]:
                 open_items["inspections"].append(_build_inspection_item(row))
 
         if row.complaint_id and row.complaint_id not in processed_complaints:
@@ -901,7 +920,9 @@ def _build_enforcement_query(inspection_ids: list):
             OrderModel,
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
-                OrderModel.order_status != OrderStatusEnum.OPEN,
+                OrderModel.order_status.notin_(
+                    [OrderStatusEnum.OPEN, OrderStatusEnum.CLOSED]
+                ),
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),
             ),
@@ -920,7 +941,11 @@ def _build_enforcement_query(inspection_ids: list):
             and_(
                 ViolationTicketModel.inspection_id == InspectionModel.id,
                 ViolationTicketModel.status.notin_(
-                    [ViolationTicketStatusEnum.PAID, ViolationTicketStatusEnum.DISPUTED]
+                    [
+                        ViolationTicketStatusEnum.PAID,
+                        ViolationTicketStatusEnum.DISPUTED,
+                        ViolationTicketStatusEnum.DEEMED_GUILTY,
+                    ]
                 ),
                 ViolationTicketModel.is_active.is_(True),
                 ViolationTicketModel.is_deleted.is_(False),

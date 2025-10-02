@@ -1,7 +1,15 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
 import { useCallback } from "react";
-import { Chip } from "@mui/material";
-import { APPROVAL_STATUS } from "@/utils/constants";
+import {
+  APPROVAL_STATUS,
+  APReferralStatus,
+  CRStatus,
+  EnforcementActionEnum,
+  OrderProgressEnum,
+  OrderStatusEnum,
+  ViolationTicketStatus,
+  WarningLetterProgressEnum,
+} from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import PageLink from "@/components/Shared/PageLink";
 import {
@@ -12,8 +20,8 @@ import { Topic } from "@/models/Topic";
 import { ComplianceFinding } from "@/models/ComplianceFinding";
 import { EnforcementAction } from "@/models/EnforcementAction";
 import { RequirementSource } from "@/models/RequirementSource";
-import { ApprovalStatus } from "@/models/ApprovalStatus";
-import { StaffUser } from "@/models/Staff";
+import { InspectionMoreDetailsEnforcementAction } from "@/models/Inspection";
+import EnforcementStatusFlag from "@/components/App/Inspections/Profile/Enforcements/EnforcementStatusFlag";
 
 // Types for the data dependencies
 export interface RequirementsGridDataDependencies {
@@ -21,8 +29,6 @@ export interface RequirementsGridDataDependencies {
   complianceFindings?: ComplianceFinding[];
   enforcementActions?: EnforcementAction[];
   requirementSources?: RequirementSource[];
-  approvalStatusOptions?: ApprovalStatus[];
-  staffUsers?: StaffUser[];
 }
 
 // Convert column filters to API query parameters
@@ -55,14 +61,14 @@ export const useConvertFiltersToQueryParams = (
               params.enf_actn_ids = filter.value.join(",");
             }
             break;
-          case "apprv_sts":
+          case "enf_stats":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.apprv_sts = filter.value.join(",");
+              params.enf_stats = filter.value.join(",");
             }
             break;
-          case "approver":
-            if (Array.isArray(filter.value) && filter.value.length > 0) {
-              params.approver_ids = filter.value.join(",");
+          case "enf_number":
+            if (typeof filter.value === "string" && filter.value.trim()) {
+              params.enf_number = filter.value.trim();
             }
             break;
           case "req_src_num":
@@ -103,13 +109,8 @@ export const useConvertFiltersToQueryParams = (
                 ? value.join(",")
                 : value;
               break;
-            case "approver_ids":
-              params.approver_ids = Array.isArray(value)
-                ? value.join(",")
-                : value;
-              break;
-            case "apprv_sts":
-              params.apprv_sts = Array.isArray(value) ? value.join(",") : value;
+            case "enf_stats":
+              params.enf_stats = Array.isArray(value) ? value.join(",") : value;
               break;
             case "inspection_status":
               params.insp_sts = Array.isArray(value) ? value.join(",") : value;
@@ -138,8 +139,6 @@ export const useRequirementsGridColumns = (
     complianceFindings,
     enforcementActions,
     requirementSources,
-    approvalStatusOptions,
-    staffUsers,
   } = dataDependencies;
 
   return [
@@ -186,46 +185,39 @@ export const useRequirementsGridColumns = (
       size: 150,
     },
     {
-      accessorKey: "apprv_sts",
-      header: "Approval Status",
+      accessorKey: "enf_stats",
+      header: "Enf. Status",
       Cell: ({ row }) => {
-        return row.original.approval_status ? (
-          <Chip
-            label={row.original.approval_status.name}
-            color={
-              row.original.approval_status.id ===
-              APPROVAL_STATUS.APPROVAL_PENDING
-                ? "warning"
-                : row.original.approval_status.id === APPROVAL_STATUS.APPROVED
-                  ? "success"
-                  : "error"
+        const enforcementStatusFlagObj: InspectionMoreDetailsEnforcementAction =
+          {
+            id: row.original.enforcement_action.id,
+            name: row.original.enforcement_action.name,
+            approval_status: row.original.approval_status,
+            progress: row.original.progress,
+            status: row.original.status,
+          };
+        return (
+          <EnforcementStatusFlag
+            enforcementActionType={
+              row.original.enforcement_action.id as EnforcementActionEnum
             }
-            variant="outlined"
-            size="small"
+            enforcementActionDetails={enforcementStatusFlagObj}
           />
-        ) : (
-          <></>
         );
       },
       filterVariant: "multi-select",
-      filterSelectOptions:
-        approvalStatusOptions?.map((approvalStatus) => ({
-          text: approvalStatus.name,
-          value: approvalStatus.id.toString(),
-        })) ?? [],
+      filterSelectOptions: enforcementStatusOptions,
       size: 120,
     },
     {
-      accessorFn: (row) => row.approved_by?.name,
-      id: "approver",
-      header: "Reviewer",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        staffUsers?.map((staffUser) => ({
-          text: staffUser.name,
-          value: staffUser.id.toString(),
-        })) ?? [],
-      size: 100,
+      accessorFn: (row) => row.enforcement_number,
+      id: "enf_number",
+      header: "Enf. Document #",
+      filterFn: "contains",
+      enableSorting: true,
+      sortingFn: "alphanumeric",
+      sortDescFirst: false,
+      size: 80,
     },
     {
       accessorFn: (row) => row.requirement_number,
@@ -272,3 +264,63 @@ export const useRequirementsGridColumns = (
     },
   ];
 };
+
+export const enforcementStatusOptions = [
+  // Order Statuses
+  {
+    value: OrderProgressEnum.DRAFTING,
+    text: "Drafting",
+  },
+  {
+    value: OrderStatusEnum.OPEN,
+    text: "Open",
+  },
+  {
+    value: OrderStatusEnum.CLOSED,
+    text: "Closed",
+  },
+  {
+    value: OrderStatusEnum.RESCINDED,
+    text: "Rescinded",
+  },
+  {
+    value: OrderProgressEnum.DEPUTY_REVIEW,
+    text: "Deputy Review",
+  },
+  {
+    value: OrderProgressEnum.APPROVED,
+    text: "Approved",
+  },
+  {
+    value: APPROVAL_STATUS.NOT_APPROVED,
+    text: "Not Approved",
+  },
+  // Warning Letter Statuses that are not in ORDER
+  {
+    value: WarningLetterProgressEnum.ISSUED,
+    text: "Issued",
+  },
+  // AP Referral Statuses that are not in OTHER ENFORCEMENT ACTIONS
+  {
+    value: APReferralStatus.CEB_NOT_PROCEEDING.id,
+    text: "CEB Not Proceeding",
+  },
+  {
+    value: APReferralStatus.REFERRED_TO_DM.id,
+    text: "Referred to DM",
+  },
+  // Violation Ticket Statuses that are not in OTHER ENFORCEMENT ACTIONS
+  {
+    value: ViolationTicketStatus.PAID,
+    text: "Paid",
+  },
+  {
+    value: ViolationTicketStatus.DISPUTED,
+    text: "Disputed",
+  },
+  // CR Statuses that are not in OTHER ENFORCEMENT ACTIONS
+  {
+    value: CRStatus.SUBMITTED_TO_CROWN_COUNSEL.id,
+    text: "Submitted to Crown Counsel",
+  },
+];

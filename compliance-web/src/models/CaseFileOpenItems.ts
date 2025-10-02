@@ -4,6 +4,7 @@
 interface OpenItem {
   id: number;
   inspection_id: number;
+  inspectionNumber?: string;
   number: string;
   status: {
     id: string;

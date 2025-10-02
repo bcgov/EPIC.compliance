@@ -146,9 +146,8 @@ class RestorativeJusticeById(Resource):
     @API.response(code=204, description="NoContent")
     def delete(restorative_justice_id):
         """Delete a restorative justice."""
-        return RestorativeJusticeService.delete_restorative_justice(
-            restorative_justice_id
-        )
+        RestorativeJusticeService.delete_restorative_justice(restorative_justice_id)
+        return {}, HTTPStatus.NO_CONTENT
 
 
 @cors_preflight("GET, OPTIONS")

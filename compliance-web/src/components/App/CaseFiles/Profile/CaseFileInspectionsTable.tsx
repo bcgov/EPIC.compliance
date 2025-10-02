@@ -1,6 +1,7 @@
 import { useInspectionOrderByNumber } from "@/hooks/useInspectionOrders";
 import {
   useInspectionsMoreDetailsByCaseFileId,
+  fetchInspectionById,
 } from "@/hooks/useInspections";
 import { CaseFile } from "@/models/CaseFile";
 import {
@@ -84,10 +85,15 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
     }
   };
 
-  const onOrderSuccess = (order: InspectionOrder) => {
-    const inspection = detailedInspections?.find(
+  const onOrderSuccess = async (order: InspectionOrder) => {
+    let inspection = detailedInspections?.find(
       (inspection) => inspection.id === order.inspection_id
     );
+
+    if (!inspection && order.inspection_id) {
+        const fetchedInspection = await fetchInspectionById(order.inspection_id);
+        inspection = fetchedInspection;
+    }
     setOpen({
       content: (
         <OrderDrawer
@@ -327,24 +333,28 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                             {isEnforcementActionLink(
                               requirement.enforcement_action
                             ) ? (
-                              <Link
-                                underline="hover"
-                                sx={{ cursor: "pointer" }}
-                                onClick={() =>
-                                  handleEnforcementActionClick(
-                                    requirement.enforcement_action
-                                  )
-                                }
-                              >
-                                {requirement.enforcement_action?.name}
-                              </Link>
+                                <Tooltip title={requirement.enforcement_action?.name}>
+                                  <Link
+                                    underline="hover"
+                                    sx={{ cursor: "pointer" }}
+                                    onClick={() =>
+                                      handleEnforcementActionClick(
+                                        requirement.enforcement_action
+                                      )
+                                    }
+                                  >
+                                    {requirement.enforcement_action?.name}
+                                  </Link>
+                                </Tooltip>
                             ) : (
-                              <Typography
-                                variant="body2"
-                                sx={{ ...styleOverFlowClipped }}
-                              >
-                                {requirement.enforcement_action?.name}
-                              </Typography>
+                                <Tooltip title={requirement.enforcement_action?.name}>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{ ...styleOverFlowClipped }}
+                                  >
+                                    {requirement.enforcement_action?.name}
+                                  </Typography>
+                                </Tooltip>
                             )}
                           </Grid>
                           <Grid item xs={2}>

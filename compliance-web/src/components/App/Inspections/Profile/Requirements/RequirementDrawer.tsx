@@ -199,6 +199,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           requirementsList
         );
       }
+
       if (updatedRequirementFigures.has(requirement.id)) {
         updatedRequirementFigures.delete(requirement.id);
         updatedRequirementFigures = updateImagesWithContinuousSortOrder(
@@ -250,12 +251,20 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
       );
 
       if (inspectionRequirementData) {
+        const photosWithSortOrder = updateImagesWithContinuousSortOrder(
+          requirementPhotos,
+          requirementsList
+        );
+        const figuresWithSortOrder = updateImagesWithContinuousSortOrder(
+          requirementFigures,
+          requirementsList
+        );
         // prepare for batch update
         const requirementBatchAPIData = isImageChanged
           ? formatRequirementBatchAPIData(
               requirementsList,
-              requirementPhotos,
-              requirementFigures,
+              photosWithSortOrder,
+              figuresWithSortOrder,
               requirement?.id ?? 0
             )
           : undefined;
@@ -309,9 +318,12 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
       : "Create Requirement";
   };
 
-  const handleClearData = () => {
-    restoreRequirementStoreFromSnapshot();
-  };
+  const handleClearData = useCallback(() => {
+    // Only restore if there are unsaved changes; otherwise keep the latest store state
+    if (isDataChanged || isImageChanged) {
+      restoreRequirementStoreFromSnapshot();
+    }
+  }, [isDataChanged, isImageChanged, restoreRequirementStoreFromSnapshot]);
 
   return (
     <FormProvider {...methods}>

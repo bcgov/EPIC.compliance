@@ -2,7 +2,6 @@ import { Box } from "@mui/material";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { FC, useEffect } from "react";
 import { ComplaintSource } from "@/models/ComplaintSource";
-import { BCDesignTokens } from "epic.theme";
 import { useFormContext, useWatch } from "react-hook-form";
 import { ComplaintSourceEnum } from "./ComplaintFormUtils";
 import { Agency } from "@/models/Agency";
@@ -162,7 +161,6 @@ const ComplaintSourceForm: FC<ComplaintSourceProps> = ({
         <Box
           p={sectionPadding}
           mb={"1.5rem"}
-          bgcolor={BCDesignTokens.surfaceColorBackgroundLightBlue}
         >
           <DynamicInputField
             config={

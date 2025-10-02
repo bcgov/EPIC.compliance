@@ -25,12 +25,16 @@ class OrderScenario(enum.Enum):
         "issuing_officer_id": 1,
         "where_as": "Updated where as",
         "now_therefore": "Updated now therefore",
-        "intended_issuance_date": datetime.now(timezone.utc).isoformat(),
+        "intended_issuance_date": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
         "inspection_requirement_ids": [1],
     }
 
-    issue_value = {"date_issued": datetime.now(timezone.utc).isoformat()}
+    issue_value = {
+        "date_issued": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    }
 
-    status_value = {"status": OrderStatusEnum.CLOSED.value}
+    status_value = {"status": OrderStatusEnum.CLOSED.name}
 
     reset_field_value = {"field_name": "where_as"}

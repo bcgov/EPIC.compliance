@@ -1,19 +1,25 @@
-import { Inspection } from "@/models/Inspection";
 import { ChevronLeftRounded, ChevronRightRounded } from "@mui/icons-material";
 import { Box, Typography, IconButton } from "@mui/material";
-import { MRT_TableInstance } from "material-react-table";
 
-interface InspectionsGridPaginationProps {
-  table: MRT_TableInstance<Inspection>;
+export interface PaginationProps {
+  currentPage: number;
+  pageSize: number;
   totalCount: number;
+  onPreviousPage: () => void;
+  onNextPage: () => void;
+  canPreviousPage: boolean;
+  canNextPage: boolean;
 }
 
-export default function InspectionsGridPagination({
-  table,
+export default function Pagination({
+  currentPage,
+  pageSize,
   totalCount,
-}: InspectionsGridPaginationProps) {
-  const currentPage = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
+  onPreviousPage,
+  onNextPage,
+  canPreviousPage,
+  canNextPage,
+}: PaginationProps) {
   const startItem = currentPage * pageSize + 1;
   const endItem = Math.min((currentPage + 1) * pageSize, totalCount);
 
@@ -32,19 +38,19 @@ export default function InspectionsGridPagination({
       <IconButton
         aria-label="page_back"
         size="small"
-        onClick={() => table.previousPage()}
-        disabled={!table.getCanPreviousPage()}
+        onClick={onPreviousPage}
+        disabled={!canPreviousPage}
       >
         <ChevronLeftRounded fontSize="small" />
       </IconButton>
       <IconButton
         aria-label="page_forward"
         size="small"
-        onClick={() => table.nextPage()}
-        disabled={!table.getCanNextPage()}
+        onClick={onNextPage}
+        disabled={!canNextPage}
       >
         <ChevronRightRounded fontSize="small" />
       </IconButton>
     </Box>
   );
-} 
+}

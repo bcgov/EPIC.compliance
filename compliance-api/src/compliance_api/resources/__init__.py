@@ -46,6 +46,7 @@ from .project import API as PROJECT_API
 from .project_status import API as PROJECT_STATUS_API
 from .requirement_source import API as REQUIREMENT_SOURCE_API
 from .restorative_justice import API as RESTORATIVE_JUSTICE_API
+from .review_board import API as REVIEW_BOARD_API
 from .section import API as SECTION_API
 from .staff_user import API as USER_API
 from .topic import API as TOPIC_API
@@ -113,4 +114,5 @@ API.add_namespace(WARNING_LETTER_API, path="warning-letters")
 API.add_namespace(ADMINISTRATIVE_PENALTY_API, path="administrative-penalties")
 API.add_namespace(CHARGE_RECOMMENDATION_API, path="charge-recommendations")
 API.add_namespace(RESTORATIVE_JUSTICE_API, path="restorative-justices")
+API.add_namespace(REVIEW_BOARD_API, path="review-board")
 API.add_namespace(INSPECTION_REQUIREMENTS_API, path="inspection-requirements")

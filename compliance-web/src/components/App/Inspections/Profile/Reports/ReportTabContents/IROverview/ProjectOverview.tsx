@@ -129,7 +129,7 @@ const ProjectOverview = () => {
   return (
     <Box
       sx={{
-        backgroundColor: BCDesignTokens.surfaceColorBackgroundLightBlue,
+        border: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
         py: 2,
         px: 3,
         borderRadius: 1,

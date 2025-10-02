@@ -27,7 +27,7 @@ import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import { useQueryClient } from "@tanstack/react-query";
 import IssueEnforcementModal from "@/components/App/Inspections/Profile/Enforcements/IssueEnforcementModal";
 import { useDrawer } from "@/store/drawerStore";
-import OrderRecindModal from "./OrderRecindModal";
+import OrderRescindModal from "./OrderRescindModal";
 import { Inspection } from "@/models/Inspection";
 
 const OrderApprovalButtons = ({
@@ -298,10 +298,10 @@ const OrderApprovalButtons = ({
     [setOpen, latestOrder.order_number, latestOrder.id, updateOrderStatus]
   );
 
-  const handleRecindButtonClick = useCallback(() => {
+  const handleRescindButtonClick = useCallback(() => {
     setOpen({
       content: (
-        <OrderRecindModal
+        <OrderRescindModal
           order={latestOrder}
           onSuccess={(message, data) => {
             refetchDataAndClose(message);
@@ -312,6 +312,7 @@ const OrderApprovalButtons = ({
           isHistoricalInspection={inspection.is_history}
         />
       ),
+      width: "520px",
     });
   }, [
     setOpen,
@@ -361,7 +362,7 @@ const OrderApprovalButtons = ({
       )}
       {isShowRescindCloseButton && (
         <Box sx={{ display: "inline-flex", gap: 2 }}>
-          <Button color="secondary" onClick={handleRecindButtonClick}>
+          <Button color="secondary" onClick={handleRescindButtonClick}>
             Rescind Order
           </Button>
           <Button

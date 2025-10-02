@@ -21,7 +21,7 @@ import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import dayjs, { Dayjs } from "dayjs";
-import { ReferralStatus, APDecisionStatus } from "@/utils/constants";
+import { APReferralStatus, APDecisionStatus } from "@/utils/constants";
 
 const administrativePenaltyUpdateSchema = yup.object().shape({
   referral_status: yup
@@ -59,7 +59,7 @@ type DecisionOption = {
 };
 
 const referralStatusOptions: ReferralStatusOption[] = Object.values(
-  ReferralStatus
+  APReferralStatus
 ).map((status) => ({
   id: status.id,
   name: status.name,
@@ -138,8 +138,10 @@ const AdministrativePenaltyUpdateModal: FC<
   }, [decision, methods]);
 
   const onUpdateSuccess = (data: AdministrativePenalty) => {
+    //  Invalidate all administrative penalties because of the AP can be linked to
+    //  other inspections
     queryClient.invalidateQueries({
-      queryKey: ["inspection-administrative-penalties", inspectionData.id],
+      queryKey: ["inspection-administrative-penalties"],
     });
     notify.success("Administrative Penalty updated successfully");
     onSuccess?.(data);
@@ -161,12 +163,17 @@ const AdministrativePenaltyUpdateModal: FC<
   const { mutate: deleteAdministrativePenalty, isPending: isPendingDelete } =
     useDeleteAdministrativePenalty(onDeleteSuccess);
 
+  // Check if AP is linked to other inspections
+  const isLinkedToOtherInspections = administrativePenalty.inspection_id !== inspectionData.id;
+
   const handleSubmitForm = useCallback(
     (data: AdministrativePenaltyUpdateFormType) => {
       const updateData: AdministrativePenaltyAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids:
-          administrativePenalty.administrative_penalty_requirement_maps.map(
+          administrativePenalty.administrative_penalty_requirement_maps
+          .filter((ap_map) => ap_map.inspection_requirement.inspection_id === inspectionData.id)
+          .map(
             (map) => map.inspection_requirement_id
           ),
         referral_status:
@@ -223,13 +230,14 @@ const AdministrativePenaltyUpdateModal: FC<
   const handleDelete = () => {
     deleteAdministrativePenalty({
       administrativePenaltyId: administrativePenalty.id,
+      inspectionId: inspectionData.id,
     });
   };
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Administrative Penalty Recommendation" />
+        <ModalTitleBar title={administrativePenalty.administrative_penalty_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <ControlledAutoComplete
@@ -287,6 +295,11 @@ const AdministrativePenaltyUpdateModal: FC<
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isPendingDelete}
+            onDeleteConfirmationText={
+              isLinkedToOtherInspections
+                ? "This AP is linked to other files. Deleting it will remove all linked APs."
+                : undefined
+            }
           />
         )}
       </form>

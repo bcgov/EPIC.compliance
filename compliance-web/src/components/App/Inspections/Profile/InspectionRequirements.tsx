@@ -107,12 +107,14 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
 
   useEffect(() => {
     if (inspectionRequirementImages) {
-      setRequirementPhotos(
-        convertRequirementImagesArrToMap(inspectionRequirementImages.photos)
+      const photosMap = convertRequirementImagesArrToMap(
+        inspectionRequirementImages.photos
       );
-      setRequirementFigures(
-        convertRequirementImagesArrToMap(inspectionRequirementImages.figures)
+      const figuresMap = convertRequirementImagesArrToMap(
+        inspectionRequirementImages.figures
       );
+      setRequirementPhotos(photosMap);
+      setRequirementFigures(figuresMap);
     }
   }, [
     inspectionRequirementImages,
@@ -199,12 +201,18 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
         updateRequirementLists.push(regulatoryConsideration);
       }
 
+      // Always read the latest maps from the store to avoid stale closures
+      const {
+        requirementPhotos: latestRequirementPhotos,
+        requirementFigures: latestRequirementFigures,
+      } = useRequirementStore.getState();
+
       const photosWithSortOrder = updateImagesWithContinuousSortOrder(
-        requirementPhotos,
+        latestRequirementPhotos,
         updateRequirementLists
       );
       const figuresWithSortOrder = updateImagesWithContinuousSortOrder(
-        requirementFigures,
+        latestRequirementFigures,
         updateRequirementLists
       );
 
@@ -249,8 +257,6 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
       inspectionData,
       queryClient,
       regulatoryConsideration,
-      requirementFigures,
-      requirementPhotos,
       setRequirementFigures,
       setRequirementPhotos,
       updateInspectionRequirementBatch,

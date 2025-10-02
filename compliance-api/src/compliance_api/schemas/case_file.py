@@ -104,6 +104,23 @@ class CaseFileUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     project_description = fields.Str(
         metadata={"description": "The project description"}, allow_none=True
     )
+    project_id = fields.Int(
+        metadata={
+            "description": "The unique identifier for the project associated with the case file."
+        },
+        allow_none=True,
+    )
+    unapproved_project_regulated_party = fields.Str(
+        metadata={"description": "The regulated_party name of the unapproved project"},
+        allow_none=True,
+    )
+    unapproved_project_type = fields.Str(
+        metadata={"description": "The type of the unapproved project"}, allow_none=True
+    )
+    unapproved_project_sub_type = fields.Str(
+        metadata={"description": "The sub type of the unapproved project"},
+        allow_none=True,
+    )
 
 
 class CaseFileCreateSchema(CaseFileUpdateSchema):  # pylint: disable=too-many-ancestors

@@ -173,7 +173,22 @@ export enum EnforcementActionEnum {
 export enum ViolationTicketStatus {
   ISSUED = "ISSUED",
   PAID = "PAID",
-  DISPUTED = "DISPUTED"
+  DISPUTED = "DISPUTED",
+  DEEMED_GUILTY = "DEEMED_GUILTY",
+}
+
+export enum AdministrativePenaltyStatus {
+  DRAFTING = "DRAFTING",
+  DEPUTY_REVIEW = "DEPUTY_REVIEW",
+  CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING",
+  REFERRED_TO_DM = "REFERRED_TO_DM"
+}
+
+export enum ChargeRecommendationStatus {
+  DRAFTING = "DRAFTING",
+  DEPUTY_REVIEW = "DEPUTY_REVIEW",
+  SUBMITTED_TO_CROWN_COUNSEL = "SUBMITTED_TO_CROWN_COUNSEL",
+  CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING"
 }
 export enum RestorativeJusticeStatus {
   DRAFTING = "DRAFTING",
@@ -185,7 +200,7 @@ export enum ComplaintStatusEnum {
   CLOSED = "Closed",
 }
 
-export const ReferralStatus = {
+export const APReferralStatus = {
   DRAFTING: { id: "DRAFTING", name: "Drafting" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
   CEB_NOT_PROCEEDING: { id: "CEB_NOT_PROCEEDING", name: "CEB Not Proceeding" },
@@ -216,4 +231,5 @@ export const CRJudgment = {
 
 export const DEFAULT_PAGE_SIZE = 15;
 
-export type VARIANT_COLORS = "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+export type ALERT_SEVERITY_COLORS = "error" | "info" | "success" | "warning";
+export type VARIANT_COLORS = "default" | "primary" | "secondary" | ALERT_SEVERITY_COLORS;

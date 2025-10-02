@@ -44,6 +44,7 @@ const statusOptions: StatusOption[] = [
   { id: ViolationTicketStatus.ISSUED, name: "Issued" },
   { id: ViolationTicketStatus.PAID, name: "Paid" },
   { id: ViolationTicketStatus.DISPUTED, name: "Disputed" },
+  { id: ViolationTicketStatus.DEEMED_GUILTY, name: "Deemed Guilty" },
 ];
 
 type ViolationTicketUpdateModalProps = {
@@ -124,7 +125,6 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
         status: typeof data.status === 'string' ? data.status : data.status?.id || 'ISSUED',
         status_date: data.status_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]"),
       };
-
       updateViolationTicket({
         violationTicketId: violationTicket.id,
         violationTicket: updateData,
@@ -146,7 +146,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Violation Ticket" />
+        <ModalTitleBar title={violationTicket.vt_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <Box sx={{ display: "flex", gap: 1 }}>

@@ -16,9 +16,15 @@ import {
   EnforcementActionEnum,
   OrderProgressEnum,
   WarningLetterProgressEnum,
+  ViolationTicketStatus,
+  AdministrativePenaltyStatus,
+  ChargeRecommendationStatus,
 } from "@/utils/constants";
 import { useInspectionOrdersData } from "@/hooks/useInspectionOrders";
 import { useInspectionWarningLettersData } from "@/hooks/useInspectionWarningLetters";
+import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
+import { useViolationTicketsData } from "@/hooks/useViolationTickets";
+import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
 import { useModal } from "@/store/modalStore";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import RequirementFormLeftEditSection from "./RequirementFormLeftEditSection";
@@ -52,6 +58,12 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
   const [orderExists, setOrderExists] = useState<boolean>(false);
   const [warningLetterExists, setWarningLetterExists] =
     useState<boolean>(false);
+  const [administrativePenaltyExists, setAdministrativePenaltyExists] =
+    useState<boolean>(false);
+  const [violationTicketExists, setViolationTicketExists] =
+    useState<boolean>(false);
+  const [chargeRecommendationExists, setChargeRecommendationExists] =
+    useState<boolean>(false);
   const [disableEnforcementAction, setDisableEnforcementAction] =
     useState<boolean>(false);
   const summaryInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +80,21 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
     useInspectionWarningLettersData(inspectionData.id, {
       isStaleInfinate: false,
     });
+  const { data: administrativePenaltiesData } = useAdministrativePenaltiesData(
+    inspectionData.id,
+    {
+      isStaleInfinate: false,
+    }
+  );
+  const { data: violationTicketsData } = useViolationTicketsData(
+    inspectionData.id
+  );
+  const { data: chargeRecommendationsData } = useChargeRecommendationsData(
+    inspectionData.id,
+    {
+      isStaleInfinate: false,
+    }
+  );
 
   const inputFocus = useCallback((inputRef: HTMLInputElement | null) => {
     if (inputRef) {
@@ -140,9 +167,39 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
       ) ?? [];
     setWarningLetterExists(requirementsInWarningLetters.length > 0);
 
+    // Check if requirement exists in administrative penalties
+    const requirementsInAdministrativePenalties =
+      administrativePenaltiesData?.filter((penalty) =>
+        penalty.administrative_penalty_requirement_maps?.some(
+          (map) => map.inspection_requirement_id === requirementId
+        )
+      ) ?? [];
+    setAdministrativePenaltyExists(requirementsInAdministrativePenalties.length > 0);
+
+    // Check if requirement exists in violation tickets
+    const requirementsInViolationTickets =
+      violationTicketsData?.filter((ticket) =>
+        ticket.violation_ticket_requirement_maps?.some(
+          (map) => map.inspection_requirement_id === requirementId
+        )
+      ) ?? [];
+    setViolationTicketExists(requirementsInViolationTickets.length > 0);
+
+    // Check if requirement exists in charge recommendations
+    const requirementsInChargeRecommendations =
+      chargeRecommendationsData?.filter((recommendation) =>
+        recommendation.charge_recommendation_requirement_maps?.some(
+          (map) => map.inspection_requirement_id === requirementId
+        )
+      ) ?? [];
+    setChargeRecommendationExists(requirementsInChargeRecommendations.length > 0);
+
     if (
       requirementsInOrders.length > 0 ||
-      requirementsInWarningLetters.length > 0
+      requirementsInWarningLetters.length > 0 ||
+      requirementsInAdministrativePenalties.length > 0 ||
+      requirementsInViolationTickets.length > 0 ||
+      requirementsInChargeRecommendations.length > 0
     ) {
       const nonDraftOrders = requirementsInOrders.some(
         (order) => order.order_progress?.id !== OrderProgressEnum.DRAFTING
@@ -150,11 +207,33 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
       const nonDraftWarningLetters = requirementsInWarningLetters.some(
         (letter) => letter.progress?.id !== WarningLetterProgressEnum.DRAFTING
       );
-      setDisableEnforcementAction(nonDraftOrders || nonDraftWarningLetters);
+      const nonIssuedViolationTickets = requirementsInViolationTickets.some(
+        (ticket) => ticket.status?.id !== ViolationTicketStatus.ISSUED
+      );
+      const nonDraftAdministrativePenalties = requirementsInAdministrativePenalties.some(
+        (penalty) => penalty.referral_status?.id !== AdministrativePenaltyStatus.DRAFTING
+      );
+      const nonDraftChargeRecommendations = requirementsInChargeRecommendations.some(
+        (charge) => charge.status?.id !== ChargeRecommendationStatus.DRAFTING
+      );
+      setDisableEnforcementAction(
+        nonDraftOrders || 
+        nonDraftWarningLetters || 
+        nonIssuedViolationTickets || 
+        nonDraftAdministrativePenalties || 
+        nonDraftChargeRecommendations
+      );
     } else {
       setDisableEnforcementAction(false);
     }
-  }, [inspectionOrdersData, inspectionWarningLettersData, requirementId]);
+  }, [
+    inspectionOrdersData, 
+    inspectionWarningLettersData, 
+    administrativePenaltiesData,
+    violationTicketsData,
+    chargeRecommendationsData,
+    requirementId
+  ]);
 
   useEffect(() => {
     // Only show confirmation modal when in edit mode and not readonly
@@ -166,16 +245,29 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
         [
           EnforcementActionEnum.ORDER,
           EnforcementActionEnum.WARNING_LETTER,
+          EnforcementActionEnum.AP_RECOMMENDATION,
+          EnforcementActionEnum.VIOLATION_TICKET,
+          EnforcementActionEnum.CHARGE_RECOMMENDATION,
         ].includes(currentEnforcementAction?.id as EnforcementActionEnum) &&
         hasEnforcementActionChanged &&
-        (orderExists || warningLetterExists)
+        (orderExists || warningLetterExists || administrativePenaltyExists || violationTicketExists || chargeRecommendationExists)
       ) {
+          const getDescription = () => {
+    if (currentEnforcementAction?.id === EnforcementActionEnum.AP_RECOMMENDATION) {
+      return `A document already exists for the previous enforcement action (Referral to Administrative Penalty). 
+
+Changing it will delete the existing document so you can create a new one`;
+    } else {
+      return `A document already exists for the previous enforcement action(${currentEnforcementAction?.name}). 
+      Changing it will delete the existing document so you can create a new one`;
+    }
+  };
+
         setOpen({
           content: (
             <ConfirmationModal
               title="Change Enforcement Action?"
-              description={`A document already exists for the previous enforcement action(${currentEnforcementAction?.name}). 
-              Changing it will delete the existing document so you can create a new one`}
+              description={getDescription()}
               confirmButtonText="Proceed"
               onConfirm={() => {
                 setClose();
@@ -193,10 +285,13 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
     currentEnforcementAction,
     enforcementAction,
     orderExists,
+    warningLetterExists,
+    administrativePenaltyExists,
+    violationTicketExists,
+    chargeRecommendationExists,
     setClose,
     setOpen,
     setValue,
-    warningLetterExists,
     isReadOnly,
   ]);
 

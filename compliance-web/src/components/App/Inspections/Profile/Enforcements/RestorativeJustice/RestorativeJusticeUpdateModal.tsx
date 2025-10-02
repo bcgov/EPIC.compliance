@@ -109,7 +109,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title="Restorative Justice" />
+        <ModalTitleBar title={restorativeJustice.restorative_justice_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <Box >

@@ -1,16 +1,21 @@
 import { StaffUser } from "@/models/Staff";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { useAuth } from "react-oidc-context";
+import { OidcConfig } from "@/utils/config";
 
 interface CustomJwtPayload extends JwtPayload {
-  groups?: string[];
+  resource_access?: {
+    [key: string]: {
+      roles: string[];
+    };
+  };
 }
 
 export const KC_USER_GROUPS = {
-  SUPERUSER: "/COMPLIANCE/SUPERUSER",
-  USER: "/COMPLIANCE/USER",
-  ADMIN: "/COMPLIANCE/ADMIN",
-  VIEWER: "/COMPLIANCE/VIEWER",
+  SUPERUSER: "super_user",
+  USER: "user",
+  ADMIN: "admin",
+  VIEWER: "viewer",
 };
 
 export const useIsRolesAllowed = (
@@ -23,10 +28,15 @@ export const useIsRolesAllowed = (
     return false;
   }
 
-  const { groups = [] } = jwtDecode<CustomJwtPayload>(authUser.access_token);
-
-  // Check if the user has any of the required roles
-  const isRoleAllowed = roles.some((role) => groups.includes(role));
+  const payload = jwtDecode<CustomJwtPayload>(authUser.access_token);
+  
+  // Get roles from resource_access if available
+  const resourceRoles = payload.resource_access?.[OidcConfig.client_id]?.roles || [];
+  
+  // Check if the user has any of the required roles (from groups or resource_access)
+  const isRoleAllowed = roles.some((role) => 
+    resourceRoles.includes(role)
+  );
 
   // Check if the logged-in user is part of the provided users list
   const isUserAllowed =

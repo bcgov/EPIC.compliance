@@ -17,9 +17,7 @@ interface ShowOnlyMyComplaintsSwitchProps {
   initialChecked?: boolean;
 }
 
-const ShowOnlyMyComplaintsSwitch: React.FC<
-  ShowOnlyMyComplaintsSwitchProps
-> = ({
+const ShowOnlyMyComplaintsSwitch: React.FC<ShowOnlyMyComplaintsSwitchProps> = ({
   disabled = false,
   staffUsers,
   onFiltersChange,
@@ -32,7 +30,8 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
 
   // Find current user in staff list
   const currentStaff = useMemo(() => {
-    if (!currentUser?.profile?.preferred_username || !staffUsers) return undefined;
+    if (!currentUser?.profile?.preferred_username || !staffUsers)
+      return undefined;
     return staffUsers.find(
       (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
     );
@@ -45,7 +44,7 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
 
   // Get the appropriate label
   const switchLabel = useMemo(() => {
-    return `${currentUser?.profile?.given_name || 'My'} Complaints`;
+    return `${currentUser?.profile?.given_name + "'s" || "My"} Complaints`;
   }, [currentUser?.profile?.given_name]);
 
   // Generate external filters for API calls
@@ -92,11 +91,7 @@ const ShowOnlyMyComplaintsSwitch: React.FC<
         columnFilters,
       });
     },
-    [
-      generateExternalFilters,
-      generateColumnFilters,
-      onFiltersChange,
-    ]
+    [generateExternalFilters, generateColumnFilters, onFiltersChange]
   );
 
   // Update internal state when initialChecked changes (for restoration)

@@ -14,12 +14,14 @@ interface ReviewBoardFiltersProps {
   onFilterChange: (filterId: string, value: string[] | string) => void;
   externalFilters: Record<string, string[] | string>;
   initialChecked: boolean;
+  onSwitchChange?: (checked: boolean) => void;
 }
 
 const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
   onFilterChange,
   externalFilters,
   initialChecked,
+  onSwitchChange,
 }) => {
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
@@ -67,8 +69,11 @@ const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
         // When turning OFF, clear the primary officer filter
         onFilterChange("primary_officer_id", []);
       }
+
+      // Notify parent so it can persist switch state explicitly
+      onSwitchChange?.(newChecked);
     },
-    [currentStaff, onFilterChange]
+    [currentStaff, onFilterChange, onSwitchChange]
   );
 
   if (authLoading || staffLoading) {

@@ -16,7 +16,18 @@ const SnackBarProvider: React.FC = () => {
         onClose={setClose}
         severity={severity}
         variant="filled"
-        sx={{ width: "100%" }}
+        sx={{ 
+          width: "100%",
+          fontWeight: 600,
+          '& .MuiAlert-action': {
+            '& .MuiIconButton-root': {
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              },
+            },
+          },
+        }}
       >
         {message}
       </Alert>

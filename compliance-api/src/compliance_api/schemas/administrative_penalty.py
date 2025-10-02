@@ -102,7 +102,7 @@ class AdministrativePenaltyInspectionRequirementMapSchema(
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),
-        only=("id", "summary"),
+        only=("id", "summary", "inspection_id"),
     )
 
 
@@ -203,3 +203,56 @@ class DecisionSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         if "decision" in data and data["decision"]:
             data["decision"] = data["decision"]["value"]
         return data
+
+
+class AdministrativePenaltyLinkCreateSchema(BaseSchema):
+    """Schema for linking administrative penalty to inspection requirements."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Exclude unknown fields in the deserialized output."""
+
+        unknown = EXCLUDE
+
+    administrative_penalty_id = fields.Integer(
+        required=True, metadata={"description": "The administrative penalty id to link"}
+    )
+    inspection_id = fields.Integer(
+        required=True, metadata={"description": "The inspection id"}
+    )
+    inspection_requirement_ids = fields.List(
+        fields.Integer(),
+        required=True,
+        metadata={
+            "description": "List of inspection requirement IDs to link with the administrative penalty."
+        },
+    )
+
+
+class AdministrativePenaltyLinksResponseSchema(BaseSchema):
+    """Schema for administrative penalty links response."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Exclude unknown fields in the deserialized output."""
+
+        unknown = EXCLUDE
+
+    inspection = fields.Nested(
+        "InspectionSchema",
+        only=(
+            "id",
+            "ir_number",
+            "case_file",
+            "primary_officer",
+            "initiation",
+            "project_status",
+        ),
+        metadata={"description": "The inspection linked to the administrative penalty"},
+    )
+    requirements = fields.Nested(
+        InspectionRequirementSchema(),
+        many=True,
+        only=("id", "summary", "requirement_source", "requirement_type"),
+        metadata={
+            "description": "The inspection requirements linked to the administrative penalty"
+        },
+    )

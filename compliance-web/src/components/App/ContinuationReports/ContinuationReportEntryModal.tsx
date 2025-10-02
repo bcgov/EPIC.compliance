@@ -136,6 +136,7 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
               width="75%"
               maxDate={maxSelectableDate}
               isRequired={true}
+              useCurrentTimeOnEmpty ={true}
             />
             <ControlledLexicalEditor
               label="Entry"

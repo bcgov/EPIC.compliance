@@ -1485,6 +1485,9 @@ def _process_inspection_requirement_query_results(query_results):
         item["status"] = result.status
         item["progress"] = result.progress
         item["approval_status"] = result.approval_status
+        item["enforcement_number"] = (
+            result.order_number or result.warning_letter_number or ""
+        )
 
         # Structure approved_by as a StaffUser object from individual fields
         approved_by_id = result.approver_id
@@ -1553,6 +1556,7 @@ def _make_requirement_detail_object(requirements: list):
                 "id": requirement["inspection_status"].name,
                 "name": requirement["inspection_status"].value,
             },
+            "enforcement_number": requirement["enforcement_number"],
         }
 
         # Handle status field
@@ -1598,11 +1602,53 @@ def _make_requirement_detail_object(requirements: list):
     return requirement_details
 
 
+def _validate_and_delete_enforcement_action(
+    enforcement_action_config, requirement_id, inspection_id, session
+):
+    """
+    Validate and delete a specific enforcement action type.
+
+    @param enforcement_action_config: Configuration dict containing model, status_field,
+                                    allowed_status, map_field, update_method, and error_message
+    @param requirement_id: Requirement id
+    @param inspection_id: Inspection id
+    @param session: Database session
+    """
+    model = enforcement_action_config["model"]
+    status_field = enforcement_action_config["status_field"]
+    allowed_status = enforcement_action_config["allowed_status"]
+    map_field = enforcement_action_config["map_field"]
+    update_method = enforcement_action_config["update_method"]
+    error_message = enforcement_action_config["error_message"]
+
+    # Get all enforcement actions of this type for the inspection
+    enforcement_actions = model.get_by_inspection_id(inspection_id)
+
+    # Filter to only those mapped to this requirement
+    requirement_enforcement_actions = [
+        action
+        for action in enforcement_actions
+        if requirement_id
+        in [map_obj.inspection_requirement_id for map_obj in getattr(action, map_field)]
+    ]
+
+    # Check if any are not in the allowed status
+    if any(
+        getattr(action, status_field) != allowed_status
+        for action in requirement_enforcement_actions
+    ):
+        raise UnprocessableEntityError(error_message)
+
+    # Delete all enforcement actions of this type for this requirement
+    for action in requirement_enforcement_actions:
+        update_method(action.id, {"is_deleted": True, "is_active": False}, session)
+
+
 def _check_enforcement_action_existennce(
     new_enforcement_ids, requirement_id, inspection_id, session
 ):
     """
-    Check if the corresponding enforcement action such as Order, Warning Letter etc.
+    Check if the corresponding enforcement action such as Order, Warning Letter, Administrative Penalty etc.
 
     are created. This method throws validation error when these actions are not in DRAFTING status.
     @param new_enforcement_ids: List of new enforcement action ids
@@ -1619,55 +1665,68 @@ def _check_enforcement_action_existennce(
     removed_action_ids = set(existing_enforcement_ids).difference(
         set(new_enforcement_ids)
     )
-    if removed_action_ids:
-        # If the removed enforcement action is either ORDER or WARNING LETTER, then check if
-        # the order or warning letter is in DRAFTING status. If not, throw validation error.
-        # If the order or warning letter is in DRAFTING status, then delete the order or warning letter.
-        if EnforcementActionOptionEnum.ORDER.value in removed_action_ids:
-            orders = OrderModel.get_by_inspection_id(inspection_id)
-            requirement_orders = [
-                order
-                for order in orders
-                if requirement_id
-                in [
-                    order_map.inspection_requirement_id
-                    for order_map in order.order_requirement_maps
-                ]
-            ]
-            if any(
-                order.order_progress != OrderProgressEnum.DRAFTING
-                for order in requirement_orders
-            ):
-                raise UnprocessableEntityError(
-                    "You cannot change enforcement action as order exists and is not in DRAFTING status."
-                )
-            for order in requirement_orders:
-                OrderModel.update_order(
-                    order.id, {"is_deleted": True, "is_active": False}, session
-                )
-        if EnforcementActionOptionEnum.WARNING_LETTER.value in removed_action_ids:
-            warnings = WarningLetterModel.get_by_inspection_id(inspection_id)
-            requirement_warnings = [
-                warning
-                for warning in warnings
-                if requirement_id
-                in [
-                    warning_map.inspection_requirement_id
-                    for warning_map in warning.warning_letter_requirement_maps
-                ]
-            ]
-            if any(
-                warning.progress != WarningLetterProgressEnum.DRAFTING
-                for warning in requirement_warnings
-            ):
-                raise UnprocessableEntityError(
-                    "You cannot change enforcement action as warning letter exists and is not in DRAFTING status."
-                )
 
-            for warning in requirement_warnings:
-                WarningLetterModel.update_warning_letter(
-                    warning.id, {"is_deleted": True, "is_active": False}, session
-                )
+    if not removed_action_ids:
+        return
+
+    # Configuration for each enforcement action type
+    enforcement_configs = {
+        EnforcementActionOptionEnum.ORDER.value: {
+            "model": OrderModel,
+            "status_field": "order_progress",
+            "allowed_status": OrderProgressEnum.DRAFTING,
+            "map_field": "order_requirement_maps",
+            "update_method": OrderModel.update_order,
+            "error_message": "You cannot change enforcement action as order exists and is not in DRAFTING status.",
+        },
+        EnforcementActionOptionEnum.WARNING_LETTER.value: {
+            "model": WarningLetterModel,
+            "status_field": "progress",
+            "allowed_status": WarningLetterProgressEnum.DRAFTING,
+            "map_field": "warning_letter_requirement_maps",
+            "update_method": WarningLetterModel.update_warning_letter,
+            "error_message": (
+                "You cannot change enforcement action as warning letter exists and is not in DRAFTING status."
+            ),
+        },
+        EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: {
+            "model": AdministrativePenaltyModel,
+            "status_field": "referral_status",
+            "allowed_status": ReferralStatusEnum.DRAFTING,
+            "map_field": "administrative_penalty_requirement_maps",
+            "update_method": AdministrativePenaltyModel.update_administrative_penalty,
+            "error_message": (
+                "You cannot change enforcement action as administrative penalty exists and is not in DRAFTING status."
+            ),
+        },
+        EnforcementActionOptionEnum.VIOLATION_TICKET.value: {
+            "model": ViolationTicketModel,
+            "status_field": "status",
+            "allowed_status": ViolationTicketStatusEnum.ISSUED,
+            "map_field": "violation_ticket_requirement_maps",
+            "update_method": ViolationTicketModel.update_violation_ticket,
+            "error_message": (
+                "You cannot change enforcement action as violation ticket exists and is not in ISSUED status."
+            ),
+        },
+        EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value: {
+            "model": ChargeRecommendationModel,
+            "status_field": "status",
+            "allowed_status": ChargeRecommendationStatusEnum.DRAFTING,
+            "map_field": "charge_recommendation_requirement_maps",
+            "update_method": ChargeRecommendationModel.update_charge_recommendation,
+            "error_message": (
+                "You cannot change enforcement action as charge recommendation exists and is not in DRAFTING status."
+            ),
+        },
+    }
+
+    # Process each removed enforcement action
+    for action_id in removed_action_ids:
+        if action_id in enforcement_configs:
+            _validate_and_delete_enforcement_action(
+                enforcement_configs[action_id], requirement_id, inspection_id, session
+            )
 
 
 def _update_the_findigs_by_images(

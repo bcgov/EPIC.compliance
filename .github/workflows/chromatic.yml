@@ -1,0 +1,44 @@
+# Workflow name
+name: "Chromatic Publish"
+
+# Event for the workflow
+on:
+  push:
+    branches:
+      - develop
+    # Only run on the main repository, not forks
+    paths-ignore:
+      - 'README.md'
+      - 'LICENSE'
+
+# List of jobs
+jobs:
+  test:
+    # Operating System
+    runs-on: ubuntu-latest
+    # Only run on the main repository (bcgov/EPIC.compliance), not forks
+    if: github.repository == 'bcgov/EPIC.compliance'
+    # Job steps
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: "compliance-web/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+        working-directory: compliance-web
+      - name: Build Storybook
+        run: npm run build-storybook
+        working-directory: compliance-web
+      #👇 Adds Chromatic as a step in the workflow
+      - uses: chromaui/action@latest
+        # Options required for Chromatic's GitHub Action
+        with:
+          #👇 Chromatic projectToken,
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          workingDir: compliance-web

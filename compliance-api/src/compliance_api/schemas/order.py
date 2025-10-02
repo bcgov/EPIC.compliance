@@ -40,6 +40,9 @@ class OrderUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     inspection_requirement_ids = fields.List(
         fields.Integer(),
         required=True,
+        validate=validate.Length(
+            min=1, error="At least one inspection requirement ID is required."
+        ),
         metadata={
             "description": "List of inspection requirement IDs associated with the order."
         },
@@ -164,7 +167,7 @@ class OrderIssueSchema(BaseSchema):
         unknown = EXCLUDE
 
     date_issued = fields.DateTime(
-        allow_none=True,
+        required=True,
         format=INPUT_DATE_TIME_FORMAT,
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."

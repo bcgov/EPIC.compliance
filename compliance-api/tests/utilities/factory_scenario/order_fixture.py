@@ -1,5 +1,7 @@
 """Order fixtures for testing."""
 
+import random
+
 import pytest
 
 from compliance_api.models.order import Order as OrderModel
@@ -27,7 +29,7 @@ def created_order(app, db, created_inspection, created_section):
         section_id=created_section.id,
         where_as="Test where as",
         now_therefore="Test now therefore",
-        order_number="TEST-ORDER-001",
+        order_number=f"TEST-ORDER-{random.randint(100000, 999999)}",
         order_status=OrderStatusEnum.CREATED,
         order_progress=OrderProgressEnum.DRAFTING,
         is_active=True,

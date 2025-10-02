@@ -11,6 +11,7 @@ from sqlalchemy.sql import func
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.models.inspection import InspectionRequirement
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
@@ -70,6 +71,27 @@ class AdministrativePenaltyInspectionRequirementMap(BaseModelVersioned):
             is_deleted=False,
             is_active=True,
         ).all()
+
+    @classmethod
+    def get_by_inspection_and_administrative_penalty_id(
+        cls, inspection_id, administrative_penalty_id
+    ):
+        """Get inspection requirement maps by inspection id and administrative penalty id."""
+        return (
+            cls.query.join(
+                InspectionRequirement,
+                InspectionRequirement.id == cls.inspection_requirement_id,
+            )
+            .filter(
+                InspectionRequirement.inspection_id == inspection_id,
+                cls.administrative_penalty_id == administrative_penalty_id,
+                cls.is_deleted.is_(False),
+                cls.is_active.is_(True),
+                InspectionRequirement.is_deleted.is_(False),
+                InspectionRequirement.is_active.is_(True),
+            )
+            .all()
+        )
 
     @classmethod
     @with_session
@@ -215,9 +237,25 @@ class AdministrativePenalty(BaseModelVersioned):
 
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
-        """Find all administrative penalties by inspection id."""
+        """Find all administrative penalties that have entries in the requirement map for the given inspection."""
         return (
-            cls.query.filter_by(inspection_id=inspection_id, is_deleted=False)
+            cls.query.join(
+                AdministrativePenaltyInspectionRequirementMap,
+                AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id
+                == cls.id,
+            )
+            .join(
+                InspectionRequirement,
+                InspectionRequirement.id
+                == AdministrativePenaltyInspectionRequirementMap.inspection_requirement_id,
+            )
+            .filter(
+                InspectionRequirement.inspection_id == inspection_id,
+                AdministrativePenaltyInspectionRequirementMap.is_active.is_(True),
+                AdministrativePenaltyInspectionRequirementMap.is_deleted.is_(False),
+                cls.is_deleted.is_(False),
+            )
+            .distinct()
             .order_by(cls.created_date.desc())
             .all()
         )
@@ -276,3 +314,25 @@ class AdministrativePenalty(BaseModelVersioned):
             query = query.filter(cls.id != administrative_penalty_id)
 
         return query.first() is not None
+
+    @classmethod
+    def get_administrative_penalties_by_case_files(cls, case_file_ids: list[int]):
+        """Get all administrative penalties by case file ids.
+
+        Args:
+            case_file_ids: List of case file IDs
+        Returns:
+            List of AdministrativePenalty objects
+        """
+        return (
+            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .filter(
+                InspectionModel.case_file_id.in_(case_file_ids),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+                InspectionModel.is_active.is_(True),
+                InspectionModel.is_deleted.is_(False),
+            )
+            .order_by(cls.created_date.desc())
+            .all()
+        )

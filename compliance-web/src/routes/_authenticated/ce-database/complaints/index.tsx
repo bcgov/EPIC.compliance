@@ -19,7 +19,7 @@ import {
 } from "material-react-table";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import ComplaintsGridPagination from "@/components/App/Complaints/ComplaintsGrid/ComplaintsGridPagination";
+import Pagination from "@/components/Shared/Pagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
@@ -436,9 +436,14 @@ export function Complaints() {
             {/* Left side - Export and Pagination */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <ComplaintsGridExport queryParams={queryParams} />
-              <ComplaintsGridPagination
-                table={table}
+              <Pagination
+                currentPage={pagination.pageIndex}
+                pageSize={pagination.pageSize}
                 totalCount={data?.total || 0}
+                onPreviousPage={() => table.previousPage()}
+                onNextPage={() => table.nextPage()}
+                canPreviousPage={table.getCanPreviousPage()}
+                canNextPage={table.getCanNextPage()}
               />
             </Box>
           </Box>

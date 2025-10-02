@@ -14,6 +14,15 @@ const fetchAdministrativePenalties = (
   });
 };
 
+const fetchAdministrativePenaltiesByCaseFile = (
+  caseFileId: number
+): Promise<AdministrativePenalty[]> => {
+  return request({
+    url: `/administrative-penalties/projectwise`,
+    params: { case_file_id: caseFileId },
+  });
+};
+
 const fetchAdministrativePenaltyByNumber = (
   administrativePenaltyNumber: string
 ): Promise<AdministrativePenalty[]> => {
@@ -50,12 +59,36 @@ const updateAdministrativePenalty = ({
 
 const deleteAdministrativePenalty = ({
   administrativePenaltyId,
+  inspectionId,
 }: {
   administrativePenaltyId: number;
+  inspectionId: number;
 }) => {
   return request({
     url: `/administrative-penalties/${administrativePenaltyId}`,
     method: "delete",
+    params: { inspection_id: inspectionId },
+  });
+};
+
+const linkAdministrativePenalty = ({
+  administrativePenaltyId,
+  link,
+}: {
+  administrativePenaltyId: number;
+  link: {
+    inspection_id: number;
+    inspection_requirement_ids: number[];
+  };
+}) => {
+  return request({
+    url: `/administrative-penalties/links`,
+    method: "post",
+    data: {
+      administrative_penalty_id: administrativePenaltyId,
+      inspection_id: link.inspection_id,
+      inspection_requirement_ids: link.inspection_requirement_ids,
+    },
   });
 };
 
@@ -67,6 +100,18 @@ export const useAdministrativePenaltiesData = (
     queryKey: ["inspection-administrative-penalties", inspectionId],
     queryFn: () => fetchAdministrativePenalties(inspectionId),
     enabled: !!inspectionId,
+    staleTime: isStaleInfinate ? Infinity : 0,
+  });
+};
+
+export const useAdministrativePenaltiesByCaseFileData = (
+  caseFileId: number,
+  { isStaleInfinate = true }: { isStaleInfinate?: boolean } = {}
+) => {
+  return useQuery({
+    queryKey: ["projectwise-administrative-penalties", caseFileId],
+    queryFn: () => fetchAdministrativePenaltiesByCaseFile(caseFileId),
+    enabled: !!caseFileId,
     staleTime: isStaleInfinate ? Infinity : 0,
   });
 };
@@ -91,6 +136,13 @@ export const useUpdateAdministrativePenalty = (onSuccess: OnSuccessType) => {
 export const useDeleteAdministrativePenalty = (onSuccess: OnSuccessType) => {
   return useMutation({
     mutationFn: deleteAdministrativePenalty,
+    onSuccess,
+  });
+};
+
+export const useLinkAdministrativePenalty = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: linkAdministrativePenalty,
     onSuccess,
   });
 };
