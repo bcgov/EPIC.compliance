@@ -21,6 +21,7 @@ import { Box, Button } from "@mui/material";
 import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
+import { MODAL_WIDTHS } from "@/utils/constants";
 
 interface RequirementFormRightProps {
   onDataChange: (data: RequirementSourceFormData[]) => void;
@@ -146,7 +147,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -160,7 +161,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -212,7 +213,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -227,7 +228,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -244,7 +245,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -274,7 +275,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           isEditSection={true}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
