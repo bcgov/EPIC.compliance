@@ -12,6 +12,7 @@ import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAut
 import {
   useUpdateAdministrativePenalty,
   useDeleteAdministrativePenalty,
+  useAdministrativePenaltyLinksData,
 } from "@/hooks/useAdministrativePenalties";
 import {
   AdministrativePenalty,
@@ -163,8 +164,13 @@ const AdministrativePenaltyUpdateModal: FC<
   const { mutate: deleteAdministrativePenalty, isPending: isPendingDelete } =
     useDeleteAdministrativePenalty(onDeleteSuccess);
 
-  // Check if AP is linked to other inspections
-  const isLinkedToOtherInspections = administrativePenalty.inspection_id !== inspectionData.id;
+  // Fetch linked inspections and requirements for this AP
+  const { data: linkedData } = useAdministrativePenaltyLinksData(administrativePenalty.id);
+
+  // Check if AP is linked to other inspections by comparing inspection IDs
+  const isLinkedToOtherInspections = linkedData?.some(
+    (linkData) => linkData.inspection.id !== inspectionData.id
+  ) ?? false;
 
   const handleSubmitForm = useCallback(
     (data: AdministrativePenaltyUpdateFormType) => {

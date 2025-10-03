@@ -1,3 +1,5 @@
+import { Inspection } from './Inspection';
+import { InspectionRequirement } from './InspectionRequirement';
 import { Option } from './common';
 
 export interface AdministrativePenalty {
@@ -34,3 +36,9 @@ export interface AdministrativePenaltyAPIData {
   inspection_requirement_ids: number[];
   administrative_penalty_number?: string;
 }
+
+export interface AdministrativePenaltyLink {
+  inspection: Inspection;
+  requirements: InspectionRequirement[];
+}
+
