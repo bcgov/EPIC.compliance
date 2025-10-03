@@ -14,6 +14,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "react-oidc-context";
+import { STAFF_USER_POSITION } from "@/utils/constants";
 
 export const Route = createFileRoute("/_authenticated/review-board")({
   component: ReviewBoard,
@@ -37,21 +38,26 @@ function ReviewBoard() {
   // Create the exact 6 sections like mockReviewBoard and populate with dynamic data
   const dynamicSections = useMemo(() => {
     // Extract primary officer filter from external filters
-    const primaryOfficerFilter = externalFilters.primary_officer_id as string[] | undefined;
-    
+    const primaryOfficerFilter = externalFilters.primary_officer_id as
+      | string[]
+      | undefined;
+    const isDeputyDirectorFilter =
+      (externalFilters.is_deputy_director as string | undefined) === "true";
+
     return generateDynamicSections(
       inspectionRecords,
       orderRecords,
       warningLetters,
       administrativePenalties,
-      primaryOfficerFilter
+      primaryOfficerFilter,
+      isDeputyDirectorFilter
     );
   }, [
     inspectionRecords,
     orderRecords,
     warningLetters,
     administrativePenalties,
-    externalFilters.primary_officer_id,
+    externalFilters,
   ]);
 
   // Track if we're in the initial load phase to prevent caching during restoration
@@ -106,8 +112,11 @@ function ReviewBoard() {
             staff.auth_user_guid === currentUser.profile.preferred_username
         );
         if (currentStaff) {
+          const isDeputyDirector =
+            currentStaff.position_id === STAFF_USER_POSITION.DEPUTY_DIRECTOR;
           const defaultExternalFilters = {
             primary_officer_id: [currentStaff.id.toString()],
+            is_deputy_director: isDeputyDirector.toString(),
           };
 
           setExternalFilters(defaultExternalFilters);
