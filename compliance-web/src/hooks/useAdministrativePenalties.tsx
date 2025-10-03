@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AdministrativePenalty,
   AdministrativePenaltyAPIData,
+  AdministrativePenaltyLink,
 } from "@/models/AdministrativePenalty";
 
 const fetchAdministrativePenalties = (
@@ -28,6 +29,14 @@ const fetchAdministrativePenaltyByNumber = (
 ): Promise<AdministrativePenalty[]> => {
   return request({
     url: `/administrative-penalties/administrative-penalty-numbers/${administrativePenaltyNumber}`,
+  });
+};
+
+const fetchAdministrativePenaltyLinks = (
+  administrativePenaltyId: number
+): Promise<AdministrativePenaltyLink[]> => {
+  return request({
+    url: `/administrative-penalties/${administrativePenaltyId}/links`
   });
 };
 
@@ -100,6 +109,18 @@ export const useAdministrativePenaltiesData = (
     queryKey: ["inspection-administrative-penalties", inspectionId],
     queryFn: () => fetchAdministrativePenalties(inspectionId),
     enabled: !!inspectionId,
+    staleTime: isStaleInfinate ? Infinity : 0,
+  });
+};
+
+export const useAdministrativePenaltyLinksData = (
+  administrativePenaltyId: number,
+  { isStaleInfinate = true }: { isStaleInfinate?: boolean } = {}
+) => {
+  return useQuery({
+    queryKey: ["administrative-penalty-links", administrativePenaltyId],
+    queryFn: () => fetchAdministrativePenaltyLinks(administrativePenaltyId),
+    enabled: !!administrativePenaltyId,
     staleTime: isStaleInfinate ? Infinity : 0,
   });
 };

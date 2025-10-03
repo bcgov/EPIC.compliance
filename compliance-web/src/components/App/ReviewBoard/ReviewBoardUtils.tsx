@@ -117,7 +117,11 @@ export const formatAdministrativePenaltiesToReviewBoardItems = (
 
 export const createInitialSections = (): ReviewBoardSection[] => {
   return [
-    { id: ReviewBoardCardTypeEnum.DRAFTING, sectionTitle: "Drafting", items: [] },
+    {
+      id: ReviewBoardCardTypeEnum.DRAFTING,
+      sectionTitle: "Drafting",
+      items: [],
+    },
     {
       id: ReviewBoardCardTypeEnum.DEPUTY_REVIEW,
       sectionTitle: "Deputy Review",
@@ -216,18 +220,58 @@ export const determineItemSection = (
   return sectionIndex;
 };
 
+const sortUsingDate = (items: ReviewBoardItem[], field: string): void => {
+  items.sort((a, b) => {
+    const aValue = a[field as keyof ReviewBoardItem];
+    const bValue = b[field as keyof ReviewBoardItem];
+    if (!aValue && !bValue) return 0;
+    if (!aValue) return 1;
+    if (!bValue) return -1;
+    return (
+      new Date(aValue as string).getTime() -
+      new Date(bValue as string).getTime()
+    );
+  });
+};
+
+const sortSections = (sections: ReviewBoardSection[]): void => {
+  sections.forEach((section) => {
+    switch (section.id) {
+      case ReviewBoardCardTypeEnum.DRAFTING:
+        sortUsingDate(section.items, "card_date");
+        break;
+      case ReviewBoardCardTypeEnum.DEPUTY_REVIEW:
+        sortUsingDate(section.items, "send_for_review_date");
+        break;
+      case ReviewBoardCardTypeEnum.REVIEW_STATUS:
+        sortUsingDate(section.items, "review_date");
+        break;
+      case ReviewBoardCardTypeEnum.HOLDER_REVIEW:
+        sortUsingDate(section.items, "expected_return_date");
+        break;
+      case ReviewBoardCardTypeEnum.FINALIZING_RECORD:
+        sortUsingDate(section.items, "date_response");
+        break;
+      case ReviewBoardCardTypeEnum.PENDING_ISSUANCE:
+        sortUsingDate(section.items, "intended_issuance_date");
+        break;
+    }
+  });
+};
+
 export const generateDynamicSections = (
   inspectionRecords?: IRReviewBoardItem[],
   orderRecords?: OrderReviewBoardItem[],
   warningLetters?: WarningLetterReviewBoardItem[],
   administrativePenalties?: APReviewBoardItem[],
-  primaryOfficerFilter?: string[]
+  primaryOfficerFilter?: string[],
+  isDeputyDirectorFilter?: boolean
 ): ReviewBoardSection[] => {
   // Initialize the 6 sections with empty items
   const sections = createInitialSections();
 
   // Collect all formatted items from different data sources
-  const allItems = [
+  let allItems = [
     ...(inspectionRecords
       ? formatInspectionRecordsToReviewBoardItems(inspectionRecords)
       : []),
@@ -241,20 +285,28 @@ export const generateDynamicSections = (
   ];
 
   // Apply primary officer filtering if filter is provided
-  const filteredItems =
-    primaryOfficerFilter && primaryOfficerFilter.length > 0
-      ? allItems.filter(
-          (item) =>
-            item.primary_officer &&
-            primaryOfficerFilter.includes(item.primary_officer.id.toString())
-        )
-      : allItems;
+  if (primaryOfficerFilter && primaryOfficerFilter.length > 0) {
+    allItems = allItems.filter(
+      (item) =>
+        item.primary_officer &&
+        primaryOfficerFilter.includes(item.primary_officer.id.toString())
+    );
+  }
+  if (isDeputyDirectorFilter) {
+    allItems = allItems.filter(
+      (item) =>
+        item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING ||
+        item.approval_status?.id === AdministrativePenaltyStatus.DEPUTY_REVIEW
+    );
+  }
 
   // Distribute items across sections based on their status/progress and approval status
-  filteredItems.forEach((item) => {
+  allItems.forEach((item) => {
     const sectionIndex = determineItemSection(item);
     sections[sectionIndex - 1].items.push(item);
   });
+
+  sortSections(sections);
 
   return sections;
 };

@@ -19,6 +19,7 @@ from flask import g, request
 from flask_jwt_oidc import JwtManager
 
 from compliance_api.exceptions import PermissionDeniedError
+from compliance_api.utils.constant import GROUP_MAP
 
 
 jwt = (
@@ -82,7 +83,7 @@ class Auth:  # pylint: disable=too-few-public-methods
     @staticmethod
     def map_permission_to_groups(permissions):
         """Map the permissions to user groups in keycloak."""
-        return [role.value for role in permissions]
+        return [GROUP_MAP[role] for role in permissions]
 
 
 auth = Auth()

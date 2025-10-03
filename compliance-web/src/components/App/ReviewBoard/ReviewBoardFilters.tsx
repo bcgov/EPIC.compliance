@@ -9,6 +9,7 @@ import { useStaffUsersData } from "@/hooks/useStaff";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CustomSwitch from "@/components/Shared/Controlled/CustomSwitch";
 import { useAuth } from "react-oidc-context";
+import { STAFF_USER_POSITION } from "@/utils/constants";
 
 interface ReviewBoardFiltersProps {
   onFilterChange: (filterId: string, value: string[] | string) => void;
@@ -52,6 +53,10 @@ const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
     );
   }, [currentUser?.profile?.preferred_username, staffUsers]);
 
+  const isDeputyDirector = useMemo(() => {
+    return currentStaff?.position_id === STAFF_USER_POSITION.DEPUTY_DIRECTOR;
+  }, [currentStaff?.position_id]);
+
   // Determine if switch should be disabled
   const isSwitchDisabled = useMemo(() => {
     return authLoading || staffLoading || !currentStaff;
@@ -65,16 +70,24 @@ const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
       if (newChecked && currentStaff) {
         // When turning ON, set the primary officer filter to current user
         onFilterChange("primary_officer_id", [currentStaff.id.toString()]);
+        onFilterChange("is_deputy_director", isDeputyDirector.toString());
       } else {
         // When turning OFF, clear the primary officer filter
         onFilterChange("primary_officer_id", []);
+        onFilterChange("is_deputy_director", "");
       }
 
       // Notify parent so it can persist switch state explicitly
       onSwitchChange?.(newChecked);
     },
-    [currentStaff, onFilterChange, onSwitchChange]
+    [currentStaff, onFilterChange, onSwitchChange, isDeputyDirector]
   );
+
+  const switchLabel = useMemo(() => {
+    return isDeputyDirector
+      ? `${currentUser?.profile?.given_name}'s Files for Review`
+      : `${currentUser?.profile?.given_name}'s Files`;
+  }, [isDeputyDirector, currentUser]);
 
   if (authLoading || staffLoading) {
     return <CircularProgress size={24} />;
@@ -103,7 +116,7 @@ const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
         }
         label={
           <Typography variant="body1" mr={1}>
-            <strong>{`${currentUser?.profile?.given_name}'s Files`}</strong>
+            <strong>{switchLabel}</strong>
           </Typography>
         }
         labelPlacement="start"

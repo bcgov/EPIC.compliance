@@ -74,4 +74,9 @@ export interface CaseFileOption {
   id: number;
   name: string;
 }
+export interface CaseFileLink {
+  id: number;
+  source: CaseFile;
+  target: CaseFile;
+}
 
