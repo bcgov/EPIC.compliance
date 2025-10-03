@@ -104,7 +104,7 @@ const EAOAppBar = forwardRef<HTMLDivElement, EAOAppBarProps>((_props, ref) => {
               <Button
                 variant="outlined"
                 color="inherit"
-                onClick={() => auth.signinRedirect()}
+                onClick={() => auth.signinRedirect({ extraQueryParams: { kc_idp_hint: "idir" } })}
               >
                 Sign In
               </Button>

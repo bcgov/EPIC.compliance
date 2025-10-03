@@ -11,7 +11,7 @@ function Auth() {
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
-      signinRedirect();
+      signinRedirect({ extraQueryParams: { kc_idp_hint: "idir" } });
     }
   }, [isAuthenticated, isLoading, signinRedirect]);
 
