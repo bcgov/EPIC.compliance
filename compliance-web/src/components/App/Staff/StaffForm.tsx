@@ -76,7 +76,7 @@ const StaffForm: React.FC<StaffFormProps> = ({
         name="permission"
         label="Permission"
         options={permissionsList ?? []}
-        getOptionLabel={(option) => option.name}
+        getOptionLabel={(option) => option.id}
         getOptionKey={(option) => option.id}
         isOptionEqualToValue={(option, value) => option.id === value.id}
         isRequired={true}

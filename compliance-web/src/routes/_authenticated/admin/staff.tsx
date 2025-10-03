@@ -153,7 +153,7 @@ export function Staff() {
         filterSelectOptions: deputyList,
       },
       {
-        accessorFn: (row) => row.permission?.name,
+        accessorFn: (row) => row.permission?.id,
         header: "Permission Level",
         filterVariant: "multi-select",
         filterSelectOptions: permissionList,
