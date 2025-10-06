@@ -168,9 +168,12 @@ const AdministrativePenaltyUpdateModal: FC<
   const { data: linkedData } = useAdministrativePenaltyLinksData(administrativePenalty.id);
 
   // Check if AP is linked to other inspections by comparing inspection IDs
-  const isLinkedToOtherInspections = linkedData?.some(
-    (linkData) => linkData.inspection.id !== inspectionData.id
-  ) ?? false;
+  const isLinkedToOtherInspections = useMemo(()=>{
+    const isParent = administrativePenalty.inspection_id == inspectionData.id;
+    return (linkedData?.some(
+      (linkData) => linkData.inspection.id !== inspectionData.id
+    ) ?? false) && isParent;
+  }, [linkedData, inspectionData, administrativePenalty]);
 
   const handleSubmitForm = useCallback(
     (data: AdministrativePenaltyUpdateFormType) => {
