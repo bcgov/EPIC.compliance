@@ -154,7 +154,7 @@ const AdministrativePenaltyUpdateModal: FC<
 
   const onDeleteSuccess = () => {
     queryClient.invalidateQueries({
-      queryKey: ["inspection-administrative-penalties", inspectionData.id],
+      queryKey: ["inspection-administrative-penalties"],
     });
     notify.success("Administrative Penalty deleted successfully");
     onSuccess?.(administrativePenalty);
@@ -170,7 +170,6 @@ const AdministrativePenaltyUpdateModal: FC<
   // Check if AP is linked to other inspections by comparing inspection IDs
   const isLinkedToOtherInspections = useMemo(()=>{
     const isParent = administrativePenalty.inspection_id == inspectionData.id;
-    console.log("isParent", isParent);
     return (linkedData?.some(
       (linkData) => linkData.inspection.id !== inspectionData.id
     ) ?? false) && isParent;

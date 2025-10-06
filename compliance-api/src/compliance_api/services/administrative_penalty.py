@@ -423,7 +423,6 @@ class AdministrativePenaltyService:
 def _extract_ap_data(administrative_penalty_data):
     """Extract administrative penalty data."""
     return {
-        "inspection_id": administrative_penalty_data.get("inspection_id", None),
         "referral_status": administrative_penalty_data.get(
             "referral_status", ReferralStatusEnum.DRAFTING
         ),
@@ -443,7 +442,7 @@ def _create_ap_object(inspection, administrative_penalty_data):
         case_file_id = inspection.case_file_id
         ap_number = _create_administrative_penalty_number(project_id, case_file_id)
     ap_data = _extract_ap_data(administrative_penalty_data)
-    return {"administrative_penalty_number": ap_number, **ap_data}
+    return {"administrative_penalty_number": ap_number, "inspection_id": inspection.id, **ap_data}
 
 
 def _create_administrative_penalty_number(project_id: int, case_file_id: int) -> str:
