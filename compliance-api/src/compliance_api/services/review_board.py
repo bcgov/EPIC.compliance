@@ -2,10 +2,10 @@
 
 from typing import List
 
-from sqlalchemy import and_, func, not_, or_
+from sqlalchemy import func
 from sqlalchemy.orm import aliased, joinedload
 
-from compliance_api.models.administrative_penalty import AdministrativePenalty, ReferralStatusEnum
+from compliance_api.models.administrative_penalty import AdministrativePenalty
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
 from compliance_api.models.inspection_record import InspectionRecord
@@ -221,18 +221,8 @@ class ReviewBoardService:
                 AdministrativePenalty.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
                 Inspection.is_deleted.is_(False),
-                # Exclude closed APs: those with CEB_NOT_PROCEEDING or REFERRED_TO_DM with decision
-                not_(
-                    or_(
-                        AdministrativePenalty.referral_status
-                        == ReferralStatusEnum.CEB_NOT_PROCEEDING,
-                        and_(
-                            AdministrativePenalty.referral_status
-                            == ReferralStatusEnum.REFERRED_TO_DM,
-                            AdministrativePenalty.decision.isnot(None),
-                        ),
-                    )
-                ),
+                # Use centralized open AP filter condition
+                AdministrativePenalty.get_open_ap_filter_condition(),
             )
             .order_by(AdministrativePenalty.created_date.desc())
             .all()

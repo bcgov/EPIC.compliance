@@ -19,7 +19,6 @@ from compliance_api.models import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import UnapprovedProject as UnapprovedProjectModel
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
-from compliance_api.models.administrative_penalty import ReferralStatusEnum
 from compliance_api.models.charge_recommendation import ChargeDecisionEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.charge_recommendation import ChargeRecommendationStatusEnum
@@ -955,17 +954,8 @@ def _build_enforcement_query(inspection_ids: list):
             AdministrativePenaltyModel,
             and_(
                 AdministrativePenaltyModel.inspection_id == InspectionModel.id,
-                not_(
-                    or_(
-                        AdministrativePenaltyModel.referral_status
-                        == ReferralStatusEnum.CEB_NOT_PROCEEDING,
-                        and_(
-                            AdministrativePenaltyModel.referral_status
-                            == ReferralStatusEnum.REFERRED_TO_DM,
-                            AdministrativePenaltyModel.decision.isnot(None),
-                        ),
-                    )
-                ),
+                # Use centralized open AP filter condition
+                AdministrativePenaltyModel.get_open_ap_filter_condition(),
                 AdministrativePenaltyModel.is_active.is_(True),
                 AdministrativePenaltyModel.is_deleted.is_(False),
             ),

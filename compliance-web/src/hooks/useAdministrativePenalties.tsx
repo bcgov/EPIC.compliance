@@ -16,11 +16,19 @@ const fetchAdministrativePenalties = (
 };
 
 const fetchAdministrativePenaltiesByCaseFile = (
-  caseFileId: number
+  caseFileId: number,
+  includeOpenAps?: boolean
 ): Promise<AdministrativePenalty[]> => {
+  const params: { case_file_id: number; include_open_aps?: string } = { 
+    case_file_id: caseFileId 
+  };
+  if (includeOpenAps) {
+    params.include_open_aps = 'true';
+  }
+  
   return request({
     url: `/administrative-penalties/projectwise`,
-    params: { case_file_id: caseFileId },
+    params,
   });
 };
 
@@ -127,11 +135,11 @@ export const useAdministrativePenaltyLinksData = (
 
 export const useAdministrativePenaltiesByCaseFileData = (
   caseFileId: number,
-  { isStaleInfinate = true }: { isStaleInfinate?: boolean } = {}
+  { isStaleInfinate = true, includeOpenAps = false }: { isStaleInfinate?: boolean; includeOpenAps?: boolean } = {}
 ) => {
   return useQuery({
-    queryKey: ["projectwise-administrative-penalties", caseFileId],
-    queryFn: () => fetchAdministrativePenaltiesByCaseFile(caseFileId),
+    queryKey: ["projectwise-administrative-penalties", caseFileId, includeOpenAps],
+    queryFn: () => fetchAdministrativePenaltiesByCaseFile(caseFileId, includeOpenAps),
     enabled: !!caseFileId,
     staleTime: isStaleInfinate ? Infinity : 0,
   });

@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import and_, func, not_, or_
 
 from compliance_api.models.base_model import BaseModelVersioned
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -211,6 +211,28 @@ class AdministrativePenalty(BaseModelVersioned):
     )
 
     @classmethod
+    def get_open_ap_filter_condition(cls):
+        """
+        Get the filter condition for open (non-closed) administrative penalties.
+
+        Excludes APs that are considered closed:
+        - CEB_NOT_PROCEEDING status
+        - REFERRED_TO_DM status with a decision made
+
+        Returns:
+            SQLAlchemy filter condition for open APs
+        """
+        return not_(
+            or_(
+                cls.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING,
+                and_(
+                    cls.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
+                    cls.decision.isnot(None),
+                ),
+            )
+        )
+
+    @classmethod
     @with_session
     def create_administrative_penalty(cls, administrative_penalty_data, session=None):
         """Create the administrative penalty."""
@@ -316,23 +338,29 @@ class AdministrativePenalty(BaseModelVersioned):
         return query.first() is not None
 
     @classmethod
-    def get_administrative_penalties_by_case_files(cls, case_file_ids: list[int]):
+    def get_administrative_penalties_by_case_files(
+        cls, case_file_ids: list[int], open_aps_only: bool = False
+    ):
         """Get all administrative penalties by case file ids.
 
         Args:
             case_file_ids: List of case file IDs
+            open_aps_only: If True, only return open administrative penalties
         Returns:
             List of AdministrativePenalty objects
         """
-        return (
-            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
-            .filter(
-                InspectionModel.case_file_id.in_(case_file_ids),
-                cls.is_active.is_(True),
-                cls.is_deleted.is_(False),
-                InspectionModel.is_active.is_(True),
-                InspectionModel.is_deleted.is_(False),
-            )
-            .order_by(cls.created_date.desc())
-            .all()
-        )
+        query = cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
+
+        filters = [
+            InspectionModel.case_file_id.in_(case_file_ids),
+            cls.is_active.is_(True),
+            cls.is_deleted.is_(False),
+            InspectionModel.is_active.is_(True),
+            InspectionModel.is_deleted.is_(False),
+        ]
+
+        # Add open AP filter condition if requested
+        if open_aps_only:
+            filters.append(cls.get_open_ap_filter_condition())
+
+        return query.filter(*filters).order_by(cls.created_date.desc()).all()

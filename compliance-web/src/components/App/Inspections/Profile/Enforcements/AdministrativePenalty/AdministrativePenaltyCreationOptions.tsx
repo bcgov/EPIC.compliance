@@ -30,14 +30,10 @@ const AdministrativePenaltyCreationOptions: FC<AdministrativePenaltyCreationOpti
 }) => {
   const { setValue, clearErrors, formState: { errors } } = useFormContext();
   const [creationMethod, setCreationMethod] = useState<APCreationMethod>("create_new");
-  const { data: existingAPs } = useAdministrativePenaltiesByCaseFileData(inspectionData.case_file_id, {
+  const { data: openAPs } = useAdministrativePenaltiesByCaseFileData(inspectionData.case_file_id, {
     isStaleInfinate: false,
+    includeOpenAps: true,
   });
-
-  const openAPs = existingAPs?.filter(ap =>
-    ap.referral_status?.id !== "CEB_NOT_PROCEEDING" &&
-    ap.referral_status?.id !== "REFERRED_TO_DM"
-  ) || [];
 
 
 

@@ -144,6 +144,9 @@ const AdministrativePenaltyUpdateModal: FC<
     queryClient.invalidateQueries({
       queryKey: ["inspection-administrative-penalties"],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["administrative-penalty-links"]
+    })
     notify.success("Administrative Penalty updated successfully");
     onSuccess?.(data);
     setModalClose();
@@ -156,6 +159,9 @@ const AdministrativePenaltyUpdateModal: FC<
     queryClient.invalidateQueries({
       queryKey: ["inspection-administrative-penalties"],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["administrative-penalty-links"]
+    })
     notify.success("Administrative Penalty deleted successfully");
     onSuccess?.(administrativePenalty);
     setModalClose();
