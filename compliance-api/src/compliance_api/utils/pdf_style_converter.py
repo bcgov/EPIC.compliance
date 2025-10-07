@@ -15,6 +15,9 @@ from bs4 import BeautifulSoup
 class PDFStyleConverter:
     """Converts inline styles in HTML to PDF-compatible format."""
 
+    # Maximum table width allowed in PDFs (in pixels)
+    MAX_TABLE_WIDTH_PX = 648
+
     # Map of unsupported CSS properties to their PDF-compatible equivalents
     PROPERTY_MAP = {
         "padding-inline-start": "margin-left",
@@ -205,14 +208,37 @@ class PDFStyleConverter:
                     candidate_tables.append(table)
 
             for table in candidate_tables:
-                # Set maximum width constraint
+                # Set width constraint while preserving smaller widths
                 current_style = table.get("style", "")
                 style_dict = cls._parse_css_declarations(current_style)
-                
-                # Ensure explicit 648px width (tables often ignore max-width in PDF renderers)
-                target_width = 648
-                style_dict["width"] = f"{target_width}px"
-                style_dict["max-width"] = f"{target_width}px"
+
+                # Detect natural width if present
+                natural_width = cls._extract_width_px(style_dict.get("width"))
+                if natural_width is None:
+                    # Sum column widths if available
+                    colgroup = table.find("colgroup")
+                    if colgroup:
+                        col_sum = 0
+                        for col in colgroup.find_all("col"):
+                            c_style = cls._parse_css_declarations(col.get("style", ""))
+                            w = cls._extract_width_px(c_style.get("width"))
+                            if w is not None:
+                                col_sum += w
+                        natural_width = col_sum if col_sum > 0 else None
+
+                if natural_width is None:
+                    # attribute width (rare)
+                    natural_width = cls._extract_width_px(table.get("width"))
+
+                # Clamp only if above MAX; otherwise keep natural width
+                target_width = (
+                    min(natural_width, cls.MAX_TABLE_WIDTH_PX)
+                    if natural_width is not None
+                    else cls.MAX_TABLE_WIDTH_PX
+                )
+
+                style_dict["width"] = f"{int(round(target_width))}px"
+                style_dict["max-width"] = f"{int(round(target_width))}px"
                 style_dict["table-layout"] = "fixed"
                 
                 # Update the table style
@@ -300,8 +326,21 @@ class PDFStyleConverter:
                 col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
             return
 
-        # Scale proportionally if total exceeds target; otherwise keep as-is
-        scale = min(1.0, target_width / total_width)
+        # Scale proportionally if total exceeds target; otherwise keep natural widths
+        if total_width <= target_width:
+            # Keep specified widths; distribute leftover space among unspecified columns (do not stretch specified)
+            remaining_px = target_width - total_width
+            unspecified_cols = [col for col, w in specified_widths if w is None]
+            if unspecified_cols:
+                share = max(1, int(round(remaining_px / len(unspecified_cols))))
+                for col in unspecified_cols:
+                    style_dict = cls._parse_css_declarations(col.get("style", ""))
+                    style_dict["width"] = f"{share}px"
+                    col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+            return
+
+        # total_width > target_width → compress proportionally
+        scale = target_width / total_width
         remaining_px = target_width
         unspecified_cols = []
         for col, width_value in specified_widths:
@@ -447,6 +486,27 @@ class PDFStyleConverter:
                     declarations[prop] = value
 
         return declarations
+
+    @classmethod
+    def _extract_width_px(cls, width_value: str) -> int:
+        """Extract a pixel width integer from various CSS width notations.
+
+        Supports values like  numeric strings, and ignores percentages.
+        Returns None if not parseable as pixels.
+        """
+        if not width_value:
+            return None
+        value = width_value.strip().lower()
+        if value.endswith("px"):
+            try:
+                return int(round(float(value[:-2])))
+            except ValueError:
+                return None
+        # plain number implies pixels in many editors
+        try:
+            return int(round(float(value)))
+        except ValueError:
+            return None
 
     @classmethod
     def _is_supported_property(cls, prop: str) -> bool:
