@@ -374,7 +374,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 )}
               </Box>
               <Box
-                width={"632px"}
+                width={"680px"}
                 display="flex"
                 flexDirection="column"
                 height="100%"

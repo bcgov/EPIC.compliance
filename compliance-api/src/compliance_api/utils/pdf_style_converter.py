@@ -74,6 +74,11 @@ class PDFStyleConverter:
         "float",
         "clear",
         "vertical-align",
+        "table-layout",
+        "border-collapse",
+        "border-spacing",
+        "empty-cells",
+        "caption-side",
     }
 
     # Properties that should be removed as they cause issues in PDF
@@ -95,6 +100,15 @@ class PDFStyleConverter:
         "cursor": True,
     }
 
+    # Table-specific properties that need special handling
+    TABLE_PROPERTIES = {
+        "table-layout",
+        "border-collapse",
+        "border-spacing",
+        "empty-cells",
+        "caption-side",
+    }
+
     @classmethod
     def convert_html_styles(cls, html_content: str) -> str:
         """
@@ -111,6 +125,9 @@ class PDFStyleConverter:
 
         # First fix list ordering issues
         html_content = cls._fix_list_ordering(html_content)
+        
+        # Handle editor tables specifically
+        html_content = cls._fix_editor_tables(html_content)
 
         def style_replacer(match):
             """Replace style attribute with PDF-compatible version."""
@@ -157,6 +174,153 @@ class PDFStyleConverter:
         except Exception:  # noqa: B902
             # If BeautifulSoup fails, return original content
             return html_content
+
+    @classmethod
+    def _fix_editor_tables(cls, html_content: str) -> str:
+        """
+        Fix editor tables to ensure proper width constraints for PDF generation.
+        
+        Args:
+            html_content: HTML string with editor tables
+            
+        Returns:
+            HTML string with fixed table constraints
+        """
+        if not html_content:
+            return html_content
+
+        try:
+            soup = BeautifulSoup(html_content, "html.parser")
+
+            # Collect candidate tables: explicit editor-table class OR cells marked by editor-tableCell*
+            candidate_tables = []
+            for table in soup.find_all("table"):
+                classes = table.get("class", []) or []
+                is_editor_table = "editor-table" in classes
+                has_editor_cells = any(
+                    any((cls or "").startswith("editor-tableCell") for cls in (cell.get("class", []) or []))
+                    for cell in table.find_all(["td", "th"], recursive=True)
+                )
+                if is_editor_table or has_editor_cells:
+                    candidate_tables.append(table)
+
+            for table in candidate_tables:
+                # Set maximum width constraint
+                current_style = table.get("style", "")
+                style_dict = cls._parse_css_declarations(current_style)
+                
+                # Ensure explicit 648px width (tables often ignore max-width in PDF renderers)
+                target_width = 648
+                style_dict["width"] = f"{target_width}px"
+                style_dict["max-width"] = f"{target_width}px"
+                style_dict["table-layout"] = "fixed"
+                
+                # Update the table style
+                new_style = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+                table["style"] = new_style
+                
+                # Process colgroup to redistribute/scale column widths if needed
+                cls._fix_table_columns(table, target_width)
+
+                # Apply cell-level word wrapping to avoid width blowouts
+                for cell in table.find_all(["td", "th"]):
+                    cell_style = cell.get("style", "")
+                    cell_style_dict = cls._parse_css_declarations(cell_style)
+                    # Normalize whitespace and force wrapping
+                    cell_style_dict["white-space"] = "normal"
+                    cell_style_dict["word-break"] = "break-word"
+                    # anywhere is better supported by modern engines; fallback is break-word
+                    cell_style_dict["overflow-wrap"] = "anywhere"
+                    cell["style"] = "; ".join([f"{p}: {v}" for p, v in cell_style_dict.items()])
+
+                # If this table is inside a TD/TH, constrain that container as well
+                parent_cell = table.find_parent(["td", "th"])
+                if parent_cell is not None:
+                    p_style = cls._parse_css_declarations(parent_cell.get("style", ""))
+                    p_style["max-width"] = "100%"
+                    p_style["overflow-x"] = "hidden"
+                    p_style["box-sizing"] = "border-box"
+                    parent_cell["style"] = "; ".join([f"{p}: {v}" for p, v in p_style.items()])
+                
+            return str(soup)
+        except Exception:  # noqa: B902
+            # If BeautifulSoup fails, return original content
+            return html_content
+
+    @classmethod
+    def _fix_table_columns(cls, table_element, target_width: int):
+        """Fix table column widths to ensure they fit within the target width.
+
+        If there is no colgroup, create one based on the first row's number of cells.
+        Then proportionally scale any specified widths so the total equals target_width.
+        """
+        colgroup = table_element.find("colgroup")
+        if not colgroup:
+            # Create a colgroup based on first row cells
+            first_row = table_element.find("tr")
+            if not first_row:
+                return
+            num_cols = len(first_row.find_all(["td", "th"])) or 1
+            colgroup = table_element.new_tag("colgroup")
+            for _ in range(num_cols):
+                col = table_element.new_tag("col")
+                colgroup.append(col)
+            # Insert as the first child of the table
+            table_element.insert(0, colgroup)
+
+        cols = colgroup.find_all("col")
+        if not cols:
+            return
+            
+        # Calculate total specified width
+        total_width = 0
+        specified_widths = []
+        
+        for col in cols:
+            style = col.get("style", "")
+            style_dict = cls._parse_css_declarations(style)
+            width = style_dict.get("width", "")
+            
+            if width and width.endswith("px"):
+                try:
+                    width_value = float(width[:-2])
+                    total_width += width_value
+                    specified_widths.append((col, width_value))
+                except ValueError:
+                    specified_widths.append((col, None))
+            else:
+                specified_widths.append((col, None))
+        
+        # If total width is zero or missing, assign equal widths to fill target
+        if total_width == 0:
+            equal_width = target_width / len(cols)
+            for col, _ in specified_widths:
+                style_dict = cls._parse_css_declarations(col.get("style", ""))
+                style_dict["width"] = f"{equal_width:.0f}px"
+                col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+            return
+
+        # Scale proportionally if total exceeds target; otherwise keep as-is
+        scale = min(1.0, target_width / total_width)
+        remaining_px = target_width
+        unspecified_cols = []
+        for col, width_value in specified_widths:
+            style_dict = cls._parse_css_declarations(col.get("style", ""))
+            if width_value is None:
+                unspecified_cols.append(col)
+                continue
+            scaled = max(1, int(round(width_value * scale)))
+            remaining_px -= scaled
+            style_dict["width"] = f"{scaled}px"
+            col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+
+        # Distribute remaining width equally among unspecified columns
+        if unspecified_cols:
+            share = max(1, int(round(remaining_px / len(unspecified_cols))))
+            for col in unspecified_cols:
+                style_dict = cls._parse_css_declarations(col.get("style", ""))
+                style_dict["width"] = f"{share}px"
+                col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
 
     @classmethod
     def _fix_ordered_list(cls, ol_element):
@@ -248,7 +412,11 @@ class PDFStyleConverter:
                 # Check if it's a problematic property with specific values
                 if cls._is_problematic_property_value(prop, value):
                     continue  # Skip this property
-                converted_declarations.append(f"{prop}: {value}")
+                # Handle table-specific property conversions
+                if prop in cls.TABLE_PROPERTIES:
+                    converted_declarations.append(f"{prop}: {value}")
+                else:
+                    converted_declarations.append(f"{prop}: {value}")
             # Skip unsupported properties
             else:
                 continue

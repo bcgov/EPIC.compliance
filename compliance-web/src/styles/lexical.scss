@@ -289,9 +289,11 @@
     overflow-y: scroll;
     overflow-x: scroll;
     table-layout: fixed;
-    width: fit-content;
     margin-top: 25px;
     margin-bottom: 30px;
+    max-width: 648px;
+    width: auto;
+    font-size: 12px;
   }
 
   .editor-tableRowStriping {
@@ -312,7 +314,7 @@
 
   .editor-tableCell {
     border: 1px solid #bbb;
-    width: 75px;
+    width: 40px;
     vertical-align: top;
     text-align: start;
     padding: 6px 8px;

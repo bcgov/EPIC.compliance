@@ -84,6 +84,8 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
+            table-layout: fixed; /* prevent content from expanding table width */
+            box-sizing: border-box;
         }
 
         th, td {
@@ -91,6 +93,9 @@
             padding: 3px 6px;
             text-align: left;
             vertical-align: middle;
+            box-sizing: border-box;
+            overflow-wrap: anywhere; /* allow breaking long tokens */
+            word-break: break-word;
         }
 
         .com-ir-header-background {
@@ -168,6 +173,13 @@
             margin-top: 4px;
             margin-bottom: 10px;
             white-space: normal !important;
+        }
+        
+        /* Ensure findings content never expands the requirement table */
+        .com-ir-findings-content {
+            display: block;
+            max-width: 100%;
+            overflow-x: hidden; /* clip any residual overflow from nested tables */
         }
         .com-ir-officer-details {
             padding-bottom: 4px
@@ -327,6 +339,81 @@
         td p {
             margin: 0;
             white-space: normal !important;
+        }
+
+        /* Editor table styles - specific to tables within requirement findings */
+        .editor-table {
+            max-width: 600px;
+            width: auto; /* let inline width from converter control exact size */
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 16px;
+        }
+
+        .editor-tableCell,
+        .editor-tableCellHeader {
+            border: 1px solid black !important;
+            padding: 4px 6px !important;
+            vertical-align: top !important;
+            text-align: start !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            font-size: 12px !important;
+            line-height: 16px !important;
+        }
+
+        .editor-tableCellHeader {
+            background-color: #f2f3f5 !important;
+            font-weight: bold !important;
+        }
+
+        /* Ensure editor table paragraphs don't interfere with spacing */
+        .editor-table .editor-paragraph {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .editor-table .editor-paragraph span {
+            white-space: pre-wrap !important;
+        }
+
+        /* Handle table overflow and responsive behavior */
+        @media print {
+            .editor-table {
+                max-width: 5.5in !important; /* Convert 600px to inches for print */
+                page-break-inside: avoid !important;
+            }
+            
+            /* If table is too wide, make it scroll horizontally or adjust column widths */
+            .editor-table[style*="max-width: 600px"] {
+                max-width: 5.5in !important;
+            }
+
+            /* Ensure editor tables don't interfere with main template layout */
+            .editor-table {
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
+        }
+
+        /* Ensure editor table content is properly contained */
+        .editor-table {
+            display: table;
+            box-sizing: border-box;
+        }
+
+        /* Handle very wide tables by making them horizontally scrollable in web view */
+        .editor-table-container {
+            max-width: 600px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .editor-table-container .editor-table {
+            margin: 0 !important;
+            min-width: 100%;
         }
 
         /* Print-specific styles */
@@ -527,8 +614,9 @@
                 <tr>
                     <td colspan="2">
                         <div class="com-ir-section-header">Findings:</div>
-                        {{ requirement.requirement_findings | safe | replace('style="white-space: pre-wrap;"',
-                        '') }}
+                        <div class="com-ir-findings-content">
+                            {{ requirement.requirement_findings | safe | replace('style="white-space: pre-wrap;"', '') }}
+                        </div>
                         {% if requirement.requirement_photos and requirement.requirement_photos|length > 0 %}
                         {% for photo in requirement.requirement_photos %}
                         <div class="com-ir-photo-section">

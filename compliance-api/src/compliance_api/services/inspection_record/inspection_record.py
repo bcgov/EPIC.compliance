@@ -305,6 +305,37 @@ class InspectionRecordService:
             preview_data["action_required_by_rp"] = convert_inline_styles_for_pdf(
                 preview_data["action_required_by_rp"]
             )
+        
+        # Apply style conversion to requirement findings and nested descriptions (may contain tables)
+        if preview_data.get("requirement_details"):
+            for requirement in preview_data["requirement_details"]:
+                # Findings
+                if requirement.get("requirement_findings"):
+                    requirement["requirement_findings"] = convert_inline_styles_for_pdf(
+                        requirement["requirement_findings"]
+                    )
+                # Requirement source descriptions
+                if requirement.get("requirement_source_details"):
+                    for source in requirement["requirement_source_details"]:
+                        if source.get("requirement_source_description"):
+                            source["requirement_source_description"] = convert_inline_styles_for_pdf(
+                                source["requirement_source_description"]
+                            )
+                        # Document descriptions nested within sources
+                        if source.get("requirement_documents"):
+                            for doc_group in source["requirement_documents"]:
+                                if doc_group.get("documents"):
+                                    for doc in doc_group["documents"]:
+                                        if doc.get("description"):
+                                            doc["description"] = convert_inline_styles_for_pdf(
+                                                doc["description"]
+                                            )
+        
+        # Apply style conversion to regulatory consideration findings
+        if preview_data.get("regulatory_consideration") and preview_data["regulatory_consideration"].get("findings"):
+            preview_data["regulatory_consideration"]["findings"] = convert_inline_styles_for_pdf(
+                preview_data["regulatory_consideration"]["findings"]
+            )
 
         response = DocGenService.render_template(
             "IR_TEMPLATE", preview_data, output_format
