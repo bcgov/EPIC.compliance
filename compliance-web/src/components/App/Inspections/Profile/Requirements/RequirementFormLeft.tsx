@@ -366,8 +366,8 @@ Changing it will delete the existing document so you can create a new one`;
     <Box
       sx={{
         background: BCDesignTokens.surfaceColorBackgroundLightGray,
-        padding: "0.5rem 1rem 1rem 2rem",
-        width: "718px",
+        padding: "0.5rem 1rem 1rem 1.5rem",
+        width: "730px",
         overflow: "auto",
         boxSizing: "border-box",
       }}
