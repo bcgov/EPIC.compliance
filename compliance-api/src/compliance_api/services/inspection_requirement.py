@@ -35,6 +35,8 @@ from compliance_api.models.charge_recommendation import \
 from compliance_api.models.charge_recommendation import ChargeRecommendationStatusEnum
 from compliance_api.models.compliance_finding import ComplianceFindingOption as ComplianceFindingOptionModel
 from compliance_api.models.db import db, session_scope
+from compliance_api.models.inspection.inspection_req_detail_image import \
+    InspectionRequirementDetailImage as InspectionReqDetailImageModel
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
@@ -1876,66 +1878,89 @@ def _requirement_check(requirement_id):
     return requirement
 
 
+def _validate_appendix(appendix_id, inspection):
+    """Validate appendix exists and belongs to the inspection."""
+    if appendix_id is not None:
+        appendix = AppendixModel.find_by_id(appendix_id)
+        if not appendix:
+            raise ResourceNotFoundError(
+                f"Appendix with given ID {appendix_id} not found"
+            )
+        if appendix.inspection_id != inspection.id:
+            raise ResourceNotFoundError(
+                f"Appendix with given ID {appendix_id} does not belong to this inspection"
+            )
+
+
+def _create_or_update_source_detail(requirement_id, source_detail_data, inspection, session):
+    """Create or update a source detail."""
+    req_detail_id = source_detail_data.get("id", None)
+    _validate_appendix(source_detail_data.get("appendix_id"), inspection)
+    source_detail_obj = _create_requirement_source_detail_obj(
+        requirement_id, source_detail_data, inspection
+    )
+    if not req_detail_id:
+        created_source_detail = InspectionReqSourceDetailModel.create_source_detail(
+            source_detail_obj, session
+        )
+        return created_source_detail.id
+
+    source_detail_obj = {**source_detail_obj, "id": req_detail_id}
+    InspectionReqSourceDetailModel.update_requirement_source_detail(
+        req_detail_id, source_detail_obj, session
+    )
+    return req_detail_id
+
+
+def _process_documents(req_detail_id, source_detail_data, inspection, session):
+    """Process documents for a source detail."""
+    for doc_detail_data in source_detail_data.get("documents", []):
+        _validate_appendix(doc_detail_data.get("appendix_id"), inspection)
+        doc_detail_id = doc_detail_data.get("id", None)
+        doc_detail_obj = _create_requirement_source_doc_obj(
+            req_detail_id, doc_detail_data
+        )
+        if not doc_detail_id:
+            InspectionReqDetailDocumentModel.create_doc_detail(
+                doc_detail_obj, session
+            )
+        else:
+            doc_detail_obj = {**doc_detail_obj, "id": doc_detail_id}
+            InspectionReqDetailDocumentModel.update_doc_detail(
+                doc_detail_id, doc_detail_obj, session
+            )
+
+
+def _process_images(req_detail_id, source_detail_data, session):
+    """Process images for a source detail."""
+    for image_detail_data in source_detail_data.get("images", []):
+        image_detail_id = image_detail_data.get("id", None)
+        image_detail_obj = _create_requirement_source_image_obj(
+            req_detail_id, image_detail_data
+        )
+        if not image_detail_id:
+            InspectionReqDetailImageModel.create_image(image_detail_obj, session)
+        else:
+            image_detail_obj = {**image_detail_obj, "id": image_detail_id}
+            InspectionReqDetailImageModel.update_image(
+                image_detail_id, image_detail_obj, session
+            )
+
+
 def _create_update_source_details_nd_docs(
     inspection, requirement_id, requirement_data, session=None
 ):
     """
-    Persist the source details and related document details.
+    Persist the source details and related document/image details.
 
-    This function check if the id is present in the data. If it is present, no need to
-    create object again.
+    This function processes requirement source details and their associated documents and images.
     """
     for source_detail_data in requirement_data.get("requirement_source_details", []):
-        req_detail_id = source_detail_data.get("id", None)
-        appendix_id = source_detail_data.get("appendix_id", None)
-        if appendix_id is not None:
-            appendix = AppendixModel.find_by_id(appendix_id)
-            if not appendix:
-                raise ResourceNotFoundError(
-                    f"Appendix with given ID {source_detail_data.get('appendix_id')} not found"
-                )
-            if appendix.inspection_id != inspection.id:
-                raise ResourceNotFoundError(
-                    f"Appendix with given ID {source_detail_data.get('appendix_id')} does not belong to this inspection"
-                )
-        source_detail_obj = _create_requirement_source_detail_obj(
-            requirement_id, source_detail_data, inspection
+        req_detail_id = _create_or_update_source_detail(
+            requirement_id, source_detail_data, inspection, session
         )
-        if not req_detail_id:
-            created_source_detail = InspectionReqSourceDetailModel.create_source_detail(
-                source_detail_obj, session
-            )
-            req_detail_id = created_source_detail.id
-        else:
-            source_detail_obj = {**source_detail_obj, "id": req_detail_id}
-            InspectionReqSourceDetailModel.update_requirement_source_detail(
-                req_detail_id, source_detail_obj, session
-            )
-        for doc_detail_data in source_detail_data.get("documents", []):
-            appendix_id = doc_detail_data.get("appendix_id", None)
-            if appendix_id is not None:
-                appendix = AppendixModel.find_by_id(appendix_id)
-                if not appendix:
-                    raise ResourceNotFoundError(
-                        f"Appendix with given ID {doc_detail_data.get('appendix_id')} not found"
-                    )
-                if appendix.inspection_id != inspection.id:
-                    raise ResourceNotFoundError(
-                        f"Appendix with given ID {doc_detail_data.get('appendix_id')} not belong to this inspection"
-                    )
-            doc_detail_id = doc_detail_data.get("id", None)
-            doc_detail_obj = _create_requirement_source_doc_obj(
-                req_detail_id, doc_detail_data
-            )
-            if not doc_detail_id:
-                InspectionReqDetailDocumentModel.create_doc_detail(
-                    doc_detail_obj, session
-                )
-            else:
-                doc_detail_obj = {**doc_detail_obj, "id": doc_detail_id}
-                InspectionReqDetailDocumentModel.update_doc_detail(
-                    doc_detail_id, doc_detail_obj, session
-                )
+        _process_documents(req_detail_id, source_detail_data, inspection, session)
+        _process_images(req_detail_id, source_detail_data, session)
 
 
 def _handle_deletion_req_detail_nd_doc(
@@ -1943,7 +1968,7 @@ def _handle_deletion_req_detail_nd_doc(
     requirement_data,
     session=None,
 ):
-    """Handle the deletion of requirement details and related document entry."""
+    """Handle the deletion of requirement details and related document/image entry."""
     existing_details = InspectionReqSourceDetailModel.get_all_by_requirement_id(
         requirement_id
     )
@@ -1959,12 +1984,24 @@ def _handle_deletion_req_detail_nd_doc(
         for doc in detail.get("documents", [])
         if doc.get("id", None) is not None
     )
+    incoming_image_detail_ids = set(
+        img.get("id", None)
+        for detail in requirement_data.get("requirement_source_details", [])
+        for img in detail.get("images", [])
+        if img.get("id", None) is not None
+    )
     existing_doc_detail_ids = {
         doc.id for detail in existing_details for doc in detail.documents
+    }
+    existing_image_detail_ids = {
+        img.id for detail in existing_details for img in detail.images
     }
     details_to_be_deleted = existing_detail_ids.difference(incoming_details_ids)
     doc_details_to_be_deleted = existing_doc_detail_ids.difference(
         incoming_doc_detail_ids
+    )
+    image_details_to_be_deleted = existing_image_detail_ids.difference(
+        incoming_image_detail_ids
     )
     InspectionReqSourceDetailModel.delete_req_details_by_ids(
         details_to_be_deleted, session
@@ -1972,6 +2009,9 @@ def _handle_deletion_req_detail_nd_doc(
     InspectionReqDetailDocumentModel.delete_req_doc_details_by_ids(
         doc_details_to_be_deleted, session
     )
+    if image_details_to_be_deleted:
+        for image_id in image_details_to_be_deleted:
+            InspectionReqDetailImageModel.delete_image(image_id, session)
 
 
 def _create_requirement_obj(inspection_id, requirement_data):
@@ -2051,6 +2091,17 @@ def _create_requirement_source_doc_obj(
         "section_number": requirement_source_doc_data.get("section_number", None),
         "section_title": requirement_source_doc_data.get("section_title", None),
         "description": requirement_source_doc_data.get("description", None),
+    }
+
+
+def _create_requirement_source_image_obj(
+    requirement_source_detail_id, requirement_source_image_data
+):
+    """Create requirement source image details object."""
+    return {
+        "req_detail_id": requirement_source_detail_id,
+        "original_file_name": requirement_source_image_data.get("original_file_name"),
+        "relative_url": requirement_source_image_data.get("relative_url"),
     }
 
 

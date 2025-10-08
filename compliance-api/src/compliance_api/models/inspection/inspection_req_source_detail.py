@@ -109,6 +109,15 @@ class InspectionReqSourceDetail(BaseModelVersioned):
         "InspectionReqDetailDocument.is_deleted == False)",
         order_by="InspectionReqDetailDocument.id.asc()",
     )
+    images = relationship(
+        "InspectionRequirementDetailImage",
+        foreign_keys="InspectionRequirementDetailImage.req_detail_id",
+        lazy="select",
+        primaryjoin="and_(InspectionRequirementDetailImage.req_detail_id == InspectionReqSourceDetail.id, "
+        "InspectionRequirementDetailImage.is_active == True, "
+        "InspectionRequirementDetailImage.is_deleted == False)",
+        order_by="InspectionRequirementDetailImage.id.asc()",
+    )
     appendix = relationship("Appendix", foreign_keys=[appendix_id], lazy="joined")
     order = relationship("Order", foreign_keys=[order_id], lazy="joined")
 

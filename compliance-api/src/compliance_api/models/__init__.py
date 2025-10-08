@@ -36,8 +36,8 @@ from .inspection import (
     ImageTypeEnum, Inspection, InspectionAgency, InspectionAttendance, InspectionAttendanceOption,
     InspectionAttendanceOptionEnum, InspectionFirstnation, InspectionInitiationOption, InspectionOfficer,
     InspectionReqDetailDocument, InspectionReqEnforcementMap, InspectionReqSourceDetail, InspectionRequirement,
-    InspectionRequirementImage, InspectionRequirementTypeEnum, InspectionStatusEnum, InspectionType,
-    InspectionTypeOption, IRStatusOption)
+    InspectionRequirementDetailImage, InspectionRequirementImage, InspectionRequirementTypeEnum, InspectionStatusEnum,
+    InspectionType, InspectionTypeOption, IRStatusOption)
 from .inspection_record import InspectionRecord, IRProgressEnum
 from .inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
 from .order import Order, OrderInspectionRequirementMap, OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum

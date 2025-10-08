@@ -18,6 +18,7 @@ from marshmallow_enum import EnumField
 from compliance_api.models import (
     EnforcementActionOptionEnum, ImageTypeEnum, InspectionReqDetailDocument, InspectionReqSourceDetail,
     InspectionRequirement, InspectionRequirementImage, InspectionRequirementTypeEnum)
+from compliance_api.models.inspection.inspection_req_detail_image import InspectionRequirementDetailImage
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
@@ -110,6 +111,29 @@ class InspectionReqDetailDocUpdateSchema(InspectionReqDetailDocCreateSchema):
     )
 
 
+class InspectionReqDetailImageCreateSchema(BaseSchema):
+    """InspectionReqDetailImageCreateSchema."""
+
+    original_file_name = fields.Str(
+        metadata={"description": "The original filename of the uploaded image"},
+        required=True,
+    )
+    relative_url = fields.Str(
+        metadata={"description": "The actual url of the final uploaded image"},
+        required=True,
+    )
+
+
+class InspectionReqDetailImageUpdateSchema(InspectionReqDetailImageCreateSchema):
+    """InspectionReqDetailImageUpdateSchema."""
+
+    id = fields.Int(
+        metadata={
+            "description": "The unique identifier of the requirement detail image"
+        }
+    )
+
+
 class InspectionReqSourceDetailCreateSchema(BaseSchema):
     """InspectionReqSourceDetailSchema."""
 
@@ -171,6 +195,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
         allow_none=True,
     )
     documents = fields.List(fields.Nested(InspectionReqDetailDocCreateSchema))
+    images = fields.List(fields.Nested(InspectionReqDetailImageCreateSchema))
 
     @validates_schema
     def validate_section_number(
@@ -297,6 +322,7 @@ class InspectionReqSourceDetailUpdateSchema(InspectionReqSourceDetailCreateSchem
         }
     )
     documents = fields.List(fields.Nested(InspectionReqDetailDocUpdateSchema))
+    images = fields.List(fields.Nested(InspectionReqDetailImageUpdateSchema))
 
 
 class InspectionRequirementCreateSchema(BaseSchema):
@@ -412,10 +438,23 @@ class OrderSchema(Schema):
     now_therefore = fields.Str(metadata={"description": "The now therefore"})
 
 
+class InspectionReqDetailImageSchema(
+    AutoSchemaBase
+):  # pylint: disable=too-many-ancestors
+    """InspectionReqDetailImageSchema."""
+
+    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
+        """Meta."""
+
+        unknown = EXCLUDE
+        model = InspectionRequirementDetailImage
+        include_fk = True
+
+
 class InspectionReqSourceDetailSchema(
     AutoSchemaBase
 ):  # pylint: disable=too-many-ancestors
-    """InspectionReqSourceSchema."""
+    """InspectionReqSourceDetailSchema."""
 
     class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
         """Meta."""
@@ -425,6 +464,7 @@ class InspectionReqSourceDetailSchema(
         include_fk = True
 
     documents = fields.List(fields.Nested(InspectionReqDetailDocSchema))
+    images = fields.List(fields.Nested(InspectionReqDetailImageSchema))
     requirement_source = fields.Nested(KeyValueSchema)
     appendix = fields.Nested(AppendixSchema)
     order = fields.Nested(OrderSchema)
