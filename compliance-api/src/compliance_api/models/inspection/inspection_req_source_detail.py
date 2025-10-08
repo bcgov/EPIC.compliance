@@ -103,7 +103,7 @@ class InspectionReqSourceDetail(BaseModelVersioned):
     documents = relationship(
         "InspectionReqDetailDocument",
         back_populates="requirement_source_detail",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(InspectionReqDetailDocument.req_detail_id == InspectionReqSourceDetail.id, "
         "InspectionReqDetailDocument.is_active == True, "
         "InspectionReqDetailDocument.is_deleted == False)",

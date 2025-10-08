@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from sqlalchemy import String, and_, case, cast, func, nullslast, or_
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 
 from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models import Appendix as AppendixModel
@@ -890,6 +890,12 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
         )
         .filter(models["req"].is_active.is_(True), models["req"].is_deleted.is_(False))
         .order_by(models["req"].id, models["enf_map"].enforcement_action_id)
+        .options(
+            selectinload(models["req"].requirement_source_details).selectinload(
+                InspectionReqSourceDetailModel.documents
+            ),
+            selectinload(models["req"].enforcement_actions),
+        )
     )
 
     # Apply filters based on query parameters

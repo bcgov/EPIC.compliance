@@ -105,7 +105,6 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     def shutdown_session(exception=None):  # pylint: disable=unused-argument
         """Execute teardown actions."""
         db.session.remove()
-        db.engine.dispose()
 
     @app.errorhandler(Exception)
     def handle_error(err):
