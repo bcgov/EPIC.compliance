@@ -235,7 +235,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             if staff_user:
                 return f"{staff_user.first_name} {staff_user.last_name}"
         return None
-    
+
     def get_deputy_director(self, obj):  # pylint: disable=no-self-use
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
