@@ -18,7 +18,7 @@ import time
 from flask_restx import Namespace, Resource
 from sqlalchemy import exc, text
 
-from submit_api.models import db
+from compliance_api.models import db
 
 
 API = Namespace('OPS', description='Service - OPS checks')
