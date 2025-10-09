@@ -78,11 +78,14 @@ class AdministrativePenaltyService:
         return list(inspections_data.values())
 
     @staticmethod
-    def get_projectwise_administrative_penalties(case_file_id: int):
+    def get_projectwise_administrative_penalties(
+        case_file_id: int, include_open_aps: str = None
+    ):
         """Get all administrative penalties for the project associated to the case file.
 
         Args:
             case_file_id: int - The case file ID
+            include_open_aps: str - Flag to include only open administrative penalties
         Returns:
             List[AdministrativePenalty] - List of administrative penalties
         """
@@ -97,8 +100,16 @@ class AdministrativePenaltyService:
                 for case_file in case_files
                 if case_file.is_active and not case_file.is_deleted
             ]
+
+        # Convert include_open_aps to boolean
+        open_aps_only = include_open_aps is not None and include_open_aps.lower() in [
+            "true",
+            "1",
+            "yes",
+        ]
+
         return AdministrativePenalty.get_administrative_penalties_by_case_files(
-            case_file_ids_to_be_queried
+            case_file_ids_to_be_queried, open_aps_only=open_aps_only
         )
 
     @staticmethod
@@ -423,7 +434,6 @@ class AdministrativePenaltyService:
 def _extract_ap_data(administrative_penalty_data):
     """Extract administrative penalty data."""
     return {
-        "inspection_id": administrative_penalty_data.get("inspection_id", None),
         "referral_status": administrative_penalty_data.get(
             "referral_status", ReferralStatusEnum.DRAFTING
         ),
@@ -443,7 +453,11 @@ def _create_ap_object(inspection, administrative_penalty_data):
         case_file_id = inspection.case_file_id
         ap_number = _create_administrative_penalty_number(project_id, case_file_id)
     ap_data = _extract_ap_data(administrative_penalty_data)
-    return {"administrative_penalty_number": ap_number, **ap_data}
+    return {
+        "administrative_penalty_number": ap_number,
+        "inspection_id": inspection.id,
+        **ap_data,
+    }
 
 
 def _create_administrative_penalty_number(project_id: int, case_file_id: int) -> str:

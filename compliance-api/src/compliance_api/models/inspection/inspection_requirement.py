@@ -79,7 +79,7 @@ class InspectionRequirement(BaseModelVersioned):
     requirement_source_details = relationship(
         "InspectionReqSourceDetail",
         back_populates="inspection_requirement",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(InspectionReqSourceDetail.requirement_id == InspectionRequirement.id, "
         "InspectionReqSourceDetail.is_active == True, "
         "InspectionReqSourceDetail.is_deleted == False)",
@@ -88,7 +88,7 @@ class InspectionRequirement(BaseModelVersioned):
     enforcement_actions = relationship(
         "InspectionReqEnforcementMap",
         back_populates="requirement",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(InspectionReqEnforcementMap.requirement_id == InspectionRequirement.id, "
         "InspectionReqEnforcementMap.is_active == True, "
         "InspectionReqEnforcementMap.is_deleted == False)",
@@ -96,7 +96,7 @@ class InspectionRequirement(BaseModelVersioned):
     orders_requirement_maps = relationship(
         "OrderInspectionRequirementMap",
         back_populates="inspection_requirement",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(OrderInspectionRequirementMap.inspection_requirement_id == InspectionRequirement.id, "
         "OrderInspectionRequirementMap.is_active == True, "
         "OrderInspectionRequirementMap.is_deleted == False)",
@@ -106,7 +106,7 @@ class InspectionRequirement(BaseModelVersioned):
     warning_letter_requirement_maps = relationship(
         "WarningLetterInspectionRequirementMap",
         back_populates="inspection_requirement",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(WarningLetterInspectionRequirementMap.inspection_requirement_id == InspectionRequirement.id, "
         "WarningLetterInspectionRequirementMap.is_active == True, "
         "WarningLetterInspectionRequirementMap.is_deleted == False)",
@@ -116,7 +116,7 @@ class InspectionRequirement(BaseModelVersioned):
     violation_ticket_requirement_maps = relationship(
         "ViolationTicketInspectionRequirementMap",
         back_populates="inspection_requirement",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(ViolationTicketInspectionRequirementMap.inspection_requirement_id == InspectionRequirement.id, "  # noqa: E501
         "ViolationTicketInspectionRequirementMap.is_active == True, "
         "ViolationTicketInspectionRequirementMap.is_deleted == False)",

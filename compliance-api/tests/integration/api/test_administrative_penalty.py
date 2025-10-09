@@ -441,7 +441,9 @@ def test_link_administrative_penalty_success(
     ap_inspection = InspectionService.create(ap_inspection_data)
 
     ap_requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
-    ap_requirement_data["enforcement_action_ids"] = [6]  # Administrative Penalty Recommendation
+    ap_requirement_data["enforcement_action_ids"] = [
+        6
+    ]  # Administrative Penalty Recommendation
     ap_requirement = InspectionRequirementService.create(
         ap_inspection.id, ap_requirement_data
     )
@@ -450,7 +452,9 @@ def test_link_administrative_penalty_success(
     ap_data = copy.copy(AdministrativePenaltyScenario.default_value.value)
     ap_data["inspection_id"] = ap_inspection.id
     ap_data["inspection_requirement_ids"] = [ap_requirement.id]
-    administrative_penalty = AdministrativePenaltyService.create_administrative_penalty(ap_data)
+    administrative_penalty = AdministrativePenaltyService.create_administrative_penalty(
+        ap_data
+    )
 
     # Create second inspection and requirement for linking
     link_inspection_data = copy.copy(InspectionScenario.default_value.value)
@@ -458,7 +462,9 @@ def test_link_administrative_penalty_success(
     link_inspection = InspectionService.create(link_inspection_data)
 
     link_requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
-    link_requirement_data["enforcement_action_ids"] = [6]  # Administrative Penalty Recommendation
+    link_requirement_data["enforcement_action_ids"] = [
+        6
+    ]  # Administrative Penalty Recommendation
     link_requirement = InspectionRequirementService.create(
         link_inspection.id, link_requirement_data
     )

@@ -69,18 +69,38 @@ const ReviewBoardFilters: React.FC<ReviewBoardFiltersProps> = ({
 
       if (newChecked && currentStaff) {
         // When turning ON, set the primary officer filter to current user
-        onFilterChange("primary_officer_id", [currentStaff.id.toString()]);
-        onFilterChange("is_deputy_director", isDeputyDirector.toString());
+        if (isDeputyDirector) {
+          onFilterChange("deputy_director_id", [currentStaff.id.toString()]);
+        } else {
+          onFilterChange("primary_officer_id", [currentStaff.id.toString()]);
+        }
       } else {
         // When turning OFF, clear the primary officer filter
-        onFilterChange("primary_officer_id", []);
-        onFilterChange("is_deputy_director", "");
+        // Remove only currentStaff.id from the "primary_officer_id" filter
+        if (
+          externalFilters.primary_officer_id &&
+          Array.isArray(externalFilters.primary_officer_id)
+        ) {
+          const filtered = externalFilters.primary_officer_id.filter(
+            (id) => id !== currentStaff?.id?.toString()
+          );
+          onFilterChange("primary_officer_id", filtered);
+        } else {
+          onFilterChange("primary_officer_id", []);
+        }
+        onFilterChange("deputy_director_id", []);
       }
 
       // Notify parent so it can persist switch state explicitly
       onSwitchChange?.(newChecked);
     },
-    [currentStaff, onFilterChange, onSwitchChange, isDeputyDirector]
+    [
+      currentStaff,
+      onSwitchChange,
+      isDeputyDirector,
+      onFilterChange,
+      externalFilters,
+    ]
   );
 
   const switchLabel = useMemo(() => {

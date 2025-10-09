@@ -127,7 +127,12 @@ class ProjectwiseAdministrativePenalties(Resource):
                 "description": "The unique identifier of the case file",
                 "type": "integer",
                 "required": True,
-            }
+            },
+            "include_open_aps": {
+                "description": "Include open administrative penalties",
+                "type": "boolean",
+                "required": False,
+            },
         }
     )
     def get():
@@ -135,9 +140,10 @@ class ProjectwiseAdministrativePenalties(Resource):
         case_file_id = request.args.get("case_file_id")
         if not case_file_id:
             raise BadRequestError("case_file_id is required")
+        include_open_aps = request.args.get("include_open_aps")
         administrative_penalties = (
             AdministrativePenaltyService.get_projectwise_administrative_penalties(
-                case_file_id
+                case_file_id, include_open_aps
             )
         )
         administrative_penalty_list_schema = AdministrativePenaltySchema(many=True)
