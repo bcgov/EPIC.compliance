@@ -14,7 +14,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAuth } from "react-oidc-context";
-import { STAFF_USER_POSITION } from "@/utils/constants";
+// STAFF_USER_POSITION no longer needed after removing default ON logic
 
 export const Route = createFileRoute("/_authenticated/review-board")({
   component: ReviewBoard,
@@ -37,20 +37,12 @@ function ReviewBoard() {
 
   // Create the exact 6 sections like mockReviewBoard and populate with dynamic data
   const dynamicSections = useMemo(() => {
-    // Extract primary officer filter from external filters
-    const primaryOfficerFilter = externalFilters.primary_officer_id as
-      | string[]
-      | undefined;
-    const isDeputyDirectorFilter =
-      (externalFilters.is_deputy_director as string | undefined) === "true";
-
     return generateDynamicSections(
       inspectionRecords,
       orderRecords,
       warningLetters,
       administrativePenalties,
-      primaryOfficerFilter,
-      isDeputyDirectorFilter
+      externalFilters
     );
   }, [
     inspectionRecords,
@@ -105,31 +97,7 @@ function ReviewBoard() {
         setInitialChecked(derivedSwitchState);
       }
     } else {
-      // No cached filters - apply default "My Files" filter for first-time users
-      if (currentUser?.profile?.preferred_username && staffUsers) {
-        const currentStaff = staffUsers.find(
-          (staff) =>
-            staff.auth_user_guid === currentUser.profile.preferred_username
-        );
-        if (currentStaff) {
-          const isDeputyDirector =
-            currentStaff.position_id === STAFF_USER_POSITION.DEPUTY_DIRECTOR;
-          const defaultExternalFilters = {
-            primary_officer_id: [currentStaff.id.toString()],
-            is_deputy_director: isDeputyDirector.toString(),
-          };
-
-          setExternalFilters(defaultExternalFilters);
-          setInitialChecked(true);
-
-          // Update prevFilters to prevent unnecessary caching during initial setup
-          prevFilters.current = {
-            ...prevFilters.current,
-            externalFilters: defaultExternalFilters,
-            initialChecked: true,
-          };
-        }
-      }
+      // No cached filters - do not auto-apply any filters or switch state
     }
 
     // Mark restoration as complete and initial load as complete

@@ -46,7 +46,9 @@ export const formatInspectionRecordsToReviewBoardItems = (
     date_report_sent: record.date_report_sent,
     expected_return_date: record.expected_return_date,
     date_response: record.date_response,
-    issuing_officer: record.intended_issuance_date ? record.deputy_director : undefined,
+    issuing_officer: record.intended_issuance_date
+      ? record.deputy_director
+      : undefined,
   }));
 };
 
@@ -267,9 +269,16 @@ export const generateDynamicSections = (
   orderRecords?: OrderReviewBoardItem[],
   warningLetters?: WarningLetterReviewBoardItem[],
   administrativePenalties?: APReviewBoardItem[],
-  primaryOfficerFilter?: string[],
-  isDeputyDirectorFilter?: boolean
+  externalFilters?: Record<string, string[] | string>
 ): ReviewBoardSection[] => {
+  // Extract primary officer filter from external filters
+  const primaryOfficerFilter = externalFilters?.primary_officer_id as
+    | string[]
+    | undefined;
+  const deputyDirectorFilter = externalFilters?.deputy_director_id as
+    | string[]
+    | undefined;
+
   // Initialize the 6 sections with empty items
   const sections = createInitialSections();
 
@@ -295,11 +304,14 @@ export const generateDynamicSections = (
         primaryOfficerFilter.includes(item.primary_officer.id.toString())
     );
   }
-  if (isDeputyDirectorFilter) {
+  if (deputyDirectorFilter && deputyDirectorFilter.length > 0) {
     allItems = allItems.filter(
       (item) =>
-        item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING ||
-        item.approval_status?.id === AdministrativePenaltyStatus.DEPUTY_REVIEW
+        (item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING ||
+          item.approval_status?.id ===
+            AdministrativePenaltyStatus.DEPUTY_REVIEW) &&
+        item.deputy_director &&
+        deputyDirectorFilter.includes(item.deputy_director.id.toString())
     );
   }
 
