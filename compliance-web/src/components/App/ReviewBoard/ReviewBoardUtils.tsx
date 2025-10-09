@@ -41,11 +41,12 @@ export const formatInspectionRecordsToReviewBoardItems = (
     ir_progress: record.ir_progress,
     ir_number: record.ir_number,
     intended_issuance_date: record.intended_issuance_date,
-    deputy_director_name: record.deputy_director_name,
+    deputy_director: record.deputy_director,
     send_for_review_date: record.send_for_review_date,
     date_report_sent: record.date_report_sent,
     expected_return_date: record.expected_return_date,
     date_response: record.date_response,
+    issuing_officer: record.intended_issuance_date ? record.deputy_director : undefined,
   }));
 };
 
@@ -67,8 +68,9 @@ export const formatOrderRecordsToReviewBoardItems = (
     review_date: record.approved_date,
     ir_number: record.ir_number,
     intended_issuance_date: record.intended_issuance_date,
-    deputy_director_name: record.deputy_director_name,
+    deputy_director: record.deputy_director,
     send_for_review_date: record.send_for_review_date,
+    issuing_officer: record.issuing_officer,
   }));
 };
 
@@ -90,8 +92,9 @@ export const formatWarningLettersToReviewBoardItems = (
     review_date: record.approved_date,
     ir_number: record.ir_number,
     intended_issuance_date: record.intended_issuance_date,
-    deputy_director_name: record.deputy_director_name,
+    deputy_director: record.deputy_director,
     send_for_review_date: record.review_requested_date,
+    issuing_officer: record.issuing_officer,
   }));
 };
 
