@@ -68,6 +68,16 @@ class InspectionRequirementScenario(Enum):
                         "section_title": "section title",
                     }
                 ],
+                "images": [
+                    {
+                        "original_file_name": "source_detail_image1.jpg",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/source_detail_image1.jpg",
+                    },
+                    {
+                        "original_file_name": "source_detail_image2.png",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/source_detail_image2.png",
+                    },
+                ],
             }
         ],
     }
@@ -129,4 +139,54 @@ class InspectionRequirementScenario(Enum):
         "findings": "Findings with enforcements",
         "sort_order": 1,
         "enforcement_action_ids": [1, 2],
+    }
+
+    requirement_with_source_detail_images = {
+        "summary": "Requirement with source detail images",
+        "topic_id": 1,
+        "req_type": InspectionRequirementTypeEnum.REQ.name,
+        "compliance_finding_id": 1,
+        "findings": "Requirement findings with source detail images",
+        "requirement_source_details": [
+            {
+                "requirement_source_id": RequirementSourceEnum.ACT_2018.value,
+                "section_number": "2.1",
+                "title": "Source detail with images",
+                "description": "Source detail description with images",
+                "documents": [],
+                "images": [
+                    {
+                        "original_file_name": "detail_evidence1.jpg",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence1.jpg",
+                    },
+                    {
+                        "original_file_name": "detail_evidence2.png",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence2.png",
+                    },
+                    {
+                        "original_file_name": "detail_evidence3.pdf",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence3.pdf",
+                    },
+                ],
+            },
+            {
+                "requirement_source_id": RequirementSourceEnum.REGULATION.value,
+                "regulation_number": "123/2024",
+                "title": "Second source detail",
+                "description": "Second source detail with mixed content",
+                "documents": [
+                    {
+                        "document_type_id": 1,
+                        "document_title": "Regulation document",
+                        "description": "Regulation compliance document",
+                    }
+                ],
+                "images": [
+                    {
+                        "original_file_name": "regulation_image.jpg",
+                        "relative_url": "/compliance/1/inspection/1/req_detail_images/regulation_image.jpg",
+                    }
+                ],
+            },
+        ],
     }

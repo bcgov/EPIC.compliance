@@ -96,7 +96,7 @@ def test_create_inspection_requirement_with_images(
 def test_create_inspection_requirement_with_everything(
     client, auth_header_super_user, created_inspection
 ):
-    """Test creating a requirement with everything."""
+    """Test creating a requirement with everything including source detail images."""
     url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
     requirement_data = copy.copy(InspectionRequirementScenario.with_everything.value)
     result = client.post(
@@ -105,6 +105,18 @@ def test_create_inspection_requirement_with_everything(
         headers=auth_header_super_user,
     )
     assert result.status_code == HTTPStatus.CREATED
+
+    # Verify requirement source details include images
+    assert len(result.json["requirement_source_details"]) == 1
+    source_detail = result.json["requirement_source_details"][0]
+    assert "images" in source_detail
+    assert len(source_detail["images"]) == 2
+    assert (
+        source_detail["images"][0]["original_file_name"] == "source_detail_image1.jpg"
+    )
+    assert (
+        source_detail["images"][1]["original_file_name"] == "source_detail_image2.png"
+    )
 
 
 def test_create_inspection_requirement_with_all_requirement_sources(
@@ -176,6 +188,36 @@ def test_create_inspection_requirement_with_all_requirement_sources(
         )
 
 
+def test_create_inspection_requirement_with_source_detail_images(
+    client, auth_header_super_user, created_inspection
+):
+    """Test creating a requirement with source detail images."""
+    url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
+    requirement_data = copy.copy(
+        InspectionRequirementScenario.requirement_with_source_detail_images.value
+    )
+    result = client.post(
+        url,
+        data=json.dumps(requirement_data),
+        headers=auth_header_super_user,
+    )
+    assert result.status_code == HTTPStatus.CREATED
+    assert len(result.json["requirement_source_details"]) == 2
+
+    # Check first source detail with images
+    first_detail = result.json["requirement_source_details"][0]
+    assert len(first_detail["images"]) == 3
+    assert first_detail["images"][0]["original_file_name"] == "detail_evidence1.jpg"
+    assert first_detail["images"][1]["original_file_name"] == "detail_evidence2.png"
+    assert first_detail["images"][2]["original_file_name"] == "detail_evidence3.pdf"
+
+    # Check second source detail with mixed content
+    second_detail = result.json["requirement_source_details"][1]
+    assert len(second_detail["documents"]) == 1
+    assert len(second_detail["images"]) == 1
+    assert second_detail["images"][0]["original_file_name"] == "regulation_image.jpg"
+
+
 def test_update_inspection_requirement(
     client, auth_header_super_user, created_inspection, created_inspection_requirement
 ):
@@ -194,6 +236,38 @@ def test_update_inspection_requirement(
     print(result.json)
     assert result.status_code == HTTPStatus.OK
     assert result.json["summary"] == "Updated description"
+
+
+def test_update_inspection_requirement_with_source_detail_images(
+    client, auth_header_super_user, created_inspection, created_inspection_requirement
+):
+    """Test updating an existing inspection requirement with source detail images."""
+    update_data = copy.copy(
+        InspectionRequirementScenario.requirement_with_source_detail_images.value
+    )
+    update_data["summary"] = "Updated requirement with source detail images"
+
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/{created_inspection_requirement.id}",
+    )
+    result = client.patch(
+        url,
+        data=json.dumps(update_data),
+        headers=auth_header_super_user,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["summary"] == "Updated requirement with source detail images"
+    assert len(result.json["requirement_source_details"]) == 2
+
+    # Verify images are included in response
+    first_detail = result.json["requirement_source_details"][0]
+    assert "images" in first_detail
+    assert len(first_detail["images"]) == 3
+
+    second_detail = result.json["requirement_source_details"][1]
+    assert "images" in second_detail
+    assert len(second_detail["images"]) == 1
 
 
 def test_delete_inspection_requirement(
