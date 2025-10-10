@@ -7,9 +7,27 @@ from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from ..models.charge_recommendation import (
     ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationInspectionRequirementMap,
-    ChargeRecommendationStatusEnum, JudgmentEnum)
+    ChargeRecommendationStatusEnum, CourtDecisionEnum)
+from ..models.cr_sentence_type_mapping import CRSentenceTypeMapping
 from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
+from .sentence_type_option import SentenceTypeOptionSchema
+
+
+class CRSentenceTypeMappingSchema(AutoSchemaBase):
+    """Schema for CR sentence type mapping model."""
+
+    class Meta:
+        """Meta class to auto generate schema."""
+
+        unknown = EXCLUDE
+        model = CRSentenceTypeMapping
+        include_fk = True
+
+    sentence_type_option = fields.Nested(
+        SentenceTypeOptionSchema(),
+        only=("id", "name"),
+    )
 
 
 class ChargeRecommendationUpdateSchema(
@@ -52,23 +70,19 @@ class ChargeRecommendationUpdateSchema(
         allow_none=True,
         metadata={"description": "The court file number"},
     )
-    court_appearances = fields.String(
-        allow_none=True,
-        metadata={"description": "Court appearances details"},
-    )
-    judgment = EnumField(
-        JudgmentEnum,
+    court_decision = EnumField(
+        CourtDecisionEnum,
         by_value=False,
         allow_none=True,
-        metadata={"description": "The judgment on the charge recommendation"},
+        metadata={"description": "The court decision on the charge recommendation"},
     )
-    judgment_date = fields.DateTime(
+    court_decision_date = fields.DateTime(
         allow_none=True,
         format=INPUT_DATE_TIME_FORMAT,
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
-        metadata={"description": "The judgment date"},
+        metadata={"description": "The court decision date"},
     )
     sentence_date = fields.DateTime(
         allow_none=True,
@@ -78,9 +92,10 @@ class ChargeRecommendationUpdateSchema(
         },
         metadata={"description": "The sentence date"},
     )
-    sentence_type = fields.String(
+    sentence_type_option_ids = fields.List(
+        fields.Integer(),
         allow_none=True,
-        metadata={"description": "The type of sentence"},
+        metadata={"description": "List of sentence type option IDs"},
     )
     inspection_requirement_ids = fields.List(
         fields.Integer(),
@@ -128,14 +143,15 @@ class ChargeRecommendationSchema(AutoSchemaBase):  # pylint: disable=too-many-an
         load_instance = True
         include_fk = True
 
-    court_appearances = fields.String(
-        allow_none=True,
-        metadata={"description": "Court appearances details"},
-    )
     charge_recommendation_requirement_maps = fields.Nested(
         ChargeRecommendationInspectionRequirementMapSchema(),
         many=True,
         only=("id", "inspection_requirement_id", "inspection_requirement"),
+    )
+    sentence_type_mappings = fields.Nested(
+        "CRSentenceTypeMappingSchema",
+        many=True,
+        only=("id", "sentence_type_option_id", "sentence_type_option"),
     )
 
     @post_dump(pass_many=True)
@@ -163,8 +179,8 @@ class ChargeRecommendationSchema(AutoSchemaBase):  # pylint: disable=too-many-an
                 "name": ChargeDecisionEnum(item["charge_decision"]).value,
             }
 
-        if "judgment" in item and item["judgment"]:
-            item["judgment"] = {
-                "id": JudgmentEnum(item["judgment"]).name,
-                "name": JudgmentEnum(item["judgment"]).value,
+        if "court_decision" in item and item["court_decision"]:
+            item["court_decision"] = {
+                "id": CourtDecisionEnum(item["court_decision"]).name,
+                "name": CourtDecisionEnum(item["court_decision"]).value,
             }

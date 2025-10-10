@@ -74,15 +74,15 @@ class _Config:  # pylint: disable=too-few-public-methods
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_RECORD_QUERIES = True
 
-    # Database Connection Pooling Configuration
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 5,              # Base connection pool size per worker
-        'max_overflow': 10,          # Additional connections when pool exhausted
-        'pool_timeout': 30,          # Timeout waiting for connection (seconds)
-        'pool_recycle': 3600,        # Recycle connections after 1 hour
-        'pool_pre_ping': True,       # Validate connections before use
-        'echo_pool': False,          # Set to True for connection pool debugging
-    }
+    # # Database Connection Pooling Configuration
+    # SQLALCHEMY_ENGINE_OPTIONS = {
+    #     'pool_size': 5,              # Base connection pool size per worker
+    #     'max_overflow': 10,          # Additional connections when pool exhausted
+    #     'pool_timeout': 30,          # Timeout waiting for connection (seconds)
+    #     'pool_recycle': 3600,        # Recycle connections after 1 hour
+    #     'pool_pre_ping': True,       # Validate connections before use
+    #     'echo_pool': False,          # Set to True for connection pool debugging
+    # }
 
     # JWT_OIDC Settings
 
@@ -120,15 +120,15 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     DEBUG = True
     print(f"SQLAlchemy URL (DevConfig): {_Config.SQLALCHEMY_DATABASE_URI}")
 
-    # Development-specific database pooling (more lenient for debugging)
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 3,              # Smaller pool for development
-        'max_overflow': 5,           # Less overflow for development
-        'pool_timeout': 30,
-        'pool_recycle': 1800,        # Shorter recycle time (30 min)
-        'pool_pre_ping': True,
-        'echo_pool': True,           # Enable pool debugging in development
-    }
+    # # Development-specific database pooling (more lenient for debugging)
+    # SQLALCHEMY_ENGINE_OPTIONS = {
+    #     'pool_size': 3,              # Smaller pool for development
+    #     'max_overflow': 5,           # Less overflow for development
+    #     'pool_timeout': 30,
+    #     'pool_recycle': 1800,        # Shorter recycle time (30 min)
+    #     'pool_pre_ping': True,
+    #     'echo_pool': True,           # Enable pool debugging in development
+    # }
 
 
 class TestConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -258,12 +258,12 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
     DEBUG = False
 
-    # Production-optimized database pooling
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': int(os.getenv('DB_POOL_SIZE', '5')),           # Configurable pool size
-        'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '10')),    # Configurable overflow
-        'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),    # Configurable timeout
-        'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Configurable recycle time
-        'pool_pre_ping': True,                                      # Always validate in production
-        'echo_pool': False,                                         # Disable pool logging in production
-    }
+    # # Production-optimized database pooling
+    # SQLALCHEMY_ENGINE_OPTIONS = {
+    #     'pool_size': int(os.getenv('DB_POOL_SIZE', '5')),           # Configurable pool size
+    #     'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '10')),    # Configurable overflow
+    #     'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),    # Configurable timeout
+    #     'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Configurable recycle time
+    #     'pool_pre_ping': True,                                      # Always validate in production
+    #     'echo_pool': False,                                         # Disable pool logging in production
+    # }

@@ -1,6 +1,7 @@
 [flake8]
 # E203 whitespace before ':' - Black intentionally breaks this rule
-extend-ignore = E203,Q000,W503
+# D202 No blank lines allowed after function docstring - Black conflicts with this
+extend-ignore = E203,Q000,W503,D202
 max-line-length = 120
 
 # Additional directories to exclude
