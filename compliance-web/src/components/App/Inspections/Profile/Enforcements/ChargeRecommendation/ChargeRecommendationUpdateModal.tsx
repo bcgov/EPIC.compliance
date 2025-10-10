@@ -12,16 +12,17 @@ import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAut
 import {
   useUpdateChargeRecommendation,
   useDeleteChargeRecommendation,
+  useSentenceTypeOptionsData,
 } from "@/hooks/useChargeRecommendations";
 import {
   ChargeRecommendation,
   ChargeRecommendationAPIData,
+  SentenceTypeOption,
 } from "@/models/ChargeRecommendation";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import { CRStatus, CRDecision, CRCourtDecision } from "@/utils/constants";
-import { useSentenceTypeOptionsData, SentenceTypeOption } from "@/hooks/useSentenceTypeOptions";
 import dayjs, { Dayjs } from "dayjs";
 
 const chargeRecommendationUpdateSchema = yup.object().shape({

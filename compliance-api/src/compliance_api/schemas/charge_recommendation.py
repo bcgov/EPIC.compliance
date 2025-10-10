@@ -14,10 +14,10 @@ from .inspection_requirement import InspectionRequirementSchema
 from .sentence_type_option import SentenceTypeOptionSchema
 
 
-class CRSentenceTypeMappingSchema(AutoSchemaBase):
+class CRSentenceTypeMappingSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     """Schema for CR sentence type mapping model."""
 
-    class Meta:
+    class Meta:  # pylint: disable=too-few-public-methods
         """Meta class to auto generate schema."""
 
         unknown = EXCLUDE

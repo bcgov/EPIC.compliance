@@ -49,4 +49,8 @@ export interface ChargeRecommendationAPIData {
   inspection_requirement_ids: number[];
 }
 
-
+export interface SentenceTypeOption {
+  id: number;
+  name: string;
+  sort_order?: number;
+}
