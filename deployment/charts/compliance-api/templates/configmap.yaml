@@ -21,3 +21,7 @@ data:
   STORAGE_HOST_URL: {{ .Values.storage_service.url }}
   S3_BUCKET: {{ .Values.storage_service.s3_bucket }}
   DOCGEN_SERVICE_URL: {{ .Values.docgen_service.url }}
+  GUNICORN_WORKERS: "{{ .Values.gunicorn.workerCount }}"
+  GUNICORN_WORKER_THREADS: "{{ .Values.gunicorn.threadCount }}"
+  GUNICORN_WORKER_CONNECTIONS: "{{ .Values.gunicorn.connectionCount }}"
+  GUNICORN_TIMEOUT: "{{ .Values.gunicorn.timeout }}"

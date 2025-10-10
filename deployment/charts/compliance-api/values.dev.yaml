@@ -70,3 +70,9 @@ vault:
 
 serviceAccount:
   name: c8b80a-vault
+
+gunicorn:
+  workerCount: 1
+  threadCount: 2
+  connectionCount: 250
+  timeout: 60
