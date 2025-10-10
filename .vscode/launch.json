@@ -14,8 +14,7 @@
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/compliance-api/src"
-            },
-            "gevent": true
+            }
         }
     ]
 }
