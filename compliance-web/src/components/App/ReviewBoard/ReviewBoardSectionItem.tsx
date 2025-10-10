@@ -191,16 +191,14 @@ const ReviewBoardSectionItem = ({
                     {getFormattedDate(item.send_for_review_date)}
                   </Typography>
                 </Typography>
-                {item.deputy_director_name && (
+                {item.deputy_director && (
                   <Typography
                     variant="caption"
                     color={BCDesignTokens.typographyColorPlaceholder}
                   >
                     Deputy Director:
                     <Typography variant="caption" ml={0.25}>
-                      {item.deputy_director_name.substring(
-                        item.deputy_director_name.indexOf(" ") + 1
-                      )}
+                      {item.deputy_director.last_name}
                     </Typography>
                   </Typography>
                 )}
@@ -244,15 +242,28 @@ const ReviewBoardSectionItem = ({
               </Typography>
             )}
             {sectionId === ReviewBoardCardTypeEnum.PENDING_ISSUANCE && (
-              <Typography
-                variant="caption"
-                color={BCDesignTokens.typographyColorPlaceholder}
-              >
-                Issuance Date:
-                <Typography variant="caption" ml={0.25}>
-                  {getFormattedDate(item.intended_issuance_date)}
+              <>
+                <Typography
+                  variant="caption"
+                  color={BCDesignTokens.typographyColorPlaceholder}
+                >
+                  Issuance Date:
+                  <Typography variant="caption" ml={0.25}>
+                    {getFormattedDate(item.intended_issuance_date)}
+                  </Typography>
                 </Typography>
-              </Typography>
+                {item.issuing_officer && (
+                  <Typography
+                    variant="caption"
+                    color={BCDesignTokens.typographyColorPlaceholder}
+                  >
+                    Issuing Officer:
+                    <Typography variant="caption" ml={0.25}>
+                      {item.issuing_officer?.last_name}
+                    </Typography>
+                  </Typography>
+                )}
+              </>
             )}
           </Box>
         </>

@@ -28,7 +28,7 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
 
     # Approval fields - if under review
     send_for_review_date = fields.Method("get_send_for_review_date", dump_only=True)
-    deputy_director_name = fields.Method("get_deputy_director_name", dump_only=True)
+    deputy_director = fields.Method("get_deputy_director", dump_only=True)
     approved_date = fields.Method("get_approved_date", dump_only=True)
 
     # Approval fields from inspection record approval
@@ -71,11 +71,17 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
             return latest_approval.created_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_deputy_director_name(self, obj):  # pylint: disable=no-self-use
+    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_by:
-            return f"{latest_approval.approved_by.first_name} {latest_approval.approved_by.last_name}"
+            officer = latest_approval.approved_by
+            return {
+                "id": officer.id,
+                "first_name": officer.first_name,
+                "last_name": officer.last_name,
+                "name": f"{officer.first_name} {officer.last_name}",
+            }
         return None
 
     def get_approved_date(self, obj):  # pylint: disable=no-self-use
@@ -158,6 +164,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
     approved_date = fields.Method("get_approved_date")
     review_requested_date = fields.Method("get_review_requested_date")
     approved_by = fields.Method("get_approved_by")
+    deputy_director = fields.Method("get_deputy_director")
     intended_issuance_date = fields.DateTime(
         format=INPUT_DATE_TIME_FORMAT, dump_only=True
     )
@@ -229,6 +236,21 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
                 return f"{staff_user.first_name} {staff_user.last_name}"
         return None
 
+    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
+        """Get deputy director name from latest approval."""
+        latest_approval = self._get_latest_approval(obj)
+        if latest_approval and latest_approval.approved_by_id:
+            # Need to fetch the staff user for the name
+            staff_user = StaffUser.query.get(latest_approval.approved_by_id)
+            if staff_user:
+                return {
+                    "id": staff_user.id,
+                    "first_name": staff_user.first_name,
+                    "last_name": staff_user.last_name,
+                    "name": f"{staff_user.first_name} {staff_user.last_name}",
+                }
+        return None
+
     def get_warning_letter_status(self, obj):  # pylint: disable=no-self-use
         """Get warning letter status."""
         if hasattr(obj, "warning_letter_status") and obj.warning_letter_status:
@@ -287,7 +309,7 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
     issuing_officer = fields.Method("get_issuing_officer", dump_only=True)
     # Approval fields
     send_for_review_date = fields.Method("get_send_for_review_date", dump_only=True)
-    deputy_director_name = fields.Method("get_deputy_director_name", dump_only=True)
+    deputy_director = fields.Method("get_deputy_director", dump_only=True)
     approved_date = fields.Method("get_approved_date", dump_only=True)
 
     # Order specific fields
@@ -334,14 +356,19 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
             return latest_approval.created_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_deputy_director_name(self, obj):  # pylint: disable=no-self-use
+    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_by_id:
             # Need to fetch the staff user for the name
             staff_user = StaffUser.query.get(latest_approval.approved_by_id)
             if staff_user:
-                return f"{staff_user.first_name} {staff_user.last_name}"
+                return {
+                    "id": staff_user.id,
+                    "first_name": staff_user.first_name,
+                    "last_name": staff_user.last_name,
+                    "name": f"{staff_user.first_name} {staff_user.last_name}",
+                }
         return None
 
     def get_approved_date(self, obj):  # pylint: disable=no-self-use

@@ -26,11 +26,12 @@ export interface ReviewBoardItem {
   ir_progress?: IRProgress;
   ir_number?: string;
   intended_issuance_date?: string;
-  deputy_director_name?: string;
+  deputy_director?: StaffUser;
   send_for_review_date?: string;
   date_report_sent?: string;
   expected_return_date?: string;
   date_response?: string;
+  issuing_officer?: StaffUser;
 }
 
 export interface ReviewBoardSection {
@@ -45,7 +46,7 @@ export interface IRReviewBoardItem {
   inspection_start_date: string,
   primary_officer: StaffUser,
   send_for_review_date: string,
-  deputy_director_name: string,
+  deputy_director: StaffUser,
   approved_date: string,
   date_report_sent: string,
   expected_return_date: string,
@@ -54,6 +55,7 @@ export interface IRReviewBoardItem {
   ir_status: IRStatus,
   ir_progress: IRProgress,
   approval_status: ApprovalStatus,
+  issuing_officer: StaffUser,
 }
 
 export interface OrderReviewBoardItem {
@@ -64,7 +66,7 @@ export interface OrderReviewBoardItem {
   primary_officer: StaffUser,
   issuing_officer: StaffUser,
   send_for_review_date: string,
-  deputy_director_name: string,
+  deputy_director: StaffUser,
   approved_date: string,
   order_status: OrderStatus,
   order_progress: OrderProgress,
@@ -80,7 +82,7 @@ export interface WarningLetterReviewBoardItem {
   primary_officer: StaffUser,
   issuing_officer: StaffUser,
   approved_date: string,
-  deputy_director_name: string,
+  deputy_director: StaffUser,
   review_requested_date: string,
   approved_by: StaffUser,
   intended_issuance_date: string,
