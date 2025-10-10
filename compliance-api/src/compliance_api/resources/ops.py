@@ -58,13 +58,13 @@ class Healthz(Resource):
         try:
             db.session.execute(SQL)
         except exc.SQLAlchemyError:
-            return {"message": "api is down"}, 500
+            return {'message': 'api is down'}, 500
 
         # made it here, so all checks passed
-        return {"message": "api is healthy"}, 200
+        return {'message': 'api is healthy'}, 200
 
 
-@API.route("readyz")
+@API.route('readyz')
 class Readyz(Resource):
     """Determines if the service is ready to respond."""
 
