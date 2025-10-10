@@ -137,6 +137,10 @@ export function Staff() {
         header: "Position",
         filterVariant: "multi-select",
         filterSelectOptions: positionList,
+        filterFn: (row, id, filterValue) => {
+          if (!filterValue.length) return true;
+          return filterValue.includes(row.getValue(id));
+        },
       },
       {
         accessorFn: (row) => row.supervisor?.name,

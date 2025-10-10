@@ -41,6 +41,5 @@ echo "  - Timeout: $GUNICORN_TIMEOUT"
 gunicorn --bind 0.0.0.0:8080 \
   --timeout $GUNICORN_TIMEOUT \
   --workers $GUNICORN_WORKERS \
-  --worker-class=gevent \
   --worker-connections=$GUNICORN_WORKER_CONNECTIONS \
   wsgi:application
