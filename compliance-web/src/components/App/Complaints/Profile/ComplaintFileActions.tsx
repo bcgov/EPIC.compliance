@@ -55,7 +55,7 @@ const ComplaintFileActions: React.FC<ComplaintFileActionsProps> = ({
     queryClient.removeQueries({
       queryKey: ["complaint", complaintData?.complaint_number],
     });
-    router.navigate({ to: "/ce-database/complaints" });
+    router.navigate({ to: `/ce-database/case-files/${complaintData?.case_file?.case_file_number}` });
   }, [router, setClose, queryClient, complaintData]);
 
   const { mutate: updateComplaintStatus } = useUpdateComplaintStatus(

@@ -58,7 +58,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
     queryClient.removeQueries({
       queryKey: ["inspection", inspectionData?.ir_number],
     });
-    router.navigate({ to: "/ce-database/inspections" });
+    router.navigate({ to: `/ce-database/case-files/${inspectionData?.case_file?.case_file_number}` });
   }, [router, setClose, queryClient, inspectionData]);
 
   const { mutate: updateInspectionInspection } = useUpdateInspectionStatus(
