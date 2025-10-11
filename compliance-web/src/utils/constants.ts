@@ -118,7 +118,7 @@ export enum IRProgressEnumText {
 export enum InspectionStatusEnum {
   OPEN = "Open",
   CLOSED = "Closed",
-  CLOSE_AS_NOTE = "Closed as Note to File",
+  CLOSE_AS_NOTE = "Close as Note to File",
   CANCELED = "Canceled",
 }
 
