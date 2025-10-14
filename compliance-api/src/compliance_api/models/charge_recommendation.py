@@ -4,7 +4,7 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_
+from sqlalchemy import ForeignKey, Index, Integer, String, and_
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -31,11 +31,12 @@ class ChargeDecisionEnum(Enum):
     NOT_PROCEEDING = "Not Proceeding"
 
 
-class JudgmentEnum(Enum):
-    """Enum for Charge Recommendation Judgment."""
+class CourtDecisionEnum(Enum):
+    """Enum for Charge Recommendation Court Decision."""
 
     GUILTY = "Guilty"
     NOT_GUILTY = "Not Guilty"
+    WITHDRAWN = "Withdrawn"
 
 
 # Removed SentenceTypeEnum - sentence_type is now a text field
@@ -191,32 +192,21 @@ class ChargeRecommendation(BaseModelVersioned):
         nullable=True,
         comment="Court file number",
     )
-    court_appearances = Column(
-        Text,
+    court_decision = Column(
+        SqlEnum(CourtDecisionEnum),
         nullable=True,
-        comment="Court appearances details",
+        comment="Court decision on the charge recommendation",
     )
-    judgment = Column(
-        SqlEnum(JudgmentEnum),
-        nullable=True,
-        comment="Judgment on the charge recommendation",
-    )
-    judgment_date = Column(
+    court_decision_date = Column(
         DateTime(timezone=True),
         nullable=True,
-        comment="Date when the judgment was made",
+        comment="Date when the court decision was made",
     )
     sentence_date = Column(
         DateTime(timezone=True),
         nullable=True,
         comment="Date when the sentence was given",
     )
-    sentence_type = Column(
-        String,
-        nullable=True,
-        comment="Type of sentence",
-    )
-
     # Relationships
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="joined")
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
@@ -229,6 +219,17 @@ class ChargeRecommendation(BaseModelVersioned):
             "ChargeRecommendation.id, "
             "ChargeRecommendationInspectionRequirementMap.is_active == True, "
             "ChargeRecommendationInspectionRequirementMap.is_deleted == False)"
+        ),
+    )
+    sentence_type_mappings = relationship(
+        "CRSentenceTypeMapping",
+        back_populates="charge_recommendation",
+        lazy="select",
+        primaryjoin=(
+            "and_(CRSentenceTypeMapping.charge_recommendation_id == "
+            "ChargeRecommendation.id, "
+            "CRSentenceTypeMapping.is_active == True, "
+            "CRSentenceTypeMapping.is_deleted == False)"
         ),
     )
 

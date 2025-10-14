@@ -22,12 +22,13 @@ from .case_file import (
     CaseFile, CaseFileInitiationEnum, CaseFileInitiationOption, CaseFileLink, CaseFileOfficer, CaseFileStatusEnum)
 from .charge_recommendation import (
     ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationInspectionRequirementMap,
-    ChargeRecommendationStatusEnum, JudgmentEnum)
+    ChargeRecommendationStatusEnum, CourtDecisionEnum)
 from .complaint import (
     Complaint, ComplaintReqOrderDetail, ComplaintRequirementSourceEnum, ComplaintResolution, ComplaintResolutionEnum,
     ComplaintSource, ComplaintSourceContact, ComplaintStatusEnum)
 from .compliance_finding import ComplianceFindingOption, ComplianceFindingOptionEnum
 from .continuation_report import ContinuationReport, ContinuationReportKey
+from .cr_sentence_type_mapping import CRSentenceTypeMapping
 from .db import db, ma, migrate
 from .department_detail import DepartmentDetail
 from .document_type import DocumentType
@@ -48,6 +49,7 @@ from .req_source_document_map import RequirementSourceDocumentMap
 from .requirement_source import RequirementSource, RequirementSourceEnum
 from .restorative_justice import RestorativeJustice, RestorativeJusticeInspectionRequirementMap
 from .section import Section
+from .sentence_type_option import SentenceTypeOption
 from .staff_user import StaffUser
 from .topic import Topic
 from .unapproved_project import UnapprovedProject

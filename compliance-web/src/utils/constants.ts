@@ -224,10 +224,14 @@ export const CRDecision = {
   NOT_PROCEEDING: { id: "NOT_PROCEEDING", name: "Not Proceeding" },
 };
 
-export const CRJudgment = {
+export const CRCourtDecision = {
   GUILTY: { id: "GUILTY", name: "Guilty" },
-  NOT_GUILTY: { id: "NOT_GUILTY", name: "Not Guilty" }
+  NOT_GUILTY: { id: "NOT_GUILTY", name: "Not Guilty" },
+  WITHDRAWN: { id: "WITHDRAWN", name: "Withdrawn" }
 };
+
+// Keep old export for backward compatibility during transition
+export const CRJudgment = CRCourtDecision;
 
 export const DEFAULT_PAGE_SIZE = 15;
 

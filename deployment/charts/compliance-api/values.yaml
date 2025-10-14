@@ -50,3 +50,8 @@ cdogs:
   apiEndpoint: https://cdogs-test.api.gov.bc.ca/api/v2
   clientId:
   clientSecret:
+gunicorn:
+  workerCount: 1
+  threadCount: 2
+  connectionCount: 250
+  timeout: 60

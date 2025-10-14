@@ -30,6 +30,7 @@ fi
 
 # Get worker configuration from environment variables with defaults
 GUNICORN_WORKERS=${GUNICORN_WORKERS:-2}
+GUNICORN_WORKER_THREADS=${GUNICORN_WORKER_THREADS:-2}
 GUNICORN_WORKER_CONNECTIONS=${GUNICORN_WORKER_CONNECTIONS:-250}
 GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-60}
 
@@ -37,9 +38,11 @@ echo "[entrypoint] Starting application with:"
 echo "  - Workers: $GUNICORN_WORKERS"
 echo "  - Worker Connections: $GUNICORN_WORKER_CONNECTIONS"
 echo "  - Timeout: $GUNICORN_TIMEOUT"
+echo "  - Worker Threads: $GUNICORN_WORKER_THREADS"
 
 gunicorn --bind 0.0.0.0:8080 \
   --timeout $GUNICORN_TIMEOUT \
   --workers $GUNICORN_WORKERS \
+  --threads $GUNICORN_WORKER_THREADS \
   --worker-connections=$GUNICORN_WORKER_CONNECTIONS \
   wsgi:application
