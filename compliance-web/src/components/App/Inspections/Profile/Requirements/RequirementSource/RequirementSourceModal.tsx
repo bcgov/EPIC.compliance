@@ -5,8 +5,11 @@ import {
   IconButton,
   Stack,
   Typography,
+  Popover,
+  CircularProgress,
 } from "@mui/material";
-import { useEffect, useMemo, useRef } from "react";
+import type React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -32,6 +35,8 @@ import {
   UploadRounded,
 } from "@mui/icons-material";
 import { BCDesignTokens } from "epic.theme";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import { RequirementImage, UploadedImageFile } from "@/models/Image";
 
 type RequirementSourceModalProps = {
   onSubmit: (data: RequirementSourceFormData) => void;
@@ -92,6 +97,7 @@ const initFormData: RequirementSourceFormData = {
   clauseNumber: undefined,
   title: "",
   description: undefined,
+  images: [],
 };
 
 const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
@@ -231,16 +237,92 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
     }
   }, [selectedRequirementSource, setValue, caseFileData]);
 
+  const [uploadedImages, setUploadedImages] = useState<RequirementImage[]>(
+    requirementSourceFormData?.images ?? []
+  );
+
   const onSubmitHandler = (data: RequirementSourceSchemaType) => {
     const formData = data as RequirementSourceFormData;
     if (!requirementSourceFormData) {
       formData.id = Date.now();
     }
+    uploadedImages.forEach((image) => {
+      if (image.id) {
+        image.dbId = image.id;
+      }
+    });
+    formData.images = uploadedImages;
     onSubmit(formData);
   };
 
   const handleTitleChange = () => {
     hasUserEditedTitle.current = true;
+  };
+
+  const [previewAnchorEl, setPreviewAnchorEl] = useState<HTMLElement | null>(
+    null
+  );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previousPreviewUrlRef = useRef<string | null>(null);
+
+  const handlePreviewEnter = (
+    event: React.MouseEvent<HTMLElement>,
+    file: RequirementImage
+  ) => {
+    setPreviewAnchorEl(event.currentTarget);
+    if (previousPreviewUrlRef.current) {
+      URL.revokeObjectURL(previousPreviewUrlRef.current);
+      previousPreviewUrlRef.current = null;
+    }
+    const url = file.url ?? "";
+    previousPreviewUrlRef.current = url;
+    setPreviewUrl(url);
+  };
+
+  const handlePreviewLeave = () => {
+    setPreviewAnchorEl(null);
+    if (previousPreviewUrlRef.current) {
+      URL.revokeObjectURL(previousPreviewUrlRef.current);
+      previousPreviewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (previousPreviewUrlRef.current) {
+        URL.revokeObjectURL(previousPreviewUrlRef.current);
+        previousPreviewUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const onSuccess = useCallback((uploadedFile: UploadedImageFile) => {
+    const requirementImage: RequirementImage = {
+      relative_url: uploadedFile.relative_url,
+      url: uploadedFile.presigned_url,
+      original_file_name: uploadedFile.fileName,
+    };
+    setUploadedImages((prevImages) => [...prevImages, requirementImage]);
+  }, []);
+
+  const { mutate: uploadImage, isPending } = useImageUpload(onSuccess);
+
+  const handleUploadImage = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        uploadImage({
+          inspectionId: caseFile.id,
+          fileName: file.name,
+          file: file,
+        });
+      }
+    };
+    input.click();
   };
 
   return (
@@ -418,12 +500,12 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                   direction={"row"}
                   gap={2}
                   alignItems={"center"}
-                  sx={{ mt: 2 }}
+                  sx={{ my: 2 }}
                 >
                   <Button
                     color="secondary"
                     size="small"
-                    onClick={() => {}}
+                    onClick={handleUploadImage}
                     startIcon={<UploadRounded />}
                   >
                     Upload Image
@@ -433,34 +515,74 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                     images in the report.
                   </Typography>
                 </Stack>
-                {[1, 2, 3].map((item) => (
+                {isPending && <CircularProgress size={20} />}
+                {!isPending && (
                   <Box
                     sx={{
-                      mt: 2,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 1,
-                      border: "1px solid",
-                      borderColor: BCDesignTokens.surfaceColorBorderDefault,
-                      borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
-                      px: "0.5rem",
+                      maxHeight: "136px",
+                      overflow: "scroll",
                     }}
                   >
-                    <Box
-                      display="flex"
-                      alignItems="center"
-                      gap={1}
-                      color={BCDesignTokens.typographyColorLink}
+                    {uploadedImages.map((item, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          mb: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 1,
+                          border: "1px solid",
+                          borderColor: BCDesignTokens.surfaceColorBorderDefault,
+                          borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
+                          px: "0.5rem",
+                          cursor: "pointer",
+                        }}
+                        onMouseEnter={(e) => handlePreviewEnter(e, item)}
+                        onMouseLeave={handlePreviewLeave}
+                      >
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          gap={1}
+                          color={BCDesignTokens.typographyColorLink}
+                        >
+                          <ImageOutlined />
+                          {item.original_file_name}
+                        </Box>
+                        <IconButton>
+                          <CloseRounded />
+                        </IconButton>
+                      </Box>
+                    ))}
+                    <Popover
+                      open={Boolean(previewAnchorEl)}
+                      anchorEl={previewAnchorEl}
+                      onClose={handlePreviewLeave}
+                      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+                      transformOrigin={{
+                        vertical: "bottom",
+                        horizontal: "center",
+                      }}
+                      sx={{ pointerEvents: "none" }}
                     >
-                      <ImageOutlined />
-                      Screenshot {item}.png
-                    </Box>
-                    <IconButton>
-                      <CloseRounded />
-                    </IconButton>
+                      {previewUrl && (
+                        <Box
+                          component="img"
+                          src={previewUrl}
+                          alt="Preview"
+                          sx={{
+                            maxWidth: 420,
+                            maxHeight: 420,
+                            objectFit: "contain",
+                            display: "block",
+                            padding: "4px",
+                          }}
+                        />
+                      )}
+                    </Popover>
                   </Box>
-                ))}
+                )}
               </Box>
             </Stack>
           </DialogContent>

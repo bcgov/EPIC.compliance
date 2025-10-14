@@ -125,6 +125,7 @@ export const formatRequirementAPIData = (
           appendix_id: item.appendix?.id ?? undefined,
           order_id: item.order?.id ?? undefined,
           documents: [],
+          images: formatImages(item.images ?? []),
         };
         if (item.dbId) {
           requirementSource.id = item.dbId;
@@ -160,10 +161,10 @@ const formatImages = (images: RequirementImage[]): ImageAPIData[] => {
       id: image.dbId ?? undefined,
       original_file_name: image.original_file_name,
       date_taken: image.date_taken ? dateUtils.dateToISO(new Date(image.date_taken)) : undefined,
-      taken_by_id: image.taken_by_id,
-      caption: image.caption,
+      taken_by_id: image.taken_by_id ?? undefined,
+      caption: image.caption ?? undefined,
       relative_url: image.relative_url,
-      sort_order: image.sort_order,
+      sort_order: image.sort_order ?? undefined,
     };
   });
 }
@@ -215,6 +216,7 @@ export const formatRequirementFormData = (requirement: InspectionRequirement): I
       order: item.order,
       description: { html: item.description, text: item.description },
       relatedDocuments: relatedDocuments,
+      images: item.images,
     };
   });
   // Sort enforcement actions by ID
