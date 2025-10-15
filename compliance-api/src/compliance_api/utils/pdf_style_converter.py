@@ -128,7 +128,7 @@ class PDFStyleConverter:
 
         # First fix list ordering issues
         html_content = cls._fix_list_ordering(html_content)
-        
+
         # Handle editor tables specifically
         html_content = cls._fix_editor_tables(html_content)
 
@@ -182,10 +182,10 @@ class PDFStyleConverter:
     def _fix_editor_tables(cls, html_content: str) -> str:
         """
         Fix editor tables to ensure proper width constraints for PDF generation.
-        
+
         Args:
             html_content: HTML string with editor tables
-            
+
         Returns:
             HTML string with fixed table constraints
         """
@@ -240,11 +240,11 @@ class PDFStyleConverter:
                 style_dict["width"] = f"{int(round(target_width))}px"
                 style_dict["max-width"] = f"{int(round(target_width))}px"
                 style_dict["table-layout"] = "fixed"
-                
+
                 # Update the table style
                 new_style = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
                 table["style"] = new_style
-                
+
                 # Process colgroup to redistribute/scale column widths if needed
                 cls._fix_table_columns(table, target_width)
 
@@ -267,7 +267,7 @@ class PDFStyleConverter:
                     p_style["overflow-x"] = "hidden"
                     p_style["box-sizing"] = "border-box"
                     parent_cell["style"] = "; ".join([f"{p}: {v}" for p, v in p_style.items()])
-                
+
             return str(soup)
         except Exception:  # noqa: B902
             # If BeautifulSoup fails, return original content
@@ -297,16 +297,16 @@ class PDFStyleConverter:
         cols = colgroup.find_all("col")
         if not cols:
             return
-            
+
         # Calculate total specified width
         total_width = 0
         specified_widths = []
-        
+
         for col in cols:
             style = col.get("style", "")
             style_dict = cls._parse_css_declarations(style)
             width = style_dict.get("width", "")
-            
+
             if width and width.endswith("px"):
                 try:
                     width_value = float(width[:-2])
@@ -316,7 +316,7 @@ class PDFStyleConverter:
                     specified_widths.append((col, None))
             else:
                 specified_widths.append((col, None))
-        
+
         # If total width is zero or missing, assign equal widths to fill target
         if total_width == 0:
             equal_width = target_width / len(cols)

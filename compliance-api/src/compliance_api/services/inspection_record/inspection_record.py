@@ -305,7 +305,7 @@ class InspectionRecordService:
             preview_data["action_required_by_rp"] = convert_inline_styles_for_pdf(
                 preview_data["action_required_by_rp"]
             )
-        
+
         # Apply style conversion to requirement findings and nested descriptions (may contain tables)
         if preview_data.get("requirement_details"):
             for requirement in preview_data["requirement_details"]:
@@ -330,7 +330,7 @@ class InspectionRecordService:
                                             doc["description"] = convert_inline_styles_for_pdf(
                                                 doc["description"]
                                             )
-        
+
         # Apply style conversion to regulatory consideration findings
         if preview_data.get("regulatory_consideration") and preview_data["regulatory_consideration"].get("findings"):
             preview_data["regulatory_consideration"]["findings"] = convert_inline_styles_for_pdf(
