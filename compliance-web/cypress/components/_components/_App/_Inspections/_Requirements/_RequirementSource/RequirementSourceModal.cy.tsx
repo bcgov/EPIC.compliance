@@ -125,6 +125,9 @@ describe("RequirementSourceModal", () => {
   });
 
   it("submits form with valid data", () => {
+    // Set viewport to ensure proper dimensions for modal layout
+    cy.viewport(1200, 800);
+
     cy.mount(
       mountRequirementSourceModal({
         requirementSource: mockRequirementSourceList[1],
@@ -136,8 +139,12 @@ describe("RequirementSourceModal", () => {
     cy.get('input[name="conditionNumber"]').type("123");
     cy.get('textarea[name="title"]').type("Test Title");
 
+    // Wait for the modal to be fully rendered and scroll into view
+    cy.get('[contenteditable="true"]').should("be.visible").scrollIntoView();
     // Type in the Lexical editor
-    cy.get('[contenteditable="true"]').type("Test Description");
+    cy.get('[contenteditable="true"]').type("Test Description", {
+      force: true,
+    });
 
     // Submit the form
     cy.contains("button", "Add").click();

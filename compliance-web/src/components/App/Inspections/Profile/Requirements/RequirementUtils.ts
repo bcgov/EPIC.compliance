@@ -216,7 +216,7 @@ export const formatRequirementFormData = (requirement: InspectionRequirement): I
       order: item.order,
       description: { html: item.description, text: item.description },
       relatedDocuments: relatedDocuments,
-      images: item.images.map((image) => ({
+      images: item.images?.map((image) => ({
         ...image,
         dbId: image.id,
       })),

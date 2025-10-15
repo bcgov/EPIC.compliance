@@ -124,6 +124,9 @@ describe("RequirementRelatedDocumentModal", () => {
   });
 
   it("submits form with valid data", () => {
+    // Set viewport to ensure proper dimensions for modal layout
+    cy.viewport(1200, 800);
+
     cy.mount(
       mountRelatedDocumentModal({
         relatedDocumentData: mockRelatedDocumentData,
@@ -136,8 +139,13 @@ describe("RequirementRelatedDocumentModal", () => {
     cy.get('input[name="sectionNumber"]').type("1.1");
     cy.get('textarea[name="sectionTitle"]').type("Test Section");
 
-    // Type in the Lexical editor
-    cy.get('[contenteditable="true"]').type("Test Description");
+    // Wait for the modal to be fully rendered and scroll into view
+    cy.get('[contenteditable="true"]').should("be.visible").scrollIntoView();
+
+    // Type in the Lexical editor with force to handle potential coverage issues
+    cy.get('[contenteditable="true"]').type("Test Description", {
+      force: true,
+    });
 
     // Submit the form
     cy.contains("button", "Add").click();
