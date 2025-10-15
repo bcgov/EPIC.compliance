@@ -437,11 +437,11 @@ def test_inspection_close(
     created_result = InspectionService.create(inspection_data)
     url = urljoin(API_BASE_URL, f"inspections/{created_result.id}/status")
     result = client.patch(
-        url, data=json.dumps({"status": "OPEN"}), headers=auth_header_super_user
+        url, data=json.dumps({"status": "CLOSED"}), headers=auth_header_super_user
     )
     assert result.status_code == HTTPStatus.NO_CONTENT
     result = client.patch(
-        url, data=json.dumps({"status": "CLOSED"}), headers=auth_header_super_user
+        url, data=json.dumps({"status": "OPEN"}), headers=auth_header_super_user
     )
     assert result.status_code == HTTPStatus.NO_CONTENT
     result = client.patch(

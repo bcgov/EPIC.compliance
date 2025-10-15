@@ -48,6 +48,7 @@ from .requirement_source import API as REQUIREMENT_SOURCE_API
 from .restorative_justice import API as RESTORATIVE_JUSTICE_API
 from .review_board import API as REVIEW_BOARD_API
 from .section import API as SECTION_API
+from .sentence_type_option import API as SENTENCE_TYPE_OPTION_API
 from .staff_user import API as USER_API
 from .topic import API as TOPIC_API
 from .violation_ticket import API as VIOLATION_TICKET_API
@@ -116,3 +117,4 @@ API.add_namespace(CHARGE_RECOMMENDATION_API, path="charge-recommendations")
 API.add_namespace(RESTORATIVE_JUSTICE_API, path="restorative-justices")
 API.add_namespace(REVIEW_BOARD_API, path="review-board")
 API.add_namespace(INSPECTION_REQUIREMENTS_API, path="inspection-requirements")
+API.add_namespace(SENTENCE_TYPE_OPTION_API, path="sentence-type-options")

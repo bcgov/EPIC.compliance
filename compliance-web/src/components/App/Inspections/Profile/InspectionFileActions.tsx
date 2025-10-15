@@ -11,6 +11,7 @@ import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import React, { useCallback } from "react";
+import { InspectionStatusEnum } from "@/utils/constants";
 
 interface InspectionFileActionsProps {
   status: string;
@@ -58,7 +59,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
     queryClient.removeQueries({
       queryKey: ["inspection", inspectionData?.ir_number],
     });
-    router.navigate({ to: "/ce-database/inspections" });
+    router.navigate({ to: `/ce-database/case-files/${inspectionData?.case_file?.case_file_number}` });
   }, [router, setClose, queryClient, inspectionData]);
 
   const { mutate: updateInspectionInspection } = useUpdateInspectionStatus(
@@ -66,7 +67,6 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   );
 
   const { mutate: deleteInspection } = useDeleteInspection(onDeleteSuccess);
-
   const actionsList = [
     {
       text: "Cancel Inspection",
@@ -88,7 +88,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
           ),
         });
       },
-      hidden: ["canceled", "closed"].includes(status?.toLowerCase()),
+      hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.CLOSED.toLowerCase(), InspectionStatusEnum.CLOSE_AS_NOTE.toLowerCase()].includes(status?.toLowerCase()),
     },
     {
       text: "Close as Note to File",
@@ -113,7 +113,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
           width: "420px",
         });
       },
-      hidden: ["canceled", "closed"].includes(status?.toLowerCase()),
+      hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.CLOSED.toLowerCase(), InspectionStatusEnum.CLOSE_AS_NOTE.toLowerCase()].includes(status?.toLowerCase()),
     },
     {
       text: "Close",
@@ -136,7 +136,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
           width: "420px",
         });
       },
-      hidden: ["canceled", "closed"].includes(status?.toLowerCase()),
+      hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.CLOSED.toLowerCase(), InspectionStatusEnum.CLOSE_AS_NOTE.toLowerCase()].includes(status?.toLowerCase()),
     },
     {
       text: "Reopen Inspection",
@@ -158,7 +158,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
           ),
         });
       },
-      hidden: ["canceled", "open"].includes(status?.toLowerCase()),
+      hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.OPEN.toLowerCase()].includes(status?.toLowerCase()),
     },
     {
       text: "Delete Inspection",

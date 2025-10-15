@@ -1898,7 +1898,9 @@ def _validate_appendix(appendix_id, inspection):
             )
 
 
-def _create_or_update_source_detail(requirement_id, source_detail_data, inspection, session):
+def _create_or_update_source_detail(
+    requirement_id, source_detail_data, inspection, session
+):
     """Create or update a source detail."""
     req_detail_id = source_detail_data.get("id", None)
     _validate_appendix(source_detail_data.get("appendix_id"), inspection)
@@ -1927,9 +1929,7 @@ def _process_documents(req_detail_id, source_detail_data, inspection, session):
             req_detail_id, doc_detail_data
         )
         if not doc_detail_id:
-            InspectionReqDetailDocumentModel.create_doc_detail(
-                doc_detail_obj, session
-            )
+            InspectionReqDetailDocumentModel.create_doc_detail(doc_detail_obj, session)
         else:
             doc_detail_obj = {**doc_detail_obj, "id": doc_detail_id}
             InspectionReqDetailDocumentModel.update_doc_detail(

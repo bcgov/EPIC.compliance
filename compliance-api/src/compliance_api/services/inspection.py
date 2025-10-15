@@ -330,9 +330,22 @@ class InspectionService:
         if not inspection:
             raise ResourceNotFoundError("Inspection not found.")
         status_enum = InspectionStatusEnum(status.get("status"))
+        possible_statuses = {
+            InspectionStatusEnum.OPEN: [
+                InspectionStatusEnum.CLOSED,
+                InspectionStatusEnum.CLOSE_AS_NOTE,
+                InspectionStatusEnum.CANCELED,
+            ],
+            InspectionStatusEnum.CLOSED: [InspectionStatusEnum.OPEN],
+            InspectionStatusEnum.CLOSE_AS_NOTE: [InspectionStatusEnum.OPEN],
+        }
         if inspection.inspection_status == InspectionStatusEnum.CANCELED:
             raise UnprocessableEntityError(
                 "No status change can be perforemed on CANCELED inspection"
+            )
+        if status_enum not in possible_statuses[inspection.inspection_status]:
+            raise UnprocessableEntityError(
+                "Invalid status change"
             )
         with session_scope() as session:
             InspectionModel.update_inspection(

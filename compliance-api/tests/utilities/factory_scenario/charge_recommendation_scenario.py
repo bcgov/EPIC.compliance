@@ -71,11 +71,12 @@ class ChargeRecommendationScenario(enum.Enum):
             "%Y-%m-%dT%H:%M:%S.%fZ"
         ),
         "court_file_number": "CF-2024-001",
-        "court_appearances": "Initial appearance scheduled for next month",
-        "judgment": "GUILTY",
-        "judgment_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "court_decision": "GUILTY",
+        "court_decision_date": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
         "sentence_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        "sentence_type": "Fine of $5000",
+        "sentence_type_option_ids": [1],  # Fine
         "inspection_requirement_ids": [1],
     }
 
@@ -105,12 +106,13 @@ class ChargeRecommendationScenario(enum.Enum):
 
     court_update_value = {
         "court_file_number": "CF-2024-002",
-        "court_appearances": "Updated court appearance details",
-        "judgment": "NOT_GUILTY",
-        "judgment_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "court_decision": "NOT_GUILTY",
+        "court_decision_date": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
     }
 
     sentence_update_value = {
         "sentence_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        "sentence_type": "Community service 100 hours",
+        "sentence_type_option_ids": [2, 3],  # Creative Sentencing, Imprisonment
     }

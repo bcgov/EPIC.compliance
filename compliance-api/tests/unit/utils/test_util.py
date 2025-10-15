@@ -81,6 +81,7 @@ class TestCorsPreflight:
 
     def test_cors_preflight_decorator_adds_options_method(self):
         """Test that cors_preflight decorator adds options method to class."""
+
         # Arrange
         @cors_preflight("GET, POST, PUT, DELETE")
         class TestResource:
@@ -139,6 +140,7 @@ class TestCorsPreflight:
 
     def test_cors_preflight_preserves_original_class(self):
         """Test that cors_preflight preserves original class functionality."""
+
         # Arrange
         @cors_preflight("GET, POST")
         class TestResource:
@@ -228,6 +230,7 @@ class TestSingleton:
 
     def test_singleton_creates_single_instance(self):
         """Test that Singleton metaclass creates only one instance."""
+
         # Arrange
         class TestClass(metaclass=Singleton):
             """Test class with Singleton metaclass."""
@@ -245,6 +248,7 @@ class TestSingleton:
 
     def test_singleton_preserves_state(self):
         """Test that Singleton instances preserve state across calls."""
+
         # Arrange
         class TestClass(metaclass=Singleton):
             """Test class with Singleton metaclass."""
@@ -266,6 +270,7 @@ class TestSingleton:
 
     def test_singleton_different_classes_different_instances(self):
         """Test that different classes with Singleton metaclass have different instances."""
+
         # Arrange
         class TestClass1(metaclass=Singleton):
             """Test class 1 with Singleton metaclass."""
@@ -287,6 +292,7 @@ class TestSingleton:
 
     def test_singleton_with_constructor_args(self):
         """Test that Singleton works with constructor arguments."""
+
         # Arrange
         class TestClass(metaclass=Singleton):
             """Test class with constructor arguments."""

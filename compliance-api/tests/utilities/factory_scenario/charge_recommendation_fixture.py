@@ -163,7 +163,9 @@ def created_charge_recommendation_with_court_details(app, db, created_inspection
     """Return a charge recommendation with complete court details."""
     from datetime import datetime, timezone
 
-    from compliance_api.models.charge_recommendation import ChargeDecisionEnum, JudgmentEnum
+    from compliance_api.models.charge_recommendation import ChargeDecisionEnum, CourtDecisionEnum
+    from compliance_api.models.cr_sentence_type_mapping import CRSentenceTypeMapping
+    from compliance_api.models.sentence_type_option import SentenceTypeOption
 
     charge_recommendation = ChargeRecommendationModel(
         inspection_id=created_inspection.id,
@@ -173,14 +175,42 @@ def created_charge_recommendation_with_court_details(app, db, created_inspection
         charge_decision=ChargeDecisionEnum.APPROVED,
         charge_decision_date=datetime.now(timezone.utc),
         court_file_number="CF-2024-TEST-001",
-        court_appearances="Test court appearance details",
-        judgment=JudgmentEnum.GUILTY,
-        judgment_date=datetime.now(timezone.utc),
+        court_decision=CourtDecisionEnum.GUILTY,
+        court_decision_date=datetime.now(timezone.utc),
         sentence_date=datetime.now(timezone.utc),
-        sentence_type="Test sentence type",
         is_active=True,
         is_deleted=False,
     )
     db.session.add(charge_recommendation)
     db.session.commit()
+
+    # Create sentence type mappings (assuming Fine option exists with ID 1)
+    # Get or create a sentence type option for testing
+    sentence_type_option = (
+        db.session.query(SentenceTypeOption).filter_by(name="Fine").first()
+    )
+    if not sentence_type_option:
+        sentence_type_option = SentenceTypeOption(
+            name="Fine",
+            sort_order=1,
+            is_active=True,
+            is_deleted=False,
+            created_by="system",
+            updated_by="system",
+        )
+        db.session.add(sentence_type_option)
+        db.session.commit()
+
+    # Create the mapping between charge recommendation and sentence type
+    sentence_mapping = CRSentenceTypeMapping(
+        charge_recommendation_id=charge_recommendation.id,
+        sentence_type_option_id=sentence_type_option.id,
+        is_active=True,
+        is_deleted=False,
+        created_by="system",
+        updated_by="system",
+    )
+    db.session.add(sentence_mapping)
+    db.session.commit()
+
     return charge_recommendation

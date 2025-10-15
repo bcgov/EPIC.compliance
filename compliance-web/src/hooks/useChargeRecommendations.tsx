@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ChargeRecommendation,
   ChargeRecommendationAPIData,
+  SentenceTypeOption,
 } from "@/models/ChargeRecommendation";
 
 const fetchChargeRecommendations = (
@@ -56,6 +57,17 @@ const deleteChargeRecommendation = ({
   return request({
     url: `/charge-recommendations/${chargeRecommendationId}`,
     method: "delete",
+  });
+};
+
+const fetchSentenceTypeOptions = (): Promise<SentenceTypeOption[]> => {
+  return request({ url: "/sentence-type-options" });
+};
+
+export const useSentenceTypeOptionsData = () => {
+  return useQuery({
+    queryKey: ["sentence-type-options"],
+    queryFn: () => fetchSentenceTypeOptions(),
   });
 };
 

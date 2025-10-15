@@ -20,7 +20,7 @@ class InspectionStatusEnum(enum.Enum):
     OPEN = "Open"
     CLOSED = "Closed"
     CANCELED = "Canceled"
-    CLOSE_AS_NOTE = "Closed as Note to File"
+    CLOSE_AS_NOTE = "Close as Note to File"
 
 
 class ImageTypeEnum(enum.Enum):

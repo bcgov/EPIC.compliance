@@ -7,7 +7,7 @@ from http import HTTPStatus
 from urllib.parse import urljoin
 
 from compliance_api.models.charge_recommendation import (
-    ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationStatusEnum, JudgmentEnum)
+    ChargeDecisionEnum, ChargeRecommendation, ChargeRecommendationStatusEnum, CourtDecisionEnum)
 from tests.utilities.factory_scenario.charge_recommendation_scenario import ChargeRecommendationScenario
 
 
@@ -212,10 +212,13 @@ def test_create_charge_recommendation_with_court_details(
         data=json.dumps(cr_data),
         headers=auth_header_super_user,
     )
+    print("without court details", result.json)
     assert result.status_code == HTTPStatus.CREATED
     assert result.json["court_file_number"] == "CF-2024-001"
-    assert result.json["judgment"]["id"] == JudgmentEnum.GUILTY.name
-    assert result.json["sentence_type"] == "Fine of $5000"
+    assert result.json["court_decision"]["id"] == CourtDecisionEnum.GUILTY.name
+    # Check sentence type mappings instead of sentence_type
+    assert "sentence_type_mappings" in result.json
+    assert len(result.json["sentence_type_mappings"]) > 0
 
 
 def test_create_charge_recommendation_with_custom_number(
@@ -396,11 +399,12 @@ def test_update_charge_recommendation_with_court_details(
     update_data = {
         "inspection_id": created_charge_recommendation_submitted.inspection_id,
         "court_file_number": "CF-2024-UPDATED",
-        "court_appearances": "Updated court appearance details",
-        "judgment": "GUILTY",
-        "judgment_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        "court_decision": "GUILTY",
+        "court_decision_date": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        ),
         "sentence_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        "sentence_type": "Updated sentence type",
+        "sentence_type_option_ids": [2, 3],  # Creative Sentencing, Imprisonment
     }
 
     headers = {**auth_header_super_user, "Content-Type": "application/json"}
@@ -409,9 +413,10 @@ def test_update_charge_recommendation_with_court_details(
         data=json.dumps(update_data),
         headers=headers,
     )
+    print("with court details on update", result.json)
     assert result.status_code == HTTPStatus.OK
     assert result.json["court_file_number"] == "CF-2024-UPDATED"
-    assert result.json["judgment"]["id"] == JudgmentEnum.GUILTY.name
+    assert result.json["court_decision"]["id"] == CourtDecisionEnum.GUILTY.name
 
 
 def test_update_charge_recommendation_with_invalid_id(

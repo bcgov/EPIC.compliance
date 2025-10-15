@@ -6,6 +6,7 @@ from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntity
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.charge_recommendation import (
     ChargeRecommendation, ChargeRecommendationInspectionRequirementMap)
+from compliance_api.models.cr_sentence_type_mapping import CRSentenceTypeMapping
 from compliance_api.models.db import session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.services.service_utils import ServiceUtils
@@ -77,6 +78,11 @@ class ChargeRecommendationService:
                 charge_recommendation_data.get("inspection_requirement_ids", []),
                 session,
             )
+            cls.insert_or_update_sentence_type_mappings(
+                charge_recommendation.id,
+                charge_recommendation_data.get("sentence_type_option_ids", []),
+                session,
+            )
 
         return charge_recommendation
 
@@ -100,15 +106,21 @@ class ChargeRecommendationService:
                 "Charge recommendation already exists for these requirements."
             )
         with session_scope() as session:
-            update_data = _extract_cr_data(update_data)
+            extracted_update_data = _extract_cr_data(update_data)
             updated_charge_recommendation = (
                 ChargeRecommendation.update_charge_recommendation(
-                    charge_recommendation_id, update_data, session
+                    charge_recommendation_id, extracted_update_data, session
                 )
             )
             cls.insert_or_update_inspection_requirements(
                 updated_charge_recommendation.id,
                 requirement_ids,
+                session,
+            )
+            sentence_type_ids = update_data.get("sentence_type_option_ids", [])
+            cls.insert_or_update_sentence_type_mappings(
+                updated_charge_recommendation.id,
+                sentence_type_ids,
                 session,
             )
         return updated_charge_recommendation
@@ -168,6 +180,46 @@ class ChargeRecommendationService:
                 )
 
     @classmethod
+    def insert_or_update_sentence_type_mappings(
+        cls,
+        charge_recommendation_id: int,
+        sentence_type_option_ids: List[int],
+        session=None,
+    ):
+        """Insert or update sentence type mappings for a charge recommendation."""
+        existing_mappings = CRSentenceTypeMapping.get_by_charge_recommendation_id(
+            charge_recommendation_id, session
+        )
+        existing_sentence_type_ids = {
+            mapping.sentence_type_option_id for mapping in existing_mappings
+        }
+        new_sentence_type_ids = set(sentence_type_option_ids)
+
+        # Find IDs to be added and deleted
+        sentence_type_ids_to_be_added = (
+            new_sentence_type_ids - existing_sentence_type_ids
+        )
+        sentence_type_ids_to_be_deleted = (
+            existing_sentence_type_ids - new_sentence_type_ids
+        )
+
+        # Delete mappings that are no longer needed
+        if sentence_type_ids_to_be_deleted:
+            CRSentenceTypeMapping.bulk_delete(
+                charge_recommendation_id,
+                list(sentence_type_ids_to_be_deleted),
+                session,
+            )
+
+        # Add new mappings
+        if sentence_type_ids_to_be_added:
+            CRSentenceTypeMapping.bulk_insert(
+                charge_recommendation_id,
+                list(sentence_type_ids_to_be_added),
+                session,
+            )
+
+    @classmethod
     def _create_requirement_mappings(
         cls,
         charge_recommendation_id: int,
@@ -218,11 +270,11 @@ def _extract_cr_data(charge_recommendation_data):
             "charge_decision_date", None
         ),
         "court_file_number": charge_recommendation_data.get("court_file_number", None),
-        "court_appearances": charge_recommendation_data.get("court_appearances", None),
-        "judgment": charge_recommendation_data.get("judgment", None),
-        "judgment_date": charge_recommendation_data.get("judgment_date", None),
+        "court_decision": charge_recommendation_data.get("court_decision", None),
+        "court_decision_date": charge_recommendation_data.get(
+            "court_decision_date", None
+        ),
         "sentence_date": charge_recommendation_data.get("sentence_date", None),
-        "sentence_type": charge_recommendation_data.get("sentence_type", None),
     }
 
 

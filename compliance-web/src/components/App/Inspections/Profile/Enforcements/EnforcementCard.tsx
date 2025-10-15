@@ -244,20 +244,15 @@ const EnforcementCard = ({
                 gridProps={{ xs: 6 }}
               />
               <GridLabelValuePair
-                label="Court Appearances"
-                value={chargeRecommendation.court_appearances || ""}
-                multiline
-              />
-              <GridLabelValuePair
-                label="Judgement"
-                value={chargeRecommendation.judgment?.name || ""}
+                label="Court Decision"
+                value={chargeRecommendation.court_decision?.name || ""}
                 gridProps={{ xs: 6 }}
               />
               <GridLabelValuePair
-                label="Judgement Date"
+                label="Court Decision Date"
                 value={
-                  chargeRecommendation.judgment_date
-                    ? dateUtils.formatDate(chargeRecommendation.judgment_date)
+                  chargeRecommendation.court_decision_date
+                    ? dateUtils.formatDate(chargeRecommendation.court_decision_date)
                     : ""
                 }
                 gridProps={{ xs: 6 }}
@@ -272,8 +267,12 @@ const EnforcementCard = ({
                 gridProps={{ xs: 6 }}
               />
               <GridLabelValuePair
-                label="Sentence Type"
-                value={chargeRecommendation.sentence_type || ""}
+                label="Sentence Types"
+                value={
+                  chargeRecommendation.sentence_type_mappings
+                    ?.map(mapping => mapping.sentence_type_option.name)
+                    .join(", ") || ""
+                }
                 gridProps={{ xs: 6 }}
               />
             </>

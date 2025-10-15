@@ -12,15 +12,17 @@ import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAut
 import {
   useUpdateChargeRecommendation,
   useDeleteChargeRecommendation,
+  useSentenceTypeOptionsData,
 } from "@/hooks/useChargeRecommendations";
 import {
   ChargeRecommendation,
   ChargeRecommendationAPIData,
+  SentenceTypeOption,
 } from "@/models/ChargeRecommendation";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
-import { CRStatus, CRDecision, CRJudgment } from "@/utils/constants";
+import { CRStatus, CRDecision, CRCourtDecision } from "@/utils/constants";
 import dayjs, { Dayjs } from "dayjs";
 
 const chargeRecommendationUpdateSchema = yup.object().shape({
@@ -32,11 +34,10 @@ const chargeRecommendationUpdateSchema = yup.object().shape({
   charge_decision: yup.mixed<DecisionOption>().nullable(),
   charge_decision_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   court_file_number: yup.string().nullable(),
-  court_appearances: yup.string().nullable(),
-  judgment: yup.mixed<JudgmentOption>().nullable(),
-  judgment_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
+  court_decision: yup.mixed<CourtDecisionOption>().nullable(),
+  court_decision_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   sentence_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
-  sentence_type: yup.string().nullable(),
+  sentence_types: yup.array().of(yup.mixed<SentenceTypeOption>()).nullable(),
 });
 
 type ChargeRecommendationUpdateFormType = yup.InferType<
@@ -53,7 +54,7 @@ type DecisionOption = {
   name: string;
 };
 
-type JudgmentOption = {
+type CourtDecisionOption = {
   id: string;
   name: string;
 };
@@ -70,10 +71,10 @@ const decisionOptions: DecisionOption[] = Object.values(CRDecision).map(
   })
 );
 
-const judgmentOptions: JudgmentOption[] = Object.values(CRJudgment).map(
-  (judgment) => ({
-    id: judgment.id,
-    name: judgment.name,
+const courtDecisionOptions: CourtDecisionOption[] = Object.values(CRCourtDecision).map(
+  (courtDecision) => ({
+    id: courtDecision.id,
+    name: courtDecision.name,
   })
 );
 
@@ -89,6 +90,7 @@ const ChargeRecommendationUpdateModal: FC<
 > = ({ chargeRecommendationData, inspectionData, onSubmit, isReadonlyMode = false }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
+  const { data: sentenceTypeOptions = [], isLoading: isSentenceTypesLoading } = useSentenceTypeOptionsData();
 
   const defaultValues = useMemo(() => {
     const currentStatus = chargeRecommendationData.status || CRStatus.DRAFTING;
@@ -101,10 +103,16 @@ const ChargeRecommendationUpdateModal: FC<
       decisionOptions.find((option) => option.id === currentDecision?.id) ||
       null;
 
-    const currentJudgment = chargeRecommendationData.judgment;
-    const selectedJudgmentOption =
-      judgmentOptions.find((option) => option.id === currentJudgment?.id) ||
+    const currentCourtDecision = chargeRecommendationData.court_decision;
+    const selectedCourtDecisionOption =
+      courtDecisionOptions.find((option) => option.id === currentCourtDecision?.id) ||
       null;
+
+    // Convert sentence type mappings to sentence type options for form
+    const selectedSentenceTypes = chargeRecommendationData.sentence_type_mappings?.map(mapping => ({
+      id: mapping.sentence_type_option_id,
+      name: mapping.sentence_type_option.name,
+    })) || [];
 
     return {
       status: selectedStatusOption,
@@ -116,15 +124,14 @@ const ChargeRecommendationUpdateModal: FC<
         ? dayjs(chargeRecommendationData.charge_decision_date)
         : null,
       court_file_number: chargeRecommendationData.court_file_number || "",
-      court_appearances: chargeRecommendationData.court_appearances || "",
-      judgment: selectedJudgmentOption,
-      judgment_date: chargeRecommendationData.judgment_date
-        ? dayjs(chargeRecommendationData.judgment_date)
+      court_decision: selectedCourtDecisionOption,
+      court_decision_date: chargeRecommendationData.court_decision_date
+        ? dayjs(chargeRecommendationData.court_decision_date)
         : null,
       sentence_date: chargeRecommendationData.sentence_date
         ? dayjs(chargeRecommendationData.sentence_date)
         : null,
-      sentence_type: chargeRecommendationData.sentence_type || "",
+      sentence_types: selectedSentenceTypes,
     };
   }, [chargeRecommendationData]);
 
@@ -194,28 +201,22 @@ const ChargeRecommendationUpdateModal: FC<
         updateData.court_file_number = data.court_file_number;
       }
 
-      if (data.court_appearances) {
-        updateData.court_appearances = data.court_appearances;
+      if (data.court_decision?.id) {
+        updateData.court_decision = data.court_decision.id;
       }
 
-      if (data.judgment?.id) {
-        updateData.judgment = data.judgment.id;
-      }
-
-      if (data.judgment_date) {
-        updateData.judgment_date = data.judgment_date.format(
-          "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
-        );
+      if (data.court_decision_date) {
+        updateData.court_decision_date = data.court_decision_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
       }
 
       if (data.sentence_date) {
-        updateData.sentence_date = data.sentence_date.format(
-          "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
-        );
+        updateData.sentence_date = data.sentence_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
       }
 
-      if (data.sentence_type) {
-        updateData.sentence_type = data.sentence_type;
+      if (data.sentence_types) {
+        updateData.sentence_type_option_ids = data.sentence_types
+          .filter((type): type is SentenceTypeOption => type != null)
+          .map((type) => type.id);
       }
 
       updateChargeRecommendation({
@@ -294,20 +295,11 @@ const ChargeRecommendationUpdateModal: FC<
               />
             </Box>
 
-            <ControlledTextField
-              name="court_appearances"
-              label="Court Appearances"
-              multiline
-              rows={1}
-              fullWidth
-              disabled={isReadonlyMode}
-            />
-
             <Box sx={{ display: "flex", gap: 2 }}>
               <ControlledAutoComplete
-                name="judgment"
-                label="Judgment"
-                options={judgmentOptions}
+                name="court_decision"
+                label="Court Decision"
+                options={courtDecisionOptions}
                 getOptionLabel={(option) => option?.name || ""}
                 isOptionEqualToValue={(option, value) =>
                   option?.id === value?.id
@@ -316,18 +308,28 @@ const ChargeRecommendationUpdateModal: FC<
                 disabled={isReadonlyMode}
               />
               <ControlledDateField
-                name="judgment_date"
-                label="Judgment Date"
+                name="court_decision_date"
+                label="Court Decision Date"
                 sx={{ flex: 1 }}
                 disabled={isReadonlyMode}
               />
             </Box>
             <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
-            <ControlledTextField
-              name="sentence_type"
-              label="Sentence Type"
+            
+            {/* Sentence Types Multiselect - Following InspectionFormLeft.tsx pattern */}
+            <ControlledAutoComplete
+              name="sentence_types"
+              label="Sentence Types"
+              options={sentenceTypeOptions}
+              getOptionLabel={(option: SentenceTypeOption) => option.name}
+              getOptionKey={(option: SentenceTypeOption) => option.id}
+              isOptionEqualToValue={(option: SentenceTypeOption, value: SentenceTypeOption) =>
+                option.id.toString() === value.id.toString()
+              }
+              multiple
               fullWidth
-              disabled={isReadonlyMode}
+              disabled={isReadonlyMode || isSentenceTypesLoading}
+              loading={isSentenceTypesLoading}
             />
           </Box>
         </DialogContent>
