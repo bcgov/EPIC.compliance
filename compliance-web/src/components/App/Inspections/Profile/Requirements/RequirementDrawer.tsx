@@ -302,7 +302,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
     const isDifferent =
       JSON.stringify(data) !== JSON.stringify(requirementSourceList);
     if (isDifferent) {
-      // setIsDataChanged(true);
+      setIsDataChanged(true);
       setRequirementSourceList(data);
     }
   };
