@@ -236,8 +236,8 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
       formData.id = Date.now();
     }
     uploadedImages.forEach((image) => {
-      if (image.id) {
-        image.dbId = image.id;
+      if (image.dbId) {
+        image.id = image.dbId;
       } else {
         image.id = Date.now();
       }

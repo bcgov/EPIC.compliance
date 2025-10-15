@@ -216,7 +216,10 @@ export const formatRequirementFormData = (requirement: InspectionRequirement): I
       order: item.order,
       description: { html: item.description, text: item.description },
       relatedDocuments: relatedDocuments,
-      images: item.images,
+      images: item.images.map((image) => ({
+        ...image,
+        dbId: image.id,
+      })),
     };
   });
   // Sort enforcement actions by ID
