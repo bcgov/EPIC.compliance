@@ -36,6 +36,7 @@ export const useImageUpload = (onSuccess: OnSuccessType) => {
         relative_url: presignedUrlData.relative_url,
         action: "GET",
       });
+      getPresignedUrlData.fileName = imageData.fileName;
       return getPresignedUrlData;
     },
     onSuccess,

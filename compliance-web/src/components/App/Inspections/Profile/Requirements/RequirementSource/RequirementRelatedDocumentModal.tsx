@@ -1,4 +1,4 @@
-import { Box, DialogContent, Grid, Typography } from "@mui/material";
+import { Box, DialogContent, Stack, Typography } from "@mui/material";
 import { useEffect, useMemo } from "react";
 import * as yup from "yup";
 import { FormProvider, useForm } from "react-hook-form";
@@ -174,95 +174,131 @@ const RequirementRelatedDocumentModal: React.FC<
               : "Add Related Document"
           }
         />
-        <DialogContent dividers>
-          <Box
-            sx={{
-              display: "flex",
-              gap: 3,
-              mb: 2,
-              p: "0.75rem",
-              backgroundColor: BCDesignTokens.surfaceColorBackgroundLightBlue,
-              borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
-            }}
-          >
-            <Box
-              width={isOrder ? "100%" : "40%"}
-              display="flex"
-              flexDirection="column"
-              gap={0.5}
-            >
-              <Typography variant="caption" fontWeight={700}>
-                Title:
-              </Typography>
-              <Typography variant="body2">
-                {requirementSourceData.requirementSource?.name}
-                {isOrder &&
-                  ` — ${requirementSourceData.order?.order_number ?? ""}`}
-              </Typography>
-            </Box>
-            {!isOrder && (
-              <Box display="flex" flexDirection="column" gap={0.5}>
-                <Typography variant="caption" fontWeight={700}>
-                  {sourceNumberType} #:
-                </Typography>
-                <Typography variant="body2">
-                  {String(
-                    requirementSourceData[
-                      `${sourceNumberType.toLowerCase()}Number` as keyof RequirementSourceFormData
-                    ] ?? ""
-                  )}
-                </Typography>
+        <DialogContent dividers sx={{ height: "50vh", display: "flex", flexDirection: "column" }}>
+          <Stack direction={"row"} gap={2} sx={{ flex: 1, minHeight: 0 }}>
+            <Box flex={1}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 3,
+                  mb: 2,
+                  p: "0.75rem",
+                  backgroundColor:
+                    BCDesignTokens.surfaceColorBackgroundLightBlue,
+                  borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
+                }}
+              >
+                <Box
+                  width={isOrder ? "100%" : "40%"}
+                  display="flex"
+                  flexDirection="column"
+                  gap={0.5}
+                >
+                  <Typography variant="caption" fontWeight={700}>
+                    Title:
+                  </Typography>
+                  <Typography variant="body2">
+                    {requirementSourceData.requirementSource?.name}
+                    {isOrder &&
+                      ` — ${requirementSourceData.order?.order_number ?? ""}`}
+                  </Typography>
+                </Box>
+                {!isOrder && (
+                  <Box display="flex" flexDirection="column" gap={0.5}>
+                    <Typography variant="caption" fontWeight={700}>
+                      {sourceNumberType} #:
+                    </Typography>
+                    <Typography variant="body2">
+                      {String(
+                        requirementSourceData[
+                          `${sourceNumberType.toLowerCase()}Number` as keyof RequirementSourceFormData
+                        ] ?? ""
+                      )}
+                    </Typography>
+                  </Box>
+                )}
               </Box>
-            )}
-          </Box>
-          <ControlledAutoComplete
-            name="relatedDocument"
-            label="Related Document"
-            options={documentTypeList ?? []}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            disabled={!isScheduleB || isEditSection}
-            isRequired={true}
-          />
-          <ControlledTextField
-            name="documentTitle"
-            label="Document Title"
-            multiline
-            fullWidth
-          />
-          <ControlledAutoComplete
-            name="appendix"
-            label="Inspection Record Appendix #"
-            options={appendixList ?? []}
-            getOptionLabel={(option) =>
-              `Appendix ${option.appendix_no}: ${option.document_title}`
-            }
-            getOptionKey={(option) => option.id ?? ""}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-          />
-          <Grid container spacing={2}>
-            <Grid item xs={3}>
+              <ControlledAutoComplete
+                name="relatedDocument"
+                label="Related Document"
+                options={documentTypeList ?? []}
+                getOptionLabel={(option) => option.name}
+                getOptionKey={(option) => option.id}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                disabled={!isScheduleB || isEditSection}
+                isRequired={true}
+              />
+              <ControlledTextField
+                name="documentTitle"
+                label="Document Title"
+                multiline
+                fullWidth
+              />
+              <ControlledAutoComplete
+                name="appendix"
+                label="Inspection Record Appendix #"
+                options={appendixList ?? []}
+                getOptionLabel={(option) =>
+                  `Appendix ${option.appendix_no}: ${option.document_title}`
+                }
+                getOptionKey={(option) => option.id ?? ""}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+              />
               <ControlledTextField
                 name="sectionNumber"
                 label="Section #"
                 fullWidth
               />
-            </Grid>
-            <Grid item xs={9}>
               <ControlledTextField
                 name="sectionTitle"
                 label="Section Title"
                 fullWidth
+                multiline
               />
-            </Grid>
-          </Grid>
-          <ControlledLexicalEditor
-            label="Description"
-            name="description"
-            isAdvanced
-            isRequired={true}
-          />
+            </Box>
+            <Box
+              width={"632px"}
+              display="flex"
+              flexDirection="column"
+              height="100%"
+              sx={{ minHeight: 0 }}
+            >
+              <Box
+                flex={1}
+                display="flex"
+                flexDirection="column"
+                sx={{ minHeight: 0 }}
+              >
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: 0,
+                    "& .MuiFormControl-root": {
+                      marginBottom: 0,
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
+                    },
+                    "& .editor-container": {
+                      flex: 1,
+                      minHeight: 0,
+                    },
+                  }}
+                >
+                  <ControlledLexicalEditor
+                    label="Description"
+                    name="description"
+                    isAdvanced
+                    isRequired={true}
+                    height={"100%"}
+                  />
+                </Box>
+              </Box>
+            </Box>
+          </Stack>
         </DialogContent>
         <ModalActions
           primaryActionButtonText={

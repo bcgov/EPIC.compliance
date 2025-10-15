@@ -1,5 +1,5 @@
 import RequirementRelatedDocumentCard from "@/components/App/Inspections/Profile/Requirements/RequirementSource/RequirementRelatedDocumentCard";
-import { RequirementRelatedDocumentData } from "@/models/InspectionRequirement";
+import { RequirementRelatedDocumentData } from "@/models/InspectionRequirementSource";
 
 describe("RequirementRelatedDocumentCard", () => {
   const mockRelatedDocument: RequirementRelatedDocumentData = {

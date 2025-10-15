@@ -60,7 +60,7 @@ const PreviewDownloadButton = () => {
     if ("html" in data) {
       setModalOpen({
         content: <ReportPreviewModal previewHtml={data.html ?? ""} />,
-        width: "660px",
+        width: "744px",
       });
     } else {
       downloadFile(data, `${inspectionData?.ir_number}.pdf`);

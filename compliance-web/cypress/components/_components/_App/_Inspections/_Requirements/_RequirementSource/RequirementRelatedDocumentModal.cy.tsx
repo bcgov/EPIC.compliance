@@ -134,7 +134,7 @@ describe("RequirementRelatedDocumentModal", () => {
     cy.get('textarea[name="documentTitle"]').clear();
     cy.get('textarea[name="documentTitle"]').type("Test Document");
     cy.get('input[name="sectionNumber"]').type("1.1");
-    cy.get('input[name="sectionTitle"]').type("Test Section");
+    cy.get('textarea[name="sectionTitle"]').type("Test Section");
 
     // Type in the Lexical editor
     cy.get('[contenteditable="true"]').type("Test Description");

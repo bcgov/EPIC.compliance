@@ -1,4 +1,5 @@
 import { Appendix } from "./Appendix";
+import { RequirementImage } from "./Image";
 import { InspectionOrder } from "./InspectionOrder";
 import { RequirementDocumentType } from "./RequirementDocumentType";
 import { RequirementSource } from "./RequirementSource";
@@ -23,6 +24,7 @@ export interface InspectionRequirementSource {
   description: string,
   is_active: boolean,
   documents: InspectionRequirementSourceDocument[],
+  images: RequirementImage[],
 }
 
 export interface InspectionRequirementSourceDocument {
@@ -59,6 +61,7 @@ export interface RequirementSourceFormData {
     text: string;
   },
   relatedDocuments?: RequirementRelatedDocumentData[];
+  images?: RequirementImage[];
 }
 
 export interface RequirementRelatedDocumentData {
@@ -111,7 +114,8 @@ export interface InspectionRequirementSourceAPIData {
   order_id?: number,
   title: string,
   description: string,
-  documents: InspectionRequirementSourceDocumentAPIData[]
+  documents: InspectionRequirementSourceDocumentAPIData[],
+  images: RequirementImage[],
 }
 
 export interface InspectionRequirementSourceDocumentAPIData {

@@ -1,5 +1,10 @@
-import { DialogContent, Stack } from "@mui/material";
-import { useEffect, useMemo, useRef } from "react";
+import {
+  Box,
+  DialogContent,
+  Stack,
+} from "@mui/material";
+import type React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -19,6 +24,8 @@ import { useInspectionOrdersProjectwiseData } from "@/hooks/useInspectionOrders"
 import { CaseFile } from "@/models/CaseFile";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { formatAuthorization } from "@/utils/appUtils";
+import { RequirementImage } from "@/models/Image";
+import ImagesRequirementSource from "../Images/ImagesRequirementSource";
 
 type RequirementSourceModalProps = {
   onSubmit: (data: RequirementSourceFormData) => void;
@@ -79,6 +86,7 @@ const initFormData: RequirementSourceFormData = {
   clauseNumber: undefined,
   title: "",
   description: undefined,
+  images: [],
 };
 
 const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
@@ -142,7 +150,11 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   }, [descriptionValue, getValues, selectedOrder]);
 
   useEffect(() => {
-    if (!requirementSourceFormData && selectedOrder?.now_therefore && !hasUserEditedDescription.current) {
+    if (
+      !requirementSourceFormData &&
+      selectedOrder?.now_therefore &&
+      !hasUserEditedDescription.current
+    ) {
       const newValue = {
         html: selectedOrder.now_therefore,
         text: selectedOrder.now_therefore,
@@ -214,17 +226,30 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
     }
   }, [selectedRequirementSource, setValue, caseFileData]);
 
+  const [uploadedImages, setUploadedImages] = useState<RequirementImage[]>(
+    requirementSourceFormData?.images ?? []
+  );
+
   const onSubmitHandler = (data: RequirementSourceSchemaType) => {
     const formData = data as RequirementSourceFormData;
     if (!requirementSourceFormData) {
       formData.id = Date.now();
     }
+    uploadedImages.forEach((image) => {
+      if (image.dbId) {
+        image.id = image.dbId;
+      } else {
+        image.id = Date.now();
+      }
+    });
+    formData.images = uploadedImages;
     onSubmit(formData);
   };
 
   const handleTitleChange = () => {
     hasUserEditedTitle.current = true;
   };
+
 
   return (
     <>
@@ -237,111 +262,173 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 : "Add Requirement Source"
             }
           />
-          <DialogContent dividers>
-            <ControlledAutoComplete
-              name="requirementSource"
-              label="Requirement Source"
-              options={requirementSourceList ?? []}
-              getOptionLabel={(option) => option.name}
-              getOptionKey={(option) => option.id}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              disabled={!!requirementSourceFormData || !!requirementSource}
-              isRequired={true}
-            />
-            {selectedRequirementSource && (
-              <Stack direction={"row"} gap={2}>
-                <ControlledTextField
-                  name="requirementSourceTitle"
-                  label="Source Title"
-                  fullWidth
-                  onChange={handleTitleChange}
+          <DialogContent
+            dividers
+            sx={{ height: "60vh", display: "flex", flexDirection: "column" }}
+          >
+            <Stack direction={"row"} gap={2} sx={{ flex: 1, minHeight: 0 }}>
+              <Box flex={1}>
+                <ControlledAutoComplete
+                  name="requirementSource"
+                  label="Requirement Source"
+                  options={requirementSourceList ?? []}
+                  getOptionLabel={(option) => option.name}
+                  getOptionKey={(option) => option.id}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                  disabled={!!requirementSourceFormData || !!requirementSource}
+                  isRequired={true}
                 />
-                {selectedRequirementSource?.id ===
-                  RequirementSourceEnum.REGULATION && (
-                  <ControlledTextField
-                    name="regulationNumber"
-                    label="Regulation #"
-                    fullWidth
-                  />
+                {selectedRequirementSource && (
+                  <Stack direction={"row"} gap={2}>
+                    <ControlledTextField
+                      name="requirementSourceTitle"
+                      label="Source Title"
+                      fullWidth
+                      onChange={handleTitleChange}
+                      multiline
+                    />
+                    {selectedRequirementSource?.id ===
+                      RequirementSourceEnum.REGULATION && (
+                      <ControlledTextField
+                        name="regulationNumber"
+                        label="Regulation #"
+                        fullWidth
+                      />
+                    )}
+                    {selectedRequirementSource?.id ===
+                      RequirementSourceEnum.COMPLAINCE_AGREEMENT && (
+                      <ControlledTextField
+                        name="complianceNumber"
+                        label="#"
+                        fullWidth
+                      />
+                    )}
+                    {selectedRequirementSource?.id ===
+                      RequirementSourceEnum.EACA && (
+                      <ControlledTextField
+                        name="amendmentNumber"
+                        label="Amendment #"
+                        fullWidth
+                      />
+                    )}
+                  </Stack>
                 )}
                 {selectedRequirementSource?.id ===
-                  RequirementSourceEnum.COMPLAINCE_AGREEMENT && (
-                  <ControlledTextField
-                    name="complianceNumber"
-                    label="#"
-                    fullWidth
+                  RequirementSourceEnum.ORDER && (
+                  <ControlledAutoComplete
+                    name="order"
+                    label="Order Number"
+                    options={orderList ?? []}
+                    getOptionLabel={(option) => option.order_number ?? ""}
+                    getOptionKey={(option) => option.id ?? ""}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
+                    disabled={!!requirementSourceFormData || !!order}
+                    isRequired={true}
                   />
                 )}
-                {selectedRequirementSource?.id ===
-                  RequirementSourceEnum.EACA && (
-                  <ControlledTextField
-                    name="amendmentNumber"
-                    label="Amendment #"
-                    fullWidth
-                  />
+                <ControlledAutoComplete
+                  name="appendix"
+                  label="Inspection Record Appendix #"
+                  options={appendixList ?? []}
+                  getOptionLabel={(option) => {
+                    return `Appendix ${option.appendix_no}: ${option.document_title}`;
+                  }}
+                  getOptionKey={(option) => option.id ?? ""}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                />
+                {selectedRequirementSource?.id !==
+                  RequirementSourceEnum.ORDER && (
+                  <>
+                    {requirementSourceNumberType(
+                      selectedRequirementSource?.id ?? ""
+                    ).toLowerCase() === "condition" && (
+                      <ControlledTextField
+                        name="conditionNumber"
+                        label="Condition #"
+                        fullWidth
+                      />
+                    )}
+                    {requirementSourceNumberType(
+                      selectedRequirementSource?.id ?? ""
+                    ).toLowerCase() === "section" && (
+                      <ControlledTextField
+                        name="sectionNumber"
+                        label="Section #"
+                        fullWidth
+                      />
+                    )}
+                    {requirementSourceNumberType(
+                      selectedRequirementSource?.id ?? ""
+                    ).toLowerCase() === "clause" && (
+                      <ControlledTextField
+                        name="clauseNumber"
+                        label="Clause #"
+                        fullWidth
+                      />
+                    )}
+                    <ControlledTextField
+                      name="title"
+                      label="Title"
+                      fullWidth
+                      multiline
+                    />
+                  </>
                 )}
-              </Stack>
-            )}
-            {selectedRequirementSource?.id === RequirementSourceEnum.ORDER && (
-              <ControlledAutoComplete
-                name="order"
-                label="Order Number"
-                options={orderList ?? []}
-                getOptionLabel={(option) => option.order_number ?? ""}
-                getOptionKey={(option) => option.id ?? ""}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                disabled={!!requirementSourceFormData || !!order}
-                isRequired={true}
-              />
-            )}
-            <ControlledAutoComplete
-              name="appendix"
-              label="Inspection Record Appendix #"
-              options={appendixList ?? []}
-              getOptionLabel={(option) => {
-                return `Appendix ${option.appendix_no}: ${option.document_title}`;
-              }}
-              getOptionKey={(option) => option.id ?? ""}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-            />
-            {selectedRequirementSource?.id !== RequirementSourceEnum.ORDER && (
-              <Stack direction={"row"} gap={2}>
-                {requirementSourceNumberType(
-                  selectedRequirementSource?.id ?? ""
-                ).toLowerCase() === "condition" && (
-                  <ControlledTextField
-                    name="conditionNumber"
-                    label="Condition #"
-                    fullWidth
-                  />
-                )}
-                {requirementSourceNumberType(
-                  selectedRequirementSource?.id ?? ""
-                ).toLowerCase() === "section" && (
-                  <ControlledTextField
-                    name="sectionNumber"
-                    label="Section #"
-                    fullWidth
-                  />
-                )}
-                {requirementSourceNumberType(
-                  selectedRequirementSource?.id ?? ""
-                ).toLowerCase() === "clause" && (
-                  <ControlledTextField
-                    name="clauseNumber"
-                    label="Clause #"
-                    fullWidth
-                  />
-                )}
-                <ControlledTextField name="title" label="Title" fullWidth />
-              </Stack>
-            )}
-            <ControlledLexicalEditor
-              label="Description"
-              name="description"
-              isAdvanced
-              isRequired={true}
-            />
+              </Box>
+              <Box
+                width={"680px"}
+                display="flex"
+                flexDirection="column"
+                height="100%"
+                sx={{ minHeight: 0 }}
+              >
+                <Box
+                  flex={1}
+                  display="flex"
+                  flexDirection="column"
+                  sx={{ minHeight: 0 }}
+                >
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      minHeight: 0,
+                      "& .MuiFormControl-root": {
+                        marginBottom: 0,
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        flex: 1,
+                      },
+                      "& .editor-container": {
+                        flex: 1,
+                        minHeight: 0,
+                      },
+                    }}
+                  >
+                    <ControlledLexicalEditor
+                      label="Description"
+                      name="description"
+                      isAdvanced
+                      isRequired={true}
+                      height={"100%"}
+                    />
+                  </Box>
+                </Box>
+                <ImagesRequirementSource
+                  uploadedImages={uploadedImages}
+                  setUploadedImages={setUploadedImages}
+                  inspectionId={caseFile.id}
+                />
+              </Box>
+            </Stack>
           </DialogContent>
           <ModalActions
             primaryActionButtonText={requirementSourceFormData ? "Save" : "Add"}

@@ -21,6 +21,7 @@ import { Box, Button } from "@mui/material";
 import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
+import { MODAL_WIDTHS } from "@/utils/constants";
 
 interface RequirementFormRightProps {
   onDataChange: (data: RequirementSourceFormData[]) => void;
@@ -58,23 +59,43 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   };
 
   const handleOnAddSubmit = (data: RequirementSourceFormData) => {
-    setRequirementSourceFormData((prevData) => [...prevData, data]);
+    setRequirementSourceFormData((prevData) => {
+      const updated = [...prevData, data];
+      onDataChange(updated);
+      return updated;
+    });
     closeModal();
   };
 
   const handleOnEditSubmit = (data: RequirementSourceFormData) => {
-    setRequirementSourceFormData((prevData) =>
-      prevData.map((item) =>
-        item.id === data.id ? { ...item, ...data } : item
-      )
-    );
+    setRequirementSourceFormData((prevData) => {
+      const updated = prevData.map((item) => {
+        if (item.id !== data.id) return item;
+
+        // Merge arrays explicitly to avoid losing existing entries when undefined
+        const mergedImages = data.images !== undefined ? data.images : item.images;
+        const mergedRelatedDocs = data.relatedDocuments !== undefined ? data.relatedDocuments : item.relatedDocuments;
+
+        return {
+          ...item,
+          ...data,
+          images: mergedImages,
+          relatedDocuments: mergedRelatedDocs,
+        };
+      });
+      // Trigger onDataChange immediately with the updated data
+      onDataChange(updated);
+      return updated;
+    });
     closeModal();
   };
 
   const handleOnDeleteSubmit = (data: RequirementSourceFormData) => {
-    setRequirementSourceFormData((prevData) =>
-      prevData.filter((item) => item.id !== data.id)
-    );
+    setRequirementSourceFormData((prevData) => {
+      const updated = prevData.filter((item) => item.id !== data.id);
+      onDataChange(updated);
+      return updated;
+    });
     closeModal();
   };
 
@@ -103,6 +124,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
         return item;
       });
+      onDataChange(updatedData);
       return updatedData;
     });
     closeModal();
@@ -111,8 +133,8 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   const handleOnDeleteRelatedDocumentSectionSubmit = (
     data: RequirementRelatedDocumentSectionData
   ) => {
-    setRequirementSourceFormData((prevData) =>
-      prevData.map((item) => {
+    setRequirementSourceFormData((prevData) => {
+      const updated = prevData.map((item) => {
         if (item.id === data.sourceFormId) {
           return {
             ...item,
@@ -132,8 +154,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           };
         }
         return item;
-      })
-    );
+      });
+      onDataChange(updated);
+      return updated;
+    });
     closeModal();
   };
 
@@ -146,7 +170,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -160,7 +184,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -212,7 +236,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -227,7 +251,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -244,7 +268,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 
@@ -274,7 +298,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           isEditSection={true}
         />
       ),
-      width: "640px",
+      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
     });
   };
 

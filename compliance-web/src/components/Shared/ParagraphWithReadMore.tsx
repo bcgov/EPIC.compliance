@@ -43,7 +43,7 @@ export default function ParagraphWithReadMore({
         className={isFormatted ? "editor-content" : ""}
         sx={{
           maxHeight: isExpanded ? "none" : `${maxHeight}px`,
-          overflow: "hidden",
+          overflowX: "scroll",
           padding: 0,
         }}
       >

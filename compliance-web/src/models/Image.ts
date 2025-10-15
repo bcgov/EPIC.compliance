@@ -44,4 +44,10 @@ export interface ImageUploadAPIData {
 export interface PresignedUrlRequestPayload {
   relative_url: string;
   action?: string;
-} 
+}
+
+export interface UploadedImageFile {
+  presigned_url: string;
+  relative_url: string;
+  fileName: string;
+}
