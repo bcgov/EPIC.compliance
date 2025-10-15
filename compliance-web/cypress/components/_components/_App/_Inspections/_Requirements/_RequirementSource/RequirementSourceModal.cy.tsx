@@ -134,7 +134,7 @@ describe("RequirementSourceModal", () => {
     // Fill out the form
     cy.get('input[name="amendmentNumber"]').type("A1");
     cy.get('input[name="conditionNumber"]').type("123");
-    cy.get('input[name="title"]').type("Test Title");
+    cy.get('textarea[name="title"]').type("Test Title");
 
     // Type in the Lexical editor
     cy.get('[contenteditable="true"]').type("Test Description");
