@@ -32,7 +32,7 @@ import { requirementSourceNumberType } from "../RequirementUtils";
 type RequirementSourceCardProps = {
   data: RequirementSourceFormData[];
   index: number;
-  onEdit: (data: RequirementSourceFormData) => void;
+  onEdit: (data: RequirementSourceFormData, index: number) => void;
   onDelete: (data: RequirementSourceFormData) => void;
   onAddSection: (data: RequirementSourceFormData) => void;
   onAddRelatedDocument: (data: RequirementSourceFormData) => void;
@@ -164,7 +164,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                           <IconButton
                             size="small"
                             color="secondary"
-                            onClick={() => onEdit(item)}
+                            onClick={() => onEdit(item, idx)}
                             data-testid={`requirement-source-edit-${index}`}
                           >
                             <EditOutlined />
