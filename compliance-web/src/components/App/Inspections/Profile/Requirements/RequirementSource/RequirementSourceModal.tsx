@@ -1,8 +1,4 @@
-import {
-  Box,
-  DialogContent,
-  Stack,
-} from "@mui/material";
+import { Box, DialogContent, Stack } from "@mui/material";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
@@ -37,6 +33,7 @@ type RequirementSourceModalProps = {
   appendixList?: Appendix[];
   inspectionId: number;
   requirementId: number;
+  isSectionModal?: boolean;
 };
 
 const requirementSourceFormSchema = yup.object().shape({
@@ -101,6 +98,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   appendixList,
   inspectionId,
   requirementId,
+  isSectionModal = false,
 }) => {
   const { data: requirementSourceList } = useRequirementSourcesData();
   const { data: orderList } = useInspectionOrdersProjectwiseData(caseFile.id);
@@ -271,7 +269,6 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
     hasUserEditedTitle.current = true;
   };
 
-
   return (
     <>
       <FormProvider {...methods}>
@@ -301,15 +298,32 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                   disabled={!!requirementSourceFormData || !!requirementSource}
                   isRequired={true}
                 />
+                {selectedRequirementSource?.id ===
+                  RequirementSourceEnum.ORDER && (
+                  <ControlledAutoComplete
+                    name="order"
+                    label="Order Number"
+                    options={orderList ?? []}
+                    getOptionLabel={(option) => option.order_number ?? ""}
+                    getOptionKey={(option) => option.id ?? ""}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
+                    disabled={!!requirementSourceFormData || !!order}
+                    isRequired={true}
+                  />
+                )}
                 {selectedRequirementSource && (
                   <Stack direction={"row"} gap={2}>
-                    <ControlledTextField
-                      name="requirementSourceTitle"
-                      label="Source Title"
-                      fullWidth
-                      onChange={handleTitleChange}
-                      multiline
-                    />
+                    {!isSectionModal && (
+                      <ControlledTextField
+                        name="requirementSourceTitle"
+                        label="Source Title"
+                        fullWidth
+                        onChange={handleTitleChange}
+                        multiline
+                      />
+                    )}
                     {selectedRequirementSource?.id ===
                       RequirementSourceEnum.REGULATION && (
                       <ControlledTextField
@@ -335,21 +349,6 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                       />
                     )}
                   </Stack>
-                )}
-                {selectedRequirementSource?.id ===
-                  RequirementSourceEnum.ORDER && (
-                  <ControlledAutoComplete
-                    name="order"
-                    label="Order Number"
-                    options={orderList ?? []}
-                    getOptionLabel={(option) => option.order_number ?? ""}
-                    getOptionKey={(option) => option.id ?? ""}
-                    isOptionEqualToValue={(option, value) =>
-                      option.id === value.id
-                    }
-                    disabled={!!requirementSourceFormData || !!order}
-                    isRequired={true}
-                  />
                 )}
                 <ControlledAutoComplete
                   name="appendix"
