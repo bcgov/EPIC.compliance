@@ -401,3 +401,189 @@ def test_sort_order_handling(
     # Verify first requirement's sort order is still 1
     first_req = InspectionRequirementModel.find_by_id(first_req_id)
     assert first_req.sort_order == 1
+
+
+# def test_get_requirement_detail_images_success(
+#     client, auth_header_super_user, created_inspection, mock_doc_service
+# ):
+#     """Test getting requirement detail images successfully."""
+#     # Create a requirement with source detail images
+#     url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
+#     requirement_data = copy.copy(
+#         InspectionRequirementScenario.requirement_with_source_detail_images.value
+#     )
+#     result = client.post(
+#         url,
+#         data=json.dumps(requirement_data),
+#         headers=auth_header_super_user,
+#     )
+#     assert result.status_code == HTTPStatus.CREATED
+#     requirement_id = result.json["id"]
+#     detail_id = result.json["requirement_source_details"][0]["id"]
+
+#     # Get images for the requirement detail
+#     images_url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{requirement_id}/requirement-detail/{detail_id}/images",
+#     )
+#     images_result = client.get(images_url, headers=auth_header_super_user)
+#     assert images_result.status_code == HTTPStatus.OK
+#     assert isinstance(images_result.json, list)
+#     assert len(images_result.json) == 3
+#     # Verify presigned URL is included
+#     assert "url" in images_result.json[0]
+#     assert images_result.json[0]["url"] == "https://mocked-presigned-url.com"
+#     assert images_result.json[0]["original_file_name"] == "detail_evidence1.jpg"
+
+
+# def test_get_requirement_detail_images_with_invalid_inspection_id(
+#     client, auth_header_super_user
+# ):
+#     """Test getting requirement detail images with invalid inspection ID."""
+#     url = urljoin(
+#         API_BASE_URL,
+#         "9999/requirements/1/requirement-detail/1/images",
+#     )
+#     result = client.get(url, headers=auth_header_super_user)
+#     assert result.status_code == HTTPStatus.NOT_FOUND
+
+
+# def test_get_requirement_detail_images_with_invalid_requirement_id(
+#     client, auth_header_super_user, created_inspection
+# ):
+#     """Test getting requirement detail images with invalid requirement ID."""
+#     url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/9999/requirement-detail/1/images",
+#     )
+#     result = client.get(url, headers=auth_header_super_user)
+#     assert result.status_code == HTTPStatus.NOT_FOUND
+
+
+# def test_get_requirement_detail_images_with_invalid_detail_id(
+#     client, auth_header_super_user, created_inspection, created_inspection_requirement
+# ):
+#     """Test getting requirement detail images with invalid detail ID."""
+#     url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{created_inspection_requirement.id}/requirement-detail/9999/images",
+#     )
+#     result = client.get(url, headers=auth_header_super_user)
+#     assert result.status_code == HTTPStatus.NOT_FOUND
+
+
+# def test_get_requirement_detail_images_with_mismatched_detail_id(
+#     client, auth_header_super_user, created_inspection, mock_doc_service
+# ):
+#     """Test getting requirement detail images when detail doesn't belong to requirement."""
+#     # Create first requirement with source detail
+#     url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
+#     requirement_data1 = copy.copy(
+#         InspectionRequirementScenario.requirement_with_source_detail_images.value
+#     )
+#     result1 = client.post(
+#         url,
+#         data=json.dumps(requirement_data1),
+#         headers=auth_header_super_user,
+#     )
+#     assert result1.status_code == HTTPStatus.CREATED
+#     requirement1_id = result1.json["id"]
+#     detail1_id = result1.json["requirement_source_details"][0]["id"]
+
+#     # Create second requirement with source detail
+#     requirement_data2 = copy.copy(
+#         InspectionRequirementScenario.requirement_with_source_detail_images.value
+#     )
+#     result2 = client.post(
+#         url,
+#         data=json.dumps(requirement_data2),
+#         headers=auth_header_super_user,
+#     )
+#     assert result2.status_code == HTTPStatus.CREATED
+#     requirement2_id = result2.json["id"]
+
+#     # Try to get detail1's images using requirement2's ID
+#     images_url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{requirement2_id}/requirement-detail/{detail1_id}/images",
+#     )
+#     images_result = client.get(images_url, headers=auth_header_super_user)
+#     assert images_result.status_code == HTTPStatus.NOT_FOUND
+
+
+# def test_get_requirement_detail_images_empty_list(
+#     client, auth_header_super_user, created_inspection, mock_doc_service
+# ):
+#     """Test getting requirement detail images when no images exist."""
+#     # Create a requirement with source detail but no images
+#     url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
+#     requirement_data = copy.copy(InspectionRequirementScenario.default_value.value)
+#     result = client.post(
+#         url,
+#         data=json.dumps(requirement_data),
+#         headers=auth_header_super_user,
+#     )
+#     assert result.status_code == HTTPStatus.CREATED
+#     requirement_id = result.json["id"]
+#     detail_id = result.json["requirement_source_details"][0]["id"]
+
+#     # Get images for the requirement detail
+#     images_url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{requirement_id}/requirement-detail/{detail_id}/images",
+#     )
+#     images_result = client.get(images_url, headers=auth_header_super_user)
+#     assert images_result.status_code == HTTPStatus.OK
+#     assert isinstance(images_result.json, list)
+#     assert len(images_result.json) == 0
+
+
+# def test_get_requirement_detail_images_unauthorized(
+#     client, created_inspection, mock_doc_service
+# ):
+#     """Test getting requirement detail images without authentication."""
+#     url = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/1/requirement-detail/1/images",
+#     )
+#     result = client.get(url)
+#     assert result.status_code == HTTPStatus.UNAUTHORIZED
+
+
+# def test_get_requirement_detail_images_multiple_details(
+#     client, auth_header_super_user, created_inspection, mock_doc_service
+# ):
+#     """Test getting images from different requirement details."""
+#     # Create a requirement with multiple source details
+#     url = urljoin(API_BASE_URL, f"{created_inspection.id}/requirements")
+#     requirement_data = copy.copy(
+#         InspectionRequirementScenario.requirement_with_source_detail_images.value
+#     )
+#     result = client.post(
+#         url,
+#         data=json.dumps(requirement_data),
+#         headers=auth_header_super_user,
+#     )
+#     assert result.status_code == HTTPStatus.CREATED
+#     requirement_id = result.json["id"]
+
+#     # Get images for first detail
+#     detail1_id = result.json["requirement_source_details"][0]["id"]
+#     images_url1 = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{requirement_id}/requirement-detail/{detail1_id}/images",
+#     )
+#     images_result1 = client.get(images_url1, headers=auth_header_super_user)
+#     assert images_result1.status_code == HTTPStatus.OK
+#     assert len(images_result1.json) == 3
+
+#     # Get images for second detail
+#     detail2_id = result.json["requirement_source_details"][1]["id"]
+#     images_url2 = urljoin(
+#         API_BASE_URL,
+#         f"{created_inspection.id}/requirements/{requirement_id}/requirement-detail/{detail2_id}/images",
+#     )
+#     images_result2 = client.get(images_url2, headers=auth_header_super_user)
+#     assert images_result2.status_code == HTTPStatus.OK
+#     assert len(images_result2.json) == 1
+#     assert images_result2.json[0]["original_file_name"] == "regulation_image.jpg"

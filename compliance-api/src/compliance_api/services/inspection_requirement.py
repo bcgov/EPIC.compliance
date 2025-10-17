@@ -303,6 +303,30 @@ class InspectionRequirementService:
         return images
 
     @classmethod
+    def get_all_requirement_detail_images(
+        cls, inspection_id, requirement_id, detail_id
+    ):
+        """Get all images for a requirement source detail."""
+        ServiceUtils.inspection_exist_check(inspection_id)
+        _requirement_check(requirement_id)
+        # Verify the detail belongs to the requirement
+        detail = InspectionReqSourceDetailModel.query.filter_by(
+            id=detail_id,
+            requirement_id=requirement_id,
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        if not detail:
+            raise ResourceNotFoundError(
+                f"Requirement detail with id {detail_id} not found for requirement {requirement_id}"
+            )
+        images = InspectionReqDetailImageModel.find_all_images_by_req_detail_id(
+            detail_id
+        )
+        images = _set_signed_url(images)
+        return images
+
+    @classmethod
     def delete_image(cls, inspection_id, requirement_id, relative_url, image_type):
         """Delete image."""
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
@@ -315,18 +339,10 @@ class InspectionRequirementService:
             raise UnprocessableEntityError(
                 f"No {image_type.value} found for the given relative url"
             )
-        #  Get the presigned delete url for the file
-        presigned_url_response = DocService.get_presigned_url(
-            {
-                "relative_url": image.relative_url,
-                "action": ActionOnFileEnum.DELETE.value,
-            }
+        # Delete from cloud storage and database
+        delete_response = _delete_image_from_storage_and_db(
+            image, InspectionRequirementImageModel
         )
-        presigned_delete_url = presigned_url_response.get("presigned_url")
-        #  Delete the actual file from cloud storage
-        delete_response = requests.delete(presigned_delete_url, timeout=120)
-        #  Mark the deletion in the inspection_req_images table
-        InspectionRequirementImageModel.delete_image(image.id)
         return delete_response
 
     @classmethod
@@ -1814,6 +1830,36 @@ def _set_signed_url(images):
     return images
 
 
+def _delete_image_from_storage_and_db(image, model_class, session=None):
+    """
+    Delete image from cloud storage and database.
+
+    Args:
+        image: Image object with relative_url and id attributes
+        model_class: Model class (InspectionRequirementImageModel or InspectionReqDetailImageModel)
+        session: Database session (optional)
+
+    Returns:
+        Response from cloud storage deletion
+    """
+    # Get the presigned delete url for the file
+    presigned_url_response = DocService.get_presigned_url(
+        {
+            "relative_url": image.relative_url,
+            "action": ActionOnFileEnum.DELETE.value,
+        }
+    )
+    presigned_delete_url = presigned_url_response.get("presigned_url")
+
+    # Delete the actual file from cloud storage
+    delete_response = requests.delete(presigned_delete_url, timeout=120)
+
+    # Mark the deletion in the database
+    model_class.delete_image(image.id, session=session)
+
+    return delete_response
+
+
 def _create_image_obj(requirement_id, img: dict, image_type):
     """Prepare the image object."""
     return {
@@ -1844,7 +1890,12 @@ def _insert_or_update_images(
     # DELETE: Remove images that exist in DB but are not in the new list
     images_to_delete = existing_image_ids - incoming_image_ids
     for image_id in images_to_delete:
-        InspectionRequirementImageModel.delete_image(image_id, session=session)
+        # Find the image object to get relative_url for cloud storage deletion
+        image = next((img for img in existing_images if img.id == image_id), None)
+        if image:
+            _delete_image_from_storage_and_db(
+                image, InspectionRequirementImageModel, session=session
+            )
 
     # INSERT or UPDATE images while maintaining order
     inserted_images = []
@@ -2002,6 +2053,10 @@ def _handle_deletion_req_detail_nd_doc(
     existing_image_detail_ids = {
         img.id for detail in existing_details for img in detail.images
     }
+    # Create a mapping of image_id to image object for cloud storage deletion
+    existing_images_map = {
+        img.id: img for detail in existing_details for img in detail.images
+    }
     details_to_be_deleted = existing_detail_ids.difference(incoming_details_ids)
     doc_details_to_be_deleted = existing_doc_detail_ids.difference(
         incoming_doc_detail_ids
@@ -2017,7 +2072,11 @@ def _handle_deletion_req_detail_nd_doc(
     )
     if image_details_to_be_deleted:
         for image_id in image_details_to_be_deleted:
-            InspectionReqDetailImageModel.delete_image(image_id, session)
+            image = existing_images_map.get(image_id)
+            if image:
+                _delete_image_from_storage_and_db(
+                    image, InspectionReqDetailImageModel, session=session
+                )
 
 
 def _create_requirement_obj(inspection_id, requirement_data):

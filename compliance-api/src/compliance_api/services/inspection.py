@@ -344,9 +344,7 @@ class InspectionService:
                 "No status change can be perforemed on CANCELED inspection"
             )
         if status_enum not in possible_statuses[inspection.inspection_status]:
-            raise UnprocessableEntityError(
-                "Invalid status change"
-            )
+            raise UnprocessableEntityError("Invalid status change")
         with session_scope() as session:
             InspectionModel.update_inspection(
                 inspection_id,

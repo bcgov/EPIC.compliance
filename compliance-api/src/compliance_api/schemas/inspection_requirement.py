@@ -450,6 +450,8 @@ class InspectionReqDetailImageSchema(
         model = InspectionRequirementDetailImage
         include_fk = True
 
+    url = fields.Str(metadata={"description": "The signed GET url of the file"})
+
 
 class InspectionReqSourceDetailSchema(
     AutoSchemaBase

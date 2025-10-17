@@ -594,6 +594,17 @@
                         <div class="com-ir-section-header">{% if loop.first %}Requirement {{ requirement.sort_order }}: {% endif %}{% if source.requirement_source_id == 5 or source.requirement_source_id == 7 %}{{ source.requirement_title | replace('Environmental Assessment Act', '<i>Environmental Assessment Act</i>') | safe }}{% else %}{{ source.requirement_title }}{% endif %}{% if source.appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ source.appendix_no }})</span>{% endif %}</div>
                         <div class="com-ir-section-description">{{ source.requirement_source_description | safe |
                         replace('style="white-space: pre-wrap;"', '') }}</div>
+                        {% if source.requirement_source_images and source.requirement_source_images|length > 0 %}
+                        {% for image in source.requirement_source_images %}
+                        <div class="com-ir-photo-section">
+                            <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
+                                style="max-width: 600px; display: block; margin: 10px 0;">
+                            <div class="com-ir-photo-caption">
+                                {{ image.original_file_name }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
                         {% if source.requirement_documents %}
                         {% for doc_group in source.requirement_documents %}
                         <div class="com-ir-document-title">{{ doc_group.document_title }}{% if doc_group.documents and doc_group.documents[0].appendix_no %} <span class="com-ir-section-header-appendix">&nbsp;(Appendix {{ doc_group.documents[0].appendix_no }})</span>{% endif %}</div>

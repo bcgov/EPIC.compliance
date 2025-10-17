@@ -208,11 +208,17 @@ class ServiceUtils:
                 "requirement_source_number": requirement_source_number,
                 "requirement_source_description": detail.description,
                 "requirement_documents": [],
+                "requirement_source_images": [],
             }
             req["requirement_source_details"].append(source_detail_dict)
 
             if detail.documents:
                 ServiceUtils._process_documents(source_detail_dict, detail.documents)
+
+            if detail.images:
+                ServiceUtils._process_requirement_source_images(
+                    source_detail_dict, detail.images
+                )
 
     @staticmethod
     def _process_documents(source_detail_dict, documents):
@@ -234,6 +240,23 @@ class ServiceUtils:
         # Add grouped documents to requirement_documents
         for grouped_doc in grouped_docs.values():
             source_detail_dict["requirement_documents"].append(grouped_doc)
+
+    @staticmethod
+    def _process_requirement_source_images(source_detail_dict, images):
+        """Process requirement source images and get presigned URLs."""
+        for image in images:
+            image_response = DocService.get_presigned_url(
+                {
+                    "relative_url": image.relative_url,
+                    "action": ActionOnFileEnum.GET.value,
+                }
+            )
+            source_detail_dict["requirement_source_images"].append(
+                {
+                    "original_file_name": image.original_file_name,
+                    "image_url": image_response.get("presigned_url"),
+                }
+            )
 
     @staticmethod
     def _add_photos_and_figures(req, requirement_id):

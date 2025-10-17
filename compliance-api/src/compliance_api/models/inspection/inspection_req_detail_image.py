@@ -1,7 +1,6 @@
 """Model to handle the image uploads in inspection requirement details."""
 
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String
-from sqlalchemy.orm import relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
@@ -36,19 +35,9 @@ class InspectionRequirementDetailImage(BaseModelVersioned):
         String, nullable=False, comment="The actual url of the final uploaded image"
     )
 
-    requirement_source_detail = relationship(
-        "InspectionReqSourceDetail", foreign_keys=[req_detail_id], lazy="select"
-    )
     is_deleted = Column(Boolean, nullable=False, default=False)
 
     __table_args__ = (
-        Index(
-            "unique_non_deleted_req_detail_original_file_name",  # Index name
-            "req_detail_id",
-            "original_file_name",
-            unique=True,
-            postgresql_where=(is_deleted is False),  # Condition for uniqueness
-        ),
         Index(
             "unique_non_deleted_req_detail_relative_url",  # Index name
             "req_detail_id",

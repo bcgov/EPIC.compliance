@@ -201,7 +201,10 @@ class PDFStyleConverter:
                 classes = table.get("class", []) or []
                 is_editor_table = "editor-table" in classes
                 has_editor_cells = any(
-                    any((cls or "").startswith("editor-tableCell") for cls in (cell.get("class", []) or []))
+                    any(
+                        (cls or "").startswith("editor-tableCell")
+                        for cls in (cell.get("class", []) or [])
+                    )
                     for cell in table.find_all(["td", "th"], recursive=True)
                 )
                 if is_editor_table or has_editor_cells:
@@ -242,7 +245,9 @@ class PDFStyleConverter:
                 style_dict["table-layout"] = "fixed"
 
                 # Update the table style
-                new_style = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+                new_style = "; ".join(
+                    [f"{prop}: {value}" for prop, value in style_dict.items()]
+                )
                 table["style"] = new_style
 
                 # Process colgroup to redistribute/scale column widths if needed
@@ -257,7 +262,9 @@ class PDFStyleConverter:
                     cell_style_dict["word-break"] = "break-word"
                     # anywhere is better supported by modern engines; fallback is break-word
                     cell_style_dict["overflow-wrap"] = "anywhere"
-                    cell["style"] = "; ".join([f"{p}: {v}" for p, v in cell_style_dict.items()])
+                    cell["style"] = "; ".join(
+                        [f"{p}: {v}" for p, v in cell_style_dict.items()]
+                    )
 
                 # If this table is inside a TD/TH, constrain that container as well
                 parent_cell = table.find_parent(["td", "th"])
@@ -266,7 +273,9 @@ class PDFStyleConverter:
                     p_style["max-width"] = "100%"
                     p_style["overflow-x"] = "hidden"
                     p_style["box-sizing"] = "border-box"
-                    parent_cell["style"] = "; ".join([f"{p}: {v}" for p, v in p_style.items()])
+                    parent_cell["style"] = "; ".join(
+                        [f"{p}: {v}" for p, v in p_style.items()]
+                    )
 
             return str(soup)
         except Exception:  # noqa: B902
@@ -323,7 +332,9 @@ class PDFStyleConverter:
             for col, _ in specified_widths:
                 style_dict = cls._parse_css_declarations(col.get("style", ""))
                 style_dict["width"] = f"{equal_width:.0f}px"
-                col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+                col["style"] = "; ".join(
+                    [f"{prop}: {value}" for prop, value in style_dict.items()]
+                )
             return
 
         # Scale proportionally if total exceeds target; otherwise keep natural widths
@@ -336,7 +347,9 @@ class PDFStyleConverter:
                 for col in unspecified_cols:
                     style_dict = cls._parse_css_declarations(col.get("style", ""))
                     style_dict["width"] = f"{share}px"
-                    col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+                    col["style"] = "; ".join(
+                        [f"{prop}: {value}" for prop, value in style_dict.items()]
+                    )
             return
 
         # total_width > target_width → compress proportionally
@@ -351,7 +364,9 @@ class PDFStyleConverter:
             scaled = max(1, int(round(width_value * scale)))
             remaining_px -= scaled
             style_dict["width"] = f"{scaled}px"
-            col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+            col["style"] = "; ".join(
+                [f"{prop}: {value}" for prop, value in style_dict.items()]
+            )
 
         # Distribute remaining width equally among unspecified columns
         if unspecified_cols:
@@ -359,7 +374,9 @@ class PDFStyleConverter:
             for col in unspecified_cols:
                 style_dict = cls._parse_css_declarations(col.get("style", ""))
                 style_dict["width"] = f"{share}px"
-                col["style"] = "; ".join([f"{prop}: {value}" for prop, value in style_dict.items()])
+                col["style"] = "; ".join(
+                    [f"{prop}: {value}" for prop, value in style_dict.items()]
+                )
 
     @classmethod
     def _fix_ordered_list(cls, ol_element):

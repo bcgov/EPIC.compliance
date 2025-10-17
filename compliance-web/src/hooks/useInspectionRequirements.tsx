@@ -54,6 +54,16 @@ const fetchInspectionRequirementImages = (
   });
 };
 
+const fetchRequirementDetailImages = (
+  inspectionId: number,
+  requirementId: number,
+  detailId: number
+): Promise<RequirementImage[]> => {
+  return request({
+    url: `/inspections/${inspectionId}/requirements/${requirementId}/requirement-detail/${detailId}/images`,
+  });
+};
+
 const createInspectionRequirement = ({
   inspectionId,
   inspectionRequirement,
@@ -219,6 +229,31 @@ export const useInspectionRequirementImages = (inspectionId: number) => {
       };
     },
     enabled: !!inspectionId,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
+  });
+};
+
+export const useRequirementDetailImages = (
+  inspectionId: number,
+  requirementId: number,
+  detailId?: number
+) => {
+  return useQuery({
+    queryKey: [
+      "requirement-detail-images",
+      inspectionId,
+      requirementId
+    ],
+    queryFn: () =>
+      fetchRequirementDetailImages(inspectionId, requirementId, detailId!),
+    select: (data: RequirementImage[]) => {
+      return data.map((image) => ({
+        ...image,
+        dbId: image.id,
+      }));
+    },
+    enabled: !!inspectionId && !!requirementId && !!detailId,
     refetchOnWindowFocus: false,
     staleTime: Infinity,
   });

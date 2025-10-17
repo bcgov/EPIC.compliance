@@ -14,6 +14,13 @@ class RequirementDocumentSchema(BaseSchema):
     documents = fields.Raw()
 
 
+class RequirementSourceImageSchema(BaseSchema):
+    """Schema for requirement source detail images."""
+
+    original_file_name = fields.String()
+    image_url = fields.String()
+
+
 class RequirementSourceDetailSchema(BaseSchema):
     """Schema for requirement source details."""
 
@@ -23,6 +30,9 @@ class RequirementSourceDetailSchema(BaseSchema):
     requirement_source_number = fields.String()
     requirement_title = fields.String()
     requirement_source_description = fields.String(allow_none=True)
+    requirement_source_images = fields.List(
+        fields.Nested(RequirementSourceImageSchema), allow_none=True
+    )
     requirement_documents = fields.List(
         fields.Nested(RequirementDocumentSchema), allow_none=True
     )
