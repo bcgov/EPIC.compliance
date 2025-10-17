@@ -2029,50 +2029,53 @@ def _handle_deletion_req_detail_nd_doc(
     existing_details = InspectionReqSourceDetailModel.get_all_by_requirement_id(
         requirement_id
     )
-    existing_detail_ids = {detail.id for detail in existing_details}
-    incoming_details_ids = {
-        detail.get("id", None)
-        for detail in requirement_data.get("requirement_source_details", [])
-        if detail.get("id", None) is not None
+    
+    # Group existing IDs together
+    existing_ids = {
+        "details": {detail.id for detail in existing_details},
+        "docs": {doc.id for detail in existing_details for doc in detail.documents},
+        "images": {img.id for detail in existing_details for img in detail.images},
+        "images_map": {img.id: img for detail in existing_details for img in detail.images}
     }
-    incoming_doc_detail_ids = set(
-        doc.get("id", None)
-        for detail in requirement_data.get("requirement_source_details", [])
-        for doc in detail.get("documents", [])
-        if doc.get("id", None) is not None
-    )
-    incoming_image_detail_ids = set(
-        img.get("id", None)
-        for detail in requirement_data.get("requirement_source_details", [])
-        for img in detail.get("images", [])
-        if img.get("id", None) is not None
-    )
-    existing_doc_detail_ids = {
-        doc.id for detail in existing_details for doc in detail.documents
+    
+    # Group incoming IDs together
+    incoming_ids = {
+        "details": {
+            detail.get("id", None)
+            for detail in requirement_data.get("requirement_source_details", [])
+            if detail.get("id", None) is not None
+        },
+        "docs": set(
+            doc.get("id", None)
+            for detail in requirement_data.get("requirement_source_details", [])
+            for doc in detail.get("documents", [])
+            if doc.get("id", None) is not None
+        ),
+        "images": set(
+            img.get("id", None)
+            for detail in requirement_data.get("requirement_source_details", [])
+            for img in detail.get("images", [])
+            if img.get("id", None) is not None
+        )
     }
-    existing_image_detail_ids = {
-        img.id for detail in existing_details for img in detail.images
+    
+    # Calculate items to delete
+    to_delete = {
+        "details": existing_ids["details"].difference(incoming_ids["details"]),
+        "docs": existing_ids["docs"].difference(incoming_ids["docs"]),
+        "images": existing_ids["images"].difference(incoming_ids["images"])
     }
-    # Create a mapping of image_id to image object for cloud storage deletion
-    existing_images_map = {
-        img.id: img for detail in existing_details for img in detail.images
-    }
-    details_to_be_deleted = existing_detail_ids.difference(incoming_details_ids)
-    doc_details_to_be_deleted = existing_doc_detail_ids.difference(
-        incoming_doc_detail_ids
-    )
-    image_details_to_be_deleted = existing_image_detail_ids.difference(
-        incoming_image_detail_ids
-    )
+    
+    # Perform deletions
     InspectionReqSourceDetailModel.delete_req_details_by_ids(
-        details_to_be_deleted, session
+        to_delete["details"], session
     )
     InspectionReqDetailDocumentModel.delete_req_doc_details_by_ids(
-        doc_details_to_be_deleted, session
+        to_delete["docs"], session
     )
-    if image_details_to_be_deleted:
-        for image_id in image_details_to_be_deleted:
-            image = existing_images_map.get(image_id)
+    if to_delete["images"]:
+        for image_id in to_delete["images"]:
+            image = existing_ids["images_map"].get(image_id)
             if image:
                 _delete_image_from_storage_and_db(
                     image, InspectionReqDetailImageModel, session=session

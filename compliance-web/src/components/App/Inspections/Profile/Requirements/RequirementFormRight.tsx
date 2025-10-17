@@ -73,8 +73,12 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         if (item.id !== data.id) return item;
 
         // Merge arrays explicitly to avoid losing existing entries when undefined
-        const mergedImages = data.images !== undefined ? data.images : item.images;
-        const mergedRelatedDocs = data.relatedDocuments !== undefined ? data.relatedDocuments : item.relatedDocuments;
+        const mergedImages =
+          data.images !== undefined ? data.images : item.images;
+        const mergedRelatedDocs =
+          data.relatedDocuments !== undefined
+            ? data.relatedDocuments
+            : item.relatedDocuments;
 
         return {
           ...item,
@@ -176,7 +180,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
     });
   };
 
-  const handleEditRequirementSource = (data: RequirementSourceFormData) => {
+  const handleEditRequirementSource = (
+    data: RequirementSourceFormData,
+    index: number
+  ) => {
     setOpen({
       content: (
         <RequirementSourceModal
@@ -186,6 +193,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
           inspectionId={inspectionId}
           requirementId={requirementId}
+          isSectionModal={index > 0}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
@@ -240,6 +248,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
           inspectionId={inspectionId}
           requirementId={requirementId}
+          isSectionModal={true}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
