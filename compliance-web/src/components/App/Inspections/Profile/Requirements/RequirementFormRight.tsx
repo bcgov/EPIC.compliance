@@ -22,6 +22,7 @@ import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
 import { MODAL_WIDTHS } from "@/utils/constants";
+import { useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
 
 interface RequirementFormRightProps {
   onDataChange: (data: RequirementSourceFormData[]) => void;
@@ -47,6 +48,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
     RequirementSourceFormData[]
   >(requirementSourceFormDataList);
   const { data: appendixList } = useAppendicesData(inspectionId);
+  const { data: requirementSourceImages } = useRequirementSourceImages(
+    inspectionId,
+    requirementId
+  );
   const { setIsDataChanged } = useRequirementStore();
 
   useEffect(() => {
@@ -172,8 +177,6 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           onSubmit={handleOnAddSubmit}
           caseFile={caseFile}
           appendixList={appendixList}
-          inspectionId={inspectionId}
-          requirementId={requirementId}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
@@ -191,8 +194,11 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           caseFile={caseFile}
           requirementSourceFormData={data}
           appendixList={appendixList}
-          inspectionId={inspectionId}
-          requirementId={requirementId}
+          requirementSourceImages={
+            requirementSourceImages?.filter(
+              (image) => image.req_detail_id === data.id
+            ) ?? []
+          }
           isSectionModal={index > 0}
         />
       ),
@@ -246,8 +252,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           requirementSource={data.requirementSource}
           order={data.order}
           appendixList={appendixList}
-          inspectionId={inspectionId}
-          requirementId={requirementId}
+          requirementSourceImages={requirementSourceImages ?? []}
           isSectionModal={true}
         />
       ),
@@ -374,6 +379,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           onDeleteRelatedDocumentSection={
             handleDeleteRequirementRelatedDocumentSection
           }
+          requirementSourceImages={requirementSourceImages}
           isRequirementEditable={isRequirementEditable}
         />
       ))}

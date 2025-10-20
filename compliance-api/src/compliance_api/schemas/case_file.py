@@ -299,6 +299,9 @@ class EnforcementItemSchema(BaseSchema):
     inspection_id = fields.Integer(
         allow_none=True, metadata={"description": "Associated inspection ID"}
     )
+    ir_number = fields.String(
+        allow_none=True, metadata={"description": "Inspection record number"}
+    )
 
     # Generic number field for all enforcement item types
     number = fields.String(

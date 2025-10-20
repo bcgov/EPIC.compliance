@@ -877,6 +877,8 @@ def _build_enforcement_query(inspection_ids: list):
     """Build the enforcement actions query with all joins."""
     return (
         db.session.query(
+            # Inspection
+            InspectionModel.ir_number,
             # Orders
             OrderModel.id.label("order_id"),
             OrderModel.order_number,
@@ -1050,6 +1052,7 @@ def _build_order_item(row) -> dict:
     return {
         "id": row.order_id,
         "inspection_id": row.order_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.order_number,
         "status": status_obj,
     }
@@ -1067,6 +1070,7 @@ def _build_warning_letter_item(row) -> dict:
     return {
         "id": row.warning_letter_id,
         "inspection_id": row.warning_letter_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.warning_letter_number,
         "status": status_obj,
     }
@@ -1084,6 +1088,7 @@ def _build_violation_ticket_item(row) -> dict:
     return {
         "id": row.violation_ticket_id,
         "inspection_id": row.violation_ticket_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.vt_number,
         "status": status_obj,
     }
@@ -1101,6 +1106,7 @@ def _build_admin_penalty_item(row) -> dict:
     return {
         "id": row.admin_penalty_id,
         "inspection_id": row.admin_penalty_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.administrative_penalty_number,
         "status": status_obj,
     }
@@ -1118,6 +1124,7 @@ def _build_charge_rec_item(row) -> dict:
     return {
         "id": row.charge_rec_id,
         "inspection_id": row.charge_rec_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.charge_recommendation_number,
         "status": status_obj,
     }
@@ -1135,6 +1142,7 @@ def _build_restorative_justice_item(row) -> dict:
     return {
         "id": row.restorative_justice_id,
         "inspection_id": row.restorative_justice_inspection_id,
+        "ir_number": row.ir_number,
         "number": row.restorative_justice_number,
         "status": status_obj,
     }

@@ -28,6 +28,7 @@ import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
 import { RequirementSourceEnum } from "@/utils/constants";
 import RequirementRelatedDocumentCard from "./RequirementRelatedDocumentCard";
 import { requirementSourceNumberType } from "../RequirementUtils";
+import { RequirementImage } from "@/models/Image";
 
 type RequirementSourceCardProps = {
   data: RequirementSourceFormData[];
@@ -46,6 +47,7 @@ type RequirementSourceCardProps = {
   onDeleteRelatedDocumentSection: (
     data: RequirementRelatedDocumentSectionData
   ) => void;
+  requirementSourceImages?: RequirementImage[];
   isRequirementEditable?: boolean;
 };
 
@@ -60,6 +62,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
     onAddRelatedDocumentSection,
     onDeleteRelatedDocumentSection,
     onEditRelatedDocumentSection,
+    requirementSourceImages,
     isRequirementEditable = true,
   }) => {
     const [isExpanded, setIsExpanded] = useState(true);
@@ -272,15 +275,39 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                       Description:
                     </Typography>
                     <ParagraphWithReadMore
-                      key={item.description?.html}
+                      key={`req-scc-desc-${item.id}`}
                       maxHeight={84}
                       isFormatted={true}
                       renderTypography={
-                        <Typography
-                          variant="subtitle2"
-                          component={"div"}
+                        <Box
                           dangerouslySetInnerHTML={{
-                            __html: item.description?.html ?? "",
+                            __html: (() => {
+                              const baseHtml = item.description?.html ?? "";
+                              const relatedImages = requirementSourceImages?.filter(
+                                (image) => image.req_detail_id === item.id
+                              );
+                              if (!relatedImages || relatedImages.length === 0) {
+                                return baseHtml;
+                              }
+                              const imageHtml = relatedImages
+                                .map((image) => {
+                                  const altText = image.original_file_name ?? "";
+                                  const caption = image.caption ? `<p style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic;">${image.caption}</p>` : "";
+                                  return `
+                                    <div style="margin-top: 8px;">
+                                      <img 
+                                        src="${image.url}" 
+                                        alt="${altText}"
+                                        style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
+                                      />
+                                      ${caption}
+                                    </div>
+                                  `;
+                                })
+                                .join("");
+                              
+                              return baseHtml + imageHtml;
+                            })(),
                           }}
                         />
                       }
