@@ -26,6 +26,9 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
     # Primary officer from inspection
     primary_officer = fields.Method("get_primary_officer", dump_only=True)
 
+    # Inspection types
+    inspection_types = fields.Method("get_inspection_types", dump_only=True)
+
     # Approval fields - if under review
     send_for_review_date = fields.Method("get_send_for_review_date", dump_only=True)
     deputy_director = fields.Method("get_deputy_director", dump_only=True)
@@ -138,6 +141,13 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
+    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+        """Get inspection types as comma-separated string."""
+        if obj.inspection and obj.inspection.types:
+            type_names = [o.type.name for o in obj.inspection.types]
+            return ", ".join(type_names)
+        return ""
+
     def _get_latest_approval(self, obj):  # pylint: disable=no-self-use
         """Get the latest approval data that was pre-fetched by the service layer."""
         return getattr(obj, "_latest_approval", None)
@@ -160,6 +170,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
         allow_none=True,
     )
     primary_officer = fields.Method("get_primary_officer")
+    inspection_types = fields.Method("get_inspection_types", dump_only=True)
     issuing_officer = fields.Method("get_issuing_officer")
     approved_date = fields.Method("get_approved_date")
     review_requested_date = fields.Method("get_review_requested_date")
@@ -283,6 +294,13 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
+    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+        """Get inspection types as comma-separated string."""
+        if obj.inspection and obj.inspection.types:
+            type_names = [o.type.name for o in obj.inspection.types]
+            return ", ".join(type_names)
+        return ""
+
 
 class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
     """Schema for Review Board Order response."""
@@ -306,6 +324,7 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
 
     # Primary officer from inspection
     primary_officer = fields.Method("get_primary_officer", dump_only=True)
+    inspection_types = fields.Method("get_inspection_types", dump_only=True)
     issuing_officer = fields.Method("get_issuing_officer", dump_only=True)
     # Approval fields
     send_for_review_date = fields.Method("get_send_for_review_date", dump_only=True)
@@ -404,6 +423,13 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
+    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+        """Get inspection types as comma-separated string."""
+        if obj.inspection and obj.inspection.types:
+            type_names = [o.type.name for o in obj.inspection.types]
+            return ", ".join(type_names)
+        return ""
+
     def _get_latest_approval(self, obj):  # pylint: disable=no-self-use
         """Get the latest approval data that was pre-fetched by the service layer."""
         return getattr(obj, "_latest_approval", None)
@@ -431,6 +457,7 @@ class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self
 
     # Primary officer from inspection
     primary_officer = fields.Method("get_primary_officer", dump_only=True)
+    inspection_types = fields.Method("get_inspection_types", dump_only=True)
 
     # Administrative penalty specific fields
     referral_status = fields.Method("get_referral_status", dump_only=True)
@@ -468,3 +495,10 @@ class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self
         if obj.decision:
             return {"id": obj.decision.name, "name": obj.decision.value}
         return None
+
+    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+        """Get inspection types as comma-separated string."""
+        if obj.inspection and obj.inspection.types:
+            type_names = [o.type.name for o in obj.inspection.types]
+            return ", ".join(type_names)
+        return ""

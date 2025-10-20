@@ -121,7 +121,7 @@ class Inspection(BaseModelVersioned):
     types = relationship(
         "InspectionType",
         back_populates="inspection",
-        lazy="select",
+        lazy="selectin",
         primaryjoin="and_(InspectionType.inspection_id == Inspection.id, "
         "InspectionType.is_active == True, "
         "InspectionType.is_deleted == False)",
