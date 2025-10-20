@@ -2018,7 +2018,7 @@ def _handle_deletion_req_detail_nd_doc(
     existing_details = InspectionReqSourceDetailModel.get_all_by_requirement_id(
         requirement_id
     )
-    
+
     # Group existing IDs together
     existing_ids = {
         "details": {detail.id for detail in existing_details},
@@ -2026,7 +2026,7 @@ def _handle_deletion_req_detail_nd_doc(
         "images": {img.id for detail in existing_details for img in detail.images},
         "images_map": {img.id: img for detail in existing_details for img in detail.images}
     }
-    
+
     # Group incoming IDs together
     incoming_ids = {
         "details": {
@@ -2047,14 +2047,14 @@ def _handle_deletion_req_detail_nd_doc(
             if img.get("id", None) is not None
         )
     }
-    
+
     # Calculate items to delete
     to_delete = {
         "details": existing_ids["details"].difference(incoming_ids["details"]),
         "docs": existing_ids["docs"].difference(incoming_ids["docs"]),
         "images": existing_ids["images"].difference(incoming_ids["images"])
     }
-    
+
     # Perform deletions
     InspectionReqSourceDetailModel.delete_req_details_by_ids(
         to_delete["details"], session
