@@ -304,24 +304,13 @@ class InspectionRequirementService:
 
     @classmethod
     def get_all_requirement_detail_images(
-        cls, inspection_id, requirement_id, detail_id
+        cls, inspection_id, requirement_id
     ):
         """Get all images for a requirement source detail."""
         ServiceUtils.inspection_exist_check(inspection_id)
         _requirement_check(requirement_id)
-        # Verify the detail belongs to the requirement
-        detail = InspectionReqSourceDetailModel.query.filter_by(
-            id=detail_id,
-            requirement_id=requirement_id,
-            is_active=True,
-            is_deleted=False,
-        ).first()
-        if not detail:
-            raise ResourceNotFoundError(
-                f"Requirement detail with id {detail_id} not found for requirement {requirement_id}"
-            )
-        images = InspectionReqDetailImageModel.find_all_images_by_req_detail_id(
-            detail_id
+        images = InspectionReqDetailImageModel.find_all_req_detail_images_by_req(
+            requirement_id
         )
         images = _set_signed_url(images)
         return images

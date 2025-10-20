@@ -32,6 +32,7 @@ import {
 } from "./RequirementUtils";
 import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 type RequirementDrawerProps = {
   inspectionData: Inspection;
@@ -57,6 +58,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
   index,
   isRegulatoryConsideration = false,
 }) => {
+  const queryClient = useQueryClient();
   const { appHeaderHeight } = useMenuStore();
   const [inspectionRequirementData, setInspectionRequirementData] = useState<
     InspectionRequirementFormData | undefined
@@ -118,9 +120,16 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
   }, [onSubmit, resetForm]);
 
   const onUpdateSuccess = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: [
+        "requirement-source-images",
+        inspectionData.id,
+        requirement?.id ?? 0,
+      ],
+    });
     onSubmit("Changes saved successfully!", false);
     setIsImageChanged(false);
-  }, [onSubmit, setIsImageChanged]);
+  }, [onSubmit, setIsImageChanged, queryClient, inspectionData, requirement]);
 
   const onDeleteSuccess = useCallback(() => {
     onSubmit("Requirement deleted successfully!", true);

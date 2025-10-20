@@ -215,7 +215,7 @@ class InspectionReqFigures(Resource):
 
 @cors_preflight("GET, OPTIONS")
 @API.route(
-    "/<int:requirement_id>/requirement-detail/<int:detail_id>/images",
+    "/<int:requirement_id>/requirement-source-images",
     methods=["OPTIONS", "GET"],
 )
 class InspectionReqSourceImages(Resource):
@@ -224,14 +224,14 @@ class InspectionReqSourceImages(Resource):
     @staticmethod
     @ApiHelper.swagger_decorators(
         API,
-        endpoint_description="Get all images for a requirement source detail",
+        endpoint_description="Get all images for a requirement source",
     )
     @auth.require
     @API.response(code=200, description="Success", model=[inspesction_req_image_schema])
     @API.response(404, "Not Found")
-    def get(inspection_id, requirement_id, detail_id):
-        """Get all images by requirement detail id."""
+    def get(inspection_id, requirement_id):
+        """Get all images by requirement id."""
         images = InspectionRequirementService.get_all_requirement_detail_images(
-            inspection_id, requirement_id, detail_id
+            inspection_id, requirement_id
         )
         return InspectionReqDetailImageSchema(many=True).dump(images), HTTPStatus.OK

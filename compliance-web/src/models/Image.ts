@@ -14,6 +14,7 @@ export interface RequirementImage {
   relative_url?: string;
   url?: string;
   is_active?: boolean;
+  req_detail_id?: number;
 }
 
 export interface RequirementImages {

@@ -2,6 +2,7 @@
 
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String
 
+from compliance_api.models.inspection.inspection_req_source_detail import InspectionReqSourceDetail
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
 from ..base_model import BaseModelVersioned
@@ -76,13 +77,17 @@ class InspectionRequirementDetailImage(BaseModelVersioned):
         return image_detail
 
     @classmethod
-    def find_all_images_by_req_detail_id(cls, req_detail_id):
-        """Get all images by req_detail_id."""
+    def find_all_req_detail_images_by_req(cls, req_id):
+        """Get all images by req_detail_ids."""
         return (
-            cls.query.filter_by(
-                req_detail_id=req_detail_id,
-                is_active=True,
-                is_deleted=False,
+            cls.query.join(
+                InspectionReqSourceDetail,
+                cls.req_detail_id == InspectionReqSourceDetail.id
+            )
+            .filter(
+                InspectionReqSourceDetail.requirement_id == req_id,
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
             )
             .order_by(cls.id)
             .all()
