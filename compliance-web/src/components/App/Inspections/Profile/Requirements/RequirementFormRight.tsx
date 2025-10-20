@@ -22,7 +22,7 @@ import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
 import { MODAL_WIDTHS } from "@/utils/constants";
-import { useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
+import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
 
 interface RequirementFormRightProps {
   onDataChange: (data: RequirementSourceFormData[]) => void;
@@ -49,6 +49,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   >(requirementSourceFormDataList);
   const { data: appendixList } = useAppendicesData(inspectionId);
   const { data: requirementSourceImages } = useRequirementSourceImages(
+    inspectionId,
+    requirementId
+  );
+  const { data: requirementDocumentImages } = useRequirementDocumentImages(
     inspectionId,
     requirementId
   );
@@ -176,6 +180,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         <RequirementSourceModal
           onSubmit={handleOnAddSubmit}
           caseFile={caseFile}
+          inspectionId={inspectionId}
           appendixList={appendixList}
         />
       ),
@@ -192,6 +197,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         <RequirementSourceModal
           onSubmit={handleOnEditSubmit}
           caseFile={caseFile}
+          inspectionId={inspectionId}
           requirementSourceFormData={data}
           appendixList={appendixList}
           requirementSourceImages={
@@ -249,10 +255,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         <RequirementSourceModal
           onSubmit={handleOnAddSubmit}
           caseFile={caseFile}
+          inspectionId={inspectionId}
           requirementSource={data.requirementSource}
           order={data.order}
           appendixList={appendixList}
-          requirementSourceImages={requirementSourceImages ?? []}
           isSectionModal={true}
         />
       ),
@@ -267,6 +273,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
       content: (
         <RequirementRelatedDocumentModal
           onSubmit={handleOnAddRelatedDocumentSubmit}
+          inspectionId={inspectionId}
           requirementSourceData={data}
           appendixList={appendixList}
         />
@@ -283,6 +290,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
       content: (
         <RequirementRelatedDocumentModal
           onSubmit={handleOnAddRelatedDocumentSubmit}
+          inspectionId={inspectionId}
           requirementSourceData={srcData}
           relatedDocumentData={docData}
           appendixList={appendixList}
@@ -311,10 +319,14 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
       content: (
         <RequirementRelatedDocumentModal
           onSubmit={handleOnAddRelatedDocumentSubmit}
+          inspectionId={inspectionId}
           requirementSourceData={srcData!}
           relatedDocumentData={docData!}
           relatedDocumentSectionData={data}
           appendixList={appendixList}
+          relatedDocumentImages={requirementDocumentImages?.filter(
+            (image) => image.req_detail_doc_id === data.id
+          ) ?? []}
           isEditSection={true}
         />
       ),
@@ -380,6 +392,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
             handleDeleteRequirementRelatedDocumentSection
           }
           requirementSourceImages={requirementSourceImages}
+          requirementDocumentImages={requirementDocumentImages}
           isRequirementEditable={isRequirementEditable}
         />
       ))}

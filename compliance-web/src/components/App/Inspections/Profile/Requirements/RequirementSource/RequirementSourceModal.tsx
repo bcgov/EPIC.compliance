@@ -26,6 +26,7 @@ import ImagesRequirementSource from "@/components/App/Inspections/Profile/Requir
 type RequirementSourceModalProps = {
   onSubmit: (data: RequirementSourceFormData) => void;
   caseFile: CaseFile;
+  inspectionId: number;
   requirementSourceFormData?: RequirementSourceFormData;
   requirementSource?: RequirementSource;
   order?: InspectionOrder;
@@ -90,6 +91,7 @@ const initFormData: RequirementSourceFormData = {
 const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   onSubmit,
   caseFile,
+  inspectionId,
   requirementSourceFormData,
   requirementSource,
   order,
@@ -426,7 +428,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 <ImagesRequirementSource
                   uploadedImages={uploadedImages}
                   setUploadedImages={setUploadedImages}
-                  inspectionId={caseFile.id}
+                  inspectionId={inspectionId}
                 />
               </Box>
             </Stack>

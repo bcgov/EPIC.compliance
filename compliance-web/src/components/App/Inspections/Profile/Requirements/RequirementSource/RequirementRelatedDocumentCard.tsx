@@ -22,6 +22,8 @@ import {
   RequirementRelatedDocumentSectionData,
 } from "@/models/InspectionRequirementSource";
 import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
+import { generateHtmlWithEmbeddedImages } from "../RequirementUtils";
+import { RequirementImage } from "@/models/Image";
 
 interface RequirementRelatedDocumentCardProps {
   relatedDocument: RequirementRelatedDocumentData;
@@ -33,6 +35,7 @@ interface RequirementRelatedDocumentCardProps {
   onEditRelatedDocumentSection: (
     data: RequirementRelatedDocumentSectionData
   ) => void;
+  relatedDocumentImages?: RequirementImage[];
   isRequirementEditable?: boolean;
 }
 
@@ -44,6 +47,7 @@ const RequirementRelatedDocumentCard: FC<
   onAddRelatedDocumentSection,
   onDeleteRelatedDocumentSection,
   onEditRelatedDocumentSection,
+  relatedDocumentImages,
   isRequirementEditable = true,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -119,96 +123,97 @@ const RequirementRelatedDocumentCard: FC<
       </AccordionSummary>
       <AccordionDetails sx={{ padding: "0" }}>
         {relatedDocument.sections?.map((section, idx) => (
+          <Box
+            key={idx}
+            sx={{
+              padding: "1rem",
+              borderBottom: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
+            }}
+          >
+            {isRequirementEditable && (
+              <Box
+                display={"flex"}
+                justifyContent={"flex-start"}
+                gap={".25rem"}
+              >
+                <Tooltip title="Edit" arrow>
+                  <IconButton
+                    size="small"
+                    color="secondary"
+                    onClick={() => onEditRelatedDocumentSection(section)}
+                    data-testid={`requirement-related-document-edit-${index}-${idx}`}
+                  >
+                    <EditOutlined />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete" arrow>
+                  <IconButton
+                    size="small"
+                    color="secondary"
+                    onClick={() => onDeleteRelatedDocumentSection(section)}
+                    data-testid={`requirement-related-document-delete-${index}-${idx}`}
+                  >
+                    <DeleteOutlineRounded />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
             <Box
-              key={idx}
               sx={{
-                padding: "1rem",
-                borderBottom: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
+                display: "flex",
+                flexDirection: "row",
+                gap: "1rem",
+                marginBottom: ".5rem",
               }}
             >
-              {isRequirementEditable && (
-                <Box
-                  display={"flex"}
-                  justifyContent={"flex-start"}
-                  gap={".25rem"}
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  color={BCDesignTokens.typographyColorPlaceholder}
                 >
-                  <Tooltip title="Edit" arrow>
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      onClick={() => onEditRelatedDocumentSection(section)}
-                      data-testid={`requirement-related-document-edit-${index}-${idx}`}
-                    >
-                      <EditOutlined />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete" arrow>
-                    <IconButton
-                      size="small"
-                      color="secondary"
-                      onClick={() => onDeleteRelatedDocumentSection(section)}
-                      data-testid={`requirement-related-document-delete-${index}-${idx}`}
-                    >
-                      <DeleteOutlineRounded />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              )}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "1rem",
-                  marginBottom: ".5rem",
-                }}
-              >
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    color={BCDesignTokens.typographyColorPlaceholder}
-                  >
-                    Section #:
-                  </Typography>
-                  <Typography variant="body2" fontWeight={700}>
-                    {section.sectionNumber}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    color={BCDesignTokens.typographyColorPlaceholder}
-                  >
-                    Section Title:
-                  </Typography>
-                  <Typography variant="body2">
-                    {section.sectionTitle}
-                  </Typography>
-                </Box>
+                  Section #:
+                </Typography>
+                <Typography variant="body2" fontWeight={700}>
+                  {section.sectionNumber}
+                </Typography>
               </Box>
               <Box>
                 <Typography
                   variant="subtitle2"
                   color={BCDesignTokens.typographyColorPlaceholder}
                 >
-                  Description:
+                  Section Title:
                 </Typography>
-                <ParagraphWithReadMore
-                  key={section.description?.html}
-                  maxHeight={84}
-                  isFormatted={true}
-                  renderTypography={
-                    <Typography
-                      variant="subtitle2"
-                      component={"div"}
-                      dangerouslySetInnerHTML={{
-                        __html: section.description?.html ?? "",
-                      }}
-                    />
-                  }
-                />
+                <Typography variant="body2">{section.sectionTitle}</Typography>
               </Box>
             </Box>
-          ))}
+            <Box>
+              <Typography
+                variant="subtitle2"
+                color={BCDesignTokens.typographyColorPlaceholder}
+              >
+                Description:
+              </Typography>
+              <ParagraphWithReadMore
+                key={`req-related-doc-card-desc-${section.id}`}
+                maxHeight={84}
+                isFormatted={true}
+                renderTypography={
+                  <Box
+                    dangerouslySetInnerHTML={{
+                      __html: generateHtmlWithEmbeddedImages(
+                        section.description?.html ?? "",
+                        relatedDocumentImages?.filter(
+                          (image) => image.req_detail_doc_id === section.id
+                        ) ?? []
+                      ),
+                    }}
+                  />
+                }
+              />
+            </Box>
+          </Box>
+        ))}
       </AccordionDetails>
     </Accordion>
   );
