@@ -18,6 +18,7 @@ from marshmallow_enum import EnumField
 from compliance_api.models import (
     EnforcementActionOptionEnum, ImageTypeEnum, InspectionReqDetailDocument, InspectionReqSourceDetail,
     InspectionRequirement, InspectionRequirementImage, InspectionRequirementTypeEnum)
+from compliance_api.models.inspection.inspection_req_detail_doc_image import InspectionRequirementDetailDocImage
 from compliance_api.models.inspection.inspection_req_detail_image import InspectionRequirementDetailImage
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
@@ -76,6 +77,52 @@ class InspectionReqImageUpdateSchema(InspectionReqImageCreateSchema):
     )
 
 
+class InspectionReqDetailImageCreateSchema(BaseSchema):
+    """InspectionReqDetailImageCreateSchema."""
+
+    original_file_name = fields.Str(
+        metadata={"description": "The original filename of the uploaded image"},
+        required=True,
+    )
+    relative_url = fields.Str(
+        metadata={"description": "The actual url of the final uploaded image"},
+        required=True,
+    )
+
+
+class InspectionReqDetailImageUpdateSchema(InspectionReqDetailImageCreateSchema):
+    """InspectionReqDetailImageUpdateSchema."""
+
+    id = fields.Int(
+        metadata={
+            "description": "The unique identifier of the requirement detail image"
+        }
+    )
+
+
+class InspectionReqDetailDocImageCreateSchema(BaseSchema):
+    """InspectionReqDetailDocImageCreateSchema."""
+
+    original_file_name = fields.Str(
+        metadata={"description": "The original filename of the uploaded image"},
+        required=True,
+    )
+    relative_url = fields.Str(
+        metadata={"description": "The actual url of the final uploaded image"},
+        required=True,
+    )
+
+
+class InspectionReqDetailDocImageUpdateSchema(InspectionReqDetailDocImageCreateSchema):
+    """InspectionReqDetailDocImageUpdateSchema."""
+
+    id = fields.Int(
+        metadata={
+            "description": "The unique identifier of the requirement detail document image"
+        }
+    )
+
+
 class InspectionReqDetailDocCreateSchema(BaseSchema):
     """InpsectionReqDetailDocCreateSchema."""
 
@@ -99,6 +146,7 @@ class InspectionReqDetailDocCreateSchema(BaseSchema):
     section_title = fields.Str(
         metadata={"description": "Additional description of the document"}
     )
+    images = fields.List(fields.Nested(InspectionReqDetailDocImageCreateSchema))
 
 
 class InspectionReqDetailDocUpdateSchema(InspectionReqDetailDocCreateSchema):
@@ -109,29 +157,7 @@ class InspectionReqDetailDocUpdateSchema(InspectionReqDetailDocCreateSchema):
             "description": "The unique identifier of the requirement detail document"
         }
     )
-
-
-class InspectionReqDetailImageCreateSchema(BaseSchema):
-    """InspectionReqDetailImageCreateSchema."""
-
-    original_file_name = fields.Str(
-        metadata={"description": "The original filename of the uploaded image"},
-        required=True,
-    )
-    relative_url = fields.Str(
-        metadata={"description": "The actual url of the final uploaded image"},
-        required=True,
-    )
-
-
-class InspectionReqDetailImageUpdateSchema(InspectionReqDetailImageCreateSchema):
-    """InspectionReqDetailImageUpdateSchema."""
-
-    id = fields.Int(
-        metadata={
-            "description": "The unique identifier of the requirement detail image"
-        }
-    )
+    images = fields.List(fields.Nested(InspectionReqDetailDocImageUpdateSchema))
 
 
 class InspectionReqSourceDetailCreateSchema(BaseSchema):
@@ -414,22 +440,6 @@ class InspectionSortOrderSchema(BaseSchema):
     )
 
 
-class InspectionReqDetailDocSchema(
-    AutoSchemaBase
-):  # pylint: disable=too-many-ancestors
-    """InspectionReqDetailDocSchema."""
-
-    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
-        """Meta."""
-
-        unknown = EXCLUDE
-        model = InspectionReqDetailDocument
-        include_fk = True
-
-    document_type = fields.Nested(KeyValueSchema)
-    appendix = fields.Nested(AppendixSchema)
-
-
 class OrderSchema(Schema):
     """OrderSchema."""
 
@@ -451,6 +461,38 @@ class InspectionReqDetailImageSchema(
         include_fk = True
 
     url = fields.Str(metadata={"description": "The signed GET url of the file"})
+
+
+class InspectionReqDetailDocImageSchema(
+    AutoSchemaBase
+):  # pylint: disable=too-many-ancestors
+    """InspectionReqDetailDocImageSchema."""
+
+    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
+        """Meta."""
+
+        unknown = EXCLUDE
+        model = InspectionRequirementDetailDocImage
+        include_fk = True
+
+    url = fields.Str(metadata={"description": "The signed GET url of the file"})
+
+
+class InspectionReqDetailDocSchema(
+    AutoSchemaBase
+):  # pylint: disable=too-many-ancestors
+    """InspectionReqDetailDocSchema."""
+
+    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
+        """Meta."""
+
+        unknown = EXCLUDE
+        model = InspectionReqDetailDocument
+        include_fk = True
+
+    document_type = fields.Nested(KeyValueSchema)
+    appendix = fields.Nested(AppendixSchema)
+    images = fields.List(fields.Nested(InspectionReqDetailDocImageSchema))
 
 
 class InspectionReqSourceDetailSchema(

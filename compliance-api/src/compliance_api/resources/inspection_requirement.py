@@ -9,8 +9,9 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import BadRequestError
 from compliance_api.models.inspection import ImageTypeEnum
 from compliance_api.schemas.inspection_requirement import (
-    InspectionReqDetailImageSchema, InspectionReqImageSchema, InspectionRequirementCreateSchema,
-    InspectionRequirementSchema, InspectionRequirementUpdateSchema, InspectionSortOrderSchema)
+    InspectionReqDetailDocImageSchema, InspectionReqDetailImageSchema, InspectionReqImageSchema,
+    InspectionRequirementCreateSchema, InspectionRequirementSchema, InspectionRequirementUpdateSchema,
+    InspectionSortOrderSchema)
 from compliance_api.services import InspectionRequirementService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.util import cors_preflight
@@ -235,3 +236,27 @@ class InspectionReqSourceImages(Resource):
             inspection_id, requirement_id, detail_id
         )
         return InspectionReqDetailImageSchema(many=True).dump(images), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route(
+    "/<int:requirement_id>/requirement-detail/<int:detail_id>/document/<int:doc_id>/images",
+    methods=["OPTIONS", "GET"],
+)
+class InspectionReqSourceDocImages(Resource):
+    """Manage the images uploaded as part of inspection requirement detail documents."""
+
+    @staticmethod
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Get all images for a requirement detail document",
+    )
+    @auth.require
+    @API.response(code=200, description="Success", model=[inspesction_req_image_schema])
+    @API.response(404, "Not Found")
+    def get(inspection_id, requirement_id, detail_id, doc_id):
+        """Get all images by requirement detail document id."""
+        images = InspectionRequirementService.get_all_requirement_detail_doc_images(
+            inspection_id, requirement_id, detail_id, doc_id
+        )
+        return InspectionReqDetailDocImageSchema(many=True).dump(images), HTTPStatus.OK

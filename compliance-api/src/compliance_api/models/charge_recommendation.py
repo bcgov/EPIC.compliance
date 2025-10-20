@@ -207,6 +207,11 @@ class ChargeRecommendation(BaseModelVersioned):
         nullable=True,
         comment="Date when the sentence was given",
     )
+    sentence_description = Column(
+        String,
+        nullable=True,
+        comment="Description of the fine",
+    )
     # Relationships
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="joined")
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)

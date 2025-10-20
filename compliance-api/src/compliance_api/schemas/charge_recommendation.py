@@ -92,6 +92,10 @@ class ChargeRecommendationUpdateSchema(
         },
         metadata={"description": "The sentence date"},
     )
+    sentence_description = fields.String(
+        allow_none=True,
+        metadata={"description": "The sentence description"},
+    )
     sentence_type_option_ids = fields.List(
         fields.Integer(),
         allow_none=True,

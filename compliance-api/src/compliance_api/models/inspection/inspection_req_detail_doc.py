@@ -71,6 +71,15 @@ class InspectionReqDetailDocument(BaseModelVersioned):
         "DocumentType", foreign_keys=[document_type_id], lazy="select"
     )
     appendix = relationship("Appendix", foreign_keys=[appendix_id], lazy="joined")
+    images = relationship(
+        "InspectionRequirementDetailDocImage",
+        foreign_keys="InspectionRequirementDetailDocImage.req_detail_doc_id",
+        lazy="select",
+        primaryjoin="and_(InspectionRequirementDetailDocImage.req_detail_doc_id == InspectionReqDetailDocument.id, "
+        "InspectionRequirementDetailDocImage.is_active == True, "
+        "InspectionRequirementDetailDocImage.is_deleted == False)",
+        order_by="InspectionRequirementDetailDocImage.id.asc()",
+    )
 
     __table_args__ = (
         Index(

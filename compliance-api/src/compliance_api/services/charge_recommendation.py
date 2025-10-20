@@ -275,6 +275,9 @@ def _extract_cr_data(charge_recommendation_data):
             "court_decision_date", None
         ),
         "sentence_date": charge_recommendation_data.get("sentence_date", None),
+        "sentence_description": charge_recommendation_data.get(
+            "sentence_description", None
+        ),
     }
 
 

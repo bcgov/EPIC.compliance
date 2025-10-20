@@ -37,6 +37,7 @@ const chargeRecommendationUpdateSchema = yup.object().shape({
   court_decision: yup.mixed<CourtDecisionOption>().nullable(),
   court_decision_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   sentence_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
+  sentence_description: yup.string().nullable(),
   sentence_types: yup.array().of(yup.mixed<SentenceTypeOption>()).nullable(),
 });
 
@@ -131,6 +132,7 @@ const ChargeRecommendationUpdateModal: FC<
       sentence_date: chargeRecommendationData.sentence_date
         ? dayjs(chargeRecommendationData.sentence_date)
         : null,
+      sentence_description: chargeRecommendationData.sentence_description || "",
       sentence_types: selectedSentenceTypes,
     };
   }, [chargeRecommendationData]);
@@ -211,6 +213,10 @@ const ChargeRecommendationUpdateModal: FC<
 
       if (data.sentence_date) {
         updateData.sentence_date = data.sentence_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+      }
+
+      if (data.sentence_description) {
+        updateData.sentence_description = data.sentence_description;
       }
 
       if (data.sentence_types) {
@@ -314,12 +320,10 @@ const ChargeRecommendationUpdateModal: FC<
                 disabled={isReadonlyMode}
               />
             </Box>
-            <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
-            
-            {/* Sentence Types Multiselect - Following InspectionFormLeft.tsx pattern */}
-            <ControlledAutoComplete
+            <Box sx={{ display: "flex", gap: 2 }}>
+                <ControlledAutoComplete
               name="sentence_types"
-              label="Sentence Types"
+              label="Sentence Type"
               options={sentenceTypeOptions}
               getOptionLabel={(option: SentenceTypeOption) => option.name}
               getOptionKey={(option: SentenceTypeOption) => option.id}
@@ -330,6 +334,15 @@ const ChargeRecommendationUpdateModal: FC<
               fullWidth
               disabled={isReadonlyMode || isSentenceTypesLoading}
               loading={isSentenceTypesLoading}
+            />
+            <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
+            </Box>
+            <ControlledTextField 
+              name="sentence_description" 
+              label="Sentence Description" 
+              disabled={isReadonlyMode}
+              multiline
+              rows={2}
             />
           </Box>
         </DialogContent>

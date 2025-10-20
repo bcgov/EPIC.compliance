@@ -14,6 +14,7 @@ export interface ChargeRecommendation {
   court_decision?: Option;
   court_decision_date?: string;
   sentence_date?: string;
+  sentence_description?: string;
   is_active: boolean;
 }
 
@@ -45,6 +46,7 @@ export interface ChargeRecommendationAPIData {
   court_decision?: string;
   court_decision_date?: string;
   sentence_date?: string;
+  sentence_description?: string;
   sentence_type_option_ids?: number[];
   inspection_requirement_ids: number[];
 }

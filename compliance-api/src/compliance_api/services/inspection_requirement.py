@@ -35,6 +35,8 @@ from compliance_api.models.charge_recommendation import \
 from compliance_api.models.charge_recommendation import ChargeRecommendationStatusEnum
 from compliance_api.models.compliance_finding import ComplianceFindingOption as ComplianceFindingOptionModel
 from compliance_api.models.db import db, session_scope
+from compliance_api.models.inspection.inspection_req_detail_doc_image import \
+    InspectionRequirementDetailDocImage as InspectionReqDetailDocImageModel
 from compliance_api.models.inspection.inspection_req_detail_image import \
     InspectionRequirementDetailImage as InspectionReqDetailImageModel
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
@@ -322,6 +324,41 @@ class InspectionRequirementService:
             )
         images = InspectionReqDetailImageModel.find_all_images_by_req_detail_id(
             detail_id
+        )
+        images = _set_signed_url(images)
+        return images
+
+    @classmethod
+    def get_all_requirement_detail_doc_images(
+        cls, inspection_id, requirement_id, detail_id, doc_id
+    ):
+        """Get all images for a requirement detail document."""
+        ServiceUtils.inspection_exist_check(inspection_id)
+        _requirement_check(requirement_id)
+        # Verify the detail belongs to the requirement
+        detail = InspectionReqSourceDetailModel.query.filter_by(
+            id=detail_id,
+            requirement_id=requirement_id,
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        if not detail:
+            raise ResourceNotFoundError(
+                f"Requirement detail with id {detail_id} not found for requirement {requirement_id}"
+            )
+        # Verify the document belongs to the detail
+        document = InspectionReqDetailDocumentModel.query.filter_by(
+            id=doc_id,
+            req_detail_id=detail_id,
+            is_active=True,
+            is_deleted=False,
+        ).first()
+        if not document:
+            raise ResourceNotFoundError(
+                f"Requirement detail document with id {doc_id} not found for detail {detail_id}"
+            )
+        images = InspectionReqDetailDocImageModel.find_all_images_by_req_detail_doc_id(
+            doc_id
         )
         images = _set_signed_url(images)
         return images
@@ -1980,12 +2017,17 @@ def _process_documents(req_detail_id, source_detail_data, inspection, session):
             req_detail_id, doc_detail_data
         )
         if not doc_detail_id:
-            InspectionReqDetailDocumentModel.create_doc_detail(doc_detail_obj, session)
+            created_doc = InspectionReqDetailDocumentModel.create_doc_detail(
+                doc_detail_obj, session
+            )
+            doc_detail_id = created_doc.id
         else:
             doc_detail_obj = {**doc_detail_obj, "id": doc_detail_id}
             InspectionReqDetailDocumentModel.update_doc_detail(
                 doc_detail_id, doc_detail_obj, session
             )
+        # Process images for this document
+        _process_doc_images(doc_detail_id, doc_detail_data, session)
 
 
 def _process_images(req_detail_id, source_detail_data, session):
@@ -2029,15 +2071,29 @@ def _handle_deletion_req_detail_nd_doc(
     existing_details = InspectionReqSourceDetailModel.get_all_by_requirement_id(
         requirement_id
     )
-    
+
     # Group existing IDs together
     existing_ids = {
         "details": {detail.id for detail in existing_details},
         "docs": {doc.id for detail in existing_details for doc in detail.documents},
         "images": {img.id for detail in existing_details for img in detail.images},
-        "images_map": {img.id: img for detail in existing_details for img in detail.images}
+        "images_map": {
+            img.id: img for detail in existing_details for img in detail.images
+        },
+        "doc_images": {
+            doc_img.id
+            for detail in existing_details
+            for doc in detail.documents
+            for doc_img in doc.images
+        },
+        "doc_images_map": {
+            doc_img.id: doc_img
+            for detail in existing_details
+            for doc in detail.documents
+            for doc_img in doc.images
+        },
     }
-    
+
     # Group incoming IDs together
     incoming_ids = {
         "details": {
@@ -2056,16 +2112,24 @@ def _handle_deletion_req_detail_nd_doc(
             for detail in requirement_data.get("requirement_source_details", [])
             for img in detail.get("images", [])
             if img.get("id", None) is not None
-        )
+        ),
+        "doc_images": set(
+            doc_img.get("id", None)
+            for detail in requirement_data.get("requirement_source_details", [])
+            for doc in detail.get("documents", [])
+            for doc_img in doc.get("images", [])
+            if doc_img.get("id", None) is not None
+        ),
     }
-    
+
     # Calculate items to delete
     to_delete = {
         "details": existing_ids["details"].difference(incoming_ids["details"]),
         "docs": existing_ids["docs"].difference(incoming_ids["docs"]),
-        "images": existing_ids["images"].difference(incoming_ids["images"])
+        "images": existing_ids["images"].difference(incoming_ids["images"]),
+        "doc_images": existing_ids["doc_images"].difference(incoming_ids["doc_images"]),
     }
-    
+
     # Perform deletions
     InspectionReqSourceDetailModel.delete_req_details_by_ids(
         to_delete["details"], session
@@ -2079,6 +2143,13 @@ def _handle_deletion_req_detail_nd_doc(
             if image:
                 _delete_image_from_storage_and_db(
                     image, InspectionReqDetailImageModel, session=session
+                )
+    if to_delete["doc_images"]:
+        for doc_image_id in to_delete["doc_images"]:
+            doc_image = existing_ids["doc_images_map"].get(doc_image_id)
+            if doc_image:
+                _delete_image_from_storage_and_db(
+                    doc_image, InspectionReqDetailDocImageModel, session=session
                 )
 
 
@@ -2171,6 +2242,35 @@ def _create_requirement_source_image_obj(
         "original_file_name": requirement_source_image_data.get("original_file_name"),
         "relative_url": requirement_source_image_data.get("relative_url"),
     }
+
+
+def _create_requirement_source_doc_image_obj(
+    requirement_source_doc_id, requirement_source_doc_image_data
+):
+    """Create requirement source document image details object."""
+    return {
+        "req_detail_doc_id": requirement_source_doc_id,
+        "original_file_name": requirement_source_doc_image_data.get(
+            "original_file_name"
+        ),
+        "relative_url": requirement_source_doc_image_data.get("relative_url"),
+    }
+
+
+def _process_doc_images(doc_detail_id, doc_detail_data, session):
+    """Process images for a document detail."""
+    for image_detail_data in doc_detail_data.get("images", []):
+        image_detail_id = image_detail_data.get("id", None)
+        image_detail_obj = _create_requirement_source_doc_image_obj(
+            doc_detail_id, image_detail_data
+        )
+        if not image_detail_id:
+            InspectionReqDetailDocImageModel.create_image(image_detail_obj, session)
+        else:
+            image_detail_obj = {**image_detail_obj, "id": image_detail_id}
+            InspectionReqDetailDocImageModel.update_image(
+                image_detail_id, image_detail_obj, session
+            )
 
 
 def _check_orders_and_warning_letters(requirement):
