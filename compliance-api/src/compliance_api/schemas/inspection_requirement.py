@@ -147,7 +147,7 @@ class InspectionReqDetailDocCreateSchema(BaseSchema):
         metadata={"description": "Additional description of the document"}
     )
     images = fields.List(
-        fields.Nested(InspectionReqDetailDocImageCreateSchema),
+        fields.Nested(InspectionReqDetailDocImageUpdateSchema),
         allow_none=True,
         required=False,
     )

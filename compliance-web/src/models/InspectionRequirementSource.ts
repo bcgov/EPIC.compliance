@@ -38,7 +38,8 @@ export interface InspectionRequirementSourceDocument {
   appendix_id: number,
   appendix: Appendix,
   description: string,
-  is_active: boolean
+  is_active: boolean,
+  images: RequirementImage[],
 }
 
 export interface RequirementSourceFormData {
@@ -85,6 +86,7 @@ export interface RequirementRelatedDocumentSectionData {
     html: string;
     text: string;
   };
+  images?: RequirementImage[];
 }
 
 export interface RequirementRelatedDocumentSectionFormData {
@@ -126,4 +128,5 @@ export interface InspectionRequirementSourceDocumentAPIData {
   section_title: string,
   description: string,
   appendix_id?: number,
+  images: RequirementImage[],
 }

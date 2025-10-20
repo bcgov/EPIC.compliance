@@ -27,7 +27,10 @@ import { BCDesignTokens } from "epic.theme";
 import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
 import { RequirementSourceEnum } from "@/utils/constants";
 import RequirementRelatedDocumentCard from "./RequirementRelatedDocumentCard";
-import { requirementSourceNumberType } from "../RequirementUtils";
+import {
+  requirementSourceNumberType,
+  generateHtmlWithEmbeddedImages,
+} from "../RequirementUtils";
 import { RequirementImage } from "@/models/Image";
 
 type RequirementSourceCardProps = {
@@ -48,6 +51,7 @@ type RequirementSourceCardProps = {
     data: RequirementRelatedDocumentSectionData
   ) => void;
   requirementSourceImages?: RequirementImage[];
+  requirementDocumentImages?: RequirementImage[];
   isRequirementEditable?: boolean;
 };
 
@@ -63,6 +67,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
     onDeleteRelatedDocumentSection,
     onEditRelatedDocumentSection,
     requirementSourceImages,
+    requirementDocumentImages,
     isRequirementEditable = true,
   }) => {
     const [isExpanded, setIsExpanded] = useState(true);
@@ -275,39 +280,18 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                       Description:
                     </Typography>
                     <ParagraphWithReadMore
-                      key={`req-scc-desc-${item.id}`}
+                      key={`req-src-card-desc-${item.id}`}
                       maxHeight={84}
                       isFormatted={true}
                       renderTypography={
                         <Box
                           dangerouslySetInnerHTML={{
-                            __html: (() => {
-                              const baseHtml = item.description?.html ?? "";
-                              const relatedImages = requirementSourceImages?.filter(
+                            __html: generateHtmlWithEmbeddedImages(
+                              item.description?.html ?? "",
+                              requirementSourceImages?.filter(
                                 (image) => image.req_detail_id === item.id
-                              );
-                              if (!relatedImages || relatedImages.length === 0) {
-                                return baseHtml;
-                              }
-                              const imageHtml = relatedImages
-                                .map((image) => {
-                                  const altText = image.original_file_name ?? "";
-                                  const caption = image.caption ? `<p style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic;">${image.caption}</p>` : "";
-                                  return `
-                                    <div style="margin-top: 8px;">
-                                      <img 
-                                        src="${image.url}" 
-                                        alt="${altText}"
-                                        style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
-                                      />
-                                      ${caption}
-                                    </div>
-                                  `;
-                                })
-                                .join("");
-                              
-                              return baseHtml + imageHtml;
-                            })(),
+                              ) ?? []
+                            ),
                           }}
                         />
                       }
@@ -319,6 +303,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                     key={docIdx}
                     index={docIdx}
                     relatedDocument={relatedDocument}
+                    relatedDocumentImages={requirementDocumentImages ?? []}
                     onAddRelatedDocumentSection={() =>
                       onAddRelatedDocumentSection(relatedDocument, item)
                     }

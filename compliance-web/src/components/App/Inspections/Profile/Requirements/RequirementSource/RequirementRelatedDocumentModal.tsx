@@ -1,5 +1,5 @@
 import { Box, DialogContent, Stack, Typography } from "@mui/material";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import { FormProvider, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -23,6 +23,8 @@ import {
 import ControlledLexicalEditor from "@/components/Shared/Controlled/ControlledLexicalEditor";
 import { Appendix } from "@/models/Appendix";
 import { requirementSourceNumberType } from "@/components/App/Inspections/Profile/Requirements/RequirementUtils";
+import ImagesRequirementSource from "../Images/ImagesRequirementSource";
+import { RequirementImage } from "@/models/Image";
 
 type RequirementRelatedDocumentModalProps = {
   onSubmit: (data: RequirementRelatedDocumentData) => void;
@@ -31,6 +33,8 @@ type RequirementRelatedDocumentModalProps = {
   relatedDocumentSectionData?: RequirementRelatedDocumentSectionData;
   appendixList?: Appendix[];
   isEditSection?: boolean;
+  inspectionId: number;
+  relatedDocumentImages?: RequirementImage[];
 };
 
 const relatedDocumentFormSchema = yup.object().shape({
@@ -64,8 +68,14 @@ const RequirementRelatedDocumentModal: React.FC<
   relatedDocumentSectionData,
   appendixList,
   isEditSection,
+  inspectionId,
+  relatedDocumentImages,
 }) => {
   const { data: documentTypeList } = useDocumentTypesData();
+
+  const [uploadedImages, setUploadedImages] = useState<RequirementImage[]>(
+    relatedDocumentImages ?? []
+  );
 
   const isScheduleB =
     requirementSourceData.requirementSource?.id ===
@@ -132,6 +142,16 @@ const RequirementRelatedDocumentModal: React.FC<
 
   const onSubmitHandler = (data: RequirementRelatedDocumentSchemaType) => {
     const formData = data as RequirementRelatedDocumentSectionFormData;
+    
+    // Process images similar to RequirementSourceModal
+    uploadedImages.forEach((image) => {
+      if (image.dbId) {
+        image.id = image.dbId;
+      } else {
+        image.id = Date.now();
+      }
+    });
+    
     const reqRelatedDocumentData: RequirementRelatedDocumentData = {
       id: relatedDocumentData?.id ?? Date.now(),
       sourceFormId: requirementSourceData.id,
@@ -150,6 +170,7 @@ const RequirementRelatedDocumentModal: React.FC<
       sectionNumber: formData.sectionNumber,
       sectionTitle: formData.sectionTitle,
       description: formData.description,
+      images: uploadedImages,
     };
     if (isEditSection) {
       reqRelatedDocumentData.sections = reqRelatedDocumentData.sections?.map(
@@ -174,7 +195,10 @@ const RequirementRelatedDocumentModal: React.FC<
               : "Add Related Document"
           }
         />
-        <DialogContent dividers sx={{ height: "50vh", display: "flex", flexDirection: "column" }}>
+        <DialogContent
+          dividers
+          sx={{ height: "50vh", display: "flex", flexDirection: "column" }}
+        >
           <Stack direction={"row"} gap={2} sx={{ flex: 1, minHeight: 0 }}>
             <Box flex={1}>
               <Box
@@ -257,7 +281,7 @@ const RequirementRelatedDocumentModal: React.FC<
               />
             </Box>
             <Box
-              width={"632px"}
+              width={"680px"}
               display="flex"
               flexDirection="column"
               height="100%"
@@ -297,6 +321,11 @@ const RequirementRelatedDocumentModal: React.FC<
                   />
                 </Box>
               </Box>
+              <ImagesRequirementSource
+                uploadedImages={uploadedImages}
+                setUploadedImages={setUploadedImages}
+                inspectionId={inspectionId}
+              />
             </Box>
           </Stack>
         </DialogContent>

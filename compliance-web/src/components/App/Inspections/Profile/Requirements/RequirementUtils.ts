@@ -139,6 +139,7 @@ export const formatRequirementAPIData = (
               section_title: section.sectionTitle ?? "",
               description: section.description?.html ?? "",
               appendix_id: section.appendix?.id ?? undefined,
+              images: formatImages(section.images ?? []),
             };
             if (section.dbId) {
               srcDocument.id = section.dbId;
@@ -186,6 +187,7 @@ export const formatRequirementFormData = (requirement: InspectionRequirement): I
         sectionNumber: document.section_number,
         sectionTitle: document.section_title,
         description: { html: document.description, text: document.description },
+        images: document.images?.map((image) => ({ ...image, dbId: image.id })),
       };
 
       if (existingDocumentIndex >= 0) {
@@ -400,4 +402,42 @@ export const convertRequirementImagesArrToMap = (requirementImages: RequirementI
     acc.set(reqId, [...existingImages, image]);
     return acc;
   }, new Map<number, RequirementImage[]>());
+};
+
+/**
+ * Generates HTML content by combining base HTML with embedded images
+ * @param baseHtml The base HTML content
+ * @param images Array of RequirementImage objects to embed
+ * @param filterByField Optional field name to filter images by (e.g., 'req_detail_id', 'requirement_id')
+ * @param filterValue Optional value to filter images by
+ * @returns Combined HTML string with embedded images
+ */
+export const generateHtmlWithEmbeddedImages = (
+  baseHtml: string,
+  images: RequirementImage[],
+): string => {
+  if (images.length === 0) {
+    return baseHtml;
+  }
+
+  const imageHtml = images
+    .map((image) => {
+      const altText = image.original_file_name ?? "";
+      const caption = image.caption 
+        ? `<p style="margin-top: 8px; font-size: 0.875rem; color: #666; font-style: italic;">${image.caption}</p>` 
+        : "";
+      return `
+        <div style="margin-top: 8px;">
+          <img 
+            src="${image.url}" 
+            alt="${altText}"
+            style="max-width: 100%; height: auto; display: block; border-radius: 4px;"
+          />
+          ${caption}
+        </div>
+      `;
+    })
+    .join("");
+
+  return baseHtml + imageHtml;
 };
