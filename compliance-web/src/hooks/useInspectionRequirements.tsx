@@ -244,7 +244,8 @@ export const useInspectionRequirementImages = (inspectionId: number) => {
 
 export const useRequirementSourceImages = (
   inspectionId: number,
-  requirementId: number
+  requirementId: number,
+  staleTime: number = Infinity
 ) => {
   return useQuery({
     queryKey: ["requirement-source-images", inspectionId, requirementId],
@@ -257,13 +258,14 @@ export const useRequirementSourceImages = (
     },
     enabled: !!inspectionId && !!requirementId,
     refetchOnWindowFocus: false,
-    // staleTime: Infinity,
+    staleTime: staleTime,
   });
 };
 
 export const useRequirementDocumentImages = (
   inspectionId: number,
-  requirementId: number
+  requirementId: number,
+  staleTime: number = Infinity
 ) => {
   return useQuery({
     queryKey: ["requirement-document-images", inspectionId, requirementId],
@@ -276,7 +278,7 @@ export const useRequirementDocumentImages = (
     },
     enabled: !!inspectionId && !!requirementId,
     refetchOnWindowFocus: false,
-    // staleTime: Infinity,
+    staleTime: staleTime,
   });
 };
 

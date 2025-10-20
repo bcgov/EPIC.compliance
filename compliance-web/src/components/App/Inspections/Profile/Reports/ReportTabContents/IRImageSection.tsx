@@ -35,7 +35,8 @@ const IRImageSection = ({ image }: { image: RequirementImage }) => {
         />
       </Box>
       <Typography variant="caption">
-        {image.image_type} {image.sort_order}. {image.caption}
+        {image.image_type ? `${image.image_type} ${image.sort_order}. ` : ""}
+        {image.caption}
       </Typography>
     </Box>
   );

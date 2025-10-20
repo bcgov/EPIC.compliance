@@ -12,15 +12,18 @@ import { Inspection } from "@/models/Inspection";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRequirementStore } from "@/components/App/Inspections/Profile/Requirements/requirementStore";
 import IRImageSection from "./IRImageSection";
+import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
 
 const DetailSection = ({
   title,
   content,
   appendixNo,
+  detailSectionImages,
 }: {
   title: string;
   content: string;
   appendixNo?: string;
+  detailSectionImages?: RequirementImage[];
 }) => (
   <>
     <Typography variant="body1" mb={0.5}>
@@ -34,6 +37,13 @@ const DetailSection = ({
       mb={1.5}
       dangerouslySetInnerHTML={{ __html: content || "" }}
     />
+    {detailSectionImages && detailSectionImages.length > 0 && (
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+        {detailSectionImages.map((image) => (
+          <IRImageSection key={image.id} image={image = {...image, caption: image.original_file_name}} />
+        ))}
+      </Box>
+    )}
   </>
 );
 
@@ -63,6 +73,9 @@ const IRRequirement = ({
 }) => {
   const { inspectionData, isReportsReadOnly } = useReportStore();
   const { requirementPhotos, requirementFigures } = useRequirementStore();
+  const { data: requirementSourceImages } = useRequirementSourceImages(inspectionData?.id ?? 0, requirement.id, 540000);
+  const { data: requirementDocumentImages } = useRequirementDocumentImages(inspectionData?.id ?? 0, requirement.id, 540000);
+
   const { setOpen, setClose } = useDrawer();
   const queryClient = useQueryClient();
   const [photos, setPhotos] = useState<RequirementImage[]>([]);
@@ -133,6 +146,7 @@ const IRRequirement = ({
                   ${reqSourceDetail.title ?? ""}`}
                   content={reqSourceDetail.description || ""}
                   appendixNo={reqSourceDetail.appendix?.appendix_no}
+                  detailSectionImages={requirementSourceImages?.filter(image => image.req_detail_id === reqSourceDetail.id) ?? []}
                 />
                 {reqSourceDetail.documents.map((document) => (
                   <DetailSection
@@ -140,6 +154,7 @@ const IRRequirement = ({
                     title={`${document.document_title} Section ${document.section_number ?? ""} ${document.section_title ?? ""}`}
                     content={document.description || ""}
                     appendixNo={document.appendix?.appendix_no}
+                    detailSectionImages={requirementDocumentImages?.filter(image => image.req_detail_doc_id === document.id) ?? []}
                   />
                 ))}
               </Box>
