@@ -318,36 +318,12 @@ class InspectionRequirementService:
         return images
 
     @classmethod
-    def get_all_requirement_detail_doc_images(
-        cls, inspection_id, requirement_id, detail_id, doc_id
-    ):
-        """Get all images for a requirement detail document."""
+    def get_all_requirement_detail_doc_images(cls, inspection_id, requirement_id):
+        """Get all images for requirement detail documents by requirement_id."""
         ServiceUtils.inspection_exist_check(inspection_id)
         _requirement_check(requirement_id)
-        # Verify the detail belongs to the requirement
-        detail = InspectionReqSourceDetailModel.query.filter_by(
-            id=detail_id,
-            requirement_id=requirement_id,
-            is_active=True,
-            is_deleted=False,
-        ).first()
-        if not detail:
-            raise ResourceNotFoundError(
-                f"Requirement detail with id {detail_id} not found for requirement {requirement_id}"
-            )
-        # Verify the document belongs to the detail
-        document = InspectionReqDetailDocumentModel.query.filter_by(
-            id=doc_id,
-            req_detail_id=detail_id,
-            is_active=True,
-            is_deleted=False,
-        ).first()
-        if not document:
-            raise ResourceNotFoundError(
-                f"Requirement detail document with id {doc_id} not found for detail {detail_id}"
-            )
-        images = InspectionReqDetailDocImageModel.find_all_images_by_req_detail_doc_id(
-            doc_id
+        images = InspectionReqDetailDocImageModel.find_all_req_detail_doc_images_by_req(
+            requirement_id
         )
         images = _set_signed_url(images)
         return images

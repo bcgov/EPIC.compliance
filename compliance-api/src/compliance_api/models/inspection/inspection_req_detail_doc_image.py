@@ -89,6 +89,35 @@ class InspectionRequirementDetailDocImage(BaseModelVersioned):
         )
 
     @classmethod
+    def find_all_req_detail_doc_images_by_req(cls, requirement_id):
+        """Get all document images by requirement_id via joins."""
+        from .inspection_req_detail_doc import InspectionReqDetailDocument
+        from .inspection_req_source_detail import InspectionReqSourceDetail
+
+        return (
+            cls.query.join(
+                InspectionReqDetailDocument,
+                cls.req_detail_doc_id == InspectionReqDetailDocument.id,
+            )
+            .join(
+                InspectionReqSourceDetail,
+                InspectionReqDetailDocument.req_detail_id
+                == InspectionReqSourceDetail.id,
+            )
+            .filter(
+                InspectionReqSourceDetail.requirement_id == requirement_id,
+                InspectionReqSourceDetail.is_active.is_(True),
+                InspectionReqSourceDetail.is_deleted.is_(False),
+                InspectionReqDetailDocument.is_active.is_(True),
+                InspectionReqDetailDocument.is_deleted.is_(False),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+            )
+            .order_by(cls.id)
+            .all()
+        )
+
+    @classmethod
     def find_image_by_url(cls, req_detail_doc_id, relative_url):
         """Get image object by url."""
         return cls.query.filter(
