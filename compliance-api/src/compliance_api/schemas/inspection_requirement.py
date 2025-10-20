@@ -146,7 +146,11 @@ class InspectionReqDetailDocCreateSchema(BaseSchema):
     section_title = fields.Str(
         metadata={"description": "Additional description of the document"}
     )
-    images = fields.List(fields.Nested(InspectionReqDetailDocImageCreateSchema))
+    images = fields.List(
+        fields.Nested(InspectionReqDetailDocImageCreateSchema),
+        allow_none=True,
+        required=False,
+    )
 
 
 class InspectionReqDetailDocUpdateSchema(InspectionReqDetailDocCreateSchema):
@@ -157,7 +161,6 @@ class InspectionReqDetailDocUpdateSchema(InspectionReqDetailDocCreateSchema):
             "description": "The unique identifier of the requirement detail document"
         }
     )
-    images = fields.List(fields.Nested(InspectionReqDetailDocImageUpdateSchema))
 
 
 class InspectionReqSourceDetailCreateSchema(BaseSchema):

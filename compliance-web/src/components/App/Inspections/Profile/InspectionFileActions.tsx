@@ -56,10 +56,14 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   const onDeleteSuccess = useCallback(() => {
     notify.success("Inspection deleted!");
     setClose();
-    queryClient.removeQueries({
-      queryKey: ["inspection", inspectionData?.ir_number],
-    });
+    // Navigate away first to unmount the component
     router.navigate({ to: `/ce-database/case-files/${inspectionData?.case_file?.case_file_number}` });
+    // Delay query cleanup to ensure navigation completes first
+    setTimeout(() => {
+      queryClient.removeQueries({
+        queryKey: ["inspection", inspectionData?.ir_number],
+      });
+    }, 100);
   }, [router, setClose, queryClient, inspectionData]);
 
   const { mutate: updateInspectionInspection } = useUpdateInspectionStatus(

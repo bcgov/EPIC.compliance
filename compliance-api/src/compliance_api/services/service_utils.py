@@ -228,12 +228,19 @@ class ServiceUtils:
             title = doc.document_title
             if title not in grouped_docs:
                 grouped_docs[title] = {"documents": [], "document_title": title}
+
+            # Process document images
+            doc_images = []
+            if doc.images:
+                ServiceUtils._process_document_images(doc_images, doc.images)
+
             grouped_docs[title]["documents"].append(
                 {
                     "appendix_no": (doc.appendix.appendix_no if doc.appendix else None),
                     "section_number": doc.section_number,
                     "section_title": doc.section_title,
                     "description": doc.description,
+                    "document_images": doc_images,
                 }
             )
 
@@ -252,6 +259,23 @@ class ServiceUtils:
                 }
             )
             source_detail_dict["requirement_source_images"].append(
+                {
+                    "original_file_name": image.original_file_name,
+                    "image_url": image_response.get("presigned_url"),
+                }
+            )
+
+    @staticmethod
+    def _process_document_images(doc_images_list, images):
+        """Process document images and get presigned URLs."""
+        for image in images:
+            image_response = DocService.get_presigned_url(
+                {
+                    "relative_url": image.relative_url,
+                    "action": ActionOnFileEnum.GET.value,
+                }
+            )
+            doc_images_list.append(
                 {
                     "original_file_name": image.original_file_name,
                     "image_url": image_response.get("presigned_url"),

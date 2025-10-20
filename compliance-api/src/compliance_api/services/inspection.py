@@ -379,7 +379,6 @@ class InspectionService:
         inspection = InspectionModel.find_by_id(inspection_id)
         if not inspection:
             raise ResourceNotFoundError(f"Inspection with ID {inspection_id} not found")
-        ServiceUtils.inspection_status_check(inspection)
         with session_scope() as session:
             InspectionModel.delete_inspection(inspection_id, session)
             InspectionTypeModel.delete_inspection_type(inspection_id, session)

@@ -353,8 +353,11 @@ class AdministrativePenaltyService:
             raise UnprocessableEntityError(
                 "Administrative Penalty already exists for these requirements."
             )
-        existing_requirements = AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
-            inspection_id, administrative_penalty_id
+        existing_requirements = (
+            AdministrativePenaltyInspectionRequirementMap.
+            get_by_inspection_and_administrative_penalty_id(
+                inspection_id, administrative_penalty_id
+            )
         )
         if existing_requirements:
             raise UnprocessableEntityError(
@@ -386,8 +389,11 @@ class AdministrativePenaltyService:
             existing_inspection_requirement_ids = {
                 req.id for req in existing_inspection_requirements
             }
-            existing_requirements = AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
-                inspection_id, administrative_penalty_id
+            existing_requirements = (
+                AdministrativePenaltyInspectionRequirementMap.
+                get_by_inspection_and_administrative_penalty_id(
+                    inspection_id, administrative_penalty_id
+                )
             )
             existing_requirement_ids = {
                 req.inspection_requirement_id for req in existing_requirements

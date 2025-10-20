@@ -615,6 +615,17 @@
                         {% if doc.description %}
                         <div class="com-ir-document-description">{{ doc.description | safe | replace('style="white-space: pre-wrap;"', '') }}</div>
                         {% endif %}
+                        {% if doc.document_images and doc.document_images|length > 0 %}
+                        {% for image in doc.document_images %}
+                        <div class="com-ir-photo-section">
+                            <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
+                                style="max-width: 600px; display: block; margin: 10px 0;">
+                            <div class="com-ir-photo-caption">
+                                {{ image.original_file_name }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% endif %}
                         {% endfor %}
                         {% endfor %}
                         {% endif %}
