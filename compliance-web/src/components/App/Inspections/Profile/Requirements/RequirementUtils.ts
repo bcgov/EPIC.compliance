@@ -215,6 +215,7 @@ export const formatRequirementFormData = (requirement: InspectionRequirement): I
       clauseNumber: item.clause_number,
       order: item.order,
       description: { html: item.description, text: item.description },
+      images: item.images?.map((image) => ({ ...image, dbId: image.id })),
       relatedDocuments: relatedDocuments,
     };
   });
