@@ -127,6 +127,13 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
         requirement?.id ?? 0,
       ],
     });
+    queryClient.invalidateQueries({
+      queryKey: [
+        "requirement-document-images",
+        inspectionData.id,
+        requirement?.id ?? 0,
+      ],
+    });
     onSubmit("Changes saved successfully!", false);
     setIsImageChanged(false);
   }, [onSubmit, setIsImageChanged, queryClient, inspectionData, requirement]);

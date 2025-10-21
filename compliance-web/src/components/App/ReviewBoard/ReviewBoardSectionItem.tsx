@@ -33,6 +33,10 @@ const ReviewBoardSectionItem = ({
     return date ? dateUtils.formatDate(date, reviewBoardDateFormat) : "N/A";
   };
 
+  const formatInspectionTypes = (inspectionTypes: string) => {
+    return inspectionTypes.replace("Administrative", "Admin");
+  };
+
   return (
     <Box
       key={item.id}
@@ -119,19 +123,17 @@ const ReviewBoardSectionItem = ({
         <Typography variant="caption">
           {getFormattedDate(item.card_date)}
         </Typography>
-        {item.types ? (
-          <Typography
-            variant="caption"
-            sx={{
-              backgroundColor: BCDesignTokens.surfaceColorBackgroundLightGray,
-              padding: 0.5,
-              marginLeft: 0.5,
-              borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
-            }}
-          >
-            {item.types.map((type) => type.name).join(", ")}
-          </Typography>
-        ) : null}
+        <Typography
+          variant="caption"
+          sx={{
+            backgroundColor: BCDesignTokens.surfaceColorBackgroundLightGray,
+            padding: 0.5,
+            marginLeft: 0.5,
+            borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
+          }}
+        >
+          {formatInspectionTypes(item.inspection_types)}
+        </Typography>
       </Box>
       <Typography
         variant="caption"

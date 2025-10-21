@@ -200,6 +200,10 @@ const RequirementRelatedDocumentCard: FC<
                 isFormatted={true}
                 renderTypography={
                   <Box
+                    sx={{
+                      fontSize: "0.875rem",
+                      color: BCDesignTokens.typographyColorPrimary,
+                    }}
                     dangerouslySetInnerHTML={{
                       __html: generateHtmlWithEmbeddedImages(
                         section.description?.html ?? "",
