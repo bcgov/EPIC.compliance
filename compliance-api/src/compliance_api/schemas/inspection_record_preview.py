@@ -28,6 +28,7 @@ class RequirementSourceDetailSchema(BaseSchema):
     requirement_source_id = fields.Integer()
     requirement_source_name = fields.String()
     requirement_source_number = fields.String()
+    title = fields.String()
     requirement_title = fields.String()
     requirement_source_description = fields.String(allow_none=True)
     requirement_source_images = fields.List(

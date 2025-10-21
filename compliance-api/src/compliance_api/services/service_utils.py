@@ -199,6 +199,7 @@ class ServiceUtils:
             source_detail_dict = {
                 "requirement_source_id": detail.requirement_source.id,
                 "requirement_source_name": detail.requirement_source.name,
+                "title": detail.title,
                 "requirement_title": ServiceUtils.get_requirement_title(
                     detail, requirement_source_number
                 ),
