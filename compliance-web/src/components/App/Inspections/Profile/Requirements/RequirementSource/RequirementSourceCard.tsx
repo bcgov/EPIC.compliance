@@ -285,6 +285,10 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                       isFormatted={true}
                       renderTypography={
                         <Box
+                          sx={{
+                            fontSize: "0.875rem",
+                            color: BCDesignTokens.typographyColorPrimary,
+                          }}
                           dangerouslySetInnerHTML={{
                             __html: generateHtmlWithEmbeddedImages(
                               item.description?.html ?? "",
