@@ -107,7 +107,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
             {caseFileOpenItems.orders.map((order, index) => (
                 <li key={index}>
                   {order.number}
-                  {linkToInspection(order.inspectionNumber)}
+                  {linkToInspection(order.ir_number)}
                 </li>
             ))}
           </ul>
@@ -121,7 +121,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
             {caseFileOpenItems.warning_letters.map((warningLetter, index) => (
                 <li key={index}>
                   {warningLetter.number}
-                  {linkToInspection(warningLetter.inspectionNumber)}
+                  {linkToInspection(warningLetter.ir_number)}
                 </li>
             ))}
           </ul>
@@ -136,7 +136,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
               (violationTicket, index) => (
                 <li key={index}>
                   {violationTicket.number}
-                  {linkToInspection(violationTicket.inspectionNumber)}
+                  {linkToInspection(violationTicket.ir_number)}
                 </li>
               )
             )}
@@ -152,7 +152,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
               (administrativePenalty, index) => (
                 <li key={index}>
                   {administrativePenalty.number}
-                  {linkToInspection(administrativePenalty.inspectionNumber)}
+                  {linkToInspection(administrativePenalty.ir_number)}
                 </li>
               )
             )}
@@ -168,7 +168,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
               (chargeRecommendation, index) => (
                 <li key={index}>
                   {chargeRecommendation.number}
-                  {linkToInspection(chargeRecommendation.inspectionNumber)}
+                  {linkToInspection(chargeRecommendation.ir_number)}
                 </li>
               )
             )}
@@ -184,7 +184,7 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
               (restorativeJustice, index) => (
                 <li key={index}>
                   {restorativeJustice.number}
-                  {linkToInspection(restorativeJustice.inspectionNumber)}
+                  {linkToInspection(restorativeJustice.ir_number)}
                 </li>
               )
             )}
