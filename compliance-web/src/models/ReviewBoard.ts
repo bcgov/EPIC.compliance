@@ -3,7 +3,6 @@ import { OrderProgress, OrderStatus } from "./InspectionOrder";
 import { WarningLetterProgress, WarningLetterStatus } from "./InspectionWarningLetter";
 import { IRProgress } from "./IRProgress";
 import { IRStatus } from "./IRStatus";
-import { IRType } from "./IRType";
 import { StaffUser } from "./Staff";
 import { Option } from "./common";
 
@@ -17,8 +16,8 @@ export interface ReviewBoardItem {
   number: string;
   project_name: string;
   card_date: string;
-  types: IRType[];
   primary_officer: StaffUser;
+  inspection_types: string;
   card_type: ReviewBoardCardType;
   approval_status?: ApprovalStatus;
   approved_by?: StaffUser;
@@ -51,6 +50,7 @@ export interface IRReviewBoardItem {
   date_report_sent: string,
   expected_return_date: string,
   date_response: string,
+  inspection_types: string,
   intended_issuance_date: string,
   ir_status: IRStatus,
   ir_progress: IRProgress,
@@ -72,6 +72,7 @@ export interface OrderReviewBoardItem {
   order_progress: OrderProgress,
   approval_status: ApprovalStatus,
   intended_issuance_date: string,
+  inspection_types: string,
 }
 
 export interface WarningLetterReviewBoardItem {
@@ -89,6 +90,7 @@ export interface WarningLetterReviewBoardItem {
   warning_letter_status: WarningLetterStatus,
   warning_letter_progress: WarningLetterProgress,
   approval_status: ApprovalStatus,
+  inspection_types: string,
 }
 
 export interface APReviewBoardItem {
@@ -102,4 +104,5 @@ export interface APReviewBoardItem {
   decision_date: string,
   decision: Option,
   penalty_amount: number,
+  inspection_types: string,
 }

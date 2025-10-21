@@ -29,7 +29,7 @@ export const formatInspectionRecordsToReviewBoardItems = (
     number: record.ir_number,
     project_name: record.project_title,
     card_date: record.inspection_start_date,
-    types: [], // IR records don't have types in the current structure
+    inspection_types: record.inspection_types,
     primary_officer: record.primary_officer,
     card_type: {
       name: "IR",
@@ -60,7 +60,7 @@ export const formatOrderRecordsToReviewBoardItems = (
     number: record.order_number,
     project_name: record.project_title,
     card_date: record.inspection_start_date,
-    types: [], // Order records don't have types in the current structure
+    inspection_types: record.inspection_types,
     primary_officer: record.primary_officer,
     card_type: {
       name: "Order",
@@ -84,7 +84,7 @@ export const formatWarningLettersToReviewBoardItems = (
     number: record.warning_letter_number,
     project_name: record.project_title,
     card_date: record.inspection_start_date,
-    types: [], // Warning letter records don't have types in the current structure
+    inspection_types: record.inspection_types,
     primary_officer: record.primary_officer,
     card_type: {
       name: "Warning Letter",
@@ -108,7 +108,7 @@ export const formatAdministrativePenaltiesToReviewBoardItems = (
     number: record.administrative_penalty_number,
     project_name: record.project_title,
     card_date: record.inspection_start_date,
-    types: [],
+    inspection_types: record.inspection_types,
     primary_officer: record.primary_officer,
     card_type: {
       name: "AP",
