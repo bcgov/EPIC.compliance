@@ -97,7 +97,6 @@ jobs:
             
             template_base64=$(base64 -w 0 "$file_path")
             echo "Base64 length: ${#template_base64} characters"
-            echo "$template_base64"
             
             response=$(curl -s -w "\n%{http_code}" -X PATCH \
               "https://${API_HOST}/api/templates/${template_name_upper}" \
