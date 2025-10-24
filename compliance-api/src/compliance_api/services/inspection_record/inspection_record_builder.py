@@ -92,7 +92,7 @@ class InspectionRecordDataBuilder:
         """Build the approval information for the inspection record."""
         self.approvals, inspection_record = self._get_approval()
         if len(self.approvals) > 0:
-            latest_approval = self.approvals[-1]
+            latest_approval = self.approvals[0]
             if inspection_record.ir_progress in [
                 IRProgressEnum.PRELIMINARY_APPROVED,
                 IRProgressEnum.HOLDER_PRELIMINARY_REVIEW,
