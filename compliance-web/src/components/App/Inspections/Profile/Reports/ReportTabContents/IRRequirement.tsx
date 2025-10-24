@@ -39,9 +39,14 @@ const DetailSection = ({
     />
     {detailSectionImages && detailSectionImages.length > 0 && (
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-        {detailSectionImages.map((image) => (
-          <IRImageSection key={image.id} image={image = {...image, caption: image.original_file_name}} />
-        ))}
+        {detailSectionImages.map((image) => {
+          const filenameWithoutExt = image.original_file_name?.includes('.') 
+            ? image.original_file_name.substring(0, image.original_file_name.lastIndexOf('.'))
+            : image.original_file_name;
+          return (
+            <IRImageSection key={image.id} image={{...image, caption: filenameWithoutExt}} />
+          );
+        })}
       </Box>
     )}
   </>

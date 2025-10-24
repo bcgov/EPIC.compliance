@@ -603,7 +603,7 @@
                             <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
                                 style="max-width: 600px; display: block; margin: 10px 0;">
                             <div class="com-ir-photo-caption">
-                                {{ image.original_file_name }}
+                                {{ image.original_file_name.rsplit('.', 1)[0] if '.' in image.original_file_name else image.original_file_name }}
                             </div>
                         </div>
                         {% endfor %}
@@ -624,7 +624,7 @@
                             <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
                                 style="max-width: 600px; display: block; margin: 10px 0;">
                             <div class="com-ir-photo-caption">
-                                {{ image.original_file_name }}
+                                {{ image.original_file_name.rsplit('.', 1)[0] if '.' in image.original_file_name else image.original_file_name }}
                             </div>
                         </div>
                         {% endfor %}
@@ -638,7 +638,7 @@
                 {% endif %}
                 <tr>
                     <td colspan="2">
-                        <div class="com-ir-section-header">Findings:</div>
+                        <div class="com-ir-section-header">Inspection Details:</div>
                         <div class="com-ir-findings-content">
                             {{ requirement.requirement_findings | safe | replace('style="white-space: pre-wrap;"', '') }}
                         </div>
