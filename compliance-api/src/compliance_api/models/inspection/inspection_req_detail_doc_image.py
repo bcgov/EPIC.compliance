@@ -6,6 +6,8 @@ from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
 from ..base_model import BaseModelVersioned
 from ..utils import with_session
+from .inspection_req_detail_doc import InspectionReqDetailDocument
+from .inspection_req_source_detail import InspectionReqSourceDetail
 
 
 class InspectionRequirementDetailDocImage(BaseModelVersioned):
@@ -91,9 +93,6 @@ class InspectionRequirementDetailDocImage(BaseModelVersioned):
     @classmethod
     def find_all_req_detail_doc_images_by_req(cls, requirement_id):
         """Get all document images by requirement_id via joins."""
-        from .inspection_req_detail_doc import InspectionReqDetailDocument
-        from .inspection_req_source_detail import InspectionReqSourceDetail
-
         return (
             cls.query.join(
                 InspectionReqDetailDocument,
