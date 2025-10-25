@@ -305,9 +305,7 @@ class InspectionRequirementService:
         return images
 
     @classmethod
-    def get_all_requirement_detail_images(
-        cls, inspection_id, requirement_id
-    ):
+    def get_all_requirement_detail_images(cls, inspection_id, requirement_id):
         """Get all images for a requirement source detail."""
         ServiceUtils.inspection_exist_check(inspection_id)
         _requirement_check(requirement_id)
@@ -1871,6 +1869,7 @@ def _create_image_obj(requirement_id, img: dict, image_type):
         "original_file_name": img.get("original_file_name"),
         "date_taken": img.get("date_taken"),
         "taken_by_id": img.get("taken_by_id"),
+        "taken_by_text": img.get("taken_by_text"),
         "caption": img.get("caption", None),
         "relative_url": img.get("relative_url"),
     }

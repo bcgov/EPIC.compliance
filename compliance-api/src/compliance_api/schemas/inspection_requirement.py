@@ -52,7 +52,15 @@ class InspectionReqImageCreateSchema(BaseSchema):
         metadata={
             "description": "The unique identifier of the staff who took the image"
         },
-        required=True,
+        required=False,
+        allow_none=True,
+    )
+    taken_by_text = fields.Str(
+        metadata={
+            "description": "Text description of who captured the image when not a staff member"
+        },
+        required=False,
+        allow_none=True,
     )
     caption = fields.Str(
         metadata={"description": "The caption given to the image"}, allow_none=True

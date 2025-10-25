@@ -46,6 +46,7 @@ from .inspection_requirement import (
     InspectionRequirementBulkUpdateSchema, InspectionRequirementCreateSchema, InspectionRequirementSchema,
     InspectionRequirementUpdateSchema, InspectionSortOrderSchema)
 from .inspection_requirement_grid import InspectionRequirementFilterSchema, InspectionRequirementGridItemSchema
+from .ir_download_request import CreateIRDownloadRequestSchema, IRDownloadRequestQuerySchema, IRDownloadRequestSchema
 from .order import (
     OrderCreateSchema, OrderIssueSchema, OrderReplaceSchema, OrderSchema, OrderStatusSchema, OrderUpdateSchema,
     ResetOrderFieldSchema)

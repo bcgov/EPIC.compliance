@@ -45,8 +45,13 @@ class InspectionRequirementImage(BaseModelVersioned):
     taken_by_id = Column(
         Integer,
         ForeignKey("staff_users.id", name="inspection_images_taken_by_fkey"),
-        nullable=False,
+        nullable=True,
         comment="The unique identifier of the staff who captured the image",
+    )
+    taken_by_text = Column(
+        String(255),
+        nullable=True,
+        comment="Text description of who captured the image when not a staff member",
     )
     caption = Column(String, nullable=True, comment="The caption of the image")
     relative_url = Column(

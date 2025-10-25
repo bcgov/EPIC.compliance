@@ -25,6 +25,7 @@ from .inspection_record.inspection_record import InspectionRecordService
 from .inspection_record.inspection_record_approval import InspectionRecordApprovalService
 from .inspection_requirement import InspectionRequirementService
 from .inspection_requirement_type import InspectionRequirementTypeService
+from .ir_download_request import IRDownloadRequestService
 from .order.order import OrderService
 from .order.order_approval import OrderApprovalService
 from .position import PositionService

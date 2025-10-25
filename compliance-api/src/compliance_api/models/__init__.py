@@ -41,6 +41,7 @@ from .inspection import (
     InspectionType, InspectionTypeOption, IRStatusOption)
 from .inspection_record import InspectionRecord, IRProgressEnum
 from .inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
+from .ir_download_request import DownloadStatusEnum, IRDownloadRequest, IRDownloadRequestErrorLog
 from .order import Order, OrderInspectionRequirementMap, OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
 from .order_approval import OrderApproval, OrderApprovalStatusEnum
 from .position import Position

@@ -1,5 +1,6 @@
 """Resources for inspection record."""
 
+from datetime import datetime
 from http import HTTPStatus
 from io import BytesIO
 
@@ -9,9 +10,9 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
-    CreateInspectionRecordApprovalSchema, InspectionRecordApprovalSchema, InspectionRecordCreateSchema,
-    InspectionRecordSchema, ResetInspectionRecordFieldSchema, UpdateInspectionRecordApprovalSchema,
-    UpdateInspectionRecordApprovalStatusSchema, UpdateInspectionRecordSchema)
+    CreateInspectionRecordApprovalSchema, CreateIRDownloadRequestSchema, InspectionRecordApprovalSchema,
+    InspectionRecordCreateSchema, InspectionRecordSchema, IRDownloadRequestSchema, ResetInspectionRecordFieldSchema,
+    UpdateInspectionRecordApprovalSchema, UpdateInspectionRecordApprovalStatusSchema, UpdateInspectionRecordSchema)
 from compliance_api.services import InspectionRecordApprovalService, InspectionRecordService
 from compliance_api.utils.util import cors_preflight
 
@@ -43,6 +44,12 @@ ir_reset_field_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 ir_approval_status_update_request = ApiHelper.convert_ma_schema_to_restx_model(
     API, UpdateInspectionRecordApprovalStatusSchema(), "IRApprovalStatusUpdate"
+)
+ir_download_request_schema = ApiHelper.convert_ma_schema_to_restx_model(
+    API, IRDownloadRequestSchema(), "IRDownloadRequest"
+)
+ir_download_request_create_schema = ApiHelper.convert_ma_schema_to_restx_model(
+    API, CreateIRDownloadRequestSchema(), "CreateIRDownloadRequest"
 )
 
 
@@ -306,3 +313,125 @@ class InspectionRecordPreview(Resource):
                 download_name=f"{inspection.ir_number}.pdf",
             )
         return response.json(), HTTPStatus.OK
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/<int:inspection_record_id>/download-requests", methods=["POST", "OPTIONS"])
+class IRDownloadRequests(Resource):
+    """Resource for creating IR download requests."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Create an IR download request"
+    )
+    @API.expect(ir_download_request_create_schema)
+    @API.response(
+        code=201,
+        model=ir_download_request_schema,
+        description="Download request created",
+    )
+    @API.response(400, "Bad Request")
+    @API.response(409, "Conflict - Request already exists")
+    def post(inspection_id, inspection_record_id):
+        """Create an IR download request.
+
+        Creates a new download request for the specified inspection record.
+        Prevents duplicate requests by checking if a pending/not-started request
+        already exists for the same inspection record and user.
+        """
+        # TEMPORARY: Fake response for development
+        # TODO: Uncomment the service call below when ready
+        # created_request = IRDownloadRequestService.create_download_request(
+        #     inspection_record_id
+        # )
+        # return (
+        #     IRDownloadRequestSchema().dump(created_request),
+        #     HTTPStatus.CREATED,
+        # )
+
+        # Fake JSON response
+        fake_response = {
+            "id": 101,
+            "inspection_record_id": inspection_record_id,
+            "download_status": {"id": "NOT_STARTED", "name": "Not Started"},
+            "relative_url": None,
+            "generated_timestamp": None,
+            "created_date": datetime.utcnow().isoformat() + "Z",
+            "updated_date": None,
+            "created_by": "fake-staff-guid-12345",
+            "updated_by": None,
+            "is_active": True,
+            "is_deleted": False,
+        }
+
+        return fake_response, HTTPStatus.CREATED
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route(
+    "/<int:inspection_record_id>/download-requests/latest",
+    methods=["GET", "OPTIONS"],
+)
+class IRDownloadRequestLatest(Resource):
+    """Resource for fetching the latest IR download request."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=ir_download_request_schema)
+    @API.response(404, "Not Found")
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Fetch the latest IR download request for a staff member",
+    )
+    @API.doc(
+        params={
+            "created_by": {
+                "description": "Staff ID (GUID) of the user who created the request",
+                "in": "query",
+                "type": "string",
+                "required": True,
+            }
+        }
+    )
+    @auth.require
+    def get(inspection_id, inspection_record_id):
+        """Fetch the latest IR download request by inspection record and staff ID.
+
+        Returns the most recent download request for the specified inspection record
+        and staff member, ordered by creation date descending.
+        """
+        # TEMPORARY: Fake response for development
+        # TODO: Uncomment the service call below when ready
+        # query_schema = IRDownloadRequestQuerySchema()
+        # query_params = query_schema.load(request.args)
+        # staff_id = query_params.get("created_by")
+
+        # download_request = IRDownloadRequestService.get_latest_download_request(
+        #     inspection_record_id, staff_id
+        # )
+
+        # if not download_request:
+        #     raise ResourceNotFoundError(
+        #         f"No download request found for inspection record {inspection_record_id} "
+        #         f"and staff ID {staff_id}"
+        #     )
+
+        # return IRDownloadRequestSchema().dump(download_request), HTTPStatus.OK
+
+        # Get staff_id from query params for the fake response
+        staff_id = request.args.get("created_by", "fake-staff-guid-12345")
+        fake_response = {
+            "id": 204,
+            "inspection_record_id": inspection_record_id,
+            "download_status": {"id": "DOWNLOADED", "name": "Downloaded"},
+            "relative_url": f"/downloads/ir_{inspection_record_id}_report.pdf",
+            "generated_timestamp": "2024-10-24T14:15:00Z",
+            "created_date": "2024-10-24T14:10:00Z",
+            "updated_date": "2024-10-24T14:18:00Z",
+            "created_by": staff_id,
+            "updated_by": staff_id,
+            "is_active": True,
+            "is_deleted": False,
+        }
+
+        return fake_response, HTTPStatus.OK

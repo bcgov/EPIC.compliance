@@ -82,7 +82,7 @@ class InspectionRequirementDetailImage(BaseModelVersioned):
         return (
             cls.query.join(
                 InspectionReqSourceDetail,
-                cls.req_detail_id == InspectionReqSourceDetail.id
+                cls.req_detail_id == InspectionReqSourceDetail.id,
             )
             .filter(
                 InspectionReqSourceDetail.requirement_id == req_id,
