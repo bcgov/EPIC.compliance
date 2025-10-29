@@ -29,10 +29,10 @@ type RequirementSourceModalProps = {
   inspectionId: number;
   requirementSourceFormData?: RequirementSourceFormData;
   requirementSource?: RequirementSource;
+  requirementSourceTitle?: string;
   order?: InspectionOrder;
   appendixList?: Appendix[];
   requirementSourceImages?: RequirementImage[];
-  isSectionModal?: boolean;
 };
 
 const requirementSourceFormSchema = yup.object().shape({
@@ -94,10 +94,10 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   inspectionId,
   requirementSourceFormData,
   requirementSource,
+  requirementSourceTitle,
   order,
   appendixList,
   requirementSourceImages,
-  isSectionModal = false,
 }) => {
   const { data: requirementSourceDataList } = useRequirementSourcesData();
   const { data: orderList } = useInspectionOrdersProjectwiseData(caseFile.id);
@@ -108,10 +108,11 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
       requirementSourceFormData ?? {
         ...initFormData,
         requirementSource: requirementSource ?? undefined,
+        requirementSourceTitle: requirementSourceTitle ?? undefined,
         order: order ?? undefined,
       }
     );
-  }, [requirementSourceFormData, requirementSource, order]);
+  }, [requirementSourceFormData, requirementSource, requirementSourceTitle, order]);
 
   const methods = useForm<RequirementSourceSchemaType>({
     resolver: yupResolver(requirementSourceFormSchema),
@@ -316,15 +317,13 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 )}
                 {selectedRequirementSource && (
                   <>
-                    {!isSectionModal && (
-                      <ControlledTextField
-                        name="requirementSourceTitle"
-                        label="Source Title"
-                        fullWidth
-                        onChange={handleTitleChange}
-                        multiline
-                      />
-                    )}
+                    <ControlledTextField
+                      name="requirementSourceTitle"
+                      label="Source Title"
+                      fullWidth
+                      onChange={handleTitleChange}
+                      multiline
+                    />
                     {selectedRequirementSource?.id ===
                       RequirementSourceEnum.REGULATION && (
                       <ControlledTextField
@@ -351,18 +350,6 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                     )}
                   </>
                 )}
-                <ControlledAutoComplete
-                  name="appendix"
-                  label="Inspection Record Appendix #"
-                  options={appendixList ?? []}
-                  getOptionLabel={(option) => {
-                    return `Appendix ${option.appendix_no}: ${option.document_title}`;
-                  }}
-                  getOptionKey={(option) => option.id ?? ""}
-                  isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
-                  }
-                />
                 {selectedRequirementSource?.id !==
                   RequirementSourceEnum.ORDER && (
                   <>
@@ -399,6 +386,18 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                       fullWidth
                       multiline
                     />
+                    <ControlledAutoComplete
+                    name="appendix"
+                    label="Inspection Record Appendix #"
+                    options={appendixList ?? []}
+                    getOptionLabel={(option) => {
+                      return `Appendix ${option.appendix_no}: ${option.document_title}`;
+                    }}
+                    getOptionKey={(option) => option.id ?? ""}
+                    isOptionEqualToValue={(option, value) =>
+                      option.id === value.id
+                    }
+                  />
                   </>
                 )}
               </Box>

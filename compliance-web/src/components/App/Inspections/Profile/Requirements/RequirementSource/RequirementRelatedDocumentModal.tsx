@@ -258,16 +258,6 @@ const RequirementRelatedDocumentModal: React.FC<
                 multiline
                 fullWidth
               />
-              <ControlledAutoComplete
-                name="appendix"
-                label="Inspection Record Appendix #"
-                options={appendixList ?? []}
-                getOptionLabel={(option) =>
-                  `Appendix ${option.appendix_no}: ${option.document_title}`
-                }
-                getOptionKey={(option) => option.id ?? ""}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-              />
               <ControlledTextField
                 name="sectionNumber"
                 label="Section #"
@@ -278,6 +268,16 @@ const RequirementRelatedDocumentModal: React.FC<
                 label="Section Title"
                 fullWidth
                 multiline
+              />
+              <ControlledAutoComplete
+                name="appendix"
+                label="Inspection Record Appendix #"
+                options={appendixList ?? []}
+                getOptionLabel={(option) =>
+                  `Appendix ${option.appendix_no}: ${option.document_title}`
+                }
+                getOptionKey={(option) => option.id ?? ""}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
               />
             </Box>
             <Box

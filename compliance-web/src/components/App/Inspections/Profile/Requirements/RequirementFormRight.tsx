@@ -189,8 +189,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   };
 
   const handleEditRequirementSource = (
-    data: RequirementSourceFormData,
-    index: number
+    data: RequirementSourceFormData
   ) => {
     setOpen({
       content: (
@@ -205,7 +204,6 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
               (image) => image.req_detail_id === data.id
             ) ?? []
           }
-          isSectionModal={index > 0}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
@@ -258,8 +256,8 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           inspectionId={inspectionId}
           requirementSource={data.requirementSource}
           order={data.order}
+          requirementSourceTitle={data.requirementSourceTitle}
           appendixList={appendixList}
-          isSectionModal={true}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
