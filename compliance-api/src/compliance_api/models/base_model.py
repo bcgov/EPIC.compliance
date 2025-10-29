@@ -29,7 +29,7 @@ class BaseModel(db.Model):
     updated_date = Column(
         DateTime,
         default=datetime.now(timezone.utc),
-        onupdate=datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=True,
     )
     created_by = Column(String(100), nullable=False)
