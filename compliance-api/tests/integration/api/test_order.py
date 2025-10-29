@@ -139,11 +139,14 @@ def test_order_preview(
     client, auth_header_super_user, created_order, mock_doc_gen_service, session
 ):
     """Test previewing an order."""
-    url = urljoin(API_BASE_URL, f"{created_order.id}/render?output_format=html")
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    render_data = {"output_format": "html"}
 
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
     result = client.post(
         url,
-        headers=auth_header_super_user,
+        data=json.dumps(render_data),
+        headers=headers,
     )
     assert result.status_code == HTTPStatus.OK
 
@@ -152,11 +155,14 @@ def test_order_preview_with_invalid_id(
     client, auth_header_super_user, mock_doc_gen_service
 ):
     """Test previewing non-existent order."""
-    url = urljoin(API_BASE_URL, "9999/render?output_format=html")
+    url = urljoin(API_BASE_URL, "9999/render")
+    render_data = {"output_format": "html"}
 
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
     result = client.post(
         url,
-        headers=auth_header_super_user,
+        data=json.dumps(render_data),
+        headers=headers,
     )
     assert result.status_code == HTTPStatus.NOT_FOUND
 
@@ -586,11 +592,14 @@ def test_order_preview_with_pdf_format(
     client, auth_header_super_user, created_order, mock_doc_gen_service, session
 ):
     """Test previewing an order in PDF format."""
-    url = urljoin(API_BASE_URL, f"{created_order.id}/render?output_format=pdf")
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    render_data = {"output_format": "pdf"}
 
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
     result = client.post(
         url,
-        headers=auth_header_super_user,
+        data=json.dumps(render_data),
+        headers=headers,
     )
     assert result.status_code == HTTPStatus.OK
 
@@ -599,13 +608,14 @@ def test_order_preview_with_invalid_format(
     client, auth_header_super_user, created_order, mock_doc_gen_service, session
 ):
     """Test previewing an order with invalid output format."""
-    url = urljoin(
-        API_BASE_URL, f"{created_order.id}/render?output_format=invalid_format"
-    )
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    render_data = {"output_format": "invalid_format"}
 
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
     result = client.post(
         url,
-        headers=auth_header_super_user,
+        data=json.dumps(render_data),
+        headers=headers,
     )
     assert result.status_code == HTTPStatus.BAD_REQUEST
 
