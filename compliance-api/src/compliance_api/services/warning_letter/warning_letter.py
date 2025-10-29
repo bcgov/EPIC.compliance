@@ -394,6 +394,7 @@ def _create_content(inspection, requirement_ids, issuing_officer_id):
                 else ""
             ),
             "ir_number": ServiceUtils.strip_project_code(inspection.ir_number),
+            "primary_officer_name": f"{inspection.primary_officer.first_name} {inspection.primary_officer.last_name}",
             "officer_name": f"{issuing_officer.first_name} {issuing_officer.last_name}",
             "officer_position": issuing_officer.position.name,
         },

@@ -43,7 +43,6 @@ class CreateIRDownloadRequestSchema(BaseSchema):
     # No additional fields needed for creation
     # inspection_record_id comes from URL path
     # staff_id comes from user context
-    pass
 
 
 class IRDownloadRequestQuerySchema(BaseSchema):

@@ -21,7 +21,7 @@ WARNING_LETTER_CONTENT = """<p class='editor-paragraph' dir='ltr'>
 <p class="editor-paragraph" style="text-align: left;"><br></p>
 <p class="editor-paragraph" dir="ltr">
     On {{ inspection_details.start_date }}, {{inspection_details.officer_position}}
-     {{ inspection_details.officer_name }} conducted a {{inspection_details.inspection_type | lower }}
+     {{ inspection_details.primary_officer_name }} conducted a {{inspection_details.inspection_type | lower }}
      inspection (Inspection) of the {{ project_details.name }} (Project) against the requirements of
       {{ requirement_sources }}.
       {% if condition_lines %}

@@ -148,7 +148,14 @@ const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                       <GridLabelValuePair
                         label="Complaint Resolution"
                         value={complaint.resolution?.name}
-                        gridProps={{ xs: 12 }}
+                        gridProps={{ xs: 4 }}
+                      />
+                    )}
+                    {complaint.resolution_agency && (
+                      <GridLabelValuePair
+                        label="Agency"
+                        value={complaint.resolution_agency?.name}
+                        gridProps={{ xs: 8 }}
                       />
                     )}
                   </Grid>
