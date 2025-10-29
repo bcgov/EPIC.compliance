@@ -40,7 +40,7 @@ export function Inspections() {
   // State for "My Inspections" switch - default to true for first-time users
   const [myInspectionsChecked, setMyInspectionsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
-    { id: "ir_number", desc: false },
+    { id: "start_date", desc: true },
   ]);
 
   // Create static data for IR Progress and Inspection Status

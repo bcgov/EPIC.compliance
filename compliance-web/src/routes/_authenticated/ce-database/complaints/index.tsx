@@ -43,7 +43,7 @@ export function Complaints() {
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
   const [sorting, setSorting] = useState<MRT_SortingState>([
-    { id: "complaint_number", desc: false },
+    { id: "date_received", desc: true },
   ]);
 
   const [pagination, setPagination] = useState({
