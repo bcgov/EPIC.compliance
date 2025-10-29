@@ -106,7 +106,7 @@ describe("InspectionFileActions Component", () => {
     cy.contains("button", "Cancel").should("exist").click();
   });
 
-  it("handles Closed as Note to File click", () => {
+  it("handles Close as Note to File click", () => {
     mountComponent("open");
     cy.contains("button", "Actions").click();
     cy.get("li[id='Close as Note to File']").click();

@@ -23,7 +23,7 @@ from .case_file import (
     CaseFileUpdateSchema, EnforcementItemSchema)
 from .charge_recommendation import (
     ChargeRecommendationCreateSchema, ChargeRecommendationSchema, ChargeRecommendationUpdateSchema)
-from .common import KeyValueSchema
+from .common import KeyValueSchema, RenderRequestSchema
 from .complaint import (
     ComplaintCreateSchema, ComplaintFilterSchema, ComplaintSchema, ComplaintSourceContactSchema, ComplaintStatusSchema,
     ComplaintUpdateSchema, RequirementSourceDetailSchema)

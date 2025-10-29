@@ -27,7 +27,7 @@ from compliance_api.models import InspectionTypeOption as InspectionTypeOptionMo
 from compliance_api.models import IRStatusOption as IRStatusOptionModel
 from compliance_api.models import Order as OrderModel
 from compliance_api.models import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models import OrderProgressEnum
+from compliance_api.models import OrderProgressEnum, OrderReplaceStatusEnum
 from compliance_api.models import ViolationTicket as ViolationTicketModel
 from compliance_api.models import WarningLetter as WarningLetterModel
 from compliance_api.models import db
@@ -572,7 +572,7 @@ def _set_order_enforcement_action_object(
         in [
             req_map.inspection_requirement_id
             for req_map in order.order_requirement_maps
-        ]
+        ] and order.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
     ]
     if requirement_orders:
         order = requirement_orders[0]

@@ -7,13 +7,14 @@ from flask import request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
-from compliance_api.exceptions import BadRequestError, ResourceNotFoundError
+from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
 
 from ..schemas import (
     CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderReplaceSchema,
-    OrderSchema, OrderStatusSchema, OrderUpdateSchema, ResetOrderFieldSchema, UpdateOrderApprovalStatusSchema)
+    OrderSchema, OrderStatusSchema, OrderUpdateSchema, RenderRequestSchema, ResetOrderFieldSchema,
+    UpdateOrderApprovalStatusSchema)
 from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
@@ -48,6 +49,9 @@ order_approval_status_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 
 reset_order_field_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, ResetOrderFieldSchema(), "ResetOrderField"
+)
+order_render_request_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, RenderRequestSchema(), "OrderRenderRequest"
 )
 
 order_replace_model = ApiHelper.convert_ma_schema_to_restx_model(
@@ -250,23 +254,12 @@ class OrderPreview(Resource):
     @API.response(code=200, description="Success")
     @API.response(404, "Not Found")
     @ApiHelper.swagger_decorators(API, endpoint_description="Preview order")
-    @API.doc(
-        params={
-            "output_format": {
-                "description": "The output format of the order report",
-                "type": "string",
-                "required": False,
-                "default": "html",
-                "enum": ["html", "pdf"],
-            }
-        }
-    )
+    @API.expect(order_render_request_model)
     @auth.require
     def post(order_id):  # pylint: disable=no-self-use, unused-argument
         """Preview order."""
-        output_format = request.args.get("output_format", "html")
-        if output_format not in ["html", "pdf"]:
-            raise BadRequestError("Invalid output format")
+        render_request = RenderRequestSchema().load(API.payload or {})
+        output_format = render_request.get("output_format", "html")
         response, order = OrderService.render(order_id, output_format)
         if output_format == "pdf":
             return send_file(

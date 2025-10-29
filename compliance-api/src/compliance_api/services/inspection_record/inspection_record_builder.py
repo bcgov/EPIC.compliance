@@ -115,6 +115,11 @@ class InspectionRecordDataBuilder:
             if self.existing_ir
             else self.inspection.primary_officer
         )
+        record_prepared_by_position = (
+            self.existing_ir.record_prepared_by_position
+            if self.existing_ir
+            else self.inspection.primary_officer.position
+        )
         self.data["officer_details"] = {
             "primary_officer": {
                 "name": f"{self.inspection.primary_officer.first_name} {self.inspection.primary_officer.last_name}",
@@ -123,7 +128,7 @@ class InspectionRecordDataBuilder:
             "record_prepared_by": {
                 "name": f"{record_prepared_by.first_name} "
                 f"{record_prepared_by.last_name}",
-                "position": record_prepared_by.position.name,
+                "position": record_prepared_by_position.name,
             },
         }
 

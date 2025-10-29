@@ -368,7 +368,6 @@ class OrderService:
             "section_id": original_order.section_id,
             "where_as": original_order.where_as,
             "now_therefore": original_order.now_therefore,
-            "intended_issuance_date": original_order.intended_issuance_date,
             "replacement_for_order_id": original_order.id,
             "order_status": OrderStatusEnum.CREATED,
             "order_progress": OrderProgressEnum.DRAFTING,
