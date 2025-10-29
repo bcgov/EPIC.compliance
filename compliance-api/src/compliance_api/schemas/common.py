@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common Schema."""
-from marshmallow import Schema, fields
+from marshmallow import Schema, fields, validate
+
+from .base_schema import BaseSchema
 
 
 class KeyValueSchema(Schema):
@@ -20,3 +22,15 @@ class KeyValueSchema(Schema):
 
     id = fields.Str(metadata={"description": "Unique id in the list"})
     name = fields.Str(metadata={"description": "Name of the list item"})
+
+
+class RenderRequestSchema(BaseSchema):
+    """Schema for document render request."""
+
+    output_format = fields.Str(
+        required=False,
+        missing="html",
+        default="html",
+        validate=validate.OneOf(["html", "pdf"]),
+        metadata={"description": "The output format of the document"}
+    )

@@ -11,8 +11,9 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
     CreateInspectionRecordApprovalSchema, CreateIRDownloadRequestSchema, InspectionRecordApprovalSchema,
-    InspectionRecordCreateSchema, InspectionRecordSchema, IRDownloadRequestSchema, ResetInspectionRecordFieldSchema,
-    UpdateInspectionRecordApprovalSchema, UpdateInspectionRecordApprovalStatusSchema, UpdateInspectionRecordSchema)
+    InspectionRecordCreateSchema, InspectionRecordSchema, IRDownloadRequestSchema, RenderRequestSchema,
+    ResetInspectionRecordFieldSchema, UpdateInspectionRecordApprovalSchema, UpdateInspectionRecordApprovalStatusSchema,
+    UpdateInspectionRecordSchema)
 from compliance_api.services import InspectionRecordApprovalService, InspectionRecordService
 from compliance_api.utils.util import cors_preflight
 
@@ -50,6 +51,9 @@ ir_download_request_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 ir_download_request_create_schema = ApiHelper.convert_ma_schema_to_restx_model(
     API, CreateIRDownloadRequestSchema(), "CreateIRDownloadRequest"
+)
+ir_render_request_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, RenderRequestSchema(), "IRRenderRequest"
 )
 
 
@@ -285,23 +289,14 @@ class InspectionRecordPreview(Resource):
     @staticmethod
     @API.response(code=200, description="Success")
     @ApiHelper.swagger_decorators(API, endpoint_description="Preview inspection record")
-    @API.doc(
-        params={
-            "output_format": {
-                "description": "The output format of the inspection record",
-                "type": "string",
-                "required": False,
-                "default": "html",
-                "enum": ["html", "pdf"],
-            }
-        }
-    )
+    @API.expect(ir_render_request_model)
     @auth.require
     def post(
         inspection_id, inspection_record_id
     ):  # pylint: disable=no-self-use, unused-argument
         """Preview inspection record."""
-        output_format = request.json.get("output_format", "html")
+        render_request = RenderRequestSchema().load(API.payload or {})
+        output_format = render_request.get("output_format", "html")
         response, inspection = InspectionRecordService.render(
             inspection_id, inspection_record_id, output_format
         )

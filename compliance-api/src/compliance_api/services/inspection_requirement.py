@@ -42,7 +42,7 @@ from compliance_api.models.inspection.inspection_req_detail_image import \
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
-from compliance_api.models.order import OrderProgressEnum, OrderStatusEnum
+from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
 from compliance_api.models.order_approval import OrderApproval as OrderApprovalModel
 from compliance_api.models.order_approval import OrderApprovalStatusEnum
 from compliance_api.models.requirement_source import RequirementSource as RequirementSourceOptionModel
@@ -481,6 +481,7 @@ def _get_requirement_order_sub_query():
             OrderInspectionRequirementMapModel.is_deleted.is_(False),
             OrderModel.is_active.is_(True),
             OrderModel.is_deleted.is_(False),
+            OrderModel.order_replace_status == OrderReplaceStatusEnum.ORIGINAL,
         )
         .subquery("requirement_order")
     )

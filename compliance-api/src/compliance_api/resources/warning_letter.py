@@ -8,6 +8,7 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
+from compliance_api.schemas import RenderRequestSchema
 from compliance_api.schemas.warning_letter import (
     ResetWarningLetterFieldSchema, WarningLetterCreateSchema, WarningLetterIssueSchema, WarningLetterSchema,
     WarningLetterStatusSchema, WarningLetterUpdateSchema)
@@ -40,6 +41,9 @@ warning_letter_issue_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 reset_warning_letter_field_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, ResetWarningLetterFieldSchema(), "ResetWarningLetterField"
+)
+warning_letter_render_request_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, RenderRequestSchema(), "WarningLetterRenderRequest"
 )
 warning_letter_approval_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, WarningLetterApprovalSchema(), "WarningLetterApproval"
@@ -232,21 +236,12 @@ class WarningLetterPreview(Resource):
     @API.response(code=200, description="Success")
     @API.response(404, "Not Found")
     @ApiHelper.swagger_decorators(API, endpoint_description="Preview warning letter")
-    @API.doc(
-        params={
-            "output_format": {
-                "description": "The output format of the warning letter report",
-                "type": "string",
-                "required": False,
-                "default": "html",
-                "enum": ["html", "pdf"],
-            }
-        }
-    )
+    @API.expect(warning_letter_render_request_model)
     @auth.require
     def post(warning_letter_id):  # pylint: disable=no-self-use, unused-argument
         """Preview warning letter."""
-        output_format = request.json.get("output_format", "html")
+        render_request = RenderRequestSchema().load(API.payload or {})
+        output_format = render_request.get("output_format", "html")
         response, warning_letter = WarningLetterService.render(
             warning_letter_id, output_format
         )
