@@ -10,6 +10,7 @@ import { useComplaintByNumber } from "@/hooks/useComplaints";
 import { CaseFile } from "@/models/CaseFile";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
+import { MQ } from "@/styles/responsive";
 import {
   CR_CONTEXT_TYPE,
   DRAWER_WIDTHS,
@@ -99,7 +100,12 @@ function ComplaintProfilePage() {
             profileContext={FILE_PROFILE_CONTEXT.COMPLAINT}
             caseFileNumber={caseFileData?.case_file_number}
           />
-          <Box p={"1rem 1rem 1.25rem 3.75rem"} display={"flex"} gap={3}>
+          <Box p={"1rem 1rem 1.25rem 3.75rem"} display={"flex"} gap={3} sx={{
+            flexDirection: "row",
+            [MQ.mdToLg]: {
+              flexDirection: "column",
+            },
+          }}>
             <ComplaintGeneralInformation
               complaintData={complaintData}
               onEdit={handleOpenEditModal}

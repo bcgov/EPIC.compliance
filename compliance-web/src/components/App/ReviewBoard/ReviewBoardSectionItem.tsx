@@ -49,6 +49,8 @@ const ReviewBoardSectionItem = ({
         border: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
         flexShrink: 0,
         cursor: "pointer",
+        minWidth: 200,
+        maxWidth: 280,
       }}
       onClick={() => {
         // All review board items navigate to their related inspection page

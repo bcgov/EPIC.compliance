@@ -18,6 +18,7 @@ import TabPanel from "@/components/Shared/TabPanel";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { CaseFile } from "@/models/CaseFile";
 import { useTab } from "@/store/tabStore";
+import { MQ } from "@/styles/responsive";
 import {
   CR_CONTEXT_TYPE,
   DRAWER_WIDTHS,
@@ -120,24 +121,36 @@ function InspectionProfilePage() {
         caseFileNumber={caseFileData?.case_file_number}
         isHistorical={inspectionData.is_history}
       />
-      <Box p="1rem 1rem 1.25rem 3.75rem" display="flex" gap={3}>
-        <TabPanel value={currentTab} index={0} id="inspection-profile">
-          <InspectionGeneralInformation
-            inspectionData={inspectionData}
-            caseFileData={caseFileData as CaseFile}
-            onEdit={handleOpenEditModal}
-            allowEdit={isInspectionEditable}
-          />
-        </TabPanel>
-        <TabPanel value={currentTab} index={1} id="inspection-requirements">
-          <InspectionRequirements inspectionData={inspectionData} />
-        </TabPanel>
-        <TabPanel value={currentTab} index={2} id="inspection-enforcement">
-          <InspectionEnforcements inspectionData={inspectionData} />
-        </TabPanel>
-        <TabPanel value={currentTab} index={3} id="inspection-report">
-          <InspectionReports inspectionData={inspectionData} />
-        </TabPanel>
+      <Box
+        p="1rem 1rem 1.25rem 3.75rem"
+        display="flex"
+        gap={3}
+        sx={{
+          flexDirection: "row",
+          [MQ.mdToLg]: {
+            flexDirection: "column",
+          },
+        }}
+      >
+        <>
+          <TabPanel value={currentTab} index={0} id="inspection-profile">
+            <InspectionGeneralInformation
+              inspectionData={inspectionData}
+              caseFileData={caseFileData as CaseFile}
+              onEdit={handleOpenEditModal}
+              allowEdit={isInspectionEditable}
+            />
+          </TabPanel>
+          <TabPanel value={currentTab} index={1} id="inspection-requirements">
+            <InspectionRequirements inspectionData={inspectionData} />
+          </TabPanel>
+          <TabPanel value={currentTab} index={2} id="inspection-enforcement">
+            <InspectionEnforcements inspectionData={inspectionData} />
+          </TabPanel>
+          <TabPanel value={currentTab} index={3} id="inspection-report">
+            <InspectionReports inspectionData={inspectionData} />
+          </TabPanel>
+        </>
         <ContinuationReport
           caseFileId={inspectionData.case_file_id}
           contextType={CR_CONTEXT_TYPE.INSPECTION}
