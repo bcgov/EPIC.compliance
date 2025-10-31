@@ -6,6 +6,7 @@ import { Initiation } from "@/models/Initiation";
 import { IRType } from "@/models/IRType";
 import { ProjectStatus } from "@/models/ProjectStatus";
 import { StaffUser } from "@/models/Staff";
+import { MQ } from "@/styles/responsive";
 import { Box, Stack } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC } from "react";
@@ -37,6 +38,11 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
           width: "718px",
           overflow: "auto",
           boxSizing: "border-box",
+          [MQ.mdToLg]: {
+            width: "auto",
+            overflow: "unset",
+            pr: 4,
+          }
         }}
       >
         <ControlledSwitch

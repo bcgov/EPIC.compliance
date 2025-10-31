@@ -13,6 +13,7 @@ import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { REGULATORY_CONSIDERATION_TYPE_ID } from "@/components/App/Inspections/Profile/Requirements/RequirementUtils";
 import { RequirementImage } from "@/models/Image";
 import IRImageSection from "./IRImageSection";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 const IRRegulatoryConsideration = () => {
   const { inspectionData, isReportsReadOnly } = useReportStore();
@@ -60,6 +61,11 @@ const IRRegulatoryConsideration = () => {
     [setClose, inspectionData, queryClient]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenEditRequirementModal = useCallback(() => {
     setOpen({
       content: (
@@ -70,7 +76,7 @@ const IRRegulatoryConsideration = () => {
           isRegulatoryConsideration={true}
         />
       ),
-      width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+      width: drawerWidth,
     });
   }, [
     setOpen,

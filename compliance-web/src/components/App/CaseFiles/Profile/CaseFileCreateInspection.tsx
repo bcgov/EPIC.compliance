@@ -1,4 +1,5 @@
 import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 import { CaseFile } from "@/models/CaseFile";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
@@ -37,6 +38,11 @@ const CaseFileCreateInspection = ({
     [queryClient, setClose, caseFileData]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.INSPECTION_DRAWER,
+    { mdToLgMax: "715px" }
+  );
+
   const handleOpenInspectionDrawer = useCallback(() => {
     setOpen({
       content: (
@@ -45,7 +51,7 @@ const CaseFileCreateInspection = ({
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.INSPECTION_DRAWER,
+      width: drawerWidth,
     });
   }, [setOpen, handleOnSubmit, caseFileData]);
 

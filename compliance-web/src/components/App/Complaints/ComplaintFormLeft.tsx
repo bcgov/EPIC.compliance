@@ -10,6 +10,7 @@ import RequirementSourceForm from "./RequirementSourceForm";
 import { RequirementSource } from "@/models/RequirementSource";
 
 import { Complaint } from "@/models/Complaint";
+import { MQ } from "@/styles/responsive";
 
 type ComplaintFormLeftProps = {
   staffUsersList: StaffUser[];
@@ -35,6 +36,11 @@ const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
           width: "718px",
           overflow: "auto",
           boxSizing: "border-box",
+          [MQ.mdToLg]: {
+            width: "auto",
+            overflow: "unset",
+            pr: 4,
+          }
         }}
       >
         <ControlledTextField

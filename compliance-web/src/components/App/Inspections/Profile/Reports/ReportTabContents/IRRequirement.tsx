@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRequirementStore } from "@/components/App/Inspections/Profile/Requirements/requirementStore";
 import IRImageSection from "./IRImageSection";
 import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 const DetailSection = ({
   title,
@@ -112,6 +113,11 @@ const IRRequirement = ({
     [setClose, inspectionData, queryClient]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenEditRequirementModal = useCallback(() => {
     setOpen({
       content: (
@@ -122,7 +128,7 @@ const IRRequirement = ({
           index={requirementIndex}
         />
       ),
-      width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+      width: drawerWidth,
     });
   }, [setOpen, handleOnSubmit, inspectionData, requirement, requirementIndex]);
 

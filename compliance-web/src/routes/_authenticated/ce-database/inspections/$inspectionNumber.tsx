@@ -25,6 +25,7 @@ import {
   FILE_PROFILE_CONTEXT,
 } from "@/utils/constants";
 import InspectionEnforcements from "@/components/App/Inspections/Profile/InspectionEnforcements";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/$inspectionNumber"
@@ -86,6 +87,11 @@ function InspectionProfilePage() {
     [queryClient, inspectionNumber, setClose]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.INSPECTION_DRAWER,
+    { mdToLgMax: "715px" }
+  );
+
   const handleOpenEditModal = useCallback(() => {
     setOpen({
       content: (
@@ -95,9 +101,9 @@ function InspectionProfilePage() {
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.INSPECTION_DRAWER,
+      width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData, caseFileData]);
+  }, [setOpen, handleOnSubmit, inspectionData, caseFileData, drawerWidth]);
 
   // Conditional rendering
   if (isError) {

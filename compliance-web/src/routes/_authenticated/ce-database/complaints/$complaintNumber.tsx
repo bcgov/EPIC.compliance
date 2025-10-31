@@ -20,6 +20,7 @@ import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import React, { useMemo } from "react";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/complaints/$complaintNumber"
@@ -61,6 +62,11 @@ function ComplaintProfilePage() {
     );
   }, [complaintData?.status, isUserEditAllowed]);
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.COMPLAINT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenEditModal = () => {
     setOpen({
       content: (
@@ -70,7 +76,7 @@ function ComplaintProfilePage() {
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.COMPLAINT_DRAWER,
+      width: drawerWidth,
     });
   };
 

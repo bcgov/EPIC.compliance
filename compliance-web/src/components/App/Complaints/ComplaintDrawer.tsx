@@ -1,5 +1,5 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box, Stack } from "@mui/material";
+import { Box } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import ComplaintFormLeft from "./ComplaintFormLeft";
 import DrawerTitleBar from "@/components/Shared/Drawer/DrawerTitleBar";
@@ -31,6 +31,7 @@ import DrawerActionBarTop from "@/components/Shared/Drawer/DrawerActionBarTop";
 import DrawerActionBarBottom from "@/components/Shared/Drawer/DrawerActionBarBottom";
 import { CaseFile } from "@/models/CaseFile";
 import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
+import { MQ } from "@/styles/responsive";
 
 type ComplaintDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -179,9 +180,16 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           isShowActionBar={!complaint}
           isLoading={isCreateComplaintPending}
         />
-        <Stack
+        <Box
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
-          direction="row"
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            [MQ.mdToLg]: {
+              flexDirection: "column",
+              overflow: "auto",
+            }
+          }}
         >
           <ComplaintFormLeft
             staffUsersList={staffUserList ?? []}
@@ -195,6 +203,11 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
               width: "399px",
               boxSizing: "border-box",
               overflow: "auto",
+              [MQ.mdToLg]: {
+                width: "auto",
+                overflow: "unset",
+                ml: 2
+              }
             }}
           >
             <ComplaintSourceForm
@@ -203,7 +216,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
               firstNationsList={firstNationsList ?? []}
             />
           </Box>
-        </Stack>
+        </Box>
         <DrawerActionBarBottom
           isShowActionBar={!!complaint}
           isLoading={isUpdateComplaintPending}

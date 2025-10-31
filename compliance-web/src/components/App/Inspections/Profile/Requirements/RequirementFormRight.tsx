@@ -23,6 +23,8 @@ import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
 import { MODAL_WIDTHS } from "@/utils/constants";
 import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
+import { MQ } from "@/styles/responsive";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 interface RequirementFormRightProps {
   onDataChange: (data: RequirementSourceFormData[]) => void;
@@ -174,6 +176,11 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
     closeModal();
   };
 
+  const modalWidth = useResponsiveDrawerWidth(
+    MODAL_WIDTHS.REQUIREMENT_SOURCE,
+    { mdToLgMax: "700px" }
+  );
+
   const handleAddRequirementSource = () => {
     setOpen({
       content: (
@@ -184,7 +191,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -208,7 +215,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           isSectionModal={index > 0}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -262,7 +269,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           isSectionModal={true}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -278,7 +285,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -296,7 +303,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           appendixList={appendixList}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -330,7 +337,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           isEditSection={true}
         />
       ),
-      width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
+      width: modalWidth,
     });
   };
 
@@ -366,6 +373,11 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         width: "510px",
         overflow: "auto",
         boxSizing: "border-box",
+        [MQ.mdToLg]: {
+          width: "auto",
+          overflow: "unset",
+          ml: 2
+        }
       }}
     >
       {!isRegulatoryConsideration && isRequirementEditable && (

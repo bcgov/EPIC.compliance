@@ -1,4 +1,5 @@
 import ComplaintDrawer from "@/components/App/Complaints/ComplaintDrawer";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 import { CaseFile } from "@/models/CaseFile";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
@@ -37,6 +38,11 @@ const CaseFileCreateComplaint = ({
     [caseFileData, queryClient, setClose]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.COMPLAINT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenComplaintDrawer = useCallback(() => {
     setOpen({
       content: (
@@ -45,7 +51,7 @@ const CaseFileCreateComplaint = ({
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.COMPLAINT_DRAWER,
+      width: drawerWidth,
     });
   }, [setOpen, handleOnSubmit, caseFileData]);
 
