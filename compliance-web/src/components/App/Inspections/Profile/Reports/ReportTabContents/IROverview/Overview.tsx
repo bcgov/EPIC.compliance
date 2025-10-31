@@ -79,7 +79,7 @@ const Overview = () => {
       ),
       width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData, caseFileData]);
+  }, [setOpen, handleOnSubmit, inspectionData, caseFileData, drawerWidth]);
 
   return (
     <>

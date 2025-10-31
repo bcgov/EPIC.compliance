@@ -53,7 +53,7 @@ const CaseFileCreateInspection = ({
       ),
       width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, caseFileData]);
+  }, [setOpen, handleOnSubmit, caseFileData, drawerWidth]);
 
   return hidden ? null : (
     <Button

@@ -154,7 +154,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
       ),
       width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData]);
+  }, [setOpen, handleOnSubmit, inspectionData, drawerWidth]);
 
   const handleOpenAddRegulatoryConsiderationModal = useCallback(() => {
     setOpen({
@@ -167,7 +167,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
       ),
       width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData]);
+  }, [setOpen, handleOnSubmit, inspectionData, drawerWidth]);
 
   const handleOpenEditRequirementDrawer = useCallback(
     (
@@ -189,7 +189,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
         width: drawerWidth,
       });
     },
-    [setOpen, handleOnSubmit, inspectionData]
+    [setOpen, handleOnSubmit, inspectionData, drawerWidth]
   );
 
   // Add a ref to store the timeout ID : to prevent multiple API calls during reordering

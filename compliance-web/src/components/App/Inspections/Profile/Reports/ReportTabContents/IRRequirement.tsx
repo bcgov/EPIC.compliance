@@ -48,11 +48,11 @@ const DetailSection = ({
     {detailSectionImages && detailSectionImages.length > 0 && (
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
         {detailSectionImages.map((image) => {
-          const filenameWithoutExt = image.original_file_name?.includes('.') 
+          const filenameWithoutExt = image.original_file_name?.includes('.')
             ? image.original_file_name.substring(0, image.original_file_name.lastIndexOf('.'))
             : image.original_file_name;
           return (
-            <IRImageSection key={image.id} image={{...image, caption: filenameWithoutExt}} />
+            <IRImageSection key={image.id} image={{ ...image, caption: filenameWithoutExt }} />
           );
         })}
       </Box>
@@ -130,7 +130,7 @@ const IRRequirement = ({
       ),
       width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData, requirement, requirementIndex]);
+  }, [setOpen, handleOnSubmit, inspectionData, requirement, requirementIndex, drawerWidth]);
 
   // Group requirement_source_details by requirement_source_id
   const groupedRequirementSources = useMemo(() => {

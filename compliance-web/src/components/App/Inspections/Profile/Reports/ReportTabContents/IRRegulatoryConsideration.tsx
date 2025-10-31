@@ -83,6 +83,7 @@ const IRRegulatoryConsideration = () => {
     handleOnSubmit,
     inspectionData,
     inspectionRegulatoryConsideration,
+    drawerWidth,
   ]);
 
   return (
