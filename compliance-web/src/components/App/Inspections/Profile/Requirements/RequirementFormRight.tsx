@@ -44,6 +44,32 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   isRequirementEditable = true,
 }) => {
   const { setOpen, setClose } = useModal();
+
+  // Helper function to synchronize requirementSourceTitle across all items
+  const syncRequirementSourceTitle = (items: RequirementSourceFormData[]) => {
+    const firstItemTitle = items[0]?.requirementSourceTitle;
+    if (firstItemTitle) {
+      items.forEach(item => {
+        item.requirementSourceTitle = firstItemTitle;
+      });
+    }
+    return items;
+  };
+
+  // Helper function to synchronize document titles across all related documents within the same requirement source
+  const syncDocumentTitles = (items: RequirementSourceFormData[]) => {
+    items.forEach(item => {
+      if (item.relatedDocuments && item.relatedDocuments.length > 0) {
+        const firstDocumentTitle = item.relatedDocuments[0]?.documentTitle;
+        if (firstDocumentTitle) {
+          item.relatedDocuments.forEach(doc => {
+            doc.documentTitle = firstDocumentTitle;
+          });
+        }
+      }
+    });
+    return items;
+  };
   const [requirementSourceFormData, setRequirementSourceFormData] = useState<
     RequirementSourceFormData[]
   >(requirementSourceFormDataList);
@@ -69,7 +95,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 
   const handleOnAddSubmit = (data: RequirementSourceFormData) => {
     setRequirementSourceFormData((prevData) => {
-      const updated = [...prevData, data];
+      const updated = syncRequirementSourceTitle([...prevData, data]);
       onDataChange(updated);
       return updated;
     });
@@ -78,7 +104,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 
   const handleOnEditSubmit = (data: RequirementSourceFormData) => {
     setRequirementSourceFormData((prevData) => {
-      const updated = prevData.map((item) => {
+      const mapped = prevData.map((item) => {
         if (item.id !== data.id) return item;
 
         // Merge arrays explicitly to avoid losing existing entries when undefined
@@ -96,6 +122,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           relatedDocuments: mergedRelatedDocs,
         };
       });
+      const updated = syncRequirementSourceTitle(mapped);
       // Trigger onDataChange immediately with the updated data
       onDataChange(updated);
       return updated;
@@ -105,7 +132,8 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 
   const handleOnDeleteSubmit = (data: RequirementSourceFormData) => {
     setRequirementSourceFormData((prevData) => {
-      const updated = prevData.filter((item) => item.id !== data.id);
+      const filtered = prevData.filter((item) => item.id !== data.id);
+      const updated = syncRequirementSourceTitle(filtered);
       onDataChange(updated);
       return updated;
     });
@@ -116,7 +144,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
     data: RequirementRelatedDocumentData
   ) => {
     setRequirementSourceFormData((prevData) => {
-      const updatedData = prevData.map((item) => {
+      const mapped = prevData.map((item) => {
         if (item.id === data.sourceFormId) {
           const existingDocumentIndex = item.relatedDocuments?.findIndex(
             (doc) => doc.id === data.id
@@ -137,8 +165,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
         return item;
       });
-      onDataChange(updatedData);
-      return updatedData;
+      const titleSynced = syncRequirementSourceTitle(mapped);
+      const updated = syncDocumentTitles(titleSynced);
+      onDataChange(updated);
+      return updated;
     });
     closeModal();
   };
@@ -147,7 +177,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
     data: RequirementRelatedDocumentSectionData
   ) => {
     setRequirementSourceFormData((prevData) => {
-      const updated = prevData.map((item) => {
+      const mapped = prevData.map((item) => {
         if (item.id === data.sourceFormId) {
           return {
             ...item,
@@ -168,12 +198,13 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
         return item;
       });
+      const titleSynced = syncRequirementSourceTitle(mapped);
+      const updated = syncDocumentTitles(titleSynced);
       onDataChange(updated);
       return updated;
     });
     closeModal();
   };
-
   const handleAddRequirementSource = () => {
     setOpen({
       content: (
@@ -257,6 +288,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           caseFile={caseFile}
           inspectionId={inspectionId}
           requirementSource={data.requirementSource}
+          requirementSourceTitle={data.requirementSourceTitle}
           order={data.order}
           appendixList={appendixList}
           isSectionModal={true}
@@ -294,6 +326,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           requirementSourceData={srcData}
           relatedDocumentData={docData}
           appendixList={appendixList}
+          isEditSection={true}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,
@@ -311,10 +344,10 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   };
 
   const handleEditRelatedDocumentSection = (
-    data: RequirementRelatedDocumentSectionData
+    data: RequirementRelatedDocumentSectionData,
+    sectionIndex: number
   ) => {
     const { srcData, docData } = filterSourceData(data);
-
     setOpen({
       content: (
         <RequirementRelatedDocumentModal
@@ -328,6 +361,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
             (image) => image.req_detail_doc_id === data.id
           ) ?? []}
           isEditSection={true}
+          isSectionModal={sectionIndex > 0}
         />
       ),
       width: MODAL_WIDTHS.REQUIREMENT_SOURCE,

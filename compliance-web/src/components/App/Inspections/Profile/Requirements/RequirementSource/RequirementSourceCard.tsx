@@ -45,7 +45,8 @@ type RequirementSourceCardProps = {
     srcData: RequirementSourceFormData
   ) => void;
   onEditRelatedDocumentSection: (
-    data: RequirementRelatedDocumentSectionData
+    data: RequirementRelatedDocumentSectionData,
+    sectionIndex: number
   ) => void;
   onDeleteRelatedDocumentSection: (
     data: RequirementRelatedDocumentSectionData
@@ -302,10 +303,10 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                     />
                   </Box>
                 </Box>
-                {item.relatedDocuments?.map((relatedDocument, docIdx) => (
+                {item.relatedDocuments?.map((relatedDocument, index) => (
                   <RequirementRelatedDocumentCard
-                    key={docIdx}
-                    index={docIdx}
+                    key={index}
+                    index={index}
                     relatedDocument={relatedDocument}
                     relatedDocumentImages={requirementDocumentImages ?? []}
                     onAddRelatedDocumentSection={() =>
@@ -314,7 +315,7 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                     onDeleteRelatedDocumentSection={
                       onDeleteRelatedDocumentSection
                     }
-                    onEditRelatedDocumentSection={onEditRelatedDocumentSection}
+                    onEditRelatedDocumentSection={(section, sectionIndex) => onEditRelatedDocumentSection(section, sectionIndex)}
                     isRequirementEditable={isRequirementEditable}
                   />
                 ))}

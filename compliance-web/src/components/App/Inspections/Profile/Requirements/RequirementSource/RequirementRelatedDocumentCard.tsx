@@ -33,7 +33,8 @@ interface RequirementRelatedDocumentCardProps {
     data: RequirementRelatedDocumentSectionData
   ) => void;
   onEditRelatedDocumentSection: (
-    data: RequirementRelatedDocumentSectionData
+    data: RequirementRelatedDocumentSectionData,
+    sectionIndex: number
   ) => void;
   relatedDocumentImages?: RequirementImage[];
   isRequirementEditable?: boolean;
@@ -140,7 +141,7 @@ const RequirementRelatedDocumentCard: FC<
                   <IconButton
                     size="small"
                     color="secondary"
-                    onClick={() => onEditRelatedDocumentSection(section)}
+                    onClick={() => onEditRelatedDocumentSection(section, idx)}
                     data-testid={`requirement-related-document-edit-${index}-${idx}`}
                   >
                     <EditOutlined />
