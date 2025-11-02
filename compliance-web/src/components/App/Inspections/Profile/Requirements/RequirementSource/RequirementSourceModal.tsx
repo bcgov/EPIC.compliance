@@ -403,12 +403,6 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                             fullWidth
                           />
                         )}
-                      <ControlledTextField
-                        name="title"
-                        label="Title"
-                        fullWidth
-                        multiline
-                      />
                     {requirementSourceNumberType(
                       selectedRequirementSource?.id ?? ""
                     ).toLowerCase() === "section" && (

@@ -126,7 +126,7 @@ class InspectionRecordService:
         return updated_inspection_record
 
     @classmethod
-    def delete_inspection_record(cls, inspection_id, inspection_record_id):
+    def delete_inspection_record(cls, inspection_id, inspection_record_id, ho_session=None):
         """Delete inspection record."""
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         inspection_record = ServiceUtils.inspection_record_exist_check(
@@ -145,12 +145,12 @@ class InspectionRecordService:
                     InspectionRecordApprovalModel.update_approval(
                         approval_id=approval.id,
                         approval_update_data={"is_deleted": True, "is_active": False},
-                        session=session,
+                        session=ho_session or session,
                     )
             InspectionRecordModel.update_inspection_record(
                 inspection_record_id=inspection_record_id,
                 ir_update_data={"is_deleted": True, "is_active": False},
-                session=session,
+                session=ho_session or session,
             )
 
     @classmethod

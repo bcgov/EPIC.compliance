@@ -33,6 +33,8 @@ const Overview = () => {
       ? [inspectionData.primary_officer]
       : [];
 
+    const primaryOfficerId = inspectionData?.primary_officer?.id;
+
     const attendingOfficers =
       inspectionData?.inspectionAttendances
         ?.filter(
@@ -40,9 +42,11 @@ const Overview = () => {
             attendance.attendance_option.id === AttendanceEnum.OFFICERS
         )
         .flatMap((attendance: InspectionAttendance) => {
-          // Handle array of officers
           if (attendance.data && Array.isArray(attendance.data)) {
-            return attendance.data as StaffUser[];
+            // Filter out primary officer from attending officers
+            return (attendance.data as StaffUser[]).filter(
+              officer => officer.id !== primaryOfficerId
+            );
           }
           return [];
         }) ?? [];
