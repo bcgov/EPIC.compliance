@@ -10,6 +10,7 @@ import { useComplaintByNumber } from "@/hooks/useComplaints";
 import { CaseFile } from "@/models/CaseFile";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
+import { MQ } from "@/styles/responsive";
 import {
   CR_CONTEXT_TYPE,
   DRAWER_WIDTHS,
@@ -19,6 +20,7 @@ import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import React, { useMemo } from "react";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/complaints/$complaintNumber"
@@ -60,6 +62,11 @@ function ComplaintProfilePage() {
     );
   }, [complaintData?.status, isUserEditAllowed]);
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.COMPLAINT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenEditModal = () => {
     setOpen({
       content: (
@@ -69,7 +76,7 @@ function ComplaintProfilePage() {
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.COMPLAINT_DRAWER,
+      width: drawerWidth,
     });
   };
 
@@ -99,7 +106,12 @@ function ComplaintProfilePage() {
             profileContext={FILE_PROFILE_CONTEXT.COMPLAINT}
             caseFileNumber={caseFileData?.case_file_number}
           />
-          <Box p={"1rem 1rem 1.25rem 3.75rem"} display={"flex"} gap={3}>
+          <Box p={"1rem 1rem 1.25rem 3.75rem"} display={"flex"} gap={3} sx={{
+            flexDirection: "row",
+            [MQ.mdToLg]: {
+              flexDirection: "column",
+            },
+          }}>
             <ComplaintGeneralInformation
               complaintData={complaintData}
               onEdit={handleOpenEditModal}

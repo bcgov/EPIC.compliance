@@ -15,7 +15,7 @@ import {
 import { RequirementSourceFormData } from "@/models/InspectionRequirementSource";
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Stack } from "@mui/material";
+import { Box } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import RequirementFormLeft from "./RequirementFormLeft";
@@ -33,6 +33,7 @@ import {
 import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { MQ } from "@/styles/responsive";
 
 type RequirementDrawerProps = {
   inspectionData: Inspection;
@@ -354,10 +355,17 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           isShowActionBar={!inspectionRequirementData}
           isLoading={isCreateInspectionRequirementPending}
         />
-        <Stack
+        <Box
           key={JSON.stringify(inspectionRequirementData)}
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
-          direction={"row"}
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            [MQ.mdToLg]: {
+              flexDirection: "column-reverse",
+              overflow: "auto",
+            }
+          }}
         >
           <RequirementFormLeft
             appHeaderHeight={appHeaderHeight}
@@ -379,7 +387,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
             requirementId={requirement?.id ?? 0}
             isRequirementEditable={isRequirementEditable}
           />
-        </Stack>
+        </Box>
         <DrawerActionBarBottom
           isShowActionBar={!!inspectionRequirementData}
           onDeleteAction={onDeleteRequirement}

@@ -1,3 +1,4 @@
+import { MQ } from "@/styles/responsive";
 import { Box } from "@mui/material";
 
 interface TabPanelProps {
@@ -18,8 +19,13 @@ function TabPanel(props: TabPanelProps) {
       id={`${id}-${index}`}
       aria-labelledby={`${id}-${index}`}
       {...other}
-      width={width}
       overflow={"auto"}
+      sx={{
+        width: width,
+        [MQ.mdToLg]: {
+          width: "100%",
+        },
+      }}
     >
       {value === index && children}
     </Box>

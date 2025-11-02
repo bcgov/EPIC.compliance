@@ -26,6 +26,7 @@ import { DRAWER_WIDTHS } from "@/utils/constants";
 import { useRequirementStore } from "./Requirements/requirementStore";
 import RequirementLoading from "./Requirements/RequirementLoading";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 interface InspectionRequirementsProps {
   inspectionData: Inspection;
@@ -138,6 +139,11 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
     [queryClient, inspectionData, setClose]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenAddRequirementModal = useCallback(() => {
     setOpen({
       content: (
@@ -146,9 +152,9 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
           inspectionData={inspectionData}
         />
       ),
-      width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+      width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData]);
+  }, [setOpen, handleOnSubmit, inspectionData, drawerWidth]);
 
   const handleOpenAddRegulatoryConsiderationModal = useCallback(() => {
     setOpen({
@@ -159,9 +165,9 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
           isRegulatoryConsideration={true}
         />
       ),
-      width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+      width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData]);
+  }, [setOpen, handleOnSubmit, inspectionData, drawerWidth]);
 
   const handleOpenEditRequirementDrawer = useCallback(
     (
@@ -180,10 +186,10 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
             isRegulatoryConsideration={isRegulatoryConsideration}
           />
         ),
-        width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+        width: drawerWidth,
       });
     },
-    [setOpen, handleOnSubmit, inspectionData]
+    [setOpen, handleOnSubmit, inspectionData, drawerWidth]
   );
 
   // Add a ref to store the timeout ID : to prevent multiple API calls during reordering

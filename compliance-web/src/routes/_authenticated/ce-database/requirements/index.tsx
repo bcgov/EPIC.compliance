@@ -32,6 +32,7 @@ import { useStaffUsersData } from "@/hooks/useStaff";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import { AppConfig } from "@/utils/config";
+import { MQ } from "@/styles/responsive";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/requirements/"
@@ -467,6 +468,11 @@ function Requirements() {
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
+              [MQ.mdToLg]: {
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 2
+              },
             }}
           >
             {/* Left side - Export button */}

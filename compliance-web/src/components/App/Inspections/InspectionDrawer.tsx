@@ -18,7 +18,7 @@ import { Inspection, InspectionFormData } from "@/models/Inspection";
 import { StaffUser } from "@/models/Staff";
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Stack } from "@mui/material";
+import { Box } from "@mui/material";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -32,6 +32,7 @@ import {
 } from "./InspectionFormUtils";
 import { Agency } from "@/models/Agency";
 import { FirstNation } from "@/models/FirstNation";
+import { MQ } from "@/styles/responsive";
 
 type InspectionDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -213,9 +214,16 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           isShowActionBar={!inspection}
           isLoading={isCreateInspectionPending}
         />
-        <Stack
+        <Box
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
-          direction={"row"}
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            [MQ.mdToLg]: {
+              flexDirection: "column",
+              overflow: "auto",
+            }
+          }}
         >
           <InspectionFormLeft
             initiationList={initiationList ?? []}
@@ -229,7 +237,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
             firstNationsList={firstNationsList ?? []}
             staffList={inattendanceOfficersList ?? []}
           />
-        </Stack>
+        </Box>
         <DrawerActionBarBottom
           isShowActionBar={!!inspection}
           isLoading={isUpdateInspectionPending}
