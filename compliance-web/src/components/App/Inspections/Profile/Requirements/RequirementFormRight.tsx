@@ -334,7 +334,6 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           requirementSourceData={srcData}
           relatedDocumentData={docData}
           appendixList={appendixList}
-          isEditSection={true}
           isSectionModal={true}
         />
       ),

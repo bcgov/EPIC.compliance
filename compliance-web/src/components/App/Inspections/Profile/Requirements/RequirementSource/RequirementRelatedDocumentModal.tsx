@@ -301,7 +301,7 @@ const RequirementRelatedDocumentModal: React.FC<
                 <ControlledTextField
                   name="documentTitle"
                   label="Document Title"
-                  placeholder="Document Title change for Management Plan and Other Document"
+                  placeholder="Water Management Plan, Rev3, Dec. 21, 2023"
                   multiline
                   fullWidth
                   disabled={isSectionModal}
