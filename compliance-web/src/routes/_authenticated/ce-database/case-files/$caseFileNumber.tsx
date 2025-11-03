@@ -8,6 +8,7 @@ import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
+import { MQ } from "@/styles/responsive";
 import {
   CR_CONTEXT_TYPE,
   DRAWER_WIDTHS,
@@ -101,7 +102,12 @@ function CaseFileProfilePage() {
         profileContext={FILE_PROFILE_CONTEXT.CASEFILE}
         isInititationOther={caseFileData.initiation.id === INITIATION.OTHER_ID}
       />
-      <Box p="1rem 1rem 1.25rem 3.75rem" display="flex" gap={3}>
+      <Box p="1rem 1rem 1.25rem 3.75rem" display="flex" gap={3} sx={{
+        flexDirection: "row",
+        [MQ.mdToLg]: {
+          flexDirection: "column",
+        },
+      }}>
         <CaseFileGeneralInformation
           caseFileData={caseFileData}
           onEdit={handleOpenEditModal}

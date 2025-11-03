@@ -1,4 +1,4 @@
-import { Box, DialogContent, Stack } from "@mui/material";
+import { Box, DialogContent } from "@mui/material";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
@@ -22,6 +22,7 @@ import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { formatAuthorization } from "@/utils/appUtils";
 import { RequirementImage } from "@/models/Image";
 import ImagesRequirementSource from "@/components/App/Inspections/Profile/Requirements/Images/ImagesRequirementSource";
+import { MQ } from "@/styles/responsive";
 
 type RequirementSourceModalProps = {
   onSubmit: (data: RequirementSourceFormData) => void;
@@ -33,6 +34,7 @@ type RequirementSourceModalProps = {
   appendixList?: Appendix[];
   requirementSourceImages?: RequirementImage[];
   isSectionModal?: boolean;
+  requirementSourceTitle?: string;
 };
 
 const requirementSourceFormSchema = yup.object().shape({
@@ -94,6 +96,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   inspectionId,
   requirementSourceFormData,
   requirementSource,
+  requirementSourceTitle,
   order,
   appendixList,
   requirementSourceImages,
@@ -109,10 +112,10 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
         ...initFormData,
         requirementSource: requirementSource ?? undefined,
         order: order ?? undefined,
+        requirementSourceTitle: requirementSourceTitle ?? undefined,
       }
     );
-  }, [requirementSourceFormData, requirementSource, order]);
-
+  }, [requirementSourceFormData, requirementSource, order, requirementSourceTitle]);
   const methods = useForm<RequirementSourceSchemaType>({
     resolver: yupResolver(requirementSourceFormSchema),
     mode: "onBlur",
@@ -219,22 +222,28 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
             requirementSourceFormData?.requirementSourceTitle
           );
         } else {
-          // For other requirement source types, use the source_title
-          let sourceTitle = selectedRequirementSource.source_title;
-          if (sourceTitle && sourceTitle.includes("${eac#}")) {
-            sourceTitle = sourceTitle.replace(
-              "${eac#}",
-              caseFileData?.authorization ?? ""
-            );
+          // For other requirement source types, use existing value or fall back to source_title template
+          const existingTitle = requirementSourceFormData?.requirementSourceTitle;
+          if (existingTitle) {
+            setValue("requirementSourceTitle", existingTitle);
+          } else {
+            // Use the default source_title template only if no existing value
+            let sourceTitle = selectedRequirementSource.source_title;
+            if (sourceTitle && sourceTitle.includes("${eac#}")) {
+              sourceTitle = sourceTitle.replace(
+                "${eac#}",
+                caseFileData?.authorization ?? ""
+              );
+            }
+            if (sourceTitle && sourceTitle.includes("${eac_type}")) {
+              const eacType = formatAuthorization(
+                caseFileData?.authorization,
+                true
+              );
+              sourceTitle = sourceTitle.replace("${eac_type}", eacType);
+            }
+            setValue("requirementSourceTitle", sourceTitle);
           }
-          if (sourceTitle && sourceTitle.includes("${eac_type}")) {
-            const eacType = formatAuthorization(
-              caseFileData?.authorization,
-              true
-            );
-            sourceTitle = sourceTitle.replace("${eac_type}", eacType);
-          }
-          setValue("requirementSourceTitle", sourceTitle);
         }
       }
     }
@@ -285,7 +294,20 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
             dividers
             sx={{ height: "60vh", display: "flex", flexDirection: "column" }}
           >
-            <Stack direction={"row"} gap={2} sx={{ flex: 1, minHeight: 0 }}>
+            <Box
+              gap={2}
+              sx={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "row",
+                [MQ.mdToLg]: {
+                  flexDirection: "column",
+                  overflow: "auto",
+                  gap: 0,
+                }
+              }}
+            >
               <Box flex={1}>
                 <ControlledAutoComplete
                   name="requirementSource"
@@ -301,80 +323,86 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 />
                 {selectedRequirementSource?.id ===
                   RequirementSourceEnum.ORDER && (
-                  <ControlledAutoComplete
-                    name="order"
-                    label="Order Number"
-                    options={orderList ?? []}
-                    getOptionLabel={(option) => option.order_number ?? ""}
-                    getOptionKey={(option) => option.id ?? ""}
-                    isOptionEqualToValue={(option, value) =>
-                      option.id === value.id
-                    }
-                    disabled={!!requirementSourceFormData || !!order}
-                    isRequired={true}
-                  />
-                )}
+                    <ControlledAutoComplete
+                      name="order"
+                      label="Order Number"
+                      options={orderList ?? []}
+                      getOptionLabel={(option) => option.order_number ?? ""}
+                      getOptionKey={(option) => option.id ?? ""}
+                      isOptionEqualToValue={(option, value) =>
+                        option.id === value.id
+                      }
+                      disabled={!!requirementSourceFormData || !!order}
+                      isRequired={true}
+                    />
+                  )}
                 {selectedRequirementSource && (
                   <>
-                    {!isSectionModal && (
-                      <ControlledTextField
-                        name="requirementSourceTitle"
-                        label="Source Title"
-                        fullWidth
-                        onChange={handleTitleChange}
-                        multiline
-                      />
-                    )}
+                    <ControlledTextField
+                      name="requirementSourceTitle"
+                      label="Source Title"
+                      fullWidth
+                      disabled={isSectionModal}
+                      onChange={handleTitleChange}
+                      multiline
+                    />
                     {selectedRequirementSource?.id ===
                       RequirementSourceEnum.REGULATION && (
-                      <ControlledTextField
-                        name="regulationNumber"
-                        label="Regulation #"
-                        fullWidth
-                      />
-                    )}
+                        <ControlledTextField
+                          name="regulationNumber"
+                          label="Regulation #"
+                          fullWidth
+                        />
+                      )}
                     {selectedRequirementSource?.id ===
                       RequirementSourceEnum.COMPLAINCE_AGREEMENT && (
-                      <ControlledTextField
-                        name="complianceNumber"
-                        label="#"
-                        fullWidth
-                      />
-                    )}
+                        <ControlledTextField
+                          name="complianceNumber"
+                          label="#"
+                          fullWidth
+                        />
+                      )}
                     {selectedRequirementSource?.id ===
                       RequirementSourceEnum.EACA && (
-                      <ControlledTextField
-                        name="amendmentNumber"
-                        label="Amendment #"
-                        fullWidth
-                      />
-                    )}
+                        <ControlledTextField
+                          name="amendmentNumber"
+                          label="Amendment #"
+                          fullWidth
+                        />
+                      )}
                   </>
                 )}
-                <ControlledAutoComplete
-                  name="appendix"
-                  label="Inspection Record Appendix #"
-                  options={appendixList ?? []}
-                  getOptionLabel={(option) => {
-                    return `Appendix ${option.appendix_no}: ${option.document_title}`;
-                  }}
-                  getOptionKey={(option) => option.id ?? ""}
-                  isOptionEqualToValue={(option, value) =>
-                    option.id === value.id
-                  }
-                />
+                
                 {selectedRequirementSource?.id !==
                   RequirementSourceEnum.ORDER && (
-                  <>
-                    {requirementSourceNumberType(
-                      selectedRequirementSource?.id ?? ""
-                    ).toLowerCase() === "condition" && (
-                      <ControlledTextField
-                        name="conditionNumber"
-                        label="Condition #"
-                        fullWidth
-                      />
-                    )}
+                    <>
+                      {requirementSourceNumberType(
+                        selectedRequirementSource?.id ?? ""
+                      ).toLowerCase() === "condition" && (
+                          <ControlledTextField
+                            name="conditionNumber"
+                            label="Condition #"
+                            fullWidth
+                          />
+                        )}
+                      {requirementSourceNumberType(
+                        selectedRequirementSource?.id ?? ""
+                      ).toLowerCase() === "section" && (
+                          <ControlledTextField
+                            name="sectionNumber"
+                            label="Section #"
+                            fullWidth
+                          />
+                        )}
+                      {requirementSourceNumberType(
+                        selectedRequirementSource?.id ?? ""
+                      ).toLowerCase() === "clause" && (
+                          <ControlledTextField
+                            name="clauseNumber"
+                            label="Clause #"
+                            fullWidth
+                          />
+                        )}
                     {requirementSourceNumberType(
                       selectedRequirementSource?.id ?? ""
                     ).toLowerCase() === "section" && (
@@ -399,6 +427,18 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                       fullWidth
                       multiline
                     />
+                    <ControlledAutoComplete
+                  name="appendix"
+                  label="Inspection Record Appendix #"
+                  options={appendixList ?? []}
+                  getOptionLabel={(option) => {
+                    return `Appendix ${option.appendix_no}: ${option.document_title}`;
+                  }}
+                  getOptionKey={(option) => option.id ?? ""}
+                  isOptionEqualToValue={(option, value) =>
+                    option.id === value.id
+                  }
+                />
                   </>
                 )}
               </Box>
@@ -407,7 +447,13 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 display="flex"
                 flexDirection="column"
                 height="100%"
-                sx={{ minHeight: 0 }}
+                sx={{
+                  minHeight: 0,
+                  [MQ.mdToLg]: {
+                    width: "auto",
+                    minHeight: "unset",
+                  }
+                }}
               >
                 <Box
                   flex={1}
@@ -449,7 +495,7 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                   inspectionId={inspectionId}
                 />
               </Box>
-            </Stack>
+            </Box>
           </DialogContent>
           <ModalActions
             primaryActionButtonText={requirementSourceFormData ? "Save" : "Add"}

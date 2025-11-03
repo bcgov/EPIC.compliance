@@ -1,4 +1,5 @@
-import { Box, Step, StepLabel, Stepper } from "@mui/material";
+import { Box, Step, StepLabel, Stepper, Collapse, IconButton } from "@mui/material";
+import { ExpandLessRounded, ChevronRight } from "@mui/icons-material";
 import { BCDesignTokens } from "epic.theme";
 import { useMemo, useState } from "react";
 import PreliminaryReview from "./PreliminaryReview";
@@ -37,6 +38,7 @@ export default function OfficerStepper() {
     setInspectionReportsData,
   } = useReportStore();
   const [activeStep, setActiveStep] = useState(0);
+  const [isContentExpanded, setIsContentExpanded] = useState(true);
   const queryClient = useQueryClient();
 
   const isFinalReportStep = useMemo(() => {
@@ -113,6 +115,10 @@ export default function OfficerStepper() {
     }
   };
 
+  const toggleContentExpansion = () => {
+    setIsContentExpanded(prev => !prev);
+  };
+
   return (
     <Box
       sx={{
@@ -122,15 +128,26 @@ export default function OfficerStepper() {
         borderRadius: 1,
       }}
     >
-      <Stepper
-        activeStep={activeStep}
+      <Box
+        onClick={toggleContentExpansion}
         sx={{
-          backgroundColor: BCDesignTokens.surfaceColorBackgroundLightGray,
-          p: 2,
-          borderBottom: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
-          fontWeight: 600,
+          cursor: "pointer",
+          position: "relative",
+          "&:hover": {
+            backgroundColor: BCDesignTokens.surfaceColorBackgroundLightBlue,
+          },
         }}
       >
+        <Stepper
+          activeStep={activeStep}
+          sx={{
+            backgroundColor: BCDesignTokens.surfaceColorBackgroundLightGray,
+            p: 2,
+            borderBottom: `1px solid ${BCDesignTokens.surfaceColorBorderDefault}`,
+            fontWeight: 600,
+            pl: "3rem",
+          }}
+        >
         {(isFinalReportStep ? finalSteps : preliminarySteps).map((label) => {
           return (
             <Step key={label}>
@@ -138,8 +155,29 @@ export default function OfficerStepper() {
             </Step>
           );
         })}
-      </Stepper>
-      <Box sx={{ p: 2 }}>
+        </Stepper>
+        
+        {/* Expand/Collapse Icon */}
+        <IconButton 
+          size="small"
+          disableRipple
+          sx={{ 
+            position: "absolute",
+            top: "50%",
+            left: "1rem",
+            transform: "translateY(-50%)",
+            color: BCDesignTokens.typographyColorSecondary,
+            "&:hover": {
+              backgroundColor: "transparent",
+            },
+          }}
+        >
+          {isContentExpanded ? <ExpandLessRounded /> : <ChevronRight />}
+        </IconButton>
+      </Box>
+      
+      <Collapse in={isContentExpanded}>
+        <Box sx={{ p: 2 }}>
         {activeStep === 0 && (
           <>
             {isFinalReportStep ? (
@@ -168,7 +206,8 @@ export default function OfficerStepper() {
             }
           />
         )}
-      </Box>
+        </Box>
+      </Collapse>
     </Box>
   );
 }

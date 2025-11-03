@@ -20,7 +20,7 @@ const ReviewBoardSection = ({
         borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
         p: 1,
         flex: 1,
-        minWidth: 0,
+        minWidth: 218, // min card width 200px + padding 16px + border 2px
         height: "calc(100% - 1rem)", // 1rem is the margin bottom of the main page box
       }}
     >

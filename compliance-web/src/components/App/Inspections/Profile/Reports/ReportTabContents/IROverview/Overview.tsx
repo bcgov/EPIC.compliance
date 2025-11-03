@@ -16,6 +16,7 @@ import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatInAttendance } from "@/components/App/Inspections/InspectionFormUtils";
 import { renderStaffNameWithPosition } from "@/utils/appUtils";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 const Overview = () => {
   const { inspectionData, caseFileData, isReportsReadOnly } = useReportStore();
@@ -32,6 +33,8 @@ const Overview = () => {
       ? [inspectionData.primary_officer]
       : [];
 
+    const primaryOfficerId = inspectionData?.primary_officer?.id;
+
     const attendingOfficers =
       inspectionData?.inspectionAttendances
         ?.filter(
@@ -39,9 +42,11 @@ const Overview = () => {
             attendance.attendance_option.id === AttendanceEnum.OFFICERS
         )
         .flatMap((attendance: InspectionAttendance) => {
-          // Handle array of officers
           if (attendance.data && Array.isArray(attendance.data)) {
-            return attendance.data as StaffUser[];
+            // Filter out primary officer from attending officers
+            return (attendance.data as StaffUser[]).filter(
+              officer => officer.id !== primaryOfficerId
+            );
           }
           return [];
         }) ?? [];
@@ -62,6 +67,11 @@ const Overview = () => {
     [queryClient, inspectionData, setClose]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.INSPECTION_DRAWER,
+    { mdToLgMax: "715px" }
+  );
+
   const handleOpenEditModal = useCallback(() => {
     setOpen({
       content: (
@@ -71,9 +81,9 @@ const Overview = () => {
           caseFile={caseFileData as CaseFile}
         />
       ),
-      width: DRAWER_WIDTHS.INSPECTION_DRAWER,
+      width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData, caseFileData]);
+  }, [setOpen, handleOnSubmit, inspectionData, caseFileData, drawerWidth]);
 
   return (
     <>

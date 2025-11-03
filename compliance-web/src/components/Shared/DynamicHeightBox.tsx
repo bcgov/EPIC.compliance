@@ -1,3 +1,4 @@
+import { MQ } from "@/styles/responsive";
 import { Box, BoxProps } from "@mui/material";
 import { useEffect, useState, useRef } from "react";
 
@@ -85,6 +86,10 @@ export default function DynamicHeightBox({
       ref={componentRef}
       sx={{
         height: calculateHeight(),
+        [MQ.mdToLg]: {
+          width: "auto",
+          height: "auto",
+        },
         ...sx,
       }}
       {...boxProps}

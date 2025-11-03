@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRequirementStore } from "@/components/App/Inspections/Profile/Requirements/requirementStore";
 import IRImageSection from "./IRImageSection";
 import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 const DetailSection = ({
   title,
@@ -47,11 +48,11 @@ const DetailSection = ({
     {detailSectionImages && detailSectionImages.length > 0 && (
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
         {detailSectionImages.map((image) => {
-          const filenameWithoutExt = image.original_file_name?.includes('.') 
+          const filenameWithoutExt = image.original_file_name?.includes('.')
             ? image.original_file_name.substring(0, image.original_file_name.lastIndexOf('.'))
             : image.original_file_name;
           return (
-            <IRImageSection key={image.id} image={{...image, caption: filenameWithoutExt}} />
+            <IRImageSection key={image.id} image={{ ...image, caption: filenameWithoutExt }} />
           );
         })}
       </Box>
@@ -112,6 +113,11 @@ const IRRequirement = ({
     [setClose, inspectionData, queryClient]
   );
 
+  const drawerWidth = useResponsiveDrawerWidth(
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+    { mdToLgMax: "750px" }
+  );
+
   const handleOpenEditRequirementModal = useCallback(() => {
     setOpen({
       content: (
@@ -122,9 +128,9 @@ const IRRequirement = ({
           index={requirementIndex}
         />
       ),
-      width: DRAWER_WIDTHS.REQUIREMENT_DRAWER,
+      width: drawerWidth,
     });
-  }, [setOpen, handleOnSubmit, inspectionData, requirement, requirementIndex]);
+  }, [setOpen, handleOnSubmit, inspectionData, requirement, requirementIndex, drawerWidth]);
 
   // Group requirement_source_details by requirement_source_id
   const groupedRequirementSources = useMemo(() => {

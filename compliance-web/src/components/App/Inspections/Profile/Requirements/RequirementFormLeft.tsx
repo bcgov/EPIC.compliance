@@ -30,6 +30,7 @@ import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import RequirementFormLeftEditSection from "./RequirementFormLeftEditSection";
 import { Inspection } from "@/models/Inspection";
 import { useEnforcementActionsData } from "@/hooks/useInspectionRequirements";
+import { MQ } from "@/styles/responsive";
 
 type RequirementFormLeftProps = {
   appHeaderHeight: number;
@@ -370,6 +371,11 @@ Changing it will delete the existing document so you can create a new one`;
         width: "730px",
         overflow: "auto",
         boxSizing: "border-box",
+        [MQ.mdToLg]: {
+          width: "auto",
+          overflow: "unset",
+          pr: 4,
+        }
       }}
     >
       {isReadOnly ? (

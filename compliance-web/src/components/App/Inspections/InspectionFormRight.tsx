@@ -16,6 +16,7 @@ import { FC, useEffect } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { AttendanceEnum } from "@/utils/constants";
 import ControlledCheckbox from "@/components/Shared/Controlled/ControlledCheckbox";
+import { MQ } from "@/styles/responsive";
 
 type InspectionFormRightProps = {
   attendanceList: Attendance[];
@@ -141,6 +142,11 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
           width: "399px",
           boxSizing: "border-box",
           overflow: "auto",
+          [MQ.mdToLg]: {
+            width: "auto",
+            overflow: "unset",
+            ml: 2
+          }
         }}
       >
         <Stack>
