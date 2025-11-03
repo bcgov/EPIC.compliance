@@ -92,7 +92,7 @@ class InspectionRequirementService:
     def generate_inspection_requirements_excel(cls, args):
         """Generate inspection requirements excel."""
         # Get and process query results
-        paginated_query, _ = _build_inspection_requirements_query(
+        paginated_query = _build_inspection_requirements_query(
             args, enable_pagination=False
         )
         query_results = paginated_query.all()

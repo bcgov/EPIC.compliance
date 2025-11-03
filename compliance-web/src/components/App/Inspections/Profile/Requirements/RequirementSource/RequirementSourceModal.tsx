@@ -403,24 +403,6 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                             fullWidth
                           />
                         )}
-                    {requirementSourceNumberType(
-                      selectedRequirementSource?.id ?? ""
-                    ).toLowerCase() === "section" && (
-                      <ControlledTextField
-                        name="sectionNumber"
-                        label="Section #"
-                        fullWidth
-                      />
-                    )}
-                    {requirementSourceNumberType(
-                      selectedRequirementSource?.id ?? ""
-                    ).toLowerCase() === "clause" && (
-                      <ControlledTextField
-                        name="clauseNumber"
-                        label="Clause #"
-                        fullWidth
-                      />
-                    )}
                     <ControlledTextField
                       name="title"
                       label="Title"
