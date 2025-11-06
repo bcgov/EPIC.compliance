@@ -7,98 +7,93 @@ from compliance_api.utils.cache import cache
 class TestCachedStaffUserService:
     """Test cached staff user service."""
 
-    def test_get_staff_by_auth_guid_cache_miss(self):
-        """Test getting staff by auth guid with cache miss."""
+    def test_exists_staff_by_auth_guid_cache_miss(self):
+        """Test checking staff existence with cache miss."""
         # Clear cache first to ensure cache miss
         cache.clear()
 
         auth_guid = "test.viewer@gov.bc.ca"
 
         # First call should be cache miss
-        staff = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
+        exists = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
 
-        assert staff is not None
-        assert staff.auth_user_guid == auth_guid
-        assert staff.first_name == "Test"
-        assert staff.last_name == "Viewer"
+        assert exists is True
 
-    def test_get_staff_by_auth_guid_cache_hit(self):
-        """Test getting staff by auth guid with cache hit."""
+    def test_exists_staff_by_auth_guid_cache_hit(self):
+        """Test checking staff existence with cache hit."""
         auth_guid = "test.viewer@gov.bc.ca"
 
         # First call to populate cache
-        staff1 = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
+        exists1 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
 
-        # Second call should be cache hit (same object)
-        staff2 = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
+        # Second call should be cache hit
+        exists2 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
 
-        assert staff1 is not None
-        assert staff2 is not None
-        assert staff1.auth_user_guid == staff2.auth_user_guid
+        assert exists1 is True
+        assert exists2 is True
 
-    def test_get_staff_by_auth_guid_nonexistent(self):
-        """Test getting nonexistent staff by auth guid."""
+    def test_exists_staff_by_auth_guid_nonexistent(self):
+        """Test checking existence for nonexistent staff."""
         # Clear cache first
         cache.clear()
 
         auth_guid = "nonexistent.user@gov.bc.ca"
 
-        # Should return None for nonexistent user
-        staff = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
+        # Should return False for nonexistent user
+        exists = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
 
-        assert staff is None
+        assert exists is False
 
-        # Second call should also return None (cached False value)
-        staff2 = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
-        assert staff2 is None
+        # Second call should also return False (cached False value)
+        exists2 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
+        assert exists2 is False
 
     def test_invalidate_staff_cache_specific_user(self):
         """Test invalidating cache for specific user."""
         auth_guid = "test.viewer@gov.bc.ca"
 
         # Populate cache
-        staff1 = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
-        assert staff1 is not None
+        exists1 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
+        assert exists1 is True
 
         # Invalidate specific user cache
         CachedStaffUserService.invalidate_staff_cache(auth_guid)
 
         # Should still work (will fetch from database)
-        staff2 = CachedStaffUserService.get_staff_by_auth_guid(auth_guid)
-        assert staff2 is not None
-        assert staff2.auth_user_guid == auth_guid
+        exists2 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
+        assert exists2 is True
 
     def test_invalidate_staff_cache_all_users(self):
         """Test invalidating all staff cache."""
         # Populate cache for both users
-        viewer_staff = CachedStaffUserService.get_staff_by_auth_guid(
+        viewer_exists = CachedStaffUserService.exists_staff_by_auth_guid(
             "test.viewer@gov.bc.ca"
         )
-        superuser_staff = CachedStaffUserService.get_staff_by_auth_guid(
+        superuser_exists = CachedStaffUserService.exists_staff_by_auth_guid(
             "test.superuser@gov.bc.ca"
         )
 
-        assert viewer_staff is not None
-        assert superuser_staff is not None
+        assert viewer_exists is True
+        assert superuser_exists is True
 
         # Invalidate all cache
         CachedStaffUserService.invalidate_staff_cache()
 
         # Both should still work (will fetch from database)
-        viewer_staff2 = CachedStaffUserService.get_staff_by_auth_guid(
+        viewer_exists2 = CachedStaffUserService.exists_staff_by_auth_guid(
             "test.viewer@gov.bc.ca"
         )
-        superuser_staff2 = CachedStaffUserService.get_staff_by_auth_guid(
+        superuser_exists2 = CachedStaffUserService.exists_staff_by_auth_guid(
             "test.superuser@gov.bc.ca"
         )
 
-        assert viewer_staff2 is not None
-        assert superuser_staff2 is not None
+        assert viewer_exists2 is True
+        assert superuser_exists2 is True
 
-    def test_get_staff_by_auth_guid_empty_guid(self):
-        """Test getting staff with empty auth guid."""
-        staff = CachedStaffUserService.get_staff_by_auth_guid("")
-        assert staff is None
+    def test_exists_staff_by_auth_guid_empty_guid(self):
+        """Test checking staff existence with empty auth guid."""
+        exists = CachedStaffUserService.exists_staff_by_auth_guid("")
+        assert exists is False
 
-        staff = CachedStaffUserService.get_staff_by_auth_guid(None)
-        assert staff is None
+        exists = CachedStaffUserService.exists_staff_by_auth_guid(None)
+        assert exists is False

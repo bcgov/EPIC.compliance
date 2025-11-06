@@ -1,7 +1,5 @@
 """Cached service for staff user validation during token authentication."""
 
-from typing import Optional
-
 from flask import current_app
 
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
@@ -16,40 +14,38 @@ class CachedStaffUserService:
     ALL_STAFF_CACHE_KEY = "all_staff_users"
 
     @classmethod
-    def get_staff_by_auth_guid(cls, auth_guid: str) -> Optional[StaffUserModel]:
+    def exists_staff_by_auth_guid(cls, auth_guid: str) -> bool:
         """
-        Get staff user by auth_guid with caching.
+        Check if staff user exists by auth_guid with caching.
 
-        This method is optimized for token validation performance.
-        It first checks cache, then falls back to database if not found.
+        This is an optimized method that only checks existence without
+        fetching the full user data from database on cache hit.
 
         Args:
             auth_guid: The auth_user_guid from token (preferred_username)
 
         Returns:
-            StaffUser model instance if found and active, None otherwise
+            True if staff user exists and is active, False otherwise
         """
         if not auth_guid:
-            return None
+            return False
 
         cache_key = f"{cls.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
 
-        # Try to get from cache first
-        cached_staff = cache.get(cache_key)
-        if cached_staff is not None:
-            current_app.logger.debug(f"Cache hit for staff user: {auth_guid}")
-            # Return None if cached value is explicitly False (user doesn't exist)
-            return cached_staff if cached_staff else None
+        cached_staff_exists = cache.get(cache_key)
+        if cached_staff_exists is not None:
+            current_app.logger.debug(
+                f"Cache hit for staff existence check: {auth_guid}"
+            )
+            return bool(cached_staff_exists)
 
-        # Cache miss - fetch from database
-        current_app.logger.debug(f"Cache miss for staff user: {auth_guid}")
+        current_app.logger.debug(f"Cache miss for staff existence check: {auth_guid}")
         staff_user = StaffUserModel.get_by_auth_guid(auth_guid)
 
-        # Cache the result (cache False if user doesn't exist to avoid repeated DB calls)
-        cache_value = staff_user if staff_user else False
+        cache_value = True if staff_user else False
         cache.set(cache_key, cache_value, timeout=cls.CACHE_TIMEOUT)
 
-        return staff_user
+        return cache_value
 
     @classmethod
     def invalidate_staff_cache(cls, auth_guid: str = None):
@@ -64,7 +60,6 @@ class CachedStaffUserService:
             cache.delete(cache_key)
             current_app.logger.info(f"Invalidated cache for staff user: {auth_guid}")
         else:
-            # Clear all staff-related cache
             cls._clear_all_staff_cache()
             current_app.logger.info("Invalidated all staff user cache")
 

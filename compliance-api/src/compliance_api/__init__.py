@@ -88,13 +88,11 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
             auth_user_id = token_info.get("preferred_username")
             if auth_user_id:
                 # Validate that there's an active staff user for this auth_user_id using cache
-                staff_user = CachedStaffUserService.get_staff_by_auth_guid(auth_user_id)
-                if not staff_user:
+                staff_exists = CachedStaffUserService.exists_staff_by_auth_guid(auth_user_id)
+                if not staff_exists:
                     raise PermissionDeniedError(
                         "No valid staff user found for this account"
                     )
-                # Store staff user info in global context for use in endpoints
-                g.staff_user = staff_user
             else:
                 raise PermissionDeniedError("Invalid token: missing preferred_username")
 
