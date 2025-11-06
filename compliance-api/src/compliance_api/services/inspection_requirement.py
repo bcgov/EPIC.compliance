@@ -1376,34 +1376,34 @@ def _apply_sort(query, args, subq):
 
     # Handle special case for enforcement status which could be in multiple tables
     if sort_field == "enf_stats":
-        return _apply_enforcement_status_sort(query, subq, sort_order)
+        query = _apply_enforcement_status_sort(query, subq, sort_order)
+    elif sort_field == "req_src_num":
+        query = _apply_requirement_source_number_sort(query, subq, sort_order)
+    elif sort_field == "insp_sts":
+        query = _apply_inspection_status_sort(query, subq, sort_order)
+    elif sort_field == "enf_number":
+        query = _apply_enforcement_number_sort(query, subq, sort_order)
+    else:
+        # Field mapping for simple column sorts
+        field_map = {
+            "tpc": "topic_name",
+            "summary": "summary",
+            "cmd_fnd": "compliance_finding",
+            "enf_actn": "enforcement_action_name",
+            "req_src": "requirement_source_option",
+            "ir_no": "ir_number",
+            "prm_offc": "staff_first_name",
+            "project": "project_name",
+            "date_issued": "date_issued",
+            "approver": "approver_first_name",
+        }
 
-    if sort_field == "req_src_num":
-        return _apply_requirement_source_number_sort(query, subq, sort_order)
-
-    if sort_field == "insp_sts":
-        return _apply_inspection_status_sort(query, subq, sort_order)
-
-    # Field mapping for simple column sorts
-    field_map = {
-        "tpc": "topic_name",
-        "summary": "summary",
-        "cmd_fnd": "compliance_finding",
-        "enf_actn": "enforcement_action_name",
-        "req_src": "requirement_source_option",
-        "ir_no": "ir_number",
-        "prm_offc": "staff_first_name",
-        "project": "project_name",
-        "date_issued": "date_issued",
-        "approver": "approver_first_name",
-    }
-
-    if field_map.get(sort_field):
-        sort_column = getattr(subq.c, field_map[sort_field])
-        query = query.add_columns(sort_column.label(f"{sort_field}_sort"))
-        return query.order_by(
-            sort_column.asc() if sort_order == "asc" else sort_column.desc()
-        )
+        if field_map.get(sort_field):
+            sort_column = getattr(subq.c, field_map[sort_field])
+            query = query.add_columns(sort_column.label(f"{sort_field}_sort"))
+            query = query.order_by(
+                sort_column.asc() if sort_order == "asc" else sort_column.desc()
+            )
 
     return query
 
@@ -1451,6 +1451,23 @@ def _apply_requirement_source_number_sort(query, subq, sort_order):
     ).label("req_src_num_sort")
     query = query.add_columns(req_src_num_expr)
     order_key = func.natural_sort_key(req_src_num_expr)
+    return query.order_by(
+        nullslast(order_key.asc())
+        if sort_order == "asc"
+        else nullslast(order_key.desc())
+    )
+
+
+def _apply_enforcement_number_sort(query, subq, sort_order):
+    """Apply enforcement number sorting logic."""
+    # Enforcement number is a combination of order_number and warning_letter_number
+    enforcement_number_expr = func.coalesce(
+        null_if_empty(subq.c.order_number),
+        null_if_empty(subq.c.warning_letter_number),
+        "",
+    ).label("enforcement_number_sort")
+    query = query.add_columns(enforcement_number_expr)
+    order_key = func.natural_sort_key(enforcement_number_expr)
     return query.order_by(
         nullslast(order_key.asc())
         if sort_order == "asc"
