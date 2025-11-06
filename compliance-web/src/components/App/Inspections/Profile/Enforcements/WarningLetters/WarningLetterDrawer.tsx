@@ -268,6 +268,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
             <ControlledLexicalEditor
               label=""
               name="content"
+              isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 235}px)`}
               disabled={isReadonlyMode}
             />

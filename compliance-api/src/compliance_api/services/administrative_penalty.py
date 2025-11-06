@@ -354,7 +354,8 @@ class AdministrativePenaltyService:
                 "Administrative Penalty already exists for these requirements."
             )
         existing_requirements = (
-            AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
+            AdministrativePenaltyInspectionRequirementMap
+            .get_by_inspection_and_administrative_penalty_id(
                 inspection_id, administrative_penalty_id
             )
         )
@@ -389,7 +390,8 @@ class AdministrativePenaltyService:
                 req.id for req in existing_inspection_requirements
             }
             existing_requirements = (
-                AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
+                AdministrativePenaltyInspectionRequirementMap
+                .get_by_inspection_and_administrative_penalty_id(
                     inspection_id, administrative_penalty_id
                 )
             )
