@@ -24,6 +24,17 @@ class StaffUserService:
         return staff_user
 
     @classmethod
+    def get_user_by_auth_guid(cls, auth_user_guid: str):
+        """Get user by auth_user_guid."""
+        staff_user = StaffUserModel.get_by_auth_guid(auth_user_guid)
+        if staff_user:
+            auth_user = AuthService.get_epic_user_by_guid(staff_user.auth_user_guid)
+            staff_user = _set_permission_level_in_compliance_user_obj(
+                staff_user, auth_user
+            )
+        return staff_user
+
+    @classmethod
     def get_all_staff_users(cls):
         """Get all users."""
         # Get users from compliance database

@@ -100,6 +100,7 @@ export function Staff() {
 
   const onDeleteSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["staff-users"] });
+    queryClient.invalidateQueries({ queryKey: ["staff-user-validation"] });
     setClose();
     notify.success("Staff deleted successfully!");
   };

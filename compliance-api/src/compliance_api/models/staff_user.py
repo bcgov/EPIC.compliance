@@ -92,7 +92,7 @@ class StaffUser(BaseModelVersioned):
     def get_by_auth_guid(cls, auth_guid: str) -> StaffUser:
         """Retrieve the staff user by auth_guid."""
         staff_user = StaffUser.query.filter_by(
-            auth_user_guid=auth_guid, is_deleted=False
+            auth_user_guid=auth_guid, is_deleted=False, is_active=True
         ).first()
         return staff_user
 
