@@ -22,6 +22,7 @@ import { Box } from "@mui/material";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 import InspectionFormLeft from "./InspectionFormLeft";
 import InspectionFormRight from "./InspectionFormRight";
 import { AttendanceEnum } from "@/utils/constants";
@@ -70,6 +71,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
   caseFile,
 }) => {
   const { appHeaderHeight } = useMenuStore();
+  const queryClient = useQueryClient();
 
   const { data: initiationList } = useInitiationsData();
   const { data: irTypeList } = useIRTypesData();
@@ -174,8 +176,14 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           : `Inspection File ${data.ir_number} was successfully created`
       );
       reset();
+      // Clear inspection-reports cache for new inspection
+      if (data.id) {
+        queryClient.invalidateQueries({
+          queryKey: ["inspection-reports", data.id],
+        });
+      }
     },
-    [inspection, onSubmit, reset]
+    [inspection, onSubmit, reset, queryClient]
   );
 
   const { mutate: createInspection, isPending: isCreateInspectionPending } =
@@ -192,15 +200,21 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           id: inspection.id,
           inspection: inspectionUpdateData,
         });
+        // Clear inspection-reports cache for updated inspection
+        queryClient.invalidateQueries({
+          queryKey: ["inspection-reports", inspection.id],
+        });
       } else {
         const inspectionCreateData = formatInspectionAPIData(
           formData,
           caseFile.id
         );
         createInspection(inspectionCreateData);
+        // Note: For new inspections, cache will be cleared in onSuccess callback
+        // when we get the new inspection ID
       }
     },
-    [inspection, updateInspection, caseFile, createInspection]
+    [inspection, updateInspection, caseFile, createInspection, queryClient]
   );
 
   return (
