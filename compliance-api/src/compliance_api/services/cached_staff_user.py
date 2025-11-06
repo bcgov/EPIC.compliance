@@ -1,13 +1,11 @@
 """Cached service for staff user validation during token authentication."""
 
-import logging
 from typing import Optional
+
+from flask import current_app
 
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.utils.cache import cache
-
-
-logger = logging.getLogger(__name__)
 
 
 class CachedStaffUserService:
@@ -39,12 +37,12 @@ class CachedStaffUserService:
         # Try to get from cache first
         cached_staff = cache.get(cache_key)
         if cached_staff is not None:
-            logger.debug(f"Cache hit for staff user: {auth_guid}")
+            current_app.logger.debug(f"Cache hit for staff user: {auth_guid}")
             # Return None if cached value is explicitly False (user doesn't exist)
             return cached_staff if cached_staff else None
 
         # Cache miss - fetch from database
-        logger.debug(f"Cache miss for staff user: {auth_guid}")
+        current_app.logger.debug(f"Cache miss for staff user: {auth_guid}")
         staff_user = StaffUserModel.get_by_auth_guid(auth_guid)
 
         # Cache the result (cache False if user doesn't exist to avoid repeated DB calls)
@@ -64,17 +62,17 @@ class CachedStaffUserService:
         if auth_guid:
             cache_key = f"{cls.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
             cache.delete(cache_key)
-            logger.info(f"Invalidated cache for staff user: {auth_guid}")
+            current_app.logger.info(f"Invalidated cache for staff user: {auth_guid}")
         else:
             # Clear all staff-related cache
             cls._clear_all_staff_cache()
-            logger.info("Invalidated all staff user cache")
+            current_app.logger.info("Invalidated all staff user cache")
 
     @classmethod
     def _clear_all_staff_cache(cls):
         """Clear all staff-related cache entries."""
         try:
             cache.clear()
-            logger.info("Cleared all cache (simple cache type)")
+            current_app.logger.info("Cleared all cache (simple cache type)")
         except (AttributeError, RuntimeError) as e:
-            logger.error(f"Error clearing cache: {str(e)}")
+            current_app.logger.error(f"Error clearing cache: {str(e)}")
