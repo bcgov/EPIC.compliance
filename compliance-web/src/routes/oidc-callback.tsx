@@ -1,5 +1,7 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
+import { useStaffUserValidation } from "@/hooks/useAuthorization";
+import { notify } from "@/store/snackbarStore";
 
 export const Route = createFileRoute("/oidc-callback")({
   component: OidcCallback,
@@ -7,8 +9,15 @@ export const Route = createFileRoute("/oidc-callback")({
 
 function OidcCallback() {
   const { isAuthenticated, isLoading, error } = useAuth();
+  const {
+    isLoading: isValidatingStaff,
+    isValidStaffUser,
+    isAccessDenied,
+    preferredUsername,
+    error: staffValidationError
+  } = useStaffUserValidation();
 
-  if (isLoading) {
+  if (isLoading || isValidatingStaff) {
     return <h1>Redirecting, Please wait...</h1>;
   }
 
@@ -16,7 +25,18 @@ function OidcCallback() {
     return <h1>Error: {error.message}</h1>;
   }
 
-  if(!isLoading && isAuthenticated) {
-    return <Navigate to="/ce-database/case-files"></Navigate>
+  if (staffValidationError && staffValidationError.message !== "No preferred_username found in token") {
+    return <h1>Error validating user: {staffValidationError.message}</h1>;
   }
+
+  if (isAccessDenied) {
+    notify.error(`Access Denied: User ${preferredUsername} is not authorized to access this application. Please contact your administrator.`);
+    return <h1>Access denied. Redirecting...</h1>;
+  }
+
+  if (!isLoading && isAuthenticated && isValidStaffUser) {
+    return <Navigate to="/ce-database/case-files"></Navigate>;
+  }
+
+  return <h1>Authentication in progress...</h1>;
 }

@@ -469,6 +469,7 @@ def _create_order_obj(inspection, order_data: dict) -> dict:
         "intended_issuance_date": order_data.get("intended_issuance_date"),
         "order_status": OrderStatusEnum.CREATED,
         "order_progress": OrderProgressEnum.DRAFTING,
+        "order_replace_status": OrderReplaceStatusEnum.ORIGINAL,
     }
 
 

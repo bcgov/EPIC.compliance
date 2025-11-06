@@ -122,6 +122,25 @@ class StaffUser(Resource):
 
 
 @cors_preflight("GET")
+@API.route("/by-auth-user-guid/<string:auth_user_guid>", methods=["GET"])
+@API.doc(params={"auth_user_guid": "The auth user GUID"})
+class StaffUserByAuthGuid(Resource):
+    """Resource for getting staff user by auth_user_guid."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by auth_user_guid")
+    @API.response(code=200, model=user_list_model, description="Success")
+    @API.response(404, "Not Found")
+    def get(auth_user_guid):
+        """Fetch a user by auth_user_guid."""
+        user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
+        if not user:
+            raise ResourceNotFoundError(f"User with auth_user_guid {auth_user_guid} not found")
+        return StaffUserSchema().dump(user), HTTPStatus.OK
+
+
+@cors_preflight("GET")
 @API.route("/permissions", methods=["GET"])
 class StaffUserPermissions(Resource):
     """Resources to manage permission level of staff user."""
