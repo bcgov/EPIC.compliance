@@ -2,12 +2,9 @@
 
 from enum import Enum
 
-from faker import Faker
-
 from compliance_api.config import get_named_config
 
 
-fake = Faker()
 CONFIG = get_named_config("testing")
 
 
@@ -17,9 +14,9 @@ class TokenJWTClaims(dict, Enum):
     default = {
         "iss": CONFIG.JWT_OIDC_TEST_ISSUER,
         "sub": "f7a4a1d3-73a8-4cbc-a40f-bb1145302065",
-        "firstname": fake.first_name(),
-        "lastname": fake.last_name(),
-        "preferred_username": fake.user_name(),
+        "firstname": "Test",
+        "lastname": "Viewer",
+        "preferred_username": "test.viewer@gov.bc.ca",
         "groups": ["/COMPLIANCE/VIEWER"],
         "realm_access": {"roles": []},
         "resource_access": {"epic-compliance": {"roles": ["viewer"]}},
@@ -27,9 +24,9 @@ class TokenJWTClaims(dict, Enum):
     super_user = {
         "iss": CONFIG.JWT_OIDC_TEST_ISSUER,
         "sub": "f7a4a1d3-73a8-4cbc-a40f-bb1145302065",
-        "firstname": fake.first_name(),
-        "lastname": fake.last_name(),
-        "preferred_username": fake.user_name(),
+        "firstname": "Test",
+        "lastname": "SuperUser",
+        "preferred_username": "test.superuser@gov.bc.ca",
         "groups": ["/COMPLIANCE/SUPERUSER"],
         "realm_access": {"roles": []},
         "resource_access": {"epic-compliance": {"roles": ["super_user"]}},

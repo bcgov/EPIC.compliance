@@ -20,6 +20,25 @@ class StaffScenario(Enum):
         "auth_user_guid": fake.word(),
     }
 
+    # Staff data that matches JWT token claims for testing
+    test_viewer_staff = {
+        "first_name": "Test",
+        "last_name": "Viewer",
+        "position_id": 1,
+        "auth_user_guid": "test.viewer@gov.bc.ca",
+        "is_active": True,
+        "is_deleted": False,
+    }
+
+    test_superuser_staff = {
+        "first_name": "Test",
+        "last_name": "SuperUser",
+        "position_id": 1,
+        "auth_user_guid": "test.superuser@gov.bc.ca",
+        "is_active": True,
+        "is_deleted": False,
+    }
+
     epic_auth_users = [
         {
             "id": "5bca57e4-1b39-498c-8872-732d3da4beaf",

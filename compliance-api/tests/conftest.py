@@ -44,6 +44,7 @@ from .utilities.factory_scenario.restorative_justice_fixture import (  # noqa: F
     created_restorative_justice, created_restorative_justice_closed, created_restorative_justice_drafting,
     created_restorative_justice_inspection_requirement, created_restorative_justice_open,
     created_restorative_justice_requirement_map)
+from .utilities.factory_scenario.staff_scenario import StaffScenario
 from .utilities.factory_scenario.violation_ticket_fixture import (  # noqa: F401
     created_violation_ticket, created_violation_ticket_disputed, created_violation_ticket_inspection_requirement,
     created_violation_ticket_issued, created_violation_ticket_no_fine, created_violation_ticket_paid,
@@ -88,7 +89,7 @@ def app():
 def app_context(app):
     """Automatically push and pop the app context for every test."""
     with app.app_context():
-        g.jwt_oidc_token_info = TokenJWTClaims.default
+        g.jwt_oidc_token_info = TokenJWTClaims.default.value
         yield
 
 
@@ -129,7 +130,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     Drops schema, and recreate.
     """
     with app.app_context():
-        g.jwt_oidc_token_info = TokenJWTClaims.default
+        g.jwt_oidc_token_info = TokenJWTClaims.default.value
         create_schema_sql = text(
             f"""DROP SCHEMA public CASCADE;
                              CREATE SCHEMA public;
@@ -161,7 +162,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
 def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
-        g.jwt_oidc_token_info = TokenJWTClaims.default
+        g.jwt_oidc_token_info = TokenJWTClaims.default.value
         conn = db.engine.connect()
         txn = conn.begin()
 
@@ -220,6 +221,61 @@ def client_id():
     #     _id = (base64.urlsafe_b64encode(uuid.uuid4().bytes)).replace('=', '')
 
     return f"client-{_id}"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_staff_users(db):
+    """Auto-setup test staff users that match JWT token claims to prevent API failures."""
+    from flask import current_app, g
+
+    from compliance_api.models.position import Position as PositionModel
+    from compliance_api.models.staff_user import StaffUser as StaffUserModel
+
+    with current_app.app_context():
+        # Set jwt_oidc_token_info for the db hook
+        g.jwt_oidc_token_info = TokenJWTClaims.default.value
+
+        print("Setting up test staff users...")
+
+        # Ensure position ID 1 exists
+        position = PositionModel.find_by_id(1)
+        if not position:
+            position_data = {
+                "name": "Test Position",
+                "sort_order": 1,
+                "description": "Test position for automated tests",
+            }
+            position = PositionModel(**position_data)
+            position.save()
+            print("Created test position with ID 1")
+
+        # Create test viewer staff if not exists
+        viewer_staff = StaffUserModel.get_by_auth_guid("test.viewer@gov.bc.ca")
+        if not viewer_staff:
+            try:
+                viewer_data = StaffScenario.test_viewer_staff.value.copy()
+                new_viewer = StaffScenario.create(viewer_data)
+                print(f"Created test viewer staff user: {new_viewer.auth_user_guid}")
+            except Exception as e:  # noqa: B902
+                print(f"Test viewer staff may already exist: {e}")
+        else:
+            print("Test viewer staff already exists")
+
+        # Create test superuser staff if not exists
+        superuser_staff = StaffUserModel.get_by_auth_guid("test.superuser@gov.bc.ca")
+        if not superuser_staff:
+            try:
+                superuser_data = StaffScenario.test_superuser_staff.value.copy()
+                new_superuser = StaffScenario.create(superuser_data)
+                print(
+                    f"Created test superuser staff user: {new_superuser.auth_user_guid}"
+                )
+            except Exception as e:  # noqa: B902
+                print(f"Test superuser staff may already exist: {e}")
+        else:
+            print("Test superuser staff already exists")
+
+    yield
 
 
 @pytest.fixture()

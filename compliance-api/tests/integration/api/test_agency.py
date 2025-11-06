@@ -32,6 +32,7 @@ def test_get_specific_agency(app, client, auth_header_super_user):
 
     url = urljoin(API_BASE_URL, f"agencies/{agency_id}")
     result = client.get(url, headers=auth_header_super_user)
+    print(result.json)
     assert result.status_code == HTTPStatus.OK
     assert result.json["id"] == agency_id
     assert result.json["name"] == agency_name
@@ -45,8 +46,8 @@ def test_create_agencies(client, auth_header_super_user):
         data=json.dumps(AgencyScenario.default_agency.value),
         headers=auth_header_super_user,
     )
-    assert result.json["name"] == AgencyScenario.default_agency.value["name"]
     assert result.status_code == HTTPStatus.CREATED
+    assert result.json["name"] == AgencyScenario.default_agency.value["name"]
 
 
 def test_create_agencies_with_non_super_user(client, auth_header):

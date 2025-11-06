@@ -126,7 +126,9 @@ class InspectionRecordService:
         return updated_inspection_record
 
     @classmethod
-    def delete_inspection_record(cls, inspection_id, inspection_record_id, ho_session=None):
+    def delete_inspection_record(
+        cls, inspection_id, inspection_record_id, ho_session=None
+    ):
         """Delete inspection record."""
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         inspection_record = ServiceUtils.inspection_record_exist_check(

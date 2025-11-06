@@ -922,7 +922,11 @@ def _build_enforcement_query(inspection_ids: list):
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
                 OrderModel.order_status.notin_(
-                    [OrderStatusEnum.OPEN, OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED]
+                    [
+                        OrderStatusEnum.OPEN,
+                        OrderStatusEnum.CLOSED,
+                        OrderStatusEnum.RESCINDED,
+                    ]
                 ),
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),

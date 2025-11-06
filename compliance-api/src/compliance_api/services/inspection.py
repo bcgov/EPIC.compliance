@@ -265,6 +265,7 @@ class InspectionService:
     def update(cls, inspection_id: int, inspection_data: dict):
         """Update inspection."""
         from compliance_api.services import InspectionRecordService  # pylint: disable=import-outside-toplevel
+
         inspection = InspectionModel.find_by_id(inspection_id)
         if not inspection:
             raise ResourceNotFoundError(f"Inspection with ID {inspection_id} not found")
@@ -274,12 +275,12 @@ class InspectionService:
         with session_scope() as session:
             #  If the history flag is changed, delete the inspection record if one already created
             if inspection.is_history != inspection_obj.get("is_history", False):
-                inspection_record = InspectionRecordService.get_by_inspection_id(inspection.id)
+                inspection_record = InspectionRecordService.get_by_inspection_id(
+                    inspection.id
+                )
                 if inspection_record:
                     InspectionRecordService.delete_inspection_record(
-                        inspection.id,
-                        inspection_record.id,
-                        session
+                        inspection.id, inspection_record.id, session
                     )
             updated_case_file = InspectionModel.update_inspection(
                 inspection_id, inspection_obj, session
@@ -582,7 +583,8 @@ def _set_order_enforcement_action_object(
         in [
             req_map.inspection_requirement_id
             for req_map in order.order_requirement_maps
-        ] and order.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
+        ]
+        and order.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
     ]
     if requirement_orders:
         order = requirement_orders[0]

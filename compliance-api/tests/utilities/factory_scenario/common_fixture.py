@@ -128,6 +128,10 @@ def created_staff(mocker):
     return new_user
 
 
+# Note: Test staff users are now created automatically by the session-scoped
+# setup_test_staff_users fixture in conftest.py. Individual fixtures are not needed.
+
+
 # Global counter for unique case file numbers
 _case_file_counter = 0
 

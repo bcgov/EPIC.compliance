@@ -129,14 +129,18 @@ class StaffUserByAuthGuid(Resource):
 
     @staticmethod
     @auth.require
-    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by auth_user_guid")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch a user by auth_user_guid"
+    )
     @API.response(code=200, model=user_list_model, description="Success")
     @API.response(404, "Not Found")
     def get(auth_user_guid):
         """Fetch a user by auth_user_guid."""
         user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         if not user:
-            raise ResourceNotFoundError(f"User with auth_user_guid {auth_user_guid} not found")
+            raise ResourceNotFoundError(
+                f"User with auth_user_guid {auth_user_guid} not found"
+            )
         return StaffUserSchema().dump(user), HTTPStatus.OK
 
 

@@ -7,6 +7,7 @@ from compliance_api.utils.constant import AUTH_APP
 from compliance_api.utils.enum import PermissionEnum
 
 from .authorize_service.auth_service import AuthService
+from .cached_staff_user import CachedStaffUserService
 
 
 class StaffUserService:
@@ -66,6 +67,8 @@ class StaffUserService:
         with session_scope() as session:
             created_user = StaffUserModel.create_staff(user_obj, session)
             AuthService.update_user_group(auth_user_guid, group_payload)
+            # Invalidate cache for the new user
+            CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
         return created_user
 
     @classmethod
@@ -94,6 +97,8 @@ class StaffUserService:
             else:
                 AuthService.update_user_group(auth_user_guid, group_payload)
                 setattr(updated_user, "permission", permission)
+            # Invalidate cache for the updated user
+            CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
         return updated_user
 
     @classmethod
@@ -103,6 +108,8 @@ class StaffUserService:
             user = StaffUserModel.delete_staff_user(user_id, session)
             #  Here we have to delete all the AUTH_APP(COMPLIANEC) level permission from keycloak
             AuthService.delete_user_group(user.auth_user_guid, group=AUTH_APP)
+            # Invalidate cache for the deleted user
+            CachedStaffUserService.invalidate_staff_cache(user.auth_user_guid)
         return user
 
     @classmethod
