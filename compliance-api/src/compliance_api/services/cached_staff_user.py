@@ -42,7 +42,7 @@ class CachedStaffUserService:
         current_app.logger.debug(f"Cache miss for staff existence check: {auth_guid}")
         staff_user = StaffUserModel.get_by_auth_guid(auth_guid)
 
-        cache_value = True if staff_user else False
+        cache_value = bool(staff_user)
         cache.set(cache_key, cache_value, timeout=cls.CACHE_TIMEOUT)
 
         return cache_value
