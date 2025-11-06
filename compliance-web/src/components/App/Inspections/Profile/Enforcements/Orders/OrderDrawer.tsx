@@ -280,6 +280,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <ControlledLexicalEditor
               label="WHEREAS & DEFINITIONS"
               name="whereAs"
+              isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 235}px)`}
               disabled={isReadonlyMode}
             />
