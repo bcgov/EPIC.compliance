@@ -70,12 +70,12 @@ ENFORCEMENT_SUMMARY = {
     been issued a Notice of Non-Compliance. See Requirement {{ req_sort_order }} for
     further information.</p>""",
     "WARNING_LETTER": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not
-    compliant with {{ ','.join(condition_lines)}} of {{ eac }}. See Appendix X for Warning Letter
-    {{ warning_letter_no }} for the non-compliance and Requirement {{ req_sort_order }} for
+    compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Warning Letter
+    {{ warning_letter_no }} has been issued for the non-compliance. See Requirement {{ req_sort_order }} for
     further information.</p>""",
     "ORDER": """<p class="editor-paragraph" dir="ltr">In Addition, {{ regulated_party }} is not
-    compliant with {{ ','.join(condition_lines)}} of {{ eac }}. See Appendix X for Order
-    {{ order_no }} issued under {{ section_no }} of the <i>{{ act }}</i> and Requirement
+    compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Order
+    {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i>. See Requirement
     {{ req_sort_order }} for further information.</p>""",
     "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In Addition, the findings
     for Requirement {{ req_sort_order }} may be referred to a decision maker for consideration of
