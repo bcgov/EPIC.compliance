@@ -19,6 +19,7 @@ from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
 from ..base_model import BaseModelVersioned
 from ..inspection.inspection import Inspection as InspectionModel
+from ..staff_user import StaffUser as StaffUserModel
 from ..utils import with_session
 
 
@@ -47,13 +48,22 @@ class InspectionOfficer(BaseModelVersioned):
         nullable=False,
         comment="The unique identifier of the associated staff user",
     )
+    officer_position_id = Column(
+        Integer,
+        ForeignKey("positions.id", name="inspection_officers_position_id_fkey"),
+        nullable=True,
+        comment="The position ID of the officer when added to this inspection",
+    )
 
     inspection = relationship(
         "Inspection",
         foreign_keys=[inspection_id],
         lazy="select",
     )
-    officer = relationship("StaffUser", foreign_keys=[officer_id], lazy="select")
+    officer = relationship("StaffUser", foreign_keys=[officer_id], lazy="joined")
+    officer_position = relationship(
+        "Position", foreign_keys=[officer_position_id], lazy="joined"
+    )
 
     @classmethod
     def get_all_by_inspection(cls, inspection_id: int):
@@ -75,12 +85,20 @@ class InspectionOfficer(BaseModelVersioned):
     @with_session
     def bulk_insert(cls, inspection_id: int, officer_ids: list[int], session=None):
         """Insert officers per inspection."""
-        inspection_officer_data = [
-            InspectionOfficer(
-                **{"inspection_id": inspection_id, "officer_id": officer_id}
+        inspection_officer_data = []
+        for officer_id in officer_ids:
+            # Get the officer's current position_id
+            staff_user = StaffUserModel.find_by_id(officer_id)
+            officer_position_id = staff_user.position_id if staff_user else None
+
+            inspection_officer_data.append(
+                InspectionOfficer(
+                    inspection_id=inspection_id,
+                    officer_id=officer_id,
+                    officer_position_id=officer_position_id,
+                )
             )
-            for officer_id in officer_ids
-        ]
+
         session.add_all(inspection_officer_data)
         session.flush()
 

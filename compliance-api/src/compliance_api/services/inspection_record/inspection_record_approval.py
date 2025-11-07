@@ -8,6 +8,7 @@ from compliance_api.models import InspectionRecordApproval as InspectionRecordAp
 from compliance_api.models import IRApprovalStatusEnum, IRProgressEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.inspection_record import IRStatusEnum
+from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
 
 from ..service_utils import ServiceUtils
@@ -180,6 +181,14 @@ class InspectionRecordApprovalService:
         # Set approved_date if the approval status is approved and update ir_progress
         if status_to_be_updated == IRApprovalStatusEnum.APPROVED:
             approval_status_data["approved_date"] = datetime.now(timezone.utc)
+            # Store the position of the approver at the time of approval
+            approved_by_id = approval_status_data.get("approved_by_id")
+            if approved_by_id:
+                staff_user = StaffUserModel.find_by_id(approved_by_id)
+                if staff_user and staff_user.position_id:
+                    approval_status_data["approved_by_position_id"] = (
+                        staff_user.position_id
+                    )
             ir_progress = (
                 IRProgressEnum.PRELIMINARY_APPROVED
                 if latest_approval.ir_status_id == IRStatusEnum.PRELIMINARY.value

@@ -328,6 +328,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <ControlledLexicalEditor
               label="NOW THEREFORE"
               name="nowTherefore"
+              isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 428}px)`}
               disabled={isReadonlyMode}
             />

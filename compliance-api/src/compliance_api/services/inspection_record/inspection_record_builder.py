@@ -100,11 +100,27 @@ class InspectionRecordDataBuilder:
                 IRProgressEnum.ISSUED,
             ]:
                 if latest_approval.approved_by:
+                    # Use stored position if available, otherwise fall back to current position
+                    approved_by_position_name = (
+                        latest_approval.approved_by_position.name
+                        if latest_approval.approved_by_position
+                        else latest_approval.approved_by.position.name
+                    )
+                    #  Use the position from existing record if the record_prepared_by_id
+                    #  is same as approved_by_id
+                    if (
+                        self.existing_ir
+                        and self.existing_ir.record_prepared_by_id
+                        == latest_approval.approved_by_id
+                    ):
+                        approved_by_position_name = (
+                            self.existing_ir.record_prepared_by_position.name
+                        )
                     self.data["approval_info"] = {
                         "approved_by": latest_approval.approved_by.first_name
                         + " "
                         + latest_approval.approved_by.last_name,
-                        "approved_by_position": latest_approval.approved_by.position.name,
+                        "approved_by_position": approved_by_position_name,
                     }
         return self
 
@@ -151,6 +167,7 @@ class InspectionRecordDataBuilder:
         # Initialize inspecting officers list with primary officer
         inspecting_officers = [
             {
+                "id": self.inspection.primary_officer_id,
                 "name": f"{self.data['officer_details']['primary_officer']['name']}",
                 "position": self.data["officer_details"]["primary_officer"]["position"],
             }
@@ -167,9 +184,18 @@ class InspectionRecordDataBuilder:
                     if officer.get("id") != self.inspection.primary_officer_id:
                         inspecting_officers.append(
                             {
+                                "id": officer.get("id"),
                                 "name": f"{officer.get('name')}",
-                                "position": officer.get("position").get("name"),
                             }
+                        )
+                #  Iterate over the inspecting officers to fix their position name
+                for officer in inspecting_officers:
+                    if (
+                        self.existing_ir
+                        and self.existing_ir.record_prepared_by_id == officer.get("id")
+                    ):
+                        officer["position"] = (
+                            self.existing_ir.record_prepared_by_position.name
                         )
                 continue
             # Handle different types of attendance data
