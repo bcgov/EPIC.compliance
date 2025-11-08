@@ -88,7 +88,9 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
             auth_user_id = token_info.get("preferred_username")
             if auth_user_id:
                 # Validate that there's an active staff user for this auth_user_id using cache
-                staff_exists = CachedStaffUserService.exists_staff_by_auth_guid(auth_user_id)
+                staff_exists = CachedStaffUserService.exists_staff_by_auth_guid(
+                    auth_user_id
+                )
                 if not staff_exists:
                     raise PermissionDeniedError(
                         "No valid staff user found for this account"

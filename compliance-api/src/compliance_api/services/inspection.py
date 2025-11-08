@@ -170,18 +170,29 @@ class InspectionService:
                     officers = InspectionOfficerModel.get_all_by_inspection(
                         inspection_id
                     )
-                    data = [
-                        {
-                            "id": officer.officer.id,
-                            "name": f"{officer.officer.first_name} {officer.officer.last_name}",
-                            "auth_user_guid": officer.officer.auth_user_guid,
-                            "position": {
+                    data = []
+                    for officer in officers:
+                        # Use stored position if available, otherwise fall back to current position
+                        position_data = None
+                        if officer.officer_position:
+                            position_data = {
+                                "id": officer.officer_position.id,
+                                "name": officer.officer_position.name,
+                            }
+                        elif officer.officer.position:
+                            position_data = {
                                 "id": officer.officer.position.id,
                                 "name": officer.officer.position.name,
-                            },
-                        }
-                        for officer in officers
-                    ]
+                            }
+
+                        data.append(
+                            {
+                                "id": officer.officer.id,
+                                "name": f"{officer.officer.first_name} {officer.officer.last_name}",
+                                "auth_user_guid": officer.officer.auth_user_guid,
+                                "position": position_data,
+                            }
+                        )
                 if (
                     option.attendance_option_id
                     == InspectionAttendanceOptionEnum.FIRSTNATIONS.value

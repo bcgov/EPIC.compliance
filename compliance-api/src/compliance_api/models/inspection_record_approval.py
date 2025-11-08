@@ -54,6 +54,12 @@ class InspectionRecordApproval(BaseModelVersioned):
         nullable=True,
         comment="Person who approved the inspection record",
     )
+    approved_by_position_id = Column(
+        Integer,
+        ForeignKey("positions.id", name="ir_approval_approved_by_position_id_fkey"),
+        nullable=True,
+        comment="The position ID of the officer who approved the inspection record",
+    )
     approved_date = Column(DateTime(timezone=True), nullable=True)
     ir_status_id = Column(
         Integer,
@@ -69,6 +75,9 @@ class InspectionRecordApproval(BaseModelVersioned):
     )
     approved_by = relationship(
         "StaffUser", foreign_keys=[approved_by_id], lazy="joined"
+    )
+    approved_by_position = relationship(
+        "Position", foreign_keys=[approved_by_position_id], lazy="joined"
     )
     inspection_record = relationship(
         "InspectionRecord", foreign_keys=[inspection_record_id], lazy="joined"
