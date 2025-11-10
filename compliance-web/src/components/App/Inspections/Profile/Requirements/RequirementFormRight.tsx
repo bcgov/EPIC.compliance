@@ -48,21 +48,26 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   const { setOpen, setClose } = useModal();
 
   // Helper function to synchronize requirementSourceTitle across all items
-  const syncRequirementSourceTitle = (items: RequirementSourceFormData[]) => {
-    const firstItemTitle = items[0]?.requirementSourceTitle;
+const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requirementSourceId?: string) => {
+    // Filter out the items that have the same requirementSourceId
+    const requirementSources = allItems.filter(item => item.requirementSource?.id === requirementSourceId);
+    const firstItemTitle = requirementSources[0]?.requirementSourceTitle;
     if (firstItemTitle) {
-      items.forEach(item => {
-        item.requirementSourceTitle = firstItemTitle;
+      allItems.forEach(item => {
+        if (item.requirementSource?.id === requirementSourceId) {
+          item.requirementSourceTitle = firstItemTitle;
+        }
       });
     }
-    return items;
+    return allItems;
   };
 
   // Helper function to synchronize document titles across all related documents within the same requirement source
-  const syncDocumentTitles = (items: RequirementSourceFormData[]) => {
-    items.forEach(item => {
-      if (item.relatedDocuments && item.relatedDocuments.length > 0) {
-        const firstDocumentTitle = item.relatedDocuments[0]?.documentTitle;
+  const syncDocumentTitles = (allItems: RequirementSourceFormData[], requirementSourceId?: string, sectionNumber?: string) => {
+    const items = allItems.filter(item => item.requirementSource?.id === requirementSourceId && item.sectionNumber === sectionNumber);
+    allItems.forEach(item => {
+      if (item.relatedDocuments && item.relatedDocuments.length > 0 && item.requirementSource?.id === requirementSourceId && item.sectionNumber === sectionNumber) {
+        const firstDocumentTitle = items[0]?.relatedDocuments?.[0]?.documentTitle;
         if (firstDocumentTitle) {
           item.relatedDocuments.forEach(doc => {
             doc.documentTitle = firstDocumentTitle;
@@ -70,7 +75,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
       }
     });
-    return items;
+    return allItems;
   };
   const [requirementSourceFormData, setRequirementSourceFormData] = useState<
     RequirementSourceFormData[]
@@ -97,7 +102,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 
   const handleOnAddSubmit = (data: RequirementSourceFormData) => {
     setRequirementSourceFormData((prevData) => {
-      const updated = syncRequirementSourceTitle([...prevData, data]);
+      const updated = syncRequirementSourceTitle([...prevData, data], data.requirementSource?.id);
       onDataChange(updated);
       return updated;
     });
@@ -124,7 +129,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
           relatedDocuments: mergedRelatedDocs,
         };
       });
-      const updated = syncRequirementSourceTitle(mapped);
+      const updated = syncRequirementSourceTitle(mapped, data.requirementSource?.id);
       // Trigger onDataChange immediately with the updated data
       onDataChange(updated);
       return updated;
@@ -135,7 +140,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   const handleOnDeleteSubmit = (data: RequirementSourceFormData) => {
     setRequirementSourceFormData((prevData) => {
       const filtered = prevData.filter((item) => item.id !== data.id);
-      const updated = syncRequirementSourceTitle(filtered);
+      const updated = syncRequirementSourceTitle(filtered, data.requirementSource?.id);
       onDataChange(updated);
       return updated;
     });
@@ -143,7 +148,9 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
   };
 
   const handleOnAddRelatedDocumentSubmit = (
-    data: RequirementRelatedDocumentData
+    data: RequirementRelatedDocumentData,
+    requirementSourceId: string,
+    sectionNumber: string,
   ) => {
     setRequirementSourceFormData((prevData) => {
       const mapped = prevData.map((item) => {
@@ -167,10 +174,8 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
         return item;
       });
-      const titleSynced = syncRequirementSourceTitle(mapped);
-      const updated = syncDocumentTitles(titleSynced);
-      onDataChange(updated);
-      return updated;
+      onDataChange(mapped);
+      return mapped;
     });
     closeModal();
   };
@@ -200,8 +205,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
         }
         return item;
       });
-      const titleSynced = syncRequirementSourceTitle(mapped);
-      const updated = syncDocumentTitles(titleSynced);
+      const updated = syncDocumentTitles(mapped);
       onDataChange(updated);
       return updated;
     });
