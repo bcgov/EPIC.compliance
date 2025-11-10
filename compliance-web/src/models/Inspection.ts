@@ -168,3 +168,17 @@ export interface InspectionAPIData {
 export interface InspectionStatusAPIData {
   status: string;
 }
+
+export interface PendingItem {
+  requirement: {
+    id: number;
+    summary: string;
+  } | null;
+  item: {
+    id: number | null;
+    name: string;
+  };
+  is_created: boolean;
+  is_issued?: boolean;
+  item_number: string | null;
+}

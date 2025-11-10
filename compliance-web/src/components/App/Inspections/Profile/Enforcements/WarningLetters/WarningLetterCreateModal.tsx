@@ -52,6 +52,9 @@ const WarningLetterCreateModal: FC<WarningLetterCreateModalProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["inspection-warning-letters", inspectionData.id],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["pending-items", inspectionData.id],
+    });
     notifyAndSubmit(data);
   };
 

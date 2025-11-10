@@ -15,6 +15,7 @@ from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 
 from ..docgen_service.docgen_service import DocGenService
+from ..inspection import InspectionService
 
 
 class InspectionRecordService:
@@ -108,6 +109,8 @@ class InspectionRecordService:
                 if latest_approval.approval_status != IRApprovalStatusEnum.APPROVED:
                     raise UnprocessableEntityError("Pending review for this IR")
                 ir_update_data["ir_progress"] = IRProgressEnum.ISSUED
+                # Validate that the inspection can be closed before closing it
+                InspectionService.validate_inspection_can_be_closed(inspection_id)
                 InspectionModel.update_inspection(
                     inspection_id=inspection_id,
                     inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},

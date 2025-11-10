@@ -4,13 +4,16 @@ import {
   useDeleteInspection,
   useUpdateInspectionStatus,
   useInspectionByNumber,
+  usePendingItems,
 } from "@/hooks/useInspections";
+import { PendingItem } from "@/models/Inspection";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
+import InspectionPendingEnforcementsDescription from "./InspectionPendingEnforcementsDescription";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { InspectionStatusEnum } from "@/utils/constants";
 
 interface InspectionFileActionsProps {
@@ -25,9 +28,11 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
+  const isWaitingForPendingItems = useRef(false);
 
   const { data: inspectionData } = useInspectionByNumber(fileNumber);
   
+  const { data: pendingItems, isLoading: pendingItemsLoading, isFetching: pendingItemsFetching } = usePendingItems(inspectionData?.id || 0);
   
   const { data: caseFileData } = useCaseFileByNumber(
     inspectionData?.case_file?.case_file_number || ""
@@ -71,6 +76,61 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   );
 
   const { mutate: deleteInspection } = useDeleteInspection(onDeleteSuccess);
+
+  // Helper function to show the close confirmation modal
+  const showCloseConfirmation = useCallback(() => {
+    const hasPendingItems = pendingItems && pendingItems.length > 0 && 
+      pendingItems.some(item => !item.is_created);
+    const hasUnissuedItems = pendingItems && pendingItems.length > 0 && 
+      pendingItems.some(item => !item.is_issued);
+
+    setOpen({
+      content: (
+        <ConfirmationModal
+          title={
+            hasPendingItems || hasUnissuedItems
+              ? "Cannot Close Inspection"
+              : "Close Inspection?"
+          }
+          formattedDescription={
+            hasPendingItems || hasUnissuedItems ? (
+              <InspectionPendingEnforcementsDescription
+                pendingEnforcements={pendingItems}
+              />
+            ) : (
+              "Are you sure you want to close inspection?"
+            )
+          }
+          confirmButtonText={
+            hasPendingItems || hasUnissuedItems
+              ? "Return to Inspection"
+              : "Close Inspection"
+          }
+          onConfirm={() => {
+            if (hasPendingItems || hasUnissuedItems) {
+              setClose();
+              return;
+            }
+            updateInspectionInspection({
+              id: inspectionData?.id ?? 0,
+              inspectionStatus: { status: "CLOSED" },
+            });
+          }}
+        />
+      ),
+      width: "420px",
+    });
+  }, [pendingItems, setOpen, setClose, updateInspectionInspection, inspectionData?.id]);
+
+  // Effect to automatically show confirmation when loading completes
+  useEffect(() => {
+    if (isWaitingForPendingItems.current && !pendingItemsLoading && !pendingItemsFetching) {
+      isWaitingForPendingItems.current = false;
+      setClose(); // Close the loading modal
+      showCloseConfirmation(); // Show the actual confirmation
+    }
+  }, [pendingItemsLoading, pendingItemsFetching, showCloseConfirmation, setClose]);
+
   const actionsList = [
     {
       text: "Cancel Inspection",
@@ -122,23 +182,26 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
     {
       text: "Close",
       onClick: () => {
-        // Handle closing inspection
-        setOpen({
-          content: (
-            <ConfirmationModal
-              title="Close Inspection?"
-              description="Are you sure you want to close inspection?"
-              confirmButtonText="Close Inspection"
-              onConfirm={() => {
-                updateInspectionInspection({
-                  id: inspectionData?.id ?? 0,
-                  inspectionStatus: { status: "CLOSED" },
-                });
-              }}
-            />
-          ),
-          width: "420px",
-        });
+        // Show loading state if pending items are still loading
+        if (pendingItemsLoading || pendingItemsFetching) {
+          isWaitingForPendingItems.current = true;
+          setOpen({
+            content: (
+              <ConfirmationModal
+                title="Loading..."
+                description="Checking for pending items. Please wait..."
+                confirmButtonText="Please Wait"
+                onConfirm={() => {
+                  // Do nothing while loading
+                }}
+              />
+            ),
+          });
+          return;
+        }
+
+        // If data is ready, show confirmation immediately
+        showCloseConfirmation();
       },
       hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.CLOSED.toLowerCase(), InspectionStatusEnum.CLOSE_AS_NOTE.toLowerCase()].includes(status?.toLowerCase()),
     },

@@ -586,3 +586,27 @@ class InspectionStatusSchema(BaseSchema):
         if status_enum:
             data["status"] = status_enum.value
         return data
+
+
+class RequirementObjectSchema(BaseSchema):
+    """Schema for requirement object in pending item response."""
+    
+    id = fields.Integer(required=True, allow_none=False, description="The requirement ID")
+    summary = fields.String(required=True, allow_none=False, description="The requirement summary text")
+
+
+class ItemObjectSchema(BaseSchema):
+    """Schema for item object in pending item response."""
+    
+    id = fields.Integer(required=False, allow_none=True, description="The item ID (enforcement action ID or null for inspection record)") 
+    name = fields.String(required=True, allow_none=False, description="The item name (enforcement action name or 'Inspection Record')")
+
+
+class PendingItemSchema(BaseSchema):
+    """Schema for pending items (enforcement actions and inspection records)."""
+
+    requirement = fields.Nested(RequirementObjectSchema, required=False, allow_none=True, description="The requirement object (null for inspection records)")
+    item = fields.Nested(ItemObjectSchema, required=True, allow_none=False, description="The item object (enforcement action or inspection record)")
+    is_created = fields.Boolean(required=True, allow_none=False, description="Whether the item is created")
+    is_issued = fields.Boolean(required=False, allow_none=True, description="Whether the item is issued (for inspection records)")
+    item_number = fields.String(required=False, allow_none=True, description="The item number (e.g., order number, warning letter number, IR number)")

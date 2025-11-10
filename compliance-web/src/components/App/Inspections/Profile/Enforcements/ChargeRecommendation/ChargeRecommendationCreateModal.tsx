@@ -55,6 +55,9 @@ const ChargeRecommendationCreateModal: FC<
     queryClient.invalidateQueries({
       queryKey: ["inspection-charge-recommendations", inspectionData.id],
     });
+    queryClient.invalidateQueries({
+      queryKey: ["pending-items", inspectionData.id],
+    });
     notify.success(
       ENFORCEMENT_MESSAGES.CHARGE_RECOMMENDATION_CREATED(
         data.charge_recommendation_number || ""

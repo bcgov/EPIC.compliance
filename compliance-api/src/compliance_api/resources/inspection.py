@@ -23,7 +23,7 @@ from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
     InspectionAttendanceSchema, InspectionCreateSchema, InspectionFilterSchema, InspectionMoreDetailsSchema,
     InspectionOfficerSchema, InspectionReqImageSchema, InspectionRequirementBulkUpdateSchema, InspectionSchema,
-    InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, StaffUserSchema)
+    InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, PendingItemSchema, StaffUserSchema)
 from compliance_api.services import InspectionRequirementService, InspectionService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.schema_utils import get_pagination_schema
@@ -67,6 +67,9 @@ inspection_requirement_bulk_update_model = ApiHelper.convert_ma_schema_to_restx_
 )
 inspection_more_details_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, InspectionMoreDetailsSchema(), "InspectionMoreDetails"
+)
+pending_item_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, PendingItemSchema(), "PendingItem"
 )
 
 
@@ -402,6 +405,32 @@ class InspectionImages(Resource):
         )
         image_schema = InspectionReqImageSchema(many=True)
         return image_schema.dump(images), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route("/<int:inspection_id>/pending-items", methods=["GET", "OPTIONS"])
+class InspectionPendingItems(Resource):
+    """Resource for fetching pending items for an inspection."""
+
+    @staticmethod
+    @auth.require
+    @API.response(code=200, description="Success", model=[pending_item_model])
+    @API.response(404, "Not Found")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch pending items for an inspection"
+    )
+    def get(inspection_id):
+        """Fetch pending items for an inspection."""
+        # Check if inspection exists
+        inspection = InspectionService.get_by_id(inspection_id)
+        if not inspection:
+            raise ResourceNotFoundError(
+                f"No inspection found for the given ID: {inspection_id}"
+            )
+        
+        pending_items = InspectionService.get_pending_items(inspection_id)
+        pending_item_schema = PendingItemSchema(many=True)
+        return pending_item_schema.dump(pending_items), HTTPStatus.OK
 
 
 @cors_preflight("PATCH, OPTIONS")

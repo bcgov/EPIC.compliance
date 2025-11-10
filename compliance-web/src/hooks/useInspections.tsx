@@ -7,6 +7,7 @@ import {
   InspectionGridQueryParams,
   InspectionMoreDetails,
   InspectionStatusAPIData,
+  PendingItem,
 } from "@/models/Inspection";
 import { IRStatus } from "@/models/IRStatus";
 import { IRType } from "@/models/IRType";
@@ -116,6 +117,13 @@ const deleteInspection = (id: number) => {
   return request({ url: `/inspections/${id}`, method: "delete" });
 };
 
+const fetchPendingItems = async (inspectionId: number): Promise<PendingItem[]> => {
+  return request({
+    url: `/inspections/${inspectionId}/pending-items`,
+    method: "GET",
+  });
+};
+
 export const useIRTypesData = () => {
   return useStaticQuery({
     queryKey: ["ir-types"],
@@ -221,4 +229,12 @@ export const useUpdateInspectionStatus = (onSuccess: OnSuccessType) => {
 
 export const useDeleteInspection = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: deleteInspection, onSuccess });
+};
+
+export const usePendingItems = (inspectionId: number) => {
+  return useQuery({
+    queryKey: ["pending-items", inspectionId],
+    queryFn: () => fetchPendingItems(inspectionId),
+    enabled: !!inspectionId,
+  });
 };
