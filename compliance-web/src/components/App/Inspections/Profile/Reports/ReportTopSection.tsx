@@ -195,9 +195,6 @@ export default function ReportTopSection() {
             queryClient.invalidateQueries({
               queryKey: ["inspection", inspectionData?.ir_number],
             });
-            queryClient.invalidateQueries({
-              queryKey: ["pending-items", inspectionData?.id],
-            });
           }}
         />
       ),

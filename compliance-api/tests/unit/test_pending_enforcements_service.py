@@ -24,7 +24,7 @@ class TestPendingEnforcementsService:
         """Test schema serialization functionality."""
         try:
             from compliance_api.schemas.inspection import PendingEnforcementSchema
-            
+
             schema = PendingEnforcementSchema()
             test_data = {
                 'requirement': {
@@ -38,23 +38,23 @@ class TestPendingEnforcementsService:
                 'is_created': False,
                 'enforcement_number': 'PROJ_001_O123'
             }
-            
+
             result = schema.dump(test_data)
             print("✅ Schema serialization successful")
             print(f"   Result: {result}")
-            
+
             # Validate all fields are present in result
             assert 'requirement' in result
             assert 'enforcement' in result
             assert 'is_created' in result
             assert 'enforcement_number' in result
-            
+
             # Validate nested object fields
             assert 'id' in result['requirement']
             assert 'summary' in result['requirement']
             assert 'id' in result['enforcement']
             assert 'name' in result['enforcement']
-            
+
             # Validate field values
             assert result['requirement']['id'] == 1
             assert result['requirement']['summary'] == 'Test requirement'
@@ -62,8 +62,8 @@ class TestPendingEnforcementsService:
             assert result['enforcement']['name'] == 'Order'
             assert result['is_created'] is False
             assert result['enforcement_number'] == 'PROJ_001_O123'
-            
-        except Exception as e:
+
+        except (ImportError, AttributeError, AssertionError, KeyError) as e:
             pytest.fail(f"Schema functionality test failed: {e}")
 
     def test_schema_export(self):
@@ -79,17 +79,17 @@ class TestPendingEnforcementsService:
         """Test that the service method exists and is callable."""
         try:
             from compliance_api.services.inspection import InspectionService
-            
+
             # Check if the method exists
             assert hasattr(InspectionService, 'get_pending_enforcements'), \
                 "InspectionService should have get_pending_enforcements method"
-            
+
             # Check if it's callable
             method = getattr(InspectionService, 'get_pending_enforcements')
             assert callable(method), "get_pending_enforcements should be callable"
-            
+
             print("✅ Service method exists and is callable")
-            
+
         except ImportError as e:
             pytest.fail(f"Failed to import InspectionService: {e}")
 
@@ -97,7 +97,7 @@ class TestPendingEnforcementsService:
         """Test that helper methods exist."""
         try:
             from compliance_api.services.inspection import InspectionService
-            
+
             helper_methods = [
                 '_check_enforcement_status',
                 '_check_order_status',
@@ -107,16 +107,16 @@ class TestPendingEnforcementsService:
                 '_check_charge_recommendation_status',
                 '_check_restorative_justice_status'
             ]
-            
+
             for method_name in helper_methods:
                 assert hasattr(InspectionService, method_name), \
                     f"InspectionService should have {method_name} method"
-                
+
                 method = getattr(InspectionService, method_name)
                 assert callable(method), f"{method_name} should be callable"
-            
+
             print("✅ All helper methods exist and are callable")
-            
+
         except ImportError as e:
             pytest.fail(f"Failed to import InspectionService: {e}")
 
@@ -126,11 +126,11 @@ def test_all_imports():
     try:
         # Test basic imports
         print("Testing imports...")
-        
+
         # Test schema import
         from compliance_api.schemas.inspection import PendingEnforcementSchema
         print("✅ PendingEnforcementSchema import successful")
-        
+
         # Test schema functionality
         schema = PendingEnforcementSchema()
         test_data = {
@@ -145,22 +145,23 @@ def test_all_imports():
             'is_created': False,
             'enforcement_number': 'PROJ_001_O123'
         }
-        
+
         result = schema.dump(test_data)
         print("✅ Schema serialization successful")
         print(f"   Result: {result}")
-        
-        # Test schema import in init
+
+        # Test schema import in init - using ImportedSchema to avoid F401
         from compliance_api.schemas import PendingEnforcementSchema as ImportedSchema
+        assert ImportedSchema is not None
         print("✅ Schema export in __init__.py successful")
-        
+
         print("\n🎉 All tests passed! The implementation looks good.")
         return True
-        
+
     except ImportError as e:
         print(f"❌ Import Error: {e}")
         return False
-    except Exception as e:
+    except (AttributeError, AssertionError) as e:
         print(f"❌ Error: {e}")
         return False
 

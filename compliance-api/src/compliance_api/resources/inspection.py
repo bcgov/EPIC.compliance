@@ -427,7 +427,7 @@ class InspectionPendingItems(Resource):
             raise ResourceNotFoundError(
                 f"No inspection found for the given ID: {inspection_id}"
             )
-        
+
         pending_items = InspectionService.get_pending_items(inspection_id)
         pending_item_schema = PendingItemSchema(many=True)
         return pending_item_schema.dump(pending_items), HTTPStatus.OK

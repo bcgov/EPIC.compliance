@@ -4,7 +4,7 @@ import {
   useDeleteInspection,
   useUpdateInspectionStatus,
   useInspectionByNumber,
-  usePendingItems,
+  useCheckPendingItems,
 } from "@/hooks/useInspections";
 import { PendingItem } from "@/models/Inspection";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
@@ -13,7 +13,7 @@ import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback } from "react";
 import { InspectionStatusEnum } from "@/utils/constants";
 
 interface InspectionFileActionsProps {
@@ -28,11 +28,8 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
-  const isWaitingForPendingItems = useRef(false);
 
   const { data: inspectionData } = useInspectionByNumber(fileNumber);
-  
-  const { data: pendingItems, isLoading: pendingItemsLoading, isFetching: pendingItemsFetching } = usePendingItems(inspectionData?.id || 0);
   
   const { data: caseFileData } = useCaseFileByNumber(
     inspectionData?.case_file?.case_file_number || ""
@@ -77,12 +74,15 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
 
   const { mutate: deleteInspection } = useDeleteInspection(onDeleteSuccess);
 
-  // Helper function to show the close confirmation modal
-  const showCloseConfirmation = useCallback(() => {
-    const hasPendingItems = pendingItems && pendingItems.length > 0 && 
-      pendingItems.some(item => !item.is_created);
-    const hasUnissuedItems = pendingItems && pendingItems.length > 0 && 
-      pendingItems.some(item => !item.is_issued);
+  // Use the hook for checking pending items on demand
+  const checkPendingItemsMutation = useCheckPendingItems();
+
+  // Handle the pending items check result
+  const handlePendingItemsResult = useCallback((pendingItems: PendingItem[]) => {
+    const hasPendingItems = pendingItems.length > 0 && 
+      pendingItems.some((item: PendingItem) => !item.is_created);
+    const hasUnissuedItems = pendingItems.length > 0 && 
+      pendingItems.some((item: PendingItem) => !item.is_issued);
 
     setOpen({
       content: (
@@ -120,16 +120,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
       ),
       width: "420px",
     });
-  }, [pendingItems, setOpen, setClose, updateInspectionInspection, inspectionData?.id]);
-
-  // Effect to automatically show confirmation when loading completes
-  useEffect(() => {
-    if (isWaitingForPendingItems.current && !pendingItemsLoading && !pendingItemsFetching) {
-      isWaitingForPendingItems.current = false;
-      setClose(); // Close the loading modal
-      showCloseConfirmation(); // Show the actual confirmation
-    }
-  }, [pendingItemsLoading, pendingItemsFetching, showCloseConfirmation, setClose]);
+  }, [setOpen, setClose, updateInspectionInspection, inspectionData?.id]);
 
   const actionsList = [
     {
@@ -182,26 +173,31 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
     {
       text: "Close",
       onClick: () => {
-        // Show loading state if pending items are still loading
-        if (pendingItemsLoading || pendingItemsFetching) {
-          isWaitingForPendingItems.current = true;
+        if (inspectionData?.id) {
+          // Show loading modal while checking pending items
+          if (checkPendingItemsMutation.isPending) {
+            return; // Already checking
+          }
+          
           setOpen({
             content: (
               <ConfirmationModal
-                title="Loading..."
-                description="Checking for pending items. Please wait..."
+                title="Checking Pending Items..."
+                description="Please wait while we check for pending items..."
                 confirmButtonText="Please Wait"
-                onConfirm={() => {
-                  // Do nothing while loading
-                }}
+                onConfirm={() => {}} // Disabled while loading
               />
             ),
           });
-          return;
-        }
 
-        // If data is ready, show confirmation immediately
-        showCloseConfirmation();
+          // Trigger the mutation to fetch pending items
+          checkPendingItemsMutation.mutate(inspectionData.id, {
+            onSuccess: handlePendingItemsResult,
+            onError: () => {
+              notify.error("Failed to check pending items. Please try again.");
+            },
+          });
+        }
       },
       hidden: [InspectionStatusEnum.CANCELED.toLowerCase(), InspectionStatusEnum.CLOSED.toLowerCase(), InspectionStatusEnum.CLOSE_AS_NOTE.toLowerCase()].includes(status?.toLowerCase()),
     },

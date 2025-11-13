@@ -182,7 +182,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   const onDeleteSuccess = useCallback(() => {
     onSubmit("Order deleted successfully!", true);
     reset();
-  }, [onSubmit, reset]);
+  }, [onSubmit, reset, inspection.id]);
 
   const { mutate: deleteInspectionOrder } =
     useDeleteInspectionOrder(onDeleteSuccess);

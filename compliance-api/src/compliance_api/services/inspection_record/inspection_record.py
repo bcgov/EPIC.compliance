@@ -110,7 +110,17 @@ class InspectionRecordService:
                     raise UnprocessableEntityError("Pending review for this IR")
                 ir_update_data["ir_progress"] = IRProgressEnum.ISSUED
                 # Validate that the inspection can be closed before closing it
-                InspectionService.validate_inspection_can_be_closed(inspection_id)
+                pending_items = InspectionService.get_pending_items(inspection_id)
+                if pending_items and len(pending_items) > 0:
+                    items_expect_ir = [
+                        item
+                        for item in pending_items
+                        if item.get("item").get("name", None) != "Inspection Record"
+                    ]
+                    if items_expect_ir:
+                        raise UnprocessableEntityError(
+                            "Pending items found for this inspection"
+                        )
                 InspectionModel.update_inspection(
                     inspection_id=inspection_id,
                     inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},

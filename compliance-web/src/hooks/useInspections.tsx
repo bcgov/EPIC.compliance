@@ -231,10 +231,12 @@ export const useDeleteInspection = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: deleteInspection, onSuccess });
 };
 
-export const usePendingItems = (inspectionId: number) => {
-  return useQuery({
-    queryKey: ["pending-items", inspectionId],
-    queryFn: () => fetchPendingItems(inspectionId),
-    enabled: !!inspectionId,
+
+
+export const useCheckPendingItems = () => {
+  return useMutation({
+    mutationFn: async (inspectionId: number): Promise<PendingItem[]> => {
+      return fetchPendingItems(inspectionId);
+    },
   });
 };

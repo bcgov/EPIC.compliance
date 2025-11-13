@@ -90,9 +90,6 @@ const OrderApprovalButtons = ({
       queryClient.invalidateQueries({
         queryKey: ["inspection-orders-projectwise", caseFileId],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["pending-items", inspection.id],
-      });
       setClose();
       setDrawerClose();
     },

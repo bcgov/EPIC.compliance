@@ -79,9 +79,6 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["inspection-violation-tickets", inspectionData.id],
     });
-    queryClient.invalidateQueries({
-      queryKey: ["pending-items", inspectionData.id],
-    });
     notifyAndSubmit(data);
   };
 

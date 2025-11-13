@@ -76,9 +76,6 @@ const WarningLetterApprovalButtons = ({
       queryClient.invalidateQueries({
         queryKey: ["inspection-warning-letters", inspectionId],
       });
-      queryClient.invalidateQueries({
-        queryKey: ["pending-items", inspectionId],
-      });
       setClose();
       setDrawerClose();
     },

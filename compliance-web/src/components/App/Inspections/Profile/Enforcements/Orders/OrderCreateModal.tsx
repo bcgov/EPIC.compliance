@@ -114,9 +114,6 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
     queryClient.invalidateQueries({
       queryKey: ["inspection-orders", inspectionData.id],
     });
-    queryClient.invalidateQueries({
-      queryKey: ["pending-items", inspectionData.id],
-    });
     notifyAndSubmit(data);
   };
 

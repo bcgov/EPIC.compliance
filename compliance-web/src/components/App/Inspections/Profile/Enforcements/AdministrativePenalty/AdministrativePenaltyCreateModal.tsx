@@ -83,9 +83,6 @@ const AdministrativePenaltyCreateModal: FC<
     queryClient.invalidateQueries({
       queryKey: ["administrative-penalty-links"]
     });
-    queryClient.invalidateQueries({
-      queryKey: ["pending-items", inspectionData.id],
-    });
     notify.success(
       ENFORCEMENT_MESSAGES.ADMINISTRATIVE_PENALTY_CREATED(
         data.administrative_penalty_number || ""
