@@ -381,7 +381,7 @@ class InspectionService:
         # Check for pending items before closing inspection
         if status_enum == InspectionStatusEnum.CLOSED:
             pending_items = cls.get_pending_items(inspection_id)
-            _validate_inspection_can_be_closed(inspection_id, pending_items)
+            _validate_inspection_can_be_closed(pending_items)
 
         with session_scope() as session:
             InspectionModel.update_inspection(
@@ -527,7 +527,7 @@ class InspectionService:
             for mapping in enforcement_mappings:
                 enforcement_action = mapping.enforcement_action
                 enforcement_status = _check_enforcement_status(
-                    requirement.id, enforcement_action.id, enforcement_action.name
+                    requirement.id, enforcement_action.id
                 )
 
                 if enforcement_status is not None:
@@ -549,11 +549,10 @@ class InspectionService:
         return pending_items
 
 
-def _validate_inspection_can_be_closed(inspection_id: int, pending_items: list):
+def _validate_inspection_can_be_closed(pending_items: list):
     """Validate that an inspection can be closed by checking for pending items.
 
     Args:
-        inspection_id (int): The ID of the inspection to validate
         pending_items (list): The list of pending items
 
     Raises:
@@ -1388,7 +1387,7 @@ def _make_requirement_detail_object_optimized(
 
 
 def _check_enforcement_status(
-    requirement_id: int, enforcement_action_id: int, enforcement_name: str
+    requirement_id: int, enforcement_action_id: int
 ):
     """Check if an enforcement action exists and its status for a requirement."""
 
@@ -1404,9 +1403,8 @@ def _check_enforcement_status(
     check_function = enforcement_map.get(enforcement_action_id)
     if check_function:
         return check_function(requirement_id)
-    else:
-        # For enforcement actions we don't track separately (like TO_BE_DETERMINED, NOT_APPLICABLE, etc.)
-        return None
+    # For enforcement actions we don't track separately (like TO_BE_DETERMINED, NOT_APPLICABLE, etc.)
+    return None
 
 
 def _check_order_status(requirement_id: int):

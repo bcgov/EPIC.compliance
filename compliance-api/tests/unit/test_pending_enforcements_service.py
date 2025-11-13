@@ -12,31 +12,31 @@ class TestPendingEnforcementsService:
     """Test class for pending enforcements service functionality."""
 
     def test_schema_import(self):
-        """Test if we can import the PendingEnforcementSchema."""
+        """Test if we can import the PendingItemSchema."""
         try:
-            from compliance_api.schemas.inspection import PendingEnforcementSchema
-            print("✅ PendingEnforcementSchema import successful")
-            assert PendingEnforcementSchema is not None
+            from compliance_api.schemas.inspection import PendingItemSchema
+            print("✅ PendingItemSchema import successful")
+            assert PendingItemSchema is not None
         except ImportError as e:
-            pytest.fail(f"Failed to import PendingEnforcementSchema: {e}")
+            pytest.fail(f"Failed to import PendingItemSchema: {e}")
 
     def test_schema_functionality(self):
         """Test schema serialization functionality."""
         try:
-            from compliance_api.schemas.inspection import PendingEnforcementSchema
+            from compliance_api.schemas.inspection import PendingItemSchema
 
-            schema = PendingEnforcementSchema()
+            schema = PendingItemSchema()
             test_data = {
                 'requirement': {
                     'id': 1,
                     'summary': 'Test requirement'
                 },
-                'enforcement': {
+                'item': {
                     'id': 5,
                     'name': 'Order'
                 },
                 'is_created': False,
-                'enforcement_number': 'PROJ_001_O123'
+                'item_number': 'PROJ_001_O123'
             }
 
             result = schema.dump(test_data)
@@ -45,23 +45,23 @@ class TestPendingEnforcementsService:
 
             # Validate all fields are present in result
             assert 'requirement' in result
-            assert 'enforcement' in result
+            assert 'item' in result
             assert 'is_created' in result
-            assert 'enforcement_number' in result
+            assert 'item_number' in result
 
             # Validate nested object fields
             assert 'id' in result['requirement']
             assert 'summary' in result['requirement']
-            assert 'id' in result['enforcement']
-            assert 'name' in result['enforcement']
+            assert 'id' in result['item']
+            assert 'name' in result['item']
 
             # Validate field values
             assert result['requirement']['id'] == 1
             assert result['requirement']['summary'] == 'Test requirement'
-            assert result['enforcement']['id'] == 5
-            assert result['enforcement']['name'] == 'Order'
+            assert result['item']['id'] == 5
+            assert result['item']['name'] == 'Order'
             assert result['is_created'] is False
-            assert result['enforcement_number'] == 'PROJ_001_O123'
+            assert result['item_number'] == 'PROJ_001_O123'
 
         except (ImportError, AttributeError, AssertionError, KeyError) as e:
             pytest.fail(f"Schema functionality test failed: {e}")
@@ -69,7 +69,7 @@ class TestPendingEnforcementsService:
     def test_schema_export(self):
         """Test schema export in __init__.py."""
         try:
-            from compliance_api.schemas import PendingEnforcementSchema as ImportedSchema
+            from compliance_api.schemas import PendingItemSchema as ImportedSchema
             print("✅ Schema export in __init__.py successful")
             assert ImportedSchema is not None
         except ImportError as e:
@@ -81,12 +81,12 @@ class TestPendingEnforcementsService:
             from compliance_api.services.inspection import InspectionService
 
             # Check if the method exists
-            assert hasattr(InspectionService, 'get_pending_enforcements'), \
-                "InspectionService should have get_pending_enforcements method"
+            assert hasattr(InspectionService, 'get_pending_items'), \
+                "InspectionService should have get_pending_items method"
 
             # Check if it's callable
-            method = getattr(InspectionService, 'get_pending_enforcements')
-            assert callable(method), "get_pending_enforcements should be callable"
+            method = getattr(InspectionService, 'get_pending_items')
+            assert callable(method), "get_pending_items should be callable"
 
             print("✅ Service method exists and is callable")
 
@@ -96,7 +96,7 @@ class TestPendingEnforcementsService:
     def test_helper_methods_exist(self):
         """Test that helper methods exist."""
         try:
-            from compliance_api.services.inspection import InspectionService
+            from compliance_api.services import inspection as inspection_module
 
             helper_methods = [
                 '_check_enforcement_status',
@@ -105,20 +105,20 @@ class TestPendingEnforcementsService:
                 '_check_administrative_penalty_status',
                 '_check_violation_ticket_status',
                 '_check_charge_recommendation_status',
-                '_check_restorative_justice_status'
+                '_check_inspection_record_status',
             ]
 
             for method_name in helper_methods:
-                assert hasattr(InspectionService, method_name), \
-                    f"InspectionService should have {method_name} method"
+                assert hasattr(inspection_module, method_name), \
+                    f"inspection module should have {method_name} function"
 
-                method = getattr(InspectionService, method_name)
+                method = getattr(inspection_module, method_name)
                 assert callable(method), f"{method_name} should be callable"
 
             print("✅ All helper methods exist and are callable")
 
         except ImportError as e:
-            pytest.fail(f"Failed to import InspectionService: {e}")
+            pytest.fail(f"Failed to import inspection module: {e}")
 
 
 def test_all_imports():
@@ -128,22 +128,22 @@ def test_all_imports():
         print("Testing imports...")
 
         # Test schema import
-        from compliance_api.schemas.inspection import PendingEnforcementSchema
-        print("✅ PendingEnforcementSchema import successful")
+        from compliance_api.schemas.inspection import PendingItemSchema
+        print("✅ PendingItemSchema import successful")
 
         # Test schema functionality
-        schema = PendingEnforcementSchema()
+        schema = PendingItemSchema()
         test_data = {
             'requirement': {
                 'id': 1,
                 'summary': 'Test requirement'
             },
-            'enforcement': {
+            'item': {
                 'id': 5,
                 'name': 'Order'
             },
             'is_created': False,
-            'enforcement_number': 'PROJ_001_O123'
+            'item_number': 'PROJ_001_O123'
         }
 
         result = schema.dump(test_data)
@@ -151,7 +151,7 @@ def test_all_imports():
         print(f"   Result: {result}")
 
         # Test schema import in init - using ImportedSchema to avoid F401
-        from compliance_api.schemas import PendingEnforcementSchema as ImportedSchema
+        from compliance_api.schemas import PendingItemSchema as ImportedSchema
         assert ImportedSchema is not None
         print("✅ Schema export in __init__.py successful")
 

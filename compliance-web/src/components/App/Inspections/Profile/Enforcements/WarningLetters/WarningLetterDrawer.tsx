@@ -166,7 +166,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
   const onDeleteSuccess = useCallback(() => {
     onSubmit("Warning letter deleted successfully!", true);
     reset();
-  }, [onSubmit, reset, inspection.id]);
+  }, [onSubmit, reset]);
 
   const { mutate: deleteWarningLetter } =
     useDeleteWarningLetter(onDeleteSuccess);

@@ -149,8 +149,6 @@ const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requi
 
   const handleOnAddRelatedDocumentSubmit = (
     data: RequirementRelatedDocumentData,
-    requirementSourceId: string,
-    sectionNumber: string,
   ) => {
     setRequirementSourceFormData((prevData) => {
       const mapped = prevData.map((item) => {

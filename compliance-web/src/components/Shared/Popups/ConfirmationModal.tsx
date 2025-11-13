@@ -9,6 +9,7 @@ type ConfirmationModalProps = {
   formattedDescription?: ReactNode;
   confirmButtonText?: string;
   cancelButtonText?: string;
+  showActions?: boolean;
   onConfirm: () => void;
   onCancel?: () => void;
 };
@@ -19,6 +20,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   formattedDescription,
   confirmButtonText,
   cancelButtonText,
+  showActions = true,
   onConfirm,
   onCancel,
 }) => {
@@ -32,12 +34,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <DialogContentText>{description}</DialogContentText>
         )}
       </DialogContent>
-      <ModalActions
-        primaryActionButtonText={confirmButtonText}
-        secondaryActionButtonText={cancelButtonText}
-        onPrimaryAction={onConfirm}
-        onSecondaryAction={onCancel}
-      />
+      {showActions === true && (
+        <ModalActions
+          primaryActionButtonText={confirmButtonText}
+          secondaryActionButtonText={cancelButtonText}
+          onPrimaryAction={onConfirm}
+          onSecondaryAction={onCancel}
+        />
+      )}
     </>
   );
 };

@@ -178,13 +178,13 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
           if (checkPendingItemsMutation.isPending) {
             return; // Already checking
           }
-          
+
           setOpen({
             content: (
               <ConfirmationModal
                 title="Checking Pending Items..."
                 description="Please wait while we check for pending items..."
-                confirmButtonText="Please Wait"
+                showActions={false}
                 onConfirm={() => {}} // Disabled while loading
               />
             ),
