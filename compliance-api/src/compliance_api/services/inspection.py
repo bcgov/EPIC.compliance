@@ -32,16 +32,26 @@ from compliance_api.models import ViolationTicket as ViolationTicketModel
 from compliance_api.models import WarningLetter as WarningLetterModel
 from compliance_api.models import db
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
+from compliance_api.models.administrative_penalty import \
+    AdministrativePenaltyInspectionRequirementMap as AdministrativePenaltyInspectionRequirementMapModel
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
+from compliance_api.models.charge_recommendation import \
+    ChargeRecommendationInspectionRequirementMap as ChargeRecommendationInspectionRequirementMapModel
 from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
+from compliance_api.models.order import OrderStatusEnum
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.staff_user import StaffUser
+from compliance_api.models.violation_ticket import \
+    ViolationTicketInspectionRequirementMap as ViolationTicketInspectionRequirementMapModel
+from compliance_api.models.warning_letter import \
+    WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
+from compliance_api.models.warning_letter import WarningLetterStatusEnum
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import UNAPPROVED_PROJECT_CODE, UNAPPROVED_PROJECT_NAME
@@ -367,6 +377,12 @@ class InspectionService:
             )
         if status_enum not in possible_statuses[inspection.inspection_status]:
             raise UnprocessableEntityError("Invalid status change")
+
+        # Check for pending items before closing inspection
+        if status_enum == InspectionStatusEnum.CLOSED:
+            pending_items = cls.get_pending_items(inspection_id)
+            _validate_inspection_can_be_closed(pending_items)
+
         with session_scope() as session:
             InspectionModel.update_inspection(
                 inspection_id,
@@ -482,6 +498,80 @@ class InspectionService:
         output.seek(0)
 
         return output
+
+    @classmethod
+    def get_pending_items(cls, inspection_id: int):
+        """Get pending items for an inspection.
+
+        Returns a list of items (enforcement actions, inspection records) that are mapped to requirements
+        or the inspection but not yet created or not in proper status.
+        """
+        # Get all requirements for this inspection
+        requirements = InspectionRequirementModel.get_by_inspection_id(inspection_id)
+
+        pending_items = []
+
+        # Check if inspection record is pending
+        pending_inspection_record = _get_pending_inspection_record(inspection_id)
+        if pending_inspection_record is not None:
+            pending_items.append(pending_inspection_record)
+
+        for requirement in requirements:
+            # Get enforcement mappings for this requirement
+            enforcement_mappings = (
+                InspectionReqEnforcementMapModel.get_all_by_requirement_id(
+                    requirement.id
+                )
+            )
+
+            for mapping in enforcement_mappings:
+                enforcement_action = mapping.enforcement_action
+                enforcement_status = _check_enforcement_status(
+                    requirement.id, enforcement_action.id
+                )
+
+                if enforcement_status is not None:
+                    pending_items.append(
+                        {
+                            "requirement": {
+                                "id": requirement.id,
+                                "summary": requirement.summary,
+                            },
+                            "item": {
+                                "id": enforcement_action.id,
+                                "name": enforcement_action.name,
+                            },
+                            "is_created": enforcement_status["is_created"],
+                            "item_number": enforcement_status.get("item_number"),
+                        }
+                    )
+
+        return pending_items
+
+
+def _validate_inspection_can_be_closed(pending_items: list):
+    """Validate that an inspection can be closed by checking for pending items.
+
+    Args:
+        pending_items (list): The list of pending items
+
+    Raises:
+        UnprocessableEntityError: If there are pending items that prevent closure
+    """
+    if pending_items and len(pending_items) > 0:
+        # Filter items that are not created or not issued
+        blocking_items = []
+        for item in pending_items:
+            if not item.get("is_created", True):
+                blocking_items.append(f"{item['item']['name']} is not created")
+            elif item.get("is_issued") is not None and not item.get("is_issued"):
+                blocking_items.append(f"{item['item']['name']} is not issued")
+
+        if blocking_items:
+            blocking_message = ". ".join(blocking_items)
+            raise UnprocessableEntityError(
+                f"Cannot close inspection. The following items are incomplete: {blocking_message}"
+            )
 
 
 def _handle_close_as_note(inspection, session):
@@ -1294,3 +1384,135 @@ def _make_requirement_detail_object_optimized(
                 )
             requirement_details.append(item)
     return requirement_details
+
+
+def _check_enforcement_status(
+    requirement_id: int, enforcement_action_id: int
+):
+    """Check if an enforcement action exists and its status for a requirement."""
+
+    # Map enforcement action IDs to their enum values
+    enforcement_map = {
+        EnforcementActionOptionEnum.ORDER.value: _check_order_status,
+        EnforcementActionOptionEnum.WARNING_LETTER.value: _check_warning_letter_status,
+        EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: _check_administrative_penalty_status,
+        EnforcementActionOptionEnum.VIOLATION_TICKET.value: _check_violation_ticket_status,
+        EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value: _check_charge_recommendation_status,
+    }
+
+    check_function = enforcement_map.get(enforcement_action_id)
+    if check_function:
+        return check_function(requirement_id)
+    # For enforcement actions we don't track separately (like TO_BE_DETERMINED, NOT_APPLICABLE, etc.)
+    return None
+
+
+def _check_order_status(requirement_id: int):
+    """Check order status for a requirement."""
+    order_map = OrderInspectionRequirementMapModel.get_by_requirement_id(requirement_id)
+    if not order_map:
+        return {"is_created": False, "item_number": None}
+
+    order = order_map.order if order_map.order else None
+    item_number = order.order_number
+    is_issued = False
+    if order.order_status == OrderStatusEnum.OPEN:
+        is_issued = True
+    return {"is_created": True, "item_number": item_number, "is_issued": is_issued}
+
+
+def _check_warning_letter_status(requirement_id: int):
+    """Check warning letter status for a requirement."""
+    warning_letter_map = (
+        WarningLetterInspectionRequirementMapModel.get_by_requirement_id(requirement_id)
+    )
+    if not warning_letter_map:
+        return {"is_created": False, "item_number": None}
+
+    # Get the warning letter
+    warning_letter = (
+        warning_letter_map.warning_letter if warning_letter_map.warning_letter else None
+    )
+    item_number = warning_letter.warning_letter_number
+    is_issued = False
+    if warning_letter.status == WarningLetterStatusEnum.ISSUED:
+        is_issued = True
+    return {"is_created": True, "item_number": item_number, "is_issued": is_issued}
+
+
+def _check_administrative_penalty_status(requirement_id: int):
+    """Check administrative penalty status for a requirement."""
+    # Query for mapping using filter
+    ap_map = AdministrativePenaltyInspectionRequirementMapModel.query.filter_by(
+        inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
+    ).first()
+
+    if not ap_map:
+        return {"is_created": False, "item_number": None}
+    return None
+
+
+def _check_violation_ticket_status(requirement_id: int):
+    """Check violation ticket status for a requirement."""
+    # Query for mapping using filter
+    vt_map = ViolationTicketInspectionRequirementMapModel.query.filter_by(
+        inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
+    ).first()
+
+    if not vt_map:
+        return {"is_created": False, "item_number": None}
+    return None
+
+
+def _check_charge_recommendation_status(requirement_id: int):
+    """Check charge recommendation status for a requirement."""
+    # Query for mapping using filter
+    cr_map = ChargeRecommendationInspectionRequirementMapModel.query.filter_by(
+        inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
+    ).first()
+
+    if not cr_map:
+        return {"is_created": False, "item_number": None}
+    return None
+
+
+def _check_inspection_record_status(inspection_id: int):
+    """Check inspection record status for an inspection."""
+    inspection_record = InspectionRecord.get_by_inspection_id(inspection_id)
+
+    if not inspection_record:
+        return {
+            "is_created": False,
+            "is_issued": False,
+            "ir_number": None,
+            "ir_id": None,
+        }
+
+    # Check if inspection record is issued (IRProgressEnum.ISSUED)
+    is_issued = inspection_record.ir_progress == IRProgressEnum.ISSUED
+
+    return {
+        "is_created": True,
+        "is_issued": is_issued,
+        "ir_number": getattr(inspection_record.inspection, "ir_number", None),
+        "ir_id": inspection_record.id,
+    }
+
+
+def _get_pending_inspection_record(inspection_id: int):
+    """Get pending inspection record if not issued."""
+    inspection_record_status = _check_inspection_record_status(inspection_id)
+
+    if inspection_record_status is None or inspection_record_status["is_issued"]:
+        return None
+
+    return {
+        "requirement": None,  # Inspection record applies to the whole inspection
+        "item": {
+            "id": inspection_record_status.get("ir_id"),
+            "name": "Inspection Record",
+        },
+        "is_created": inspection_record_status["is_created"],
+        "is_issued": inspection_record_status["is_issued"],
+        "item_number": inspection_record_status.get("ir_number"),
+    }

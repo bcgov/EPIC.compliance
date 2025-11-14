@@ -33,7 +33,7 @@ from .continuation_report import (
 from .department_detail import DepartmentDetailsSchema
 from .inspection import (
     InspectionAttendanceSchema, InspectionCreateSchema, InspectionFilterSchema, InspectionMoreDetailsSchema,
-    InspectionOfficerSchema, InspectionSchema, InspectionStatusSchema, InspectionUpdateSchema)
+    InspectionOfficerSchema, InspectionSchema, InspectionStatusSchema, InspectionUpdateSchema, PendingItemSchema)
 from .inspection_approval import (
     CreateInspectionRecordApprovalSchema, InspectionRecordApprovalSchema, UpdateInspectionRecordApprovalSchema,
     UpdateInspectionRecordApprovalStatusSchema)

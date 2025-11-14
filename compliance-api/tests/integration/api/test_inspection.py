@@ -439,11 +439,7 @@ def test_inspection_close(
     result = client.patch(
         url, data=json.dumps({"status": "CLOSED"}), headers=auth_header_super_user
     )
-    assert result.status_code == HTTPStatus.NO_CONTENT
-    result = client.patch(
-        url, data=json.dumps({"status": "OPEN"}), headers=auth_header_super_user
-    )
-    assert result.status_code == HTTPStatus.NO_CONTENT
+    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
     result = client.patch(
         url, data=json.dumps({"status": "CANCELED"}), headers=auth_header_super_user
     )
