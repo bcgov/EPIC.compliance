@@ -16,6 +16,7 @@ export interface ChargeRecommendation {
   sentence_date?: string;
   sentence_description?: string;
   is_active: boolean;
+  is_closed: boolean;
 }
 
 interface ChargeRecommendationRequirementMap {

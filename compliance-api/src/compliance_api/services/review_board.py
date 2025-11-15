@@ -2,7 +2,7 @@
 
 from typing import List
 
-from sqlalchemy import func
+from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased, joinedload
 
 from compliance_api.models.administrative_penalty import AdministrativePenalty
@@ -221,8 +221,7 @@ class ReviewBoardService:
                 AdministrativePenalty.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
                 Inspection.is_deleted.is_(False),
-                # Use centralized open AP filter condition
-                AdministrativePenalty.get_open_ap_filter_condition(),
+                not_(AdministrativePenalty.get_closed_conditions()),
             )
             .order_by(AdministrativePenalty.created_date.desc())
             .all()

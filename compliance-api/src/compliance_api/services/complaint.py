@@ -135,11 +135,11 @@ class ComplaintService:
     @classmethod
     def delete_by_case_file(cls, case_file_id, ho_session=None):
         """Delete complaint by case file id."""
-        with session_scope() as session:
-            ComplaintModel.delete_by_case_file(case_file_id, ho_session or session)
-            ComplaintSourceContactModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
+
+        def _execute_deletion(session):
+            """Execute the actual deletion logic."""
+            ComplaintModel.delete_by_case_file(case_file_id, session)
+            ComplaintSourceContactModel.delete_by_case_file(case_file_id, session)
             # Delete order details for complaints in this case file
             complaints = ComplaintModel.get_by_params({"case_file_id": case_file_id})
             for complaint in complaints:
@@ -147,9 +147,15 @@ class ComplaintService:
                     complaint.requirement_source_id
                     == ComplaintRequirementSourceEnum.ORDER.value
                 ):
-                    ComplaintReqOrderDetailModel.delete_details(
-                        complaint.id, ho_session or session
-                    )
+                    ComplaintReqOrderDetailModel.delete_details(complaint.id, session)
+
+        if ho_session:
+            # Use the provided session from outer transaction
+            _execute_deletion(ho_session)
+        else:
+            # Create own session scope when no session is provided
+            with session_scope() as session:
+                _execute_deletion(session)
 
     @classmethod
     def delete_complaint(cls, complaint_id):

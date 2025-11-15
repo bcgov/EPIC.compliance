@@ -190,7 +190,10 @@ class AdministrativePenaltyService:
             or administrative_penalty.inspection_id
         )
         ServiceUtils.access_check_update_for_inspection(inspection)
-        ServiceUtils.inspection_status_check(inspection)
+        # If administrative penalty is closed, then check the inspection status
+        # No more modification possible once the AP and IR is closed
+        if administrative_penalty.is_closed:
+            ServiceUtils.inspection_status_check(inspection)
 
         requirement_ids = update_data.get("inspection_requirement_ids", [])
         if requirement_ids:
@@ -260,7 +263,10 @@ class AdministrativePenaltyService:
         ServiceUtils.access_check_update_for_inspection(
             administrative_penalty.inspection
         )
-        ServiceUtils.inspection_status_check(administrative_penalty.inspection)
+        # If administrative penalty is closed, then check the inspection status
+        # No more modification possible once the AP and IR is closed
+        if administrative_penalty.is_closed:
+            ServiceUtils.inspection_status_check(administrative_penalty.inspection)
 
         # Check if the inspection belongs to the same inspection as the AP
         ap_inspection_id = administrative_penalty.inspection_id
@@ -354,8 +360,7 @@ class AdministrativePenaltyService:
                 "Administrative Penalty already exists for these requirements."
             )
         existing_requirements = (
-            AdministrativePenaltyInspectionRequirementMap
-            .get_by_inspection_and_administrative_penalty_id(
+            AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
                 inspection_id, administrative_penalty_id
             )
         )
@@ -390,8 +395,7 @@ class AdministrativePenaltyService:
                 req.id for req in existing_inspection_requirements
             }
             existing_requirements = (
-                AdministrativePenaltyInspectionRequirementMap
-                .get_by_inspection_and_administrative_penalty_id(
+                AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
                     inspection_id, administrative_penalty_id
                 )
             )

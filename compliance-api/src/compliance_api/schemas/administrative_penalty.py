@@ -129,6 +129,7 @@ class AdministrativePenaltySchema(AutoSchemaBase):  # pylint: disable=too-many-a
         many=True,
         only=("id", "inspection_requirement_id", "inspection_requirement"),
     )
+    is_closed = fields.Bool()
 
     @post_dump
     def transform_data(

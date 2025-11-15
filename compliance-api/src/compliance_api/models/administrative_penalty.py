@@ -210,26 +210,42 @@ class AdministrativePenalty(BaseModelVersioned):
         ),
     )
 
-    @classmethod
-    def get_open_ap_filter_condition(cls):
+    @property
+    def is_closed(self):
         """
-        Get the filter condition for open (non-closed) administrative penalties.
+        Check if the administrative penalty is in a closed state.
 
-        Excludes APs that are considered closed:
+        An administrative penalty is considered closed if:
+        - Referral status is CEB_NOT_PROCEEDING
+        - Referral status is REFERRED_TO_DM and a decision has been made
+
+        Returns:
+            bool: True if the administrative penalty is closed, False otherwise
+        """
+        return self.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING or (
+            self.referral_status == ReferralStatusEnum.REFERRED_TO_DM
+            and self.decision is not None
+        )
+
+    @classmethod
+    def get_closed_conditions(cls):
+        """Get the SQLAlchemy conditions for closed administrative penalties.
+
+        Used for database queries to filter closed administrative penalties.
+
+        An administrative penalty is considered closed if:
         - CEB_NOT_PROCEEDING status
         - REFERRED_TO_DM status with a decision made
 
         Returns:
-            SQLAlchemy filter condition for open APs
+            sqlalchemy.sql.elements.BooleanClauseList: OR conditions for closed state
         """
-        return not_(
-            or_(
-                cls.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING,
-                and_(
-                    cls.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
-                    cls.decision.isnot(None),
-                ),
-            )
+        return or_(
+            cls.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING,
+            and_(
+                cls.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
+                cls.decision.isnot(None),
+            ),
         )
 
     @classmethod
@@ -361,6 +377,6 @@ class AdministrativePenalty(BaseModelVersioned):
 
         # Add open AP filter condition if requested
         if open_aps_only:
-            filters.append(cls.get_open_ap_filter_condition())
+            filters.append(not_(cls.get_closed_conditions()))
 
         return query.filter(*filters).order_by(cls.created_date.desc()).all()

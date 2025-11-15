@@ -60,7 +60,7 @@ class UnapprovedProject(BaseModelVersioned):
         """Delete unapproved project details by case_file_id."""
         projects = cls.query.filter(
             UnapprovedProject.case_file_id == case_file_id,
-            UnapprovedProject.is_deleted is False,
+            UnapprovedProject.is_deleted.is_(False),
         ).all()
         for project in projects:
             project.update(DELETE_DIC_PARAMS, commit=False)

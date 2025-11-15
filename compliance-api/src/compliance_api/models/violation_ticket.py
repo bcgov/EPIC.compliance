@@ -182,6 +182,53 @@ class ViolationTicket(BaseModelVersioned):
         ),
     )
 
+    @property
+    def is_closed(self):
+        """
+        Check if the violation ticket is in a closed state.
+
+        A violation ticket is considered closed if its status is:
+        - PAID: Ticket has been paid
+        - DISPUTED: Ticket is under dispute
+        - DEEMED_GUILTY: Ticket has been deemed guilty
+
+        Returns:
+            bool: True if the violation ticket is closed, False otherwise
+        """
+        closed_statuses = [
+            ViolationTicketStatusEnum.PAID,
+            ViolationTicketStatusEnum.DISPUTED,
+            ViolationTicketStatusEnum.DEEMED_GUILTY,
+        ]
+        return self.status in closed_statuses
+
+    @classmethod
+    def get_closed_statuses(cls):
+        """
+        Get list of violation ticket statuses that are considered closed.
+
+        Returns:
+            list: List of ViolationTicketStatusEnum values for closed statuses
+        """
+        return [
+            ViolationTicketStatusEnum.PAID,
+            ViolationTicketStatusEnum.DISPUTED,
+            ViolationTicketStatusEnum.DEEMED_GUILTY,
+        ]
+
+    @classmethod
+    def get_non_deletable_statuses(cls):
+        """
+        Get list of violation ticket statuses where deletion is not allowed.
+
+        Returns:
+            list: List of ViolationTicketStatusEnum values for non-deletable statuses
+        """
+        return [
+            ViolationTicketStatusEnum.PAID,
+            ViolationTicketStatusEnum.DISPUTED,
+        ]
+
     @classmethod
     @with_session
     def create(cls, violation_ticket_data: dict, session=None):
@@ -274,4 +321,5 @@ class ViolationTicket(BaseModelVersioned):
             "inspection_id": self.inspection_id,
             "created_date": self.created_date,
             "updated_date": self.updated_date,
+            "is_closed": self.is_closed,
         }

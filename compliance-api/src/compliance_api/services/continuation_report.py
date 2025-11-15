@@ -62,13 +62,19 @@ class ContinuationReportService:
     @classmethod
     def delete_by_case_file(cls, case_file_id, ho_session=None):
         """Delete continuation report entries by case file id."""
-        with session_scope() as session:
-            ContinuationReportModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
-            ContinuationReportKeyModel.delete_keys_by_case_file(
-                case_file_id, ho_session or session
-            )
+
+        def _execute_deletion(session):
+            """Execute the actual deletion logic."""
+            ContinuationReportModel.delete_by_case_file(case_file_id, session)
+            ContinuationReportKeyModel.delete_keys_by_case_file(case_file_id, session)
+
+        if ho_session:
+            # Use the provided session from outer transaction
+            _execute_deletion(ho_session)
+        else:
+            # Create own session scope when no session is provided
+            with session_scope() as session:
+                _execute_deletion(session)
 
     @classmethod
     def delete_by_context(cls, context_id, context_type, ho_session=None):

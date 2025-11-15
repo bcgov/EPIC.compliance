@@ -72,7 +72,7 @@ class InspectionType(BaseModelVersioned):
             cls.query.join(InspectionModel)
             .filter(
                 InspectionModel.case_file_id == case_file_id,
-                InspectionType.is_deleted is False,
+                InspectionType.is_deleted.is_(False),
             )
             .all()
         )

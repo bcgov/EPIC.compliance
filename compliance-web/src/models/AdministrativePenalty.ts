@@ -13,6 +13,7 @@ export interface AdministrativePenalty {
   referral_status: Option;
   decision?: Option;
   penalty_amount?: string;
+  is_closed: boolean;
 }
 
 

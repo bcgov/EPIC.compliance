@@ -113,7 +113,10 @@ class ViolationTicketService:
 
         # Perform access and status checks
         ServiceUtils.access_check_update_for_inspection(violation_ticket.inspection)
-        ServiceUtils.inspection_status_check(violation_ticket.inspection)
+        # If violation ticket is closed, then check the inspection status
+        # No more modification possible once the VT and IR is closed
+        if violation_ticket.is_closed:
+            ServiceUtils.inspection_status_check(violation_ticket.inspection)
 
         # Check if violation ticket can be updated based on status
         if violation_ticket.status == ViolationTicketStatusEnum.PAID:
@@ -181,10 +184,7 @@ class ViolationTicketService:
         ServiceUtils.inspection_status_check(violation_ticket.inspection)
 
         # Check if violation ticket can be deleted based on status
-        if violation_ticket.status in [
-            ViolationTicketStatusEnum.PAID,
-            ViolationTicketStatusEnum.DISPUTED,
-        ]:
+        if violation_ticket.status in ViolationTicketModel.get_non_deletable_statuses():
             raise UnprocessableEntityError(
                 f"Violation ticket cannot be deleted as it is already {violation_ticket.status.value}"
             )

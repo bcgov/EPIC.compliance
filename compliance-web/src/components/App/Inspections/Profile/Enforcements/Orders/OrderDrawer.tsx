@@ -248,14 +248,14 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             Reset Template
           </Button>
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-            {!isReadonlyMode && (
-              <OrderApprovalButtons
-                inspectionOrder={enforcementOrder}
-                inspection={inspection}
-                caseFileId={inspection.case_file_id ?? 0}
-                openEnforcementOrderDrawer={openEnforcementOrderDrawer}
-              />
-            )}
+            
+            <OrderApprovalButtons
+              inspectionOrder={enforcementOrder}
+              inspection={inspection}
+              caseFileId={inspection.case_file_id ?? 0}
+              openEnforcementOrderDrawer={openEnforcementOrderDrawer}
+            />
+            
             <EnforcementDownloadPDFButton
               enforcementId={enforcementOrder.id || 0}
               fileNumber={enforcementOrder.order_number || ""}

@@ -157,6 +157,7 @@ class ChargeRecommendationSchema(AutoSchemaBase):  # pylint: disable=too-many-an
         many=True,
         only=("id", "sentence_type_option_id", "sentence_type_option"),
     )
+    is_closed = fields.Bool()
 
     @post_dump(pass_many=True)
     def transform_data(self, data, many, **kwargs):  # pylint: disable=unused-argument
