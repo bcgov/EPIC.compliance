@@ -26,7 +26,6 @@ from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.inspection import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
-from compliance_api.models.order import OrderStatusEnum
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.restorative_justice import RestorativeJusticeStatusEnum
@@ -225,10 +224,9 @@ class CaseFileService:
         if ho_session:
             # Use the provided session from outer transaction
             return _execute_update(ho_session)
-        else:
-            # Create own session scope when no session is provided
-            with session_scope() as session:
-                return _execute_update(session)
+        # Create own session scope when no session is provided
+        with session_scope() as session:
+            return _execute_update(session)
 
     @classmethod
     def get_by_file_number(cls, case_file_number: int):
@@ -927,13 +925,7 @@ def _build_enforcement_query(inspection_ids: list):
             OrderModel,
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
-                OrderModel.order_status.notin_(
-                    [
-                        OrderStatusEnum.OPEN,
-                        OrderStatusEnum.CLOSED,
-                        OrderStatusEnum.RESCINDED,
-                    ]
-                ),
+                OrderModel.order_status.notin_(OrderModel.get_closed_statuses()),
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),
             ),

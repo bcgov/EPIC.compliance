@@ -4,7 +4,7 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, and_
+from sqlalchemy import ForeignKey, Index, Integer, String, and_, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -278,8 +278,6 @@ class ChargeRecommendation(BaseModelVersioned):
         Returns:
             sqlalchemy.sql.elements.BooleanClauseList: OR conditions for closed state
         """
-        from sqlalchemy import and_, or_
-
         return or_(
             cls.status == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
             and_(
