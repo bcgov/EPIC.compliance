@@ -615,6 +615,7 @@ def _create_model_aliases():
         # Order models
         "order_app": aliased(OrderApprovalModel),
         "order": aliased(OrderModel),
+        "req_source_order": aliased(OrderModel),
         # Warning Letter models
         "warning_app": aliased(WarningLetterApprovalModel),
         "warning_letter": aliased(WarningLetterModel),
@@ -736,6 +737,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["req_source"].condition_number.label("condition_number"),
             models["req_source"].clause_number.label("clause_number"),
             models["order"].order_number.label("order_number"),
+            models["req_source_order"].order_number.label("req_order_number"),
             models["warning_letter"].warning_letter_number.label(
                 "warning_letter_number"
             ),
@@ -792,6 +794,14 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["req_source_option"],
             models["req_source"].requirement_source_id
             == models["req_source_option"].id,
+        )
+        .outerjoin(
+            models["req_source_order"],
+            and_(
+                models["req_source"].order_id == models["req_source_order"].id,
+                models["req_source_order"].is_deleted.is_(False),
+                models["req_source_order"].is_active.is_(True),
+            ),
         )
         .outerjoin(
             subqueries["requirement_order"],
@@ -1133,7 +1143,19 @@ def _apply_approval_and_source_filters(query, args, **kwargs):
                 kwargs.get("req_source").condition_number.in_(
                     args["req_src_num"].split(",")
                 ),
-                kwargs.get("order").order_number.in_(args["req_src_num"].split(",")),
+                kwargs.get("req_source").order.has(
+                    OrderModel.order_number.in_(args["req_src_num"].split(","))
+                ),
+            )
+        )
+
+    # Enforcement number filter
+    if args.get("enf_number"):
+        enf_numbers = args["enf_number"].split(",")
+        query = query.filter(
+            or_(
+                kwargs.get("order").order_number.in_(enf_numbers),
+                kwargs.get("warning_letter").warning_letter_number.in_(enf_numbers),
             )
         )
 
@@ -1217,6 +1239,7 @@ def _apply_pagination(query, args, **kwargs):
         "req_source_option": kwargs.get("req_source_option"),
         "req_source": kwargs.get("req_source"),
         "order": kwargs.get("order"),
+        "req_source_order": kwargs.get("req_source_order"),
         "warning_letter": kwargs.get("warning_letter"),
         "violation_ticket": kwargs.get("violation_ticket"),
         "admin_penalty": kwargs.get("admin_penalty"),
@@ -1317,6 +1340,7 @@ def _apply_pagination(query, args, **kwargs):
         reference_models["req_source"].condition_number.label("condition_number"),
         reference_models["req_source"].clause_number.label("clause_number"),
         reference_models["order"].order_number.label("order_number"),
+        reference_models["req_source_order"].order_number.label("req_order_number"),
         reference_models["warning_letter"].warning_letter_number.label(
             "warning_letter_number"
         ),
@@ -1446,8 +1470,9 @@ def _apply_requirement_source_number_sort(query, subq, sort_order):
         null_if_empty(subq.c.section_number),
         null_if_empty(subq.c.clause_number),
         null_if_empty(subq.c.condition_number),
-        null_if_empty(subq.c.order_number),
-        null_if_empty(subq.c.warning_letter_number),
+        null_if_empty(subq.c.req_order_number),
+
+        ''  # Provide empty string as final fallback
     ).label("req_src_num_sort")
     query = query.add_columns(req_src_num_expr)
     order_key = func.natural_sort_key(req_src_num_expr)
