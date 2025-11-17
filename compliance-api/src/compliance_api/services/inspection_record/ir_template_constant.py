@@ -19,7 +19,11 @@ INSPECTION_SCOPE = """<p class="editor-paragraph" dir="ltr">
         <span>{{ req }}.</span>
     </li>
     {% endfor %}
-</ol>"""
+</ol>
+<p class="editor-paragraph">
+    <br>
+</p>
+"""
 
 FINDING_STATEMENT = """<p class="editor-paragraph" dir="ltr">
     <span>Additional detail regarding these findings may be found in the sections below.</span>
@@ -54,6 +58,9 @@ PRELIMINARY_REVIEW_DETAILS = """<div>
     <p class="editor-paragraph" dir="ltr"><span>OR</span></p>
     <p class="editor-paragraph" dir="ltr"><span>No comments were received from the {{ proponent_label }} prior to
             finalizing the record.</span></p>
+    <p class="editor-paragraph">
+        <br>
+    </p>
 </div>
 """
 
