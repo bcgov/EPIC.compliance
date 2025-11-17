@@ -7,6 +7,9 @@ INSPECTION_SCOPE = """<p class="editor-paragraph" dir="ltr">
     <span>The inspection included a debrief</span>
     <span> of observations with Project staff on {{ debrief_date }}.</span>
 </p>
+<p class="editor-paragraph">
+    <br>
+</p>
 <p class="editor-paragraph" dir="ltr">
     <span>The following requirements were inspected against:</span>
 </p>
