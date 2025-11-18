@@ -5,7 +5,6 @@ import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import { ViolationTicket } from "@/models/ViolationTicket";
 import { RestorativeJustice } from "@/models/RestorativeJustice";
 import {
-  APPROVAL_STATUS,
   OrderProgressEnum,
   OrderStatusEnum,
   VARIANT_COLORS,
@@ -55,9 +54,6 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
         enforcementActionDetails?.progress || order?.order_progress;
       const orderStatus =
         enforcementActionDetails?.status || order?.order_status;
-      const orderApprovals =
-        enforcementActionDetails?.approval_status ||
-        order?.order_approvals?.[0]?.approval_status;
       status = {
         name: orderProgress?.name || "",
       };
@@ -75,19 +71,10 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
           status.name = orderStatus?.name || "";
           status.color = "error";
         }
-      } else if (
-        orderProgress?.id === OrderProgressEnum.DRAFTING &&
-        orderApprovals?.id === APPROVAL_STATUS.NOT_APPROVED
-      ) {
-        status.name = "Not Approved";
-        status.color = "error";
       }
     } else if (enforcementActionType === EnforcementActionEnum.WARNING_LETTER) {
       const warningLetterProgress =
         enforcementActionDetails?.progress || warningLetter?.progress;
-      const warningLetterApprovals =
-        enforcementActionDetails?.approval_status ||
-        warningLetter?.warning_letter_approvals?.[0]?.approval_status;
       status = {
         name: warningLetterProgress?.name || "",
       };
@@ -101,12 +88,6 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
         warningLetterProgress?.id === WarningLetterProgressEnum.ISSUED
       ) {
         status.color = "success";
-      } else if (
-        warningLetterProgress?.id === WarningLetterProgressEnum.DRAFTING &&
-        warningLetterApprovals?.id === APPROVAL_STATUS.NOT_APPROVED
-      ) {
-        status.name = "Not Approved";
-        status.color = "error";
       }
     } else if (
       enforcementActionType === EnforcementActionEnum.AP_RECOMMENDATION
@@ -195,14 +176,17 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
     restorativeJustice,
   ]);
 
-  return flagStatus.name ? (
+  // Fallback to display raw status if component logic fails
+  const displayName = flagStatus.name || "Unknown Status";
+  
+  return (
     <Chip
-      label={flagStatus.name}
-      color={flagStatus.color}
+      label={displayName}
+      color={flagStatus.color || "default"}
       size="small"
       variant="outlined"
     />
-  ) : null;
+  );
 };
 
 export default EnforcementStatusFlag;

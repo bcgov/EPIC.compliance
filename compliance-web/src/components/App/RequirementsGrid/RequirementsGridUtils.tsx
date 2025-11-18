@@ -186,13 +186,12 @@ export const useRequirementsGridColumns = (
     },
     {
       accessorKey: "enf_stats",
-      header: "Enf. Status",
+      header: "Enf. Status", 
       Cell: ({ row }) => {
         const enforcementStatusFlagObj: InspectionMoreDetailsEnforcementAction =
           {
             id: row.original.enforcement_action.id,
             name: row.original.enforcement_action.name,
-            approval_status: row.original.approval_status,
             progress: row.original.progress,
             status: row.original.status,
           };

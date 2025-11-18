@@ -7,7 +7,6 @@ import { IRType } from "./IRType";
 import { Project } from "./Project";
 import { ProjectStatus } from "./ProjectStatus";
 import { StaffUser } from "./Staff";
-import { ApprovalStatus } from "./ApprovalStatus";
 import { IRProgress } from "./IRProgress";
 import { BaseTableQueryParams } from "./BaseTableQueryParams";
 import { Agency } from "./Agency";
@@ -48,9 +47,6 @@ export interface Inspection {
   subtopic?: string;
   source?: string;
   enforcement?: string;
-  approval_status?: ApprovalStatus;
-  approved_by_id?: number;
-  approved_by?: StaffUser;
   ir_progress?: IRProgress;
   is_history?: boolean;
 }
@@ -108,7 +104,6 @@ export interface InspectionMoreDetailsEnforcementAction {
   id: string;
   name: string;
   number?: string;
-  approval_status?: ApprovalStatus;
   progress?: Option;
   status?: Option;
 }
