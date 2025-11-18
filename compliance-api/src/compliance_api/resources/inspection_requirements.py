@@ -106,11 +106,6 @@ class InspectionRequirements(Resource):
                 "type": "string",
                 "required": False,
             },
-            "reviewer_ids": {
-                "description": "The comma separated list of reviewer ids of the inspection requirement",
-                "type": "string",
-                "required": False,
-            },
             "sort_by": {
                 "description": "The sort by field of the inspection requirement",
                 "type": "string",

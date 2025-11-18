@@ -43,8 +43,6 @@ from compliance_api.models.inspection_record import InspectionRecord as Inspecti
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
-from compliance_api.models.order_approval import OrderApproval as OrderApprovalModel
-from compliance_api.models.order_approval import OrderApprovalStatusEnum
 from compliance_api.models.requirement_source import RequirementSource as RequirementSourceOptionModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.restorative_justice import \
@@ -59,8 +57,6 @@ from compliance_api.models.violation_ticket import ViolationTicketStatusEnum
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
 from compliance_api.models.warning_letter import WarningLetterStatusEnum
-from compliance_api.models.warning_letter_approval import WarningLetterApproval as WarningLetterApprovalModel
-from compliance_api.models.warning_letter_approval import WarningLetterApprovalStatusEnum
 from compliance_api.schemas.inspection_requirement_grid import InspectionRequirementGridItemSchema
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.document_service.doc_service_enum import ActionOnFileEnum
@@ -427,13 +423,13 @@ def _get_excel_columns_and_headers(data_frame):
         ("summary", "Summary"),
         ("compliance_finding.name", "Compliance Finding"),
         ("enforcement_action.name", "Enforcement Action"),
-        ("approval_status.name", "Approval Status"),
+        ("enforcement_number", "Enforcement Document #"),
+        ("status.name", "Enforcement Status"),
         ("requirement_number", "Condition #"),
         ("requirement_source.name", "Requirement Source"),
         ("ir_number", "IR Number"),
         ("date_issued", "Date Issued"),
         ("primary_officer.name", "Primary Officer"),
-        ("approved_by.name", "Approved By"),
         ("project.name", "Project"),
         ("inspection_status.name", "Inspection Status"),
     ]
@@ -611,13 +607,10 @@ def _create_model_aliases():
         "req_source": aliased(InspectionReqSourceDetailModel),
         "enf_action": aliased(EnforcementActionOptionModel),
         "staff": aliased(StaffUserModel),
-        "approved_by_staff": aliased(StaffUserModel),
         # Order models
-        "order_app": aliased(OrderApprovalModel),
         "order": aliased(OrderModel),
         "req_source_order": aliased(OrderModel),
         # Warning Letter models
-        "warning_app": aliased(WarningLetterApprovalModel),
         "warning_letter": aliased(WarningLetterModel),
         # Violation Ticket models
         "violation_ticket": aliased(ViolationTicketModel),
@@ -712,24 +705,6 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
                 ),
                 else_=None,  # Other enforcement actions don't have progress
             ).label("progress"),
-            # Approval status fields (only for Order and Warning Letter)
-            case(
-                (
-                    models["enf_map"].enforcement_action_id
-                    == EnforcementActionOptionEnum.ORDER.value,
-                    cast(models["order_app"].approval_status, String),
-                ),
-                (
-                    models["enf_map"].enforcement_action_id
-                    == EnforcementActionOptionEnum.WARNING_LETTER.value,
-                    cast(models["warning_app"].approval_status, String),
-                ),
-                else_=None,
-            ).label("approval_status"),
-            models["approved_by_staff"].id.label("approver_id"),
-            models["approved_by_staff"].first_name.label("approver_first_name"),
-            models["approved_by_staff"].last_name.label("approver_last_name"),
-            models["approved_by_staff"].auth_user_guid.label("approver_auth_user_guid"),
             models["topic"].name.label("topic_name"),
             models["cmp_finding"].name.label("compliance_finding"),
             models["req_source_option"].name.label("requirement_source_option"),
@@ -817,17 +792,6 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             ),
         )
         .outerjoin(
-            models["order_app"],
-            and_(
-                models["order_app"].order_id
-                == subqueries["requirement_order"].c.order_id,
-                models["enf_map"].enforcement_action_id
-                == EnforcementActionOptionEnum.ORDER.value,
-                models["order_app"].is_deleted.is_(False),
-                models["order_app"].is_active.is_(True),
-            ),
-        )
-        .outerjoin(
             subqueries["requirement_warning_letter"],
             subqueries["requirement_warning_letter"].c.inspection_requirement_id
             == models["req"].id,
@@ -839,17 +803,6 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
                 == subqueries["requirement_warning_letter"].c.warning_letter_id,
                 models["warning_letter"].is_deleted.is_(False),
                 models["warning_letter"].is_active.is_(True),
-            ),
-        )
-        .outerjoin(
-            models["warning_app"],
-            and_(
-                models["warning_app"].warning_letter_id
-                == subqueries["requirement_warning_letter"].c.warning_letter_id,
-                models["enf_map"].enforcement_action_id
-                == EnforcementActionOptionEnum.WARNING.value,
-                models["warning_app"].is_deleted.is_(False),
-                models["warning_app"].is_active.is_(True),
             ),
         )
         .outerjoin(
@@ -908,13 +861,6 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
                 ].c.restorative_justice_id,
                 models["restorative_justice"].is_deleted.is_(False),
                 models["restorative_justice"].is_active.is_(True),
-            ),
-        )
-        .outerjoin(
-            models["approved_by_staff"],
-            or_(
-                models["approved_by_staff"].id == models["order_app"].approved_by_id,
-                models["approved_by_staff"].id == models["warning_app"].approved_by_id,
             ),
         )
         .filter(models["req"].is_active.is_(True), models["req"].is_deleted.is_(False))
@@ -1006,6 +952,34 @@ def _apply_inspection_filters(query, args, **kwargs):
     return query
 
 
+def _get_enforcement_status_filters(enforcement_statuses, **kwargs):
+    """Get enforcement status filter conditions for all enforcement types."""
+    or_conditions = []
+
+    # Define enum mappings with their model attributes
+    enum_mappings = [
+        (OrderStatusEnum, kwargs.get("order"), "order_status"),
+        (OrderProgressEnum, kwargs.get("order"), "order_progress"),
+        (WarningLetterStatusEnum, kwargs.get("warning_letter"), "status"),
+        (WarningLetterProgressEnum, kwargs.get("warning_letter"), "progress"),
+        (ViolationTicketStatusEnum, kwargs.get("violation_ticket"), "status"),
+        (ReferralStatusEnum, kwargs.get("admin_penalty"), "referral_status"),
+        (ChargeRecommendationStatusEnum, kwargs.get("charge_rec"), "status"),
+        (RestorativeJusticeStatusEnum, kwargs.get("restorative_justice"), "status"),
+    ]
+
+    # Process each enum type
+    for enum_class, model, attr_name in enum_mappings:
+        matching_values = [
+            status for status in enforcement_statuses
+            if any(status == e.name.upper() for e in enum_class)
+        ]
+        if matching_values and model:
+            or_conditions.append(getattr(model, attr_name).in_(matching_values))
+
+    return or_conditions
+
+
 def _apply_approval_and_source_filters(query, args, **kwargs):
     """Apply approval and source-related filters."""
     # Enforcement status filter - searches across all enforcement action status fields
@@ -1013,120 +987,7 @@ def _apply_approval_and_source_filters(query, args, **kwargs):
         enforcement_statuses = [
             st.upper().strip() for st in args["enf_stats"].split(",")
         ]
-        or_conditions = []
-
-        # Filter enum values based on their respective enum types
-        order_status_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in OrderStatusEnum)
-        ]
-        order_progress_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in OrderProgressEnum)
-        ]
-        warning_status_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in WarningLetterStatusEnum)
-        ]
-        warning_progress_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in WarningLetterProgressEnum)
-        ]
-        violation_ticket_status_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in ViolationTicketStatusEnum)
-        ]
-        admin_penalty_referral_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in ReferralStatusEnum)
-        ]
-        charge_rec_status_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in ChargeRecommendationStatusEnum)
-        ]
-        restorative_justice_status_values = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in RestorativeJusticeStatusEnum)
-        ]
-        order_approval_statuses = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in OrderApprovalStatusEnum)
-        ]
-        warning_approval_statuses = [
-            status
-            for status in enforcement_statuses
-            if any(status == e.name.upper() for e in WarningLetterApprovalStatusEnum)
-        ]
-
-        # Order statuses - only apply if we have valid enum values
-        if order_status_values:
-            or_conditions.append(
-                kwargs.get("order").order_status.in_(order_status_values)
-            )
-        if order_progress_values:
-            or_conditions.append(
-                kwargs.get("order").order_progress.in_(order_progress_values)
-            )
-
-        # Order approval statuses
-        or_conditions.append(
-            kwargs.get("order_app").approval_status.in_(order_approval_statuses)
-        )
-
-        # Warning letter statuses - only apply if we have valid enum values
-        if warning_status_values:
-            or_conditions.append(
-                kwargs.get("warning_letter").status.in_(warning_status_values)
-            )
-        if warning_progress_values:
-            or_conditions.append(
-                kwargs.get("warning_letter").progress.in_(warning_progress_values)
-            )
-
-        # Warning letter approval statuses
-        or_conditions.append(
-            kwargs.get("warning_app").approval_status.in_(warning_approval_statuses)
-        )
-
-        # Violation ticket statuses - only apply if we have valid enum values
-        if violation_ticket_status_values:
-            or_conditions.append(
-                kwargs.get("violation_ticket").status.in_(
-                    violation_ticket_status_values
-                )
-            )
-
-        # Administrative penalty referral statuses - only apply if we have valid enum values
-        if admin_penalty_referral_values:
-            or_conditions.append(
-                kwargs.get("admin_penalty").referral_status.in_(
-                    admin_penalty_referral_values
-                )
-            )
-
-        # Charge recommendation statuses - only apply if we have valid enum values
-        if charge_rec_status_values:
-            or_conditions.append(
-                kwargs.get("charge_rec").status.in_(charge_rec_status_values)
-            )
-
-        # Restorative justice statuses - only apply if we have valid enum values
-        if restorative_justice_status_values:
-            or_conditions.append(
-                kwargs.get("restorative_justice").status.in_(
-                    restorative_justice_status_values
-                )
-            )
-
+        or_conditions = _get_enforcement_status_filters(enforcement_statuses, **kwargs)
         if or_conditions:
             query = query.filter(or_(*or_conditions))
 
@@ -1159,18 +1020,6 @@ def _apply_approval_and_source_filters(query, args, **kwargs):
             )
         )
 
-    # Approver IDs filter
-    if args.get("approver_ids"):
-        query = query.filter(
-            or_(
-                kwargs.get("order_app").approved_by_id.in_(
-                    args["approver_ids"].split(",")
-                ),
-                kwargs.get("warning_app").approved_by_id.in_(
-                    args["approver_ids"].split(",")
-                ),
-            )
-        )
     return query
 
 
@@ -1220,13 +1069,6 @@ def _apply_pagination(query, args, **kwargs):
         "enf_map": kwargs.get("enf_map"),
         "insp": kwargs.get("insp"),
         "insp_rec": kwargs.get("insp_rec"),
-    }
-
-    # Group approval-related models
-    approval_models = {
-        "order_app": kwargs.get("order_app"),
-        "warning_app": kwargs.get("warning_app"),
-        "approved_by_staff": kwargs.get("approved_by_staff"),
     }
 
     # Group reference data models
@@ -1313,26 +1155,6 @@ def _apply_pagination(query, args, **kwargs):
             ),
             else_=None,
         ).label("progress"),
-        # Approval status fields (only for Order and Warning Letter)
-        case(
-            (
-                core_models["enf_map"].enforcement_action_id
-                == EnforcementActionOptionEnum.ORDER.value,
-                cast(approval_models["order_app"].approval_status, String),
-            ),
-            (
-                core_models["enf_map"].enforcement_action_id
-                == EnforcementActionOptionEnum.WARNING_LETTER.value,
-                cast(approval_models["warning_app"].approval_status, String),
-            ),
-            else_=None,
-        ).label("approval_status"),
-        approval_models["approved_by_staff"].id.label("approver_id"),
-        approval_models["approved_by_staff"].first_name.label("approver_first_name"),
-        approval_models["approved_by_staff"].last_name.label("approver_last_name"),
-        approval_models["approved_by_staff"].auth_user_guid.label(
-            "approver_auth_user_guid"
-        ),
         reference_models["topic"].name.label("topic_name"),
         reference_models["cmp_finding"].name.label("compliance_finding"),
         reference_models["req_source_option"].name.label("requirement_source_option"),
@@ -1361,11 +1183,6 @@ def _apply_pagination(query, args, **kwargs):
         subq.c.inspection_status.label("inspection_status"),
         subq.c.status.label("status"),
         subq.c.progress.label("progress"),
-        subq.c.approval_status.label("approval_status"),
-        subq.c.approver_id.label("approver_id"),
-        subq.c.approver_first_name.label("approver_first_name"),
-        subq.c.approver_last_name.label("approver_last_name"),
-        subq.c.approver_auth_user_guid.label("approver_auth_user_guid"),
         subq.c.topic_name.label("topic_name"),
         subq.c.compliance_finding.label("compliance_finding"),
         subq.c.requirement_source_option.label("requirement_source_option"),
@@ -1419,7 +1236,6 @@ def _apply_sort(query, args, subq):
             "prm_offc": "staff_first_name",
             "project": "project_name",
             "date_issued": "date_issued",
-            "approver": "approver_first_name",
         }
 
         if field_map.get(sort_field):
@@ -1432,29 +1248,11 @@ def _apply_sort(query, args, subq):
     return query
 
 
-def _apply_approval_status_sort(query, subq, sort_order):
-    """Apply approval status sorting logic."""
-    approval_status_expr = case(
-        (
-            subq.c.approval_status.isnot(None),
-            cast(subq.c.approval_status, String),
-        ),
-        else_=None,
-    ).label("approval_status_sort")
-    query = query.add_columns(approval_status_expr)
-    return query.order_by(
-        approval_status_expr.asc()
-        if sort_order == "asc"
-        else approval_status_expr.desc()
-    )
-
-
 def _apply_enforcement_status_sort(query, subq, sort_order):
     """Apply enforcement status sorting logic across all enforcement action status fields."""
     enforcement_status_expr = func.coalesce(
         cast(subq.c.status, String),
         cast(subq.c.progress, String),
-        cast(subq.c.approval_status, String),
     ).label("enforcement_status_sort")
     query = query.add_columns(enforcement_status_expr)
     return query.order_by(
@@ -1551,26 +1349,9 @@ def _process_inspection_requirement_query_results(query_results):
         item["inspection_status"] = result.inspection_status
         item["status"] = result.status
         item["progress"] = result.progress
-        item["approval_status"] = result.approval_status
         item["enforcement_number"] = (
             result.order_number or result.warning_letter_number or ""
         )
-
-        # Structure approved_by as a StaffUser object from individual fields
-        approved_by_id = result.approver_id
-        approved_by_first_name = result.approver_first_name
-        approved_by_last_name = result.approver_last_name
-        approved_by_auth_guid = result.approver_auth_user_guid
-
-        if approved_by_id:
-            item["approved_by"] = {
-                "id": approved_by_id,
-                "first_name": approved_by_first_name or "",
-                "last_name": approved_by_last_name or "",
-                "auth_user_guid": approved_by_auth_guid,
-            }
-        else:
-            item["approved_by"] = None
 
         processed_requirements.append(item)
     return processed_requirements
@@ -1608,7 +1389,6 @@ def _make_requirement_detail_object(requirements: list):
             "id": requirement["id"],
             "topic": requirement["topic"],
             "summary": requirement["summary"],
-            "approved_by": requirement["approved_by"],
             "sort_order": requirement["sort_order"],
             "ir_number": requirement["ir_number"],
             "date_issued": (
@@ -1647,15 +1427,6 @@ def _make_requirement_detail_object(requirements: list):
             item["progress"] = _convert_enum_string_to_object(
                 progress, [OrderProgressEnum, WarningLetterProgressEnum]
             )
-
-        # Handle approval_status field
-        approval_status = requirement["approval_status"]
-        if approval_status:
-            item["approval_status"] = _convert_enum_string_to_object(
-                approval_status,
-                [OrderApprovalStatusEnum, WarningLetterApprovalStatusEnum],
-            )
-
         if requirement["requirement_source_details"]:
             first_requirement_details = requirement["requirement_source_details"][0]
             number_field = ServiceUtils.get_requirement_source_number_field(

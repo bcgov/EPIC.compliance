@@ -33,18 +33,6 @@ class InspectionRequirementGridItemSchema(Schema):
     enforcement_number = fields.Str(
         metadata={"description": "The enforcement number of the inspection requirement"}
     )
-    approval_status = fields.Nested(
-        KeyValueSchema,
-        metadata={"description": "The approval status of the enforcement action"},
-        allow_none=True,
-    )
-    approved_by = fields.Nested(
-        StaffUserSchema,
-        metadata={
-            "description": "The staff user who approved the inspection requirement"
-        },
-        allow_none=True,
-    )
     status = fields.Nested(
         KeyValueSchema,
         metadata={"description": "The status of the inspection requirement"},
@@ -158,12 +146,6 @@ class InspectionRequirementFilterSchema(BaseSchema):
             "description": "The comma separated list of project ids of the inspection requirement"
         },
     )
-    approver_ids = fields.String(
-        required=False,
-        metadata={
-            "description": "The comma separated list of approver ids of the inspection requirement"
-        },
-    )
     sort_by = fields.String(
         required=False,
         validate=validate.OneOf(
@@ -181,7 +163,6 @@ class InspectionRequirementFilterSchema(BaseSchema):
                 "prm_offc",
                 "insp_sts",
                 "project",
-                "approver",
             ]
         ),
         metadata={"description": "The sort by field of the inspection requirement"},
