@@ -77,14 +77,19 @@ type AdministrativePenaltyUpdateModalProps = {
   administrativePenalty: AdministrativePenalty;
   inspectionData: Inspection;
   onSuccess?: (data: AdministrativePenalty) => void;
-  isReadonlyMode?: boolean;
 };
 
 const AdministrativePenaltyUpdateModal: FC<
   AdministrativePenaltyUpdateModalProps
-> = ({ administrativePenalty, inspectionData, onSuccess, isReadonlyMode = false }) => {
+> = ({ administrativePenalty, inspectionData, onSuccess }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
+
+  // Calculate readonly mode based on inspection status and administrative penalty status
+  const isReadonlyMode = useMemo(() => {
+    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
+    return isInspectionClosed && administrativePenalty.is_closed;
+  }, [inspectionData.inspection_status, administrativePenalty.is_closed]);
 
   const defaultValues = useMemo(() => {
     const currentReferralStatus =

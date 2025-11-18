@@ -395,21 +395,23 @@ class InspectionService:
     @classmethod
     def delete_by_case_file(cls, case_file_id, ho_session=None):
         """Delete inspection and related entries by case file id."""
-        with session_scope() as session:
-            InspectionModel.delete_by_case_file(case_file_id, ho_session or session)
-            InspectionAgencyModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
-            InspectionAttendanceModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
-            InspectionFirstnationModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
-            InspectionOfficerModel.delete_by_case_file(
-                case_file_id, ho_session or session
-            )
-            InspectionTypeModel.delete_by_case_file(case_file_id, ho_session or session)
+
+        def _execute_deletion(session):
+            """Execute the actual deletion logic."""
+            InspectionModel.delete_by_case_file(case_file_id, session)
+            InspectionAgencyModel.delete_by_case_file(case_file_id, session)
+            InspectionAttendanceModel.delete_by_case_file(case_file_id, session)
+            InspectionFirstnationModel.delete_by_case_file(case_file_id, session)
+            InspectionOfficerModel.delete_by_case_file(case_file_id, session)
+            InspectionTypeModel.delete_by_case_file(case_file_id, session)
+
+        if ho_session:
+            # Use the provided session from outer transaction
+            _execute_deletion(ho_session)
+        else:
+            # Create own session scope when no session is provided
+            with session_scope() as session:
+                _execute_deletion(session)
 
     @classmethod
     def delete_inspection(cls, inspection_id):
@@ -531,20 +533,21 @@ class InspectionService:
                 )
 
                 if enforcement_status is not None:
-                    pending_items.append(
-                        {
-                            "requirement": {
-                                "id": requirement.id,
-                                "summary": requirement.summary,
-                            },
-                            "item": {
-                                "id": enforcement_action.id,
-                                "name": enforcement_action.name,
-                            },
-                            "is_created": enforcement_status["is_created"],
-                            "item_number": enforcement_status.get("item_number"),
-                        }
-                    )
+                    item = {
+                        "requirement": {
+                            "id": requirement.id,
+                            "summary": requirement.summary,
+                        },
+                        "item": {
+                            "id": enforcement_action.id,
+                            "name": enforcement_action.name,
+                        },
+                        "is_created": enforcement_status["is_created"],
+                        "item_number": enforcement_status.get("item_number"),
+                    }
+                    if enforcement_status.get("is_issued", None) is not None:
+                        item["is_issued"] = enforcement_status["is_issued"]
+                    pending_items.append(item)
 
         return pending_items
 
@@ -893,6 +896,10 @@ def _create_inspection_record_number(
 ):  # pylint: disable=inconsistent-return-statements
     """Generate the inspection record number."""
     project_code = ServiceUtils.get_project_abbreviation(project_id)
+    if project_code is None:
+        raise UnprocessableEntityError(
+            "Given project doesn't have an abbreviation. Check Epic.Track for more details"
+        )
     case_file = CaseFileModel.find_by_id(case_file_id)
     if not case_file:
         raise ResourceNotFoundError("Given case file doesn't exist")
@@ -1386,9 +1393,7 @@ def _make_requirement_detail_object_optimized(
     return requirement_details
 
 
-def _check_enforcement_status(
-    requirement_id: int, enforcement_action_id: int
-):
+def _check_enforcement_status(requirement_id: int, enforcement_action_id: int):
     """Check if an enforcement action exists and its status for a requirement."""
 
     # Map enforcement action IDs to their enum values
@@ -1415,10 +1420,9 @@ def _check_order_status(requirement_id: int):
 
     order = order_map.order if order_map.order else None
     item_number = order.order_number
-    is_issued = False
-    if order.order_status == OrderStatusEnum.OPEN:
-        is_issued = True
-    return {"is_created": True, "item_number": item_number, "is_issued": is_issued}
+    if order.order_status != OrderStatusEnum.OPEN:
+        return {"is_created": True, "item_number": item_number, "is_issued": False}
+    return None
 
 
 def _check_warning_letter_status(requirement_id: int):
@@ -1434,10 +1438,9 @@ def _check_warning_letter_status(requirement_id: int):
         warning_letter_map.warning_letter if warning_letter_map.warning_letter else None
     )
     item_number = warning_letter.warning_letter_number
-    is_issued = False
-    if warning_letter.status == WarningLetterStatusEnum.ISSUED:
-        is_issued = True
-    return {"is_created": True, "item_number": item_number, "is_issued": is_issued}
+    if warning_letter.status != WarningLetterStatusEnum.ISSUED:
+        return {"is_created": True, "item_number": item_number, "is_issued": False}
+    return None
 
 
 def _check_administrative_penalty_status(requirement_id: int):

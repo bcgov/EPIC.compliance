@@ -109,6 +109,7 @@ class ViolationTicketSchema(AutoSchemaBase):  # pylint: disable=too-many-ancesto
         only=("id", "inspection_requirement_id", "inspection_requirement"),
     )
     status = fields.Raw()
+    is_closed = fields.Bool()
 
     @post_dump
     def post_dump_actions(

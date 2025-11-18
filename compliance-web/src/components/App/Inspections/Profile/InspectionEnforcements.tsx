@@ -486,7 +486,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["inspection-violation-tickets", inspectionData.id],
             });
           }}
-          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
       width: MODAL_WIDTHS.VIOLATION_TICKET,

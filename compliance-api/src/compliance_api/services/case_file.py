@@ -7,7 +7,7 @@ from io import BytesIO
 
 import pandas as pd
 from flask import g
-from sqlalchemy import String, and_, asc, case, cast, desc, func, not_, or_
+from sqlalchemy import String, and_, asc, case, cast, desc, func, not_
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -19,22 +19,18 @@ from compliance_api.models import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import UnapprovedProject as UnapprovedProjectModel
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
-from compliance_api.models.charge_recommendation import ChargeDecisionEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
-from compliance_api.models.charge_recommendation import ChargeRecommendationStatusEnum
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.inspection import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
-from compliance_api.models.order import OrderStatusEnum
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
 from compliance_api.models.restorative_justice import RestorativeJusticeStatusEnum
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.models.violation_ticket import ViolationTicket as ViolationTicketModel
-from compliance_api.models.violation_ticket import ViolationTicketStatusEnum
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import WarningLetterProgressEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, UNAPPROVED_PROJECT_NAME
@@ -196,14 +192,16 @@ class CaseFileService:
             "is_deleted": case_file_data.get("is_deleted", False),
             "is_active": case_file_data.get("is_active", True),
         }
-        with session_scope() as session:
+
+        def _execute_update(session):
+            """Execute the actual update logic."""
             updated_case_file = CaseFileModel.update_case_file(
-                case_file_id, case_file_obj, ho_session or session
+                case_file_id, case_file_obj, session
             )
             cls.insert_or_update_officers(
                 case_file_id,
                 case_file_data.get("officer_ids", []),
-                ho_session or session,
+                session,
             )
 
             if not case_file_data.get("project_id", None):
@@ -221,8 +219,14 @@ class CaseFileService:
                     existing_unapproved_project.update(
                         unapproved_project_update_data, commit=False
                     )
+            return updated_case_file
 
-        return updated_case_file
+        if ho_session:
+            # Use the provided session from outer transaction
+            return _execute_update(ho_session)
+        # Create own session scope when no session is provided
+        with session_scope() as session:
+            return _execute_update(session)
 
     @classmethod
     def get_by_file_number(cls, case_file_number: int):
@@ -921,13 +925,7 @@ def _build_enforcement_query(inspection_ids: list):
             OrderModel,
             and_(
                 OrderModel.inspection_id == InspectionModel.id,
-                OrderModel.order_status.notin_(
-                    [
-                        OrderStatusEnum.OPEN,
-                        OrderStatusEnum.CLOSED,
-                        OrderStatusEnum.RESCINDED,
-                    ]
-                ),
+                OrderModel.order_status.notin_(OrderModel.get_closed_statuses()),
                 OrderModel.is_active.is_(True),
                 OrderModel.is_deleted.is_(False),
             ),
@@ -946,11 +944,7 @@ def _build_enforcement_query(inspection_ids: list):
             and_(
                 ViolationTicketModel.inspection_id == InspectionModel.id,
                 ViolationTicketModel.status.notin_(
-                    [
-                        ViolationTicketStatusEnum.PAID,
-                        ViolationTicketStatusEnum.DISPUTED,
-                        ViolationTicketStatusEnum.DEEMED_GUILTY,
-                    ]
+                    ViolationTicketModel.get_closed_statuses()
                 ),
                 ViolationTicketModel.is_active.is_(True),
                 ViolationTicketModel.is_deleted.is_(False),
@@ -960,8 +954,7 @@ def _build_enforcement_query(inspection_ids: list):
             AdministrativePenaltyModel,
             and_(
                 AdministrativePenaltyModel.inspection_id == InspectionModel.id,
-                # Use centralized open AP filter condition
-                AdministrativePenaltyModel.get_open_ap_filter_condition(),
+                not_(AdministrativePenaltyModel.get_closed_conditions()),
                 AdministrativePenaltyModel.is_active.is_(True),
                 AdministrativePenaltyModel.is_deleted.is_(False),
             ),
@@ -970,18 +963,7 @@ def _build_enforcement_query(inspection_ids: list):
             ChargeRecommendationModel,
             and_(
                 ChargeRecommendationModel.inspection_id == InspectionModel.id,
-                not_(
-                    or_(
-                        ChargeRecommendationModel.status
-                        == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
-                        and_(
-                            ChargeRecommendationModel.charge_decision.isnot(None),
-                            ChargeRecommendationModel.charge_decision
-                            == ChargeDecisionEnum.NOT_PROCEEDING,
-                        ),
-                        ChargeRecommendationModel.sentence_date.isnot(None),
-                    )
-                ),
+                not_(ChargeRecommendationModel.get_closed_conditions()),
                 ChargeRecommendationModel.is_active.is_(True),
                 ChargeRecommendationModel.is_deleted.is_(False),
             ),
@@ -1020,6 +1002,7 @@ def _process_enforcement_row(row, processed_items: dict, open_items: dict):
         row.violation_ticket_id
         and row.violation_ticket_id not in processed_items["violation_tickets"]
     ):
+        processed_items["violation_tickets"].add(row.violation_ticket_id)
         open_items["violation_tickets"].append(_build_violation_ticket_item(row))
 
     # Process Administrative Penalties

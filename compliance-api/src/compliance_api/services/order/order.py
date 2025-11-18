@@ -190,7 +190,6 @@ class OrderService:
         """Close the order."""
         order = ServiceUtils.order_exist_check(order_id)
         ServiceUtils.access_check_update_for_inspection(order.inspection)
-        ServiceUtils.inspection_status_check(order.inspection)
         status_enum = OrderStatusEnum(status.get("status"))
         if order.order_status == status_enum:
             raise UnprocessableEntityError(

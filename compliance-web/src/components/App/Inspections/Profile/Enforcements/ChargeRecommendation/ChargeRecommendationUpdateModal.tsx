@@ -83,15 +83,20 @@ type ChargeRecommendationUpdateModalProps = {
   chargeRecommendationData: ChargeRecommendation;
   inspectionData: Inspection;
   onSubmit: (data: ChargeRecommendation) => void;
-  isReadonlyMode?: boolean;
 };
 
 const ChargeRecommendationUpdateModal: FC<
   ChargeRecommendationUpdateModalProps
-> = ({ chargeRecommendationData, inspectionData, onSubmit, isReadonlyMode = false }) => {
+> = ({ chargeRecommendationData, inspectionData, onSubmit }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
   const { data: sentenceTypeOptions = [], isLoading: isSentenceTypesLoading } = useSentenceTypeOptionsData();
+
+  // Calculate readonly mode based on inspection status and charge recommendation status
+  const isReadonlyMode = useMemo(() => {
+    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
+    return isInspectionClosed && chargeRecommendationData.is_closed;
+  }, [inspectionData.inspection_status, chargeRecommendationData.is_closed]);
 
   const defaultValues = useMemo(() => {
     const currentStatus = chargeRecommendationData.status || CRStatus.DRAFTING;

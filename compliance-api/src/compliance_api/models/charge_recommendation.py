@@ -4,7 +4,7 @@ from enum import Enum
 
 from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, and_
+from sqlalchemy import ForeignKey, Index, Integer, String, and_, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -246,6 +246,46 @@ class ChargeRecommendation(BaseModelVersioned):
             postgresql_where=(is_deleted is False),  # Condition for uniqueness
         ),
     )
+
+    @property
+    def is_closed(self):
+        """
+        Check if the charge recommendation is in a closed state.
+
+        A charge recommendation is considered closed if any of these conditions are true:
+        - Status is CEB_NOT_PROCEEDING
+        - Charge decision exists and is NOT_PROCEEDING
+        - Sentence date exists (case has been sentenced)
+
+        Returns:
+            bool: True if the charge recommendation is closed, False otherwise
+        """
+        return (
+            self.status == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING
+            or (
+                self.charge_decision is not None
+                and self.charge_decision == ChargeDecisionEnum.NOT_PROCEEDING
+            )
+            or self.sentence_date is not None
+        )
+
+    @classmethod
+    def get_closed_conditions(cls):
+        """Get the SQLAlchemy conditions for closed charge recommendations.
+
+        Used for database queries to filter closed charge recommendations.
+
+        Returns:
+            sqlalchemy.sql.elements.BooleanClauseList: OR conditions for closed state
+        """
+        return or_(
+            cls.status == ChargeRecommendationStatusEnum.CEB_NOT_PROCEEDING,
+            and_(
+                cls.charge_decision.isnot(None),
+                cls.charge_decision == ChargeDecisionEnum.NOT_PROCEEDING,
+            ),
+            cls.sentence_date.isnot(None),
+        )
 
     @classmethod
     @with_session

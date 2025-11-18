@@ -84,7 +84,7 @@ class ComplaintSourceContact(BaseModelVersioned):
             cls.query.join(ComplaintModel)
             .filter(
                 ComplaintModel.case_file_id == case_file_id,
-                ComplaintSourceContact.is_deleted is False,
+                ComplaintSourceContact.is_deleted.is_(False),
             )
             .all()
         )

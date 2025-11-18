@@ -2,15 +2,15 @@
 
 from typing import List
 
-from sqlalchemy import func
+from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased, joinedload
 
 from compliance_api.models.administrative_penalty import AdministrativePenalty
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
-from compliance_api.models.inspection_record import InspectionRecord
+from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval
-from compliance_api.models.order import Order, OrderProgressEnum
+from compliance_api.models.order import Order
 from compliance_api.models.order_approval import OrderApproval
 from compliance_api.models.warning_letter import WarningLetter, WarningLetterProgressEnum
 from compliance_api.models.warning_letter_approval import WarningLetterApproval
@@ -58,7 +58,7 @@ class ReviewBoardService:
                 ),
             )
             .filter(
-                Inspection.inspection_status == InspectionStatusEnum.OPEN,
+                InspectionRecord.ir_progress != IRProgressEnum.ISSUED,
                 InspectionRecord.is_active.is_(True),
                 InspectionRecord.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
@@ -119,7 +119,6 @@ class ReviewBoardService:
                 ),
             )
             .filter(
-                Inspection.inspection_status == InspectionStatusEnum.OPEN,
                 WarningLetter.progress != WarningLetterProgressEnum.ISSUED,
                 WarningLetter.is_active.is_(True),
                 WarningLetter.is_deleted.is_(False),
@@ -175,8 +174,7 @@ class ReviewBoardService:
                 joinedload(Order.inspection).joinedload(Inspection.primary_officer),
             )
             .filter(
-                Inspection.inspection_status == InspectionStatusEnum.OPEN,
-                Order.order_progress != OrderProgressEnum.ISSUED,
+                Order.order_status.notin_(Order.get_closed_statuses()),
                 Order.is_active.is_(True),
                 Order.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
@@ -221,8 +219,7 @@ class ReviewBoardService:
                 AdministrativePenalty.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
                 Inspection.is_deleted.is_(False),
-                # Use centralized open AP filter condition
-                AdministrativePenalty.get_open_ap_filter_condition(),
+                not_(AdministrativePenalty.get_closed_conditions()),
             )
             .order_by(AdministrativePenalty.created_date.desc())
             .all()

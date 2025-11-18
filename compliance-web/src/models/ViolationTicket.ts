@@ -10,6 +10,7 @@ export interface ViolationTicket {
   status_date: string;
   created_date: string;
   updated_date: string;
+  is_closed: boolean;
 }
 
 interface ViolationTicketRequirementMap {

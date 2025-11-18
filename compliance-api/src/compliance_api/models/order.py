@@ -171,6 +171,38 @@ class Order(BaseModelVersioned):
         ),
     )
 
+    @property
+    def is_closed(self):
+        """Check if the order is in a closed state.
+
+        An order is considered closed if its status is:
+        - OPEN: Order has been issued and is open
+        - CLOSED: Order has been closed
+        - RESCINDED: Order has been rescinded
+
+        Returns:
+            bool: True if the order is closed, False otherwise
+        """
+        closed_statuses = [
+            OrderStatusEnum.OPEN,
+            OrderStatusEnum.CLOSED,
+            OrderStatusEnum.RESCINDED,
+        ]
+        return self.order_status in closed_statuses
+
+    @classmethod
+    def get_closed_statuses(cls):
+        """Get list of order statuses that are considered closed.
+
+        Returns:
+            list: List of OrderStatusEnum values for closed statuses
+        """
+        return [
+            OrderStatusEnum.OPEN,
+            OrderStatusEnum.CLOSED,
+            OrderStatusEnum.RESCINDED,
+        ]
+
     @classmethod
     @with_session
     def create(cls, order_data: dict, session=None):

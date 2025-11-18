@@ -51,17 +51,21 @@ type ViolationTicketUpdateModalProps = {
   violationTicket: ViolationTicket;
   inspectionData: Inspection;
   onSuccess?: (data: ViolationTicket) => void;
-  isReadonlyMode?: boolean;
 };
 
 const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   violationTicket,
   inspectionData,
   onSuccess,
-  isReadonlyMode = false,
 }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
+
+  // Calculate readonly mode based on inspection status and violation ticket status
+  const isReadonlyMode = useMemo(() => {
+    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
+    return isInspectionClosed && violationTicket.is_closed;
+  }, [inspectionData.inspection_status, violationTicket.is_closed]);
 
   const defaultValues = useMemo(() => {
     const currentStatus = violationTicket.status?.id || "ISSUED";

@@ -91,12 +91,15 @@ class ChargeRecommendationService:
         cls, charge_recommendation_id: int, update_data: dict
     ) -> ChargeRecommendation:
         """Update an existing charge recommendation."""
-        cls.get_by_id(charge_recommendation_id)
+        charge_recommendation = cls.get_by_id(charge_recommendation_id)
         inspection = ServiceUtils.inspection_exist_check(
             inspection_id=update_data.get("inspection_id")
         )
         ServiceUtils.access_check_update_for_inspection(inspection)
-        ServiceUtils.inspection_status_check(inspection)
+        # If charge recommendation is closed, then check the inspection status
+        # No more modification possible once the CR and IR is closed
+        if charge_recommendation.is_closed:
+            ServiceUtils.inspection_status_check(inspection)
         requirement_ids = update_data.get("inspection_requirement_ids", [])
 
         if ChargeRecommendation.does_charge_recommendation_exists_by_requirement_ids(
@@ -129,7 +132,15 @@ class ChargeRecommendationService:
     def delete_charge_recommendation(cls, charge_recommendation_id: int) -> None:
         """Delete a charge recommendation."""
         # Check if charge recommendation exists
-        cls.get_by_id(charge_recommendation_id)
+        charge_recommendation = cls.get_by_id(charge_recommendation_id)
+        ServiceUtils.access_check_update_for_inspection(
+            charge_recommendation.inspection
+        )
+
+        # If charge recommendation is closed, then check the inspection status
+        # No more modification possible once the CR and IR is closed
+        if charge_recommendation.is_closed:
+            ServiceUtils.inspection_status_check(charge_recommendation.inspection)
 
         with session_scope() as session:
             # Soft delete the charge recommendation

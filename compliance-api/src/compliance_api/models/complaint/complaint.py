@@ -233,7 +233,7 @@ class Complaint(BaseModelVersioned):
     def delete_by_case_file(cls, case_file_id, session=None):
         """Delete complaint by case file."""
         complaints = cls.query.filter(
-            Complaint.case_file_id == case_file_id, Complaint.is_deleted is False
+            Complaint.case_file_id == case_file_id, Complaint.is_deleted.is_(False)
         ).all()
         for complaint in complaints:
             complaint.update(DELETE_DIC_PARAMS, commit=False)

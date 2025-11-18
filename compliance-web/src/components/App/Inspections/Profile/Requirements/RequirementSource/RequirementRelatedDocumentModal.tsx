@@ -29,7 +29,7 @@ import { ExpandMoreRounded } from "@mui/icons-material";
 import { MQ } from "@/styles/responsive";
 
 type RequirementRelatedDocumentModalProps = {
-  onSubmit: (data: RequirementRelatedDocumentData) => void;
+  onSubmit: (data: RequirementRelatedDocumentData, requirementSourceId?: string, sectionNumber?: string) => void;
   requirementSourceData: RequirementSourceFormData;
   relatedDocumentData?: RequirementRelatedDocumentData;
   relatedDocumentSectionData?: RequirementRelatedDocumentSectionData;
@@ -215,7 +215,7 @@ const RequirementRelatedDocumentModal: React.FC<
       } else {
         reqRelatedDocumentData.sections?.push(reqSectionData);
       }
-      onSubmit(reqRelatedDocumentData);
+      onSubmit(reqRelatedDocumentData, requirementSourceData.requirementSource?.id, requirementSourceData.sectionNumber);
     };
     return (
       <FormProvider {...methods}>
