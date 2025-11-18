@@ -716,6 +716,10 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["warning_letter"].warning_letter_number.label(
                 "warning_letter_number"
             ),
+            models["violation_ticket"].vt_number.label("violation_ticket_number"),
+            models["admin_penalty"].administrative_penalty_number.label("admin_penalty_number"),
+            models["charge_rec"].charge_recommendation_number.label("charge_rec_number"),
+            models["restorative_justice"].restorative_justice_number.label("restorative_justice_number"),
         )
         .join(
             models["topic"],
@@ -1017,6 +1021,10 @@ def _apply_approval_and_source_filters(query, args, **kwargs):
             or_(
                 kwargs.get("order").order_number.in_(enf_numbers),
                 kwargs.get("warning_letter").warning_letter_number.in_(enf_numbers),
+                kwargs.get("violation_ticket").vt_number.in_(enf_numbers),
+                kwargs.get("admin_penalty").administrative_penalty_number.in_(enf_numbers),
+                kwargs.get("charge_rec").charge_recommendation_number.in_(enf_numbers),
+                kwargs.get("restorative_justice").restorative_justice_number.in_(enf_numbers),
             )
         )
 
@@ -1166,6 +1174,10 @@ def _apply_pagination(query, args, **kwargs):
         reference_models["warning_letter"].warning_letter_number.label(
             "warning_letter_number"
         ),
+        reference_models["violation_ticket"].vt_number.label("violation_ticket_number"),
+        reference_models["admin_penalty"].administrative_penalty_number.label("admin_penalty_number"),
+        reference_models["charge_rec"].charge_recommendation_number.label("charge_rec_number"),
+        reference_models["restorative_justice"].restorative_justice_number.label("restorative_justice_number"),
     ).distinct(core_models["req"].id, core_models["enf_map"].enforcement_action_id)
     subq = distinct_query.subquery("distinct_q")
 
@@ -1191,6 +1203,10 @@ def _apply_pagination(query, args, **kwargs):
         subq.c.clause_number.label("clause_number"),
         subq.c.order_number.label("order_number"),
         subq.c.warning_letter_number.label("warning_letter_number"),
+        subq.c.violation_ticket_number.label("violation_ticket_number"),
+        subq.c.admin_penalty_number.label("admin_penalty_number"),
+        subq.c.charge_rec_number.label("charge_rec_number"),
+        subq.c.restorative_justice_number.label("restorative_justice_number"),
     ).join(
         subq,
         core_models["req"].id == subq.c.id,
@@ -1281,13 +1297,56 @@ def _apply_requirement_source_number_sort(query, subq, sort_order):
     )
 
 
+def _get_enforcement_number_by_type(result):
+    """Get the correct enforcement number based on the enforcement action type."""
+    enforcement_action_id = result.enforcement_action_id
+
+    # Map enforcement action ID to the corresponding number field
+    if enforcement_action_id == EnforcementActionOptionEnum.ORDER.value:
+        return result.order_number or ""
+    elif enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+        return result.warning_letter_number or ""
+    elif enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
+        return result.violation_ticket_number or ""
+    elif enforcement_action_id == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value:
+        return result.admin_penalty_number or ""
+    elif enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value:
+        return result.charge_rec_number or ""
+    elif enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value:
+        return result.restorative_justice_number or ""
+    else:
+        return ""
+
+
 def _apply_enforcement_number_sort(query, subq, sort_order):
     """Apply enforcement number sorting logic."""
-    # Enforcement number is a combination of order_number and warning_letter_number
-    enforcement_number_expr = func.coalesce(
-        null_if_empty(subq.c.order_number),
-        null_if_empty(subq.c.warning_letter_number),
-        "",
+    # Use case statement to get the correct enforcement number based on enforcement action type
+    enforcement_number_expr = case(
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.ORDER.value,
+            subq.c.order_number,
+        ),
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value,
+            subq.c.warning_letter_number,
+        ),
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value,
+            subq.c.violation_ticket_number,
+        ),
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
+            subq.c.admin_penalty_number,
+        ),
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value,
+            subq.c.charge_rec_number,
+        ),
+        (
+            subq.c.enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value,
+            subq.c.restorative_justice_number,
+        ),
+        else_="",
     ).label("enforcement_number_sort")
     query = query.add_columns(enforcement_number_expr)
     order_key = func.natural_sort_key(enforcement_number_expr)
@@ -1349,9 +1408,7 @@ def _process_inspection_requirement_query_results(query_results):
         item["inspection_status"] = result.inspection_status
         item["status"] = result.status
         item["progress"] = result.progress
-        item["enforcement_number"] = (
-            result.order_number or result.warning_letter_number or ""
-        )
+        item["enforcement_number"] = _get_enforcement_number_by_type(result)
 
         processed_requirements.append(item)
     return processed_requirements
