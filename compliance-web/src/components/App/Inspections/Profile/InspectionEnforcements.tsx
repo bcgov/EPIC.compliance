@@ -159,15 +159,14 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
 
   const nonProceededOrderRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
-    const orderReqIds = inspectionOrdersData?.map((order) =>
-      order.order_requirement_maps?.map((map) => map.inspection_requirement_id)
+    return requirementEnforcements.filter(
+      (requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) =>
+            enforcement.id === EnforcementActionEnum.ORDER
+        )
     );
-    return prepNonProceededRequirements({
-      requirements: requirementEnforcements,
-      reqIds: orderReqIds,
-      enforcementActionType: EnforcementActionEnum.ORDER,
-    });
-  }, [requirementEnforcements, inspectionOrdersData]);
+  }, [requirementEnforcements]);
 
   const nonProceededWarningLetterRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
@@ -446,7 +445,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               ],
             });
           }}
-          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
       width: MODAL_WIDTHS.ADMINISTRATIVE_PENALTY,
@@ -467,7 +465,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               queryKey: ["charge-recommendations", inspectionData.id],
             });
           }}
-          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
       width: MODAL_WIDTHS.CHARGE_RECOMMENDATION,

@@ -246,28 +246,28 @@ class Order(BaseModelVersioned):
         )
         return result.order_count if result else 0
 
-    @classmethod
-    def does_order_exists_by_requirement_ids(
-        cls, requirement_ids: list[int], order=None
-    ):
-        """Check if an order exists by requirement ids."""
-        query = cls.query.join(
-            OrderInspectionRequirementMap,
-            OrderInspectionRequirementMap.order_id == cls.id,
-        ).filter(
-            OrderInspectionRequirementMap.inspection_requirement_id.in_(
-                requirement_ids
-            ),
-            cls.is_deleted.is_(False),
-        )
+    # @classmethod
+    # def does_order_exists_by_requirement_ids(
+    #     cls, requirement_ids: list[int], order=None
+    # ):
+    #     """Check if an order exists by requirement ids."""
+    #     query = cls.query.join(
+    #         OrderInspectionRequirementMap,
+    #         OrderInspectionRequirementMap.order_id == cls.id,
+    #     ).filter(
+    #         OrderInspectionRequirementMap.inspection_requirement_id.in_(
+    #             requirement_ids
+    #         ),
+    #         cls.is_deleted.is_(False),
+    #     )
 
-        # Only filter by order_replace_status if order is provided
-        if order and hasattr(order, "order_replace_status"):
-            query = query.filter(cls.order_replace_status == order.order_replace_status)
+    #     # Only filter by order_replace_status if order is provided
+    #     if order and hasattr(order, "order_replace_status"):
+    #         query = query.filter(cls.order_replace_status == order.order_replace_status)
 
-        if order and order.id:
-            query = query.filter(cls.id != order.id)
-        return query.first()
+    #     if order and order.id:
+    #         query = query.filter(cls.id != order.id)
+    #     return query.first()
 
     @classmethod
     def get_by_order_number(cls, order_number: str):

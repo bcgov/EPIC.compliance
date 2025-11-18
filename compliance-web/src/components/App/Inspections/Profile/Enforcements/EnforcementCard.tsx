@@ -126,9 +126,9 @@ const EnforcementCard = ({
           />
         </Stack>
         <Stack>
-          {requirementSourcesFormatted?.map((source) => {
+          {requirementSourcesFormatted?.map((source, index) => {
             return (
-              <Typography key={source} variant="caption" component={"div"}>
+              <Typography key={index} variant="caption" component={"div"}>
                 {source}
               </Typography>
             );
