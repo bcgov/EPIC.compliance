@@ -16,6 +16,7 @@ type ModalActionsProps = {
   onDeleteConfirmationText?: string;
   isLoading?: boolean;
   isDeleteActionLoading?: boolean;
+  hideSecondaryButton?: boolean;
 };
 
 const ModalActions: FC<ModalActionsProps> = ({
@@ -28,6 +29,7 @@ const ModalActions: FC<ModalActionsProps> = ({
   onDeleteConfirmationText = "Are you sure you want to delete this?",
   isLoading = false,
   isDeleteActionLoading = false,
+  hideSecondaryButton = false,
 }) => {
   const { setClose } = useModal();
   const formContext = useFormContext();
@@ -58,17 +60,19 @@ const ModalActions: FC<ModalActionsProps> = ({
             </Button>
           )}
           <Box sx={{ display: "flex", gap: "0.75rem" }}>
-            <Button
-              variant="text"
-              onClick={() => {
-                onSecondaryAction?.();
-                setClose();
-              }}
-              disabled={showDeleteConfirmation}
-              data-testid="cancel-action-modal-button"
-            >
-              {secondaryActionButtonText ?? "Cancel"}
-            </Button>
+            {!hideSecondaryButton && (
+              <Button
+                variant="text"
+                onClick={() => {
+                  onSecondaryAction?.();
+                  setClose();
+                }}
+                disabled={showDeleteConfirmation}
+                data-testid="cancel-action-modal-button"
+              >
+                {secondaryActionButtonText ?? "Cancel"}
+              </Button>
+            )}
             <LoadingButton
               sx={{ minWidth: 100 }}
               type={onPrimaryAction ? "button" : "submit"}

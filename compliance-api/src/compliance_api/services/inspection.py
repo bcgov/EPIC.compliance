@@ -512,6 +512,8 @@ class InspectionService:
         requirements = InspectionRequirementModel.get_by_inspection_id(inspection_id)
 
         pending_items = []
+        # Track seen item numbers to avoid duplicates (multiple requirements can map to same order/warning letter)
+        seen_item_numbers = set()
 
         # Check if inspection record is pending
         pending_inspection_record = _get_pending_inspection_record(inspection_id)
@@ -533,6 +535,13 @@ class InspectionService:
                 )
 
                 if enforcement_status is not None:
+                    item_number = enforcement_status.get("item_number")
+
+                    # Skip if we've already added this item_number (avoid duplicates for orders/warning letters)
+                    # Only deduplicate if item_number exists (orders and warning letters)
+                    if item_number and item_number in seen_item_numbers:
+                        continue
+
                     item = {
                         "requirement": {
                             "id": requirement.id,
@@ -543,11 +552,16 @@ class InspectionService:
                             "name": enforcement_action.name,
                         },
                         "is_created": enforcement_status["is_created"],
-                        "item_number": enforcement_status.get("item_number"),
+                        "item_number": item_number,
                     }
                     if enforcement_status.get("is_issued", None) is not None:
                         item["is_issued"] = enforcement_status["is_issued"]
+
                     pending_items.append(item)
+
+                    # Track this item_number to prevent duplicates
+                    if item_number:
+                        seen_item_numbers.add(item_number)
 
         return pending_items
 
@@ -1420,6 +1434,8 @@ def _check_order_status(requirement_id: int):
 
     order = order_map.order if order_map.order else None
     item_number = order.order_number
+    if order.order_status in [OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED]:
+        return None
     if order.order_status != OrderStatusEnum.OPEN:
         return {"is_created": True, "item_number": item_number, "is_issued": False}
     return None
@@ -1486,7 +1502,6 @@ def _check_inspection_record_status(inspection_id: int):
     if not inspection_record:
         return {
             "is_created": False,
-            "is_issued": False,
             "ir_number": None,
             "ir_id": None,
         }
@@ -1506,16 +1521,13 @@ def _get_pending_inspection_record(inspection_id: int):
     """Get pending inspection record if not issued."""
     inspection_record_status = _check_inspection_record_status(inspection_id)
 
-    if inspection_record_status is None or inspection_record_status["is_issued"]:
-        return None
-
     return {
         "requirement": None,  # Inspection record applies to the whole inspection
         "item": {
             "id": inspection_record_status.get("ir_id"),
             "name": "Inspection Record",
         },
-        "is_created": inspection_record_status["is_created"],
-        "is_issued": inspection_record_status["is_issued"],
+        "is_created": inspection_record_status.get("is_created"),
+        "is_issued": inspection_record_status.get("is_issued", None),
         "item_number": inspection_record_status.get("ir_number"),
     }

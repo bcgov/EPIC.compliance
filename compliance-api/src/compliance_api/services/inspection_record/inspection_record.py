@@ -117,15 +117,14 @@ class InspectionRecordService:
                         for item in pending_items
                         if item.get("item").get("name", None) != "Inspection Record"
                     ]
-                    if items_expect_ir:
-                        raise UnprocessableEntityError(
-                            "Pending items found for this inspection"
+                    # Update the inspection status to be closed only if there are
+                    # no pending enforcement actions present
+                    if len(items_expect_ir) == 0:
+                        InspectionModel.update_inspection(
+                            inspection_id=inspection_id,
+                            inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},
+                            session=session,
                         )
-                InspectionModel.update_inspection(
-                    inspection_id=inspection_id,
-                    inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},
-                    session=session,
-                )
             if field_name == "record_prepared_by_id" and value:
                 # Validate the record prepared by id and add record_prepared_by_position_id to ir_update_data
                 _validate_record_prepared_by_value(
