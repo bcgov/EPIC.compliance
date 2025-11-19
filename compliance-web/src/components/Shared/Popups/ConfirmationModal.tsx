@@ -10,6 +10,7 @@ type ConfirmationModalProps = {
   confirmButtonText?: string;
   cancelButtonText?: string;
   showActions?: boolean;
+  hideSecondaryButton?: boolean;
   onConfirm: () => void;
   onCancel?: () => void;
 };
@@ -21,6 +22,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmButtonText,
   cancelButtonText,
   showActions = true,
+  hideSecondaryButton = false,
   onConfirm,
   onCancel,
 }) => {
@@ -40,6 +42,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           secondaryActionButtonText={cancelButtonText}
           onPrimaryAction={onConfirm}
           onSecondaryAction={onCancel}
+          hideSecondaryButton={hideSecondaryButton}
         />
       )}
     </>

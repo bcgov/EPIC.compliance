@@ -106,6 +106,7 @@ const InspectionFileActions: React.FC<InspectionFileActionsProps> = ({
               ? "Return to Inspection"
               : "Close Inspection"
           }
+          hideSecondaryButton={true}
           onConfirm={() => {
             if (hasPendingItems || hasUnissuedItems) {
               setClose();
