@@ -17,11 +17,14 @@ import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { useQueryClient } from "@tanstack/react-query";
 import { notify } from "@/store/snackbarStore";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 type WarningLetterCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  enforcementAction?: EnforcementActionEnum;
+  nonProceededRequirements?: InspectionRequirement[];
   onSubmit: (data: InspectionWarningLetter) => void;
 };
 
@@ -29,6 +32,8 @@ const WarningLetterCreateModal: FC<WarningLetterCreateModalProps> = ({
   inspectionData,
   requirementsList,
   requirement,
+  enforcementAction,
+  nonProceededRequirements,
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
@@ -89,6 +94,8 @@ const WarningLetterCreateModal: FC<WarningLetterCreateModalProps> = ({
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        enforcementAction={enforcementAction}
+        nonProceededRequirements={nonProceededRequirements}
         title="Create Warning Letter"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingWarningLetter}

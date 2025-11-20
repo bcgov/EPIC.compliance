@@ -57,14 +57,6 @@ class ChargeRecommendationService:
         inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
         ServiceUtils.access_check_update_for_inspection(inspection)
         ServiceUtils.inspection_status_check(inspection)
-
-        # Check if charge recommendation already exists for the given requirements
-        if ChargeRecommendation.does_charge_recommendation_exists_by_requirement_ids(
-            charge_recommendation_data.get("inspection_requirement_ids", []),
-        ):
-            raise UnprocessableEntityError(
-                "Charge Recommendation already exists for these requirements."
-            )
         charge_recommendation_obj = _create_cr_object(
             inspection, charge_recommendation_data
         )
@@ -101,13 +93,6 @@ class ChargeRecommendationService:
         if charge_recommendation.is_closed:
             ServiceUtils.inspection_status_check(inspection)
         requirement_ids = update_data.get("inspection_requirement_ids", [])
-
-        if ChargeRecommendation.does_charge_recommendation_exists_by_requirement_ids(
-            requirement_ids, charge_recommendation_id
-        ):
-            raise UnprocessableEntityError(
-                "Charge recommendation already exists for these requirements."
-            )
         with session_scope() as session:
             extracted_update_data = _extract_cr_data(update_data)
             updated_charge_recommendation = (

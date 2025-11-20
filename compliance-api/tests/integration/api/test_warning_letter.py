@@ -251,7 +251,7 @@ def test_create_warning_letter_with_duplicate_requirements(
         data=json.dumps(wl_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_update_warning_letter_success(

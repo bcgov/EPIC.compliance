@@ -331,29 +331,6 @@ class AdministrativePenalty(BaseModelVersioned):
         return result.administrative_penalty_count if result else 0
 
     @classmethod
-    def does_administrative_penalty_exists_by_requirement_ids(
-        cls, requirement_ids: list[int], administrative_penalty_id: int = None
-    ):
-        """Check if an administrative penalty exists by requirement ids."""
-        query = cls.query.join(
-            AdministrativePenaltyInspectionRequirementMap,
-            AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id
-            == cls.id,
-        ).filter(
-            AdministrativePenaltyInspectionRequirementMap.inspection_requirement_id.in_(
-                requirement_ids
-            ),
-            AdministrativePenaltyInspectionRequirementMap.is_deleted.is_(False),
-            AdministrativePenaltyInspectionRequirementMap.is_active.is_(True),
-            cls.is_deleted.is_(False),
-        )
-
-        if administrative_penalty_id:
-            query = query.filter(cls.id != administrative_penalty_id)
-
-        return query.first() is not None
-
-    @classmethod
     def get_administrative_penalties_by_case_files(
         cls, case_file_ids: list[int], open_aps_only: bool = False
     ):

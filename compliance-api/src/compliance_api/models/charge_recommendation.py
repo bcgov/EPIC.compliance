@@ -376,37 +376,3 @@ class ChargeRecommendation(BaseModelVersioned):
             .first()
         )
         return result.charge_recommendation_count if result else 0
-
-    @classmethod
-    @with_session
-    def does_charge_recommendation_exists_by_requirement_ids(
-        cls,
-        requirement_ids: list[int],
-        charge_recommendation_id: int = None,
-        session=None,
-    ):
-        """Check if a charge recommendation exists by requirement ids."""
-        query = (
-            session.query(cls)
-            .join(
-                ChargeRecommendationInspectionRequirementMap,
-                cls.id
-                == ChargeRecommendationInspectionRequirementMap.charge_recommendation_id,
-            )
-            .filter(
-                and_(
-                    ChargeRecommendationInspectionRequirementMap.inspection_requirement_id.in_(
-                        requirement_ids
-                    ),
-                    cls.is_active.is_(True),
-                    cls.is_deleted.is_(False),
-                    ChargeRecommendationInspectionRequirementMap.is_active.is_(True),
-                    ChargeRecommendationInspectionRequirementMap.is_deleted.is_(False),
-                )
-            )
-        )
-
-        if charge_recommendation_id:
-            query = query.filter(cls.id != charge_recommendation_id)
-
-        return query.first() is not None

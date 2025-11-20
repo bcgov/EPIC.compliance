@@ -146,13 +146,6 @@ class AdministrativePenaltyService:
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
         )
 
-        # Check if administrative penalty already exists for the given requirements
-        if AdministrativePenalty.does_administrative_penalty_exists_by_requirement_ids(
-            administrative_penalty_data.get("inspection_requirement_ids", []),
-        ):
-            raise UnprocessableEntityError(
-                "Administrative Penalty already exists for these requirements."
-            )
         administrative_penalty_obj = _create_ap_object(
             inspection, administrative_penalty_data
         )
@@ -200,17 +193,6 @@ class AdministrativePenaltyService:
             ServiceUtils.check_requirement_for_enforcement_action(
                 requirement_ids,
                 EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
-            )
-
-        # Check if administrative penalty already exists for the given requirements
-        if (
-            requirement_ids
-            and AdministrativePenalty.does_administrative_penalty_exists_by_requirement_ids(
-                requirement_ids, administrative_penalty_id
-            )
-        ):
-            raise UnprocessableEntityError(
-                "Administrative Penalty already exists for these requirements."
             )
 
         # Validate penalty_amount if decision is provided
@@ -349,16 +331,6 @@ class AdministrativePenaltyService:
             requirement_ids,
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
         )
-        # Check if administrative penalty already exists for the given requirements
-        if (
-            requirement_ids
-            and AdministrativePenalty.does_administrative_penalty_exists_by_requirement_ids(
-                requirement_ids, administrative_penalty_id
-            )
-        ):
-            raise UnprocessableEntityError(
-                "Administrative Penalty already exists for these requirements."
-            )
         existing_requirements = (
             AdministrativePenaltyInspectionRequirementMap.get_by_inspection_and_administrative_penalty_id(
                 inspection_id, administrative_penalty_id

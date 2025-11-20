@@ -222,7 +222,8 @@ def test_create_restorative_justice_with_duplicate_requirements(
     """Test creating restorative justice with requirements that are already used."""
     # The created_restorative_justice fixture already uses the
     # created_restorative_justice_inspection_requirement
-    # Now try to create a new restorative justice with the same requirement (should fail)
+    # Now try to create a new restorative justice with the same requirement
+    # This should succeed as requirements can be shared across multiple restorative justices
     url = API_BASE_URL
     rj_data = copy.copy(RestorativeJusticeScenario.default_value.value)
     rj_data["inspection_id"] = created_inspection.id
@@ -235,7 +236,7 @@ def test_create_restorative_justice_with_duplicate_requirements(
         data=json.dumps(rj_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.BAD_REQUEST
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_update_restorative_justice_success(

@@ -13,10 +13,10 @@ from compliance_api.models import InspectionRequirementImage as InspectionRequir
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.case_file import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
+from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionReqSourceDetail as InspectionReqSourceDetailModel
 from compliance_api.models.inspection import InspectionStatusEnum
-from compliance_api.models.enforcement_action import EnforcementActionOption as EnforcementActionOptionModel
 from compliance_api.models.inspection.inspection_req_enforcement_map import \
     InspectionReqEnforcementMap as InspectionReqEnforcementMapModel
 from compliance_api.models.inspection.inspection_req_image import ImageTypeEnum
@@ -503,10 +503,10 @@ class ServiceUtils:
             return
 
         valid_mappings = (
-            InspectionReqEnforcementMapModel.query
-            .filter(
+            InspectionReqEnforcementMapModel.query.filter(
                 InspectionReqEnforcementMapModel.requirement_id.in_(requirement_ids),
-                InspectionReqEnforcementMapModel.enforcement_action_id == enforcement_action_id
+                InspectionReqEnforcementMapModel.enforcement_action_id
+                == enforcement_action_id,
             )
             .with_entities(InspectionReqEnforcementMapModel.requirement_id)
             .distinct()
@@ -517,11 +517,19 @@ class ServiceUtils:
         valid_req_ids = {mapping.requirement_id for mapping in valid_mappings}
 
         # Find requirements that don't have the enforcement action
-        invalid_reqs = [req_id for req_id in requirement_ids if req_id not in valid_req_ids]
+        invalid_reqs = [
+            req_id for req_id in requirement_ids if req_id not in valid_req_ids
+        ]
 
         if invalid_reqs:
-            enforcement_action = EnforcementActionOptionModel.find_by_id(enforcement_action_id)
-            action_name = enforcement_action.name.lower() if enforcement_action else "specified enforcement action"
+            enforcement_action = EnforcementActionOptionModel.find_by_id(
+                enforcement_action_id
+            )
+            action_name = (
+                enforcement_action.name.lower()
+                if enforcement_action
+                else "specified enforcement action"
+            )
 
             raise UnprocessableEntityError(
                 f"Requirements {', '.join(map(str, invalid_reqs))} do not have enforcement action as {action_name}"

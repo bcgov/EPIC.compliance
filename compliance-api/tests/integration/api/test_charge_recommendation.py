@@ -303,7 +303,7 @@ def test_create_charge_recommendation_with_duplicate_requirements(
         data=json.dumps(cr_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_update_charge_recommendation_success(

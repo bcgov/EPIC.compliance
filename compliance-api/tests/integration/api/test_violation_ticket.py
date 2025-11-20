@@ -242,7 +242,7 @@ def test_create_violation_ticket_with_duplicate_requirements(
         data=json.dumps(vt_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_update_violation_ticket_success(

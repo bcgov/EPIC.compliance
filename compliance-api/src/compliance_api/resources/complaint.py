@@ -184,6 +184,7 @@ class Complaint(Resource):
     """Resource for managing a single Complaint."""
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a complaint by id")
     @API.response(code=200, model=complaint_list_model, description="Success")
     @API.response(404, "Not Found")
@@ -228,6 +229,7 @@ class ComplaintRequirementDetails(Resource):
     """Resource for managing a Complaint requirement details.."""
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(
         API, endpoint_description="Fetch a complaint requirement details"
     )
@@ -245,6 +247,7 @@ class ComplaintContact(Resource):
     """Resource for managing a Complaint Contact."""
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(
         API, endpoint_description="Fetch a complaint source contact"
     )

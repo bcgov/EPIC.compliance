@@ -14,7 +14,7 @@ const PendingItemsList: React.FC<PendingItemsListProps> = ({ items, filterCondit
   const filteredItems = items.filter(filterCondition);
   
   return (
-    <ul style={{ paddingLeft: "30px", margin: 0 }}>
+    <ul style={{ paddingLeft: "30px", marginBottom: "16px" }}>
       {Array.from(new Set(filteredItems.map(item => item.item.name)))
         .map((itemName, index) => {
           const itemsWithSameName = filteredItems.filter(item => item.item.name === itemName);
@@ -83,7 +83,7 @@ const InspectionPendingEnforcementsDescription: React.FC<
         </>
       )}
       
-      <div style={{ marginTop: "16px" }}>
+      <div>
         Please resolve these items and try again.
       </div>
     </div>

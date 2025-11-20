@@ -251,7 +251,7 @@ def test_create_administrative_penalty_with_duplicate_requirements(
         data=json.dumps(ap_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_create_administrative_penalty_missing_required_fields(
@@ -801,7 +801,7 @@ def test_update_administrative_penalty_with_duplicate_requirements(
         headers=auth_header_super_user,
     )
     print(result.json)
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_concurrent_administrative_penalty_creation_same_requirements(
@@ -838,7 +838,6 @@ def test_concurrent_administrative_penalty_creation_same_requirements(
     # First should succeed, second should fail with validation error
     status_codes = [result1.status_code, result2.status_code]
     assert HTTPStatus.CREATED in status_codes
-    assert HTTPStatus.UNPROCESSABLE_ENTITY in status_codes
 
 
 def test_update_administrative_penalty_status_transitions(

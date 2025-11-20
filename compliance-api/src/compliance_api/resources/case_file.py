@@ -199,6 +199,7 @@ class CaseFile(Resource):
     """Resource for managing a single CaseFile."""
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a CaseFile by id")
     @API.response(code=200, model=case_file_list_model, description="Success")
     @API.response(404, "Not Found")
@@ -340,6 +341,7 @@ class CaseFileLinks(Resource):
         return CaseFileLinkSchema().dump(created_link), HTTPStatus.CREATED
 
     @staticmethod
+    @auth.require
     @ApiHelper.swagger_decorators(API, endpoint_description="Get all linked case files")
     @API.response(code=200, model=[case_file_option_schema], description="Success")
     def get(case_file_id):

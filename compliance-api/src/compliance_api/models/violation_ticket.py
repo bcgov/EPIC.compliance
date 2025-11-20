@@ -266,24 +266,6 @@ class ViolationTicket(BaseModelVersioned):
         return query.count()
 
     @classmethod
-    def does_violation_ticket_exists_by_requirement_ids(
-        cls, requirement_ids: list[int], violation_ticket_id: int = None
-    ):
-        """Check if a violation ticket exists by requirement ids."""
-        query = cls.query.join(
-            ViolationTicketInspectionRequirementMap,
-            ViolationTicketInspectionRequirementMap.violation_ticket_id == cls.id,
-        ).filter(
-            ViolationTicketInspectionRequirementMap.inspection_requirement_id.in_(
-                requirement_ids
-            ),
-            cls.is_deleted.is_(False),
-        )
-        if violation_ticket_id:
-            query = query.filter(cls.id != violation_ticket_id)
-        return query.first()
-
-    @classmethod
     def get_by_vt_number(cls, vt_number: str):
         """Find a violation ticket by vt number."""
         return cls.get_by_params({"vt_number": vt_number}, default_filters=True)

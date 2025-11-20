@@ -44,6 +44,8 @@ type ViolationTicketCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  nonProceededRequirements?: InspectionRequirement[];
+  enforcementAction?: EnforcementActionEnum;
   onSubmit: (data: ViolationTicket) => void;
 };
 
@@ -51,6 +53,8 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
   inspectionData,
   requirementsList,
   requirement,
+  nonProceededRequirements,
+  enforcementAction,
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
@@ -120,6 +124,8 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        nonProceededRequirements={nonProceededRequirements}
+        enforcementAction={enforcementAction}
         title="Create Violation Ticket"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingViolationTicket}

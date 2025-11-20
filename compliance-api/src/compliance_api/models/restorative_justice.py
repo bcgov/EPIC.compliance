@@ -301,37 +301,3 @@ class RestorativeJustice(BaseModelVersioned):
             )
             .count()
         )
-
-    @classmethod
-    @with_session
-    def does_restorative_justice_exists_by_requirement_ids(
-        cls,
-        requirement_ids: list[int],
-        restorative_justice_id: int = None,
-        session=None,
-    ):
-        """Check if a restorative justice exists by requirement ids."""
-        query = (
-            session.query(cls)
-            .join(
-                RestorativeJusticeInspectionRequirementMap,
-                cls.id
-                == RestorativeJusticeInspectionRequirementMap.restorative_justice_id,
-            )
-            .filter(
-                and_(
-                    RestorativeJusticeInspectionRequirementMap.inspection_requirement_id.in_(
-                        requirement_ids
-                    ),
-                    cls.is_active.is_(True),
-                    cls.is_deleted.is_(False),
-                    RestorativeJusticeInspectionRequirementMap.is_active.is_(True),
-                    RestorativeJusticeInspectionRequirementMap.is_deleted.is_(False),
-                )
-            )
-        )
-
-        if restorative_justice_id:
-            query = query.filter(cls.id != restorative_justice_id)
-
-        return query.first() is not None

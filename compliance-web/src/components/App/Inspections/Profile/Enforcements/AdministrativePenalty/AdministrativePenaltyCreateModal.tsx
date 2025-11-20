@@ -45,12 +45,14 @@ type AdministrativePenaltyCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  nonProceededRequirements?: InspectionRequirement[];
+  enforcementAction: EnforcementActionEnum;
   onSubmit: (data: AdministrativePenalty) => void;
 };
 
 const AdministrativePenaltyCreateModal: FC<
   AdministrativePenaltyCreateModalProps
-> = ({ inspectionData, requirementsList, requirement, onSubmit }) => {
+> = ({ inspectionData, requirementsList, requirement, nonProceededRequirements, enforcementAction, onSubmit }) => {
   const queryClient = useQueryClient();
   const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
 
@@ -183,8 +185,10 @@ const AdministrativePenaltyCreateModal: FC<
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        nonProceededRequirements={nonProceededRequirements}
         title="Create Administrative Penalty"
         onSubmit={handleBaseSubmit}
+        enforcementAction={enforcementAction}
         isLoading={isPendingAdministrativePenalty || isPendingLink}
         additionalFormFields={
           <FormProvider {...methods}>

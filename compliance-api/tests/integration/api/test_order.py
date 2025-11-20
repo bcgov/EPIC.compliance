@@ -297,7 +297,7 @@ def test_create_order_with_duplicate_requirements(
         data=json.dumps(order_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.CREATED
 
 
 def test_create_order_missing_required_fields(client, auth_header_super_user):
@@ -430,7 +430,7 @@ def test_update_order_with_duplicate_requirements(
         data=json.dumps(update_data),
         headers=auth_header_super_user,
     )
-    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert result.status_code == HTTPStatus.OK
 
 
 def test_change_order_status_success(client, auth_header_super_user, created_order, db):

@@ -58,15 +58,6 @@ class RestorativeJusticeService:
         restorative_justice_obj = _create_rj_object(
             inspection, restorative_justice_data
         )
-        # Validate requirements if provided
-        if inspection_requirement_ids is not None:
-            exists = RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
-                inspection_requirement_ids
-            )
-            if exists:
-                raise BadRequestError(
-                    "A restorative justice already exists for one or more of the selected requirements"
-                )
         # Create restorative justice with session scope
         with session_scope() as session:
             restorative_justice = RestorativeJusticeModel.create_restorative_justice(
@@ -90,16 +81,6 @@ class RestorativeJusticeService:
 
         # Extract inspection requirement IDs
         inspection_requirement_ids = update_data.pop("inspection_requirement_ids", None)
-
-        # Validate requirements if provided
-        if inspection_requirement_ids is not None:
-            exists = RestorativeJusticeModel.does_restorative_justice_exists_by_requirement_ids(
-                inspection_requirement_ids, restorative_justice_id
-            )
-            if exists:
-                raise BadRequestError(
-                    "A restorative justice already exists for one or more of the selected requirements"
-                )
 
         with session_scope() as session:
             # Update the restorative justice

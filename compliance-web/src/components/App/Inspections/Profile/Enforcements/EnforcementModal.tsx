@@ -13,10 +13,13 @@ import {
   baseEnforcementSchema,
   initBaseFormData,
 } from "./EnforcementUtils";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 type EnforcementModalProps = {
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  enforcementAction: EnforcementActionEnum;
+  nonProceededRequirements?: InspectionRequirement[];
   title: string;
   onSubmit: (data: BaseEnforcementFormType, additionalData?: Record<string, unknown>) => void;
   isLoading?: boolean;
@@ -27,6 +30,8 @@ type EnforcementModalProps = {
 const EnforcementModal = ({
   requirementsList,
   requirement,
+  enforcementAction,
+  nonProceededRequirements,
   title,
   onSubmit,
   isLoading = false,
@@ -51,7 +56,11 @@ const EnforcementModal = ({
   const { handleSubmit, reset, watch } = methods;
 
   const selectedRequirements = watch("requirements") as InspectionRequirement[];
-
+  const requirementsAlreadyUsed = useMemo(() => {
+    return selectedRequirements.filter(
+      (requirement) => !nonProceededRequirements?.map((req:InspectionRequirement) => req.id)?.includes(requirement.id)
+    );
+  }, [selectedRequirements, nonProceededRequirements]);
   useEffect(() => {
     reset(defaultValues);
   }, [reset, defaultValues]);
@@ -91,7 +100,16 @@ const EnforcementModal = ({
               multiple
               disabled={!requirementsList?.length}
             />
-            {selectedRequirements?.map((requirement) => (
+            {selectedRequirements?.map((requirement) => {
+              const regularStyle = {
+                background: BCDesignTokens.surfaceColorBackgroundLightBlue,
+              };
+              const usedStyle = {
+                background: BCDesignTokens.supportSurfaceColorInfo,
+                border: `1px solid ${BCDesignTokens.supportBorderColorDanger}`,
+              };
+              const enforcementActionName = requirement.enforcement_action_data.filter((action) => action.id === enforcementAction)[0].name;
+              return (
               <Box
                 key={requirement.id}
                 sx={{
@@ -101,7 +119,7 @@ const EnforcementModal = ({
                   p: 1.5,
                   mb: 1.5,
                   borderRadius: BCDesignTokens.layoutBorderRadiusMedium,
-                  background: BCDesignTokens.surfaceColorBackgroundLightBlue,
+                  ...(requirementsAlreadyUsed.includes(requirement) ? usedStyle : regularStyle),
                 }}
               >
                 <Typography variant="caption" fontWeight={700}>
@@ -110,8 +128,16 @@ const EnforcementModal = ({
                 <Typography variant="subtitle2">
                   {requirement.summary}
                 </Typography>
+                {requirementsAlreadyUsed.includes(requirement) && (
+                  <Typography variant="caption" sx={{ color: BCDesignTokens.typographyColorDanger, fontSize: '0.75rem', lineHeight: '1.125rem' }}>
+                    This requirement has already been used to create&nbsp;
+                    {enforcementActionName}.&nbsp;
+                    Create another only if a separate {enforcementActionName} is needed
+                    for the same requirement.
+                  </Typography>
+                )}
               </Box>
-            ))}
+            )})}
             {additionalFormFields}
           </Box>
           {selectedRequirements?.length > 1 && (

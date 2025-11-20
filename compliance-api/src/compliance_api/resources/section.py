@@ -4,6 +4,8 @@ from http import HTTPStatus
 
 from flask_restx import Namespace, Resource
 
+from compliance_api.auth import auth
+
 from ..schemas import SectionSchema
 from ..services.section import SectionService
 from ..utils.util import cors_preflight
@@ -23,6 +25,7 @@ class Sections(Resource):
     """Resource for managing sections."""
 
     @staticmethod
+    @auth.require
     @API.response(code=200, description="Success", model=[section_list_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all active sections")
     def get():

@@ -175,18 +175,15 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
     violationTicket,
     restorativeJustice,
   ]);
-
-  // Fallback to display raw status if component logic fails
-  const displayName = flagStatus.name || "Unknown Status";
   
-  return (
+  return flagStatus.name ? (
     <Chip
-      label={displayName}
-      color={flagStatus.color || "default"}
+      label={flagStatus.name}
+      color={flagStatus.color}
       size="small"
       variant="outlined"
     />
-  );
+  ) : null;
 };
 
 export default EnforcementStatusFlag;

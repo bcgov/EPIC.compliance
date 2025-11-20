@@ -156,18 +156,35 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
       setRequirementEnforcements(filteredRequirements);
     }
   }, [inspectionRequirementsData]);
-
+  // All requirements marked for Order for which no orders created yet
   const nonProceededOrderRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
-    return requirementEnforcements.filter(
-      (requirement) =>
-        requirement.enforcement_action_data?.some(
-          (enforcement) =>
-            enforcement.id === EnforcementActionEnum.ORDER
-        )
+    const orderReqIds = inspectionOrdersData?.map((order) =>
+      order.order_requirement_maps?.map((map) => map.inspection_requirement_id)
     );
+    return prepNonProceededRequirements({
+      requirements: requirementEnforcements,
+      reqIds: orderReqIds,
+      enforcementActionType: EnforcementActionEnum.ORDER,
+    });
+  }, [requirementEnforcements, inspectionOrdersData]);
+
+  // All requirements marked for Order for which orders created or not
+  const allRequirementsForOrder = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    return requirementEnforcements
+      .filter((requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) => enforcement.id === EnforcementActionEnum.ORDER
+        )
+      )
+      .map((requirement) => ({
+        ...requirement,
+        enforcement_action_data: requirement.enforcement_action_data || [],
+      }));
   }, [requirementEnforcements]);
 
+  // All requirements marked for Warning Letter for which no warning letters created yet
   const nonProceededWarningLetterRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
     const warningLetterReqIds = inspectionWarningLettersData?.map(
@@ -183,6 +200,22 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionWarningLettersData]);
 
+  // All requirements marked for Warning Letter for which warning letters created or not
+  const allRequirementsForWarningLetter = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    return requirementEnforcements
+      .filter((requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) => enforcement.id === EnforcementActionEnum.WARNING_LETTER
+        )
+      )
+      .map((requirement) => ({
+        ...requirement,
+        enforcement_action_data: requirement.enforcement_action_data || [],
+      }));
+  }, [requirementEnforcements]);
+
+  // All requirements marked for AP Recommendation for which no AP recommendations created yet
   const nonProceededAPRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
     const apReqIds = inspectionAdministrativePenaltiesData?.map(
@@ -198,9 +231,25 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     });
   }, [requirementEnforcements, inspectionAdministrativePenaltiesData]);
 
+  // All requirements marked for AP Recommendation for which AP recommendations created or not
+  const allRequirementsForAP = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    return requirementEnforcements
+      .filter((requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) =>
+            enforcement.id === EnforcementActionEnum.AP_RECOMMENDATION
+        )
+      )
+      .map((requirement) => ({
+        ...requirement,
+        enforcement_action_data: requirement.enforcement_action_data || [],
+      }));
+  }, [requirementEnforcements]);
+
+  // All requirements marked for Charge Recommendation for which no charge recommendations created yet
   const nonProceededChargeRecommendationRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
-
     const chargeRecommendationReqIds = inspectionChargeRecommendationsData?.map(
       (chargeRecommendation) =>
         chargeRecommendation.charge_recommendation_requirement_maps?.map(
@@ -208,29 +257,31 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         )
     );
 
+    return prepNonProceededRequirements({
+      requirements: requirementEnforcements,
+      reqIds: chargeRecommendationReqIds,
+      enforcementActionType: EnforcementActionEnum.CHARGE_RECOMMENDATION,
+    });
+  }, [requirementEnforcements, inspectionChargeRecommendationsData]);
+
+  // All requirements marked for Charge Recommendation for which charge recommendations created or not
+  const allRequirementsForChargeRecommendation = useMemo(() => {
+    if (!requirementEnforcements) return [];
+
     return requirementEnforcements
-      .filter(
-        (requirement) =>
-          requirement.enforcement_action_data?.some(
-            (enforcement) =>
-              enforcement.id === EnforcementActionEnum.CHARGE_RECOMMENDATION
-          ) && !chargeRecommendationReqIds?.flat().includes(requirement.id)
+      .filter((requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) =>
+            enforcement.id === EnforcementActionEnum.CHARGE_RECOMMENDATION
+        )
       )
       .map((requirement) => ({
         ...requirement,
         enforcement_action_data: requirement.enforcement_action_data || [],
       }));
-  }, [requirementEnforcements, inspectionChargeRecommendationsData]);
-
-  const allRequirementsForChargeRecommendation = useMemo(() => {
-    if (!requirementEnforcements) return [];
-
-    return requirementEnforcements.map((requirement) => ({
-      ...requirement,
-      enforcement_action_data: requirement.enforcement_action_data || [],
-    }));
   }, [requirementEnforcements]);
 
+  // All requirements marked for Violation Ticket for which no violation tickets created yet
   const nonProceededVTRequirements = useMemo(() => {
     if (!requirementEnforcements) return [];
     const vtReqIds = inspectionViolationTicketsData?.map((violationTicket) =>
@@ -244,7 +295,22 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
       enforcementActionType: EnforcementActionEnum.VIOLATION_TICKET,
     });
   }, [requirementEnforcements, inspectionViolationTicketsData]);
-
+  // All requirements marked for Violation Ticket for which violation tickets created or not
+  const allRequirementsForViolationTicket = useMemo(() => {
+    if (!requirementEnforcements) return [];
+    return requirementEnforcements
+      .filter((requirement) =>
+        requirement.enforcement_action_data?.some(
+          (enforcement) =>
+            enforcement.id === EnforcementActionEnum.VIOLATION_TICKET
+        )
+      )
+      .map((requirement) => ({
+        ...requirement,
+        enforcement_action_data: requirement.enforcement_action_data || [],
+      }));
+  }, [requirementEnforcements]);
+  
   const allRequirementsForRestorativeJustice = useMemo(() => {
     if (!requirementEnforcements) return [];
 
@@ -268,8 +334,10 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <OrderCreateModal
             inspectionData={inspectionData}
-            requirementsList={nonProceededOrderRequirements}
+            requirementsList={allRequirementsForOrder}
             requirement={requirement}
+            enforcementAction={modelType}
+            nonProceededRequirements={nonProceededOrderRequirements}
             onSubmit={(data) => {
               openEnforcementOrderDrawer(data);
               setModalClose();
@@ -281,8 +349,10 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <WarningLetterCreateModal
             inspectionData={inspectionData}
-            requirementsList={nonProceededWarningLetterRequirements}
+            requirementsList={allRequirementsForWarningLetter}
             requirement={requirement}
+            enforcementAction={modelType}
+            nonProceededRequirements={nonProceededWarningLetterRequirements}
             onSubmit={(data) => {
               openEnforcementWarningLetterDrawer(data);
               setModalClose();
@@ -294,8 +364,10 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <AdministrativePenaltyCreateModal
             inspectionData={inspectionData}
-            requirementsList={nonProceededAPRequirements}
+            requirementsList={allRequirementsForAP}
             requirement={requirement}
+            enforcementAction={modelType}
+            nonProceededRequirements={nonProceededAPRequirements}
             onSubmit={() => {
               setModalClose();
             }}
@@ -307,6 +379,8 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
           <ChargeRecommendationCreateModal
             inspectionData={inspectionData}
             requirementsList={allRequirementsForChargeRecommendation}
+            enforcementAction={modelType}
+            nonProceededRequirements={nonProceededChargeRecommendationRequirements}
             requirement={requirement}
             onSubmit={() => {
               setModalClose();
@@ -318,7 +392,9 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         content = (
           <ViolationTicketCreateModal
             inspectionData={inspectionData}
-            requirementsList={nonProceededVTRequirements}
+            requirementsList={allRequirementsForViolationTicket}
+            nonProceededRequirements={nonProceededVTRequirements}
+            enforcementAction={modelType}
             requirement={requirement}
             onSubmit={() => {
               setModalClose();

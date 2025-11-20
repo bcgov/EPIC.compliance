@@ -122,7 +122,9 @@ class InspectionRecordService:
                     if len(items_expect_ir) == 0:
                         InspectionModel.update_inspection(
                             inspection_id=inspection_id,
-                            inspection_data={"inspection_status": InspectionStatusEnum.CLOSED},
+                            inspection_data={
+                                "inspection_status": InspectionStatusEnum.CLOSED
+                            },
                             session=session,
                         )
             if field_name == "record_prepared_by_id" and value:

@@ -246,21 +246,3 @@ class WarningLetter(BaseModelVersioned):
             .first()
         )
         return result.warning_letter_count if result else 0
-
-    @classmethod
-    def does_warning_letter_exists_by_requirement_ids(
-        cls, requirement_ids: list[int], warning_letter_id: int = None
-    ):
-        """Check if a warning letter exists by requirement ids."""
-        query = cls.query.join(
-            WarningLetterInspectionRequirementMap,
-            WarningLetterInspectionRequirementMap.warning_letter_id == cls.id,
-        ).filter(
-            WarningLetterInspectionRequirementMap.inspection_requirement_id.in_(
-                requirement_ids
-            ),
-            cls.is_deleted.is_(False),
-        )
-        if warning_letter_id:
-            query = query.filter(cls.id != warning_letter_id)
-        return query.first()

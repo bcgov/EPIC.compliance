@@ -1,9 +1,10 @@
 """Integration tests for the pending enforcements endpoint."""
 
-import requests
 import json
-import pytest
 from http import HTTPStatus
+
+import pytest
+import requests
 
 
 class TestPendingEnforcementsEndpoint:

@@ -51,12 +51,6 @@ class WarningLetterService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value
         )
-        if WarningLetterModel.does_warning_letter_exists_by_requirement_ids(
-            requirement_ids
-        ):
-            raise UnprocessableEntityError(
-                "Warning letter already exists for these requirements."
-            )
         warning_letter_obj = _create_warning_letter_obj(inspection, warning_letter_data)
         with session_scope() as session:
             # pylint: disable=import-outside-toplevel
@@ -106,12 +100,6 @@ class WarningLetterService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value
         )
-        if WarningLetterModel.does_warning_letter_exists_by_requirement_ids(
-            requirement_ids, warning_letter_id
-        ):
-            raise UnprocessableEntityError(
-                "Warning letter already exists for these requirements."
-            )
         #  If the issuing officer id is different from the existing one, regenerate the content
         if issuing_officer_id != warning_letter.issuing_officer_id:
             update_data["content"] = _create_content(

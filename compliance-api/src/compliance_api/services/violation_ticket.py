@@ -66,14 +66,6 @@ class ViolationTicketService:
             requirement_ids, EnforcementActionOptionEnum.VIOLATION_TICKET.value
         )
 
-        # Check if violation ticket already exists for these requirements
-        if ViolationTicketModel.does_violation_ticket_exists_by_requirement_ids(
-            requirement_ids
-        ):
-            raise UnprocessableEntityError(
-                "Violation ticket already exists for these requirements."
-            )
-
         # Create violation ticket object with generated VT number
         violation_ticket_obj = _create_violation_ticket_obj(
             inspection, violation_ticket_data
@@ -131,14 +123,6 @@ class ViolationTicketService:
             ServiceUtils.check_requirement_for_enforcement_action(
                 requirement_ids, EnforcementActionOptionEnum.VIOLATION_TICKET.value
             )
-
-            # Check if violation ticket already exists for these requirements (excluding current ticket)
-            if ViolationTicketModel.does_violation_ticket_exists_by_requirement_ids(
-                requirement_ids, violation_ticket_id
-            ):
-                raise UnprocessableEntityError(
-                    "Violation ticket already exists for these requirements."
-                )
 
             # Validate inspection requirements exist
             for req_id in requirement_ids:

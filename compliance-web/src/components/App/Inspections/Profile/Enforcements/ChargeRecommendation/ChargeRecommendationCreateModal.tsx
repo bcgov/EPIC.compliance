@@ -20,7 +20,7 @@ import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import ChargeRecommendationUpdateModal from "./ChargeRecommendationUpdateModal";
-import { MODAL_WIDTHS } from "@/utils/constants";
+import { EnforcementActionEnum, MODAL_WIDTHS } from "@/utils/constants";
 
 const chargeRecommendationSchema = baseEnforcementSchema;
 
@@ -31,13 +31,22 @@ type ChargeRecommendationFormType = yup.InferType<
 type ChargeRecommendationCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
+  nonProceededRequirements: InspectionRequirement[];
+  enforcementAction: EnforcementActionEnum;
   requirement?: InspectionRequirement;
   onSubmit: (data: ChargeRecommendation) => void;
 };
 
 const ChargeRecommendationCreateModal: FC<
   ChargeRecommendationCreateModalProps
-> = ({ inspectionData, requirementsList, requirement, onSubmit }) => {
+> = ({
+  inspectionData,
+  requirementsList,
+  nonProceededRequirements,
+  enforcementAction,
+  requirement,
+  onSubmit,
+}) => {
   const queryClient = useQueryClient();
   const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
 
@@ -108,6 +117,8 @@ const ChargeRecommendationCreateModal: FC<
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        nonProceededRequirements={nonProceededRequirements}
+        enforcementAction={enforcementAction}
         title="Create Charge Recommendation"
         onSubmit={handleBaseSubmit}
         isLoading={isPending}

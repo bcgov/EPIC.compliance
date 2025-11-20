@@ -69,10 +69,6 @@ class OrderService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.ORDER.value
         )
-        # if OrderModel.does_order_exists_by_requirement_ids(requirement_ids):
-        #     raise UnprocessableEntityError(
-        #         "Order already exists for these requirements."
-        #     )
         order_obj = _create_order_obj(inspection, order_data)
         with session_scope() as session:
             from compliance_api.services.order.order_approval import (  # pylint: disable=import-outside-toplevel
@@ -107,7 +103,7 @@ class OrderService:
     @classmethod
     def update_order(cls, order_id: int, update_data: dict) -> OrderModel:
         """Update an existing order."""
-        order = ServiceUtils.order_exist_check(order_id)
+        ServiceUtils.order_exist_check(order_id)
         inspection = ServiceUtils.inspection_exist_check(
             inspection_id=update_data.get("inspection_id")
         )
@@ -118,10 +114,6 @@ class OrderService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.ORDER.value
         )
-        if OrderModel.does_order_exists_by_requirement_ids(requirement_ids, order):
-            raise UnprocessableEntityError(
-                "Order already exists for these requirements."
-            )
         with session_scope() as session:
             updated_order = OrderModel.update_order(order_id, update_data, session)
             cls.insert_or_update_inspection_requirements(

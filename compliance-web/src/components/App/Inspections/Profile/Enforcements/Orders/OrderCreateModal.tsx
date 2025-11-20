@@ -21,6 +21,7 @@ import {
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 type OrderFormType = yup.InferType<typeof orderSchema>;
 
@@ -83,6 +84,8 @@ type OrderCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  enforcementAction: EnforcementActionEnum;
+  nonProceededRequirements?: InspectionRequirement[];
   onSubmit: (data: InspectionOrder) => void;
 };
 
@@ -90,6 +93,8 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   inspectionData,
   requirementsList,
   requirement,
+  enforcementAction,
+  nonProceededRequirements,
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
@@ -150,6 +155,8 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        nonProceededRequirements={nonProceededRequirements}
+        enforcementAction={enforcementAction}
         title="Create Order"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingOrder}
