@@ -186,6 +186,7 @@ class InspectionRecordDataBuilder:
                             {
                                 "id": officer.get("id"),
                                 "name": f"{officer.get('name')}",
+                                "position": officer.get("position").get("name"),
                             }
                         )
                 #  Iterate over the inspecting officers to fix their position name

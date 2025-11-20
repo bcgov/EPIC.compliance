@@ -122,7 +122,8 @@ const ProjectOverview = () => {
     ].includes(inspectionReportsData?.ir_progress?.id as IRProgressEnum);
     if (isApproved) {
       const approvedBy = irApprovalsData?.[0]?.approved_by;
-      return `${approvedBy?.name}, ${approvedBy?.position?.name}`;
+      const approvedByPosition = irApprovalsData?.[0]?.approved_by_position;
+      return `${approvedBy?.name}, ${approvedByPosition?.name}`;
     }
     return "";
   };

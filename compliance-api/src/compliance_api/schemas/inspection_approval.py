@@ -1,5 +1,6 @@
 """Schema for Inspection Record Approval."""
 
+from compliance_api.schemas.common import KeyValueSchema
 from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, validate
 from marshmallow_enum import EnumField
 
@@ -24,6 +25,7 @@ class InspectionRecordApprovalSchema(
         include_fk = True
 
     approved_by = fields.Nested(StaffUserSchema)
+    approved_by_position = fields.Nested(KeyValueSchema)
 
     @post_dump
     def convert_enum_to_key_value(

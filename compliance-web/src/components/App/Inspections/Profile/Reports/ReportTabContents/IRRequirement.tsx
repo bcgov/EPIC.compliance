@@ -3,7 +3,7 @@ import { RequirementImage } from "@/models/Image";
 import IRBoxContainer from "./IRBoxContainer";
 import { Box, Typography } from "@mui/material";
 import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
-import { DRAWER_WIDTHS } from "@/utils/constants";
+import { DRAWER_WIDTHS, RequirementSourceEnum } from "@/utils/constants";
 import RequirementDrawer from "@/components/App/Inspections/Profile/Requirements/RequirementDrawer";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDrawer } from "@/store/drawerStore";
@@ -155,12 +155,30 @@ const IRRequirement = ({
       {Array.from(groupedRequirementSources.entries()).map(
         ([sourceId, reqSourceDetails], groupIndex) => (
           <Box key={sourceId} sx={{ mb: 3 }}>
-            {reqSourceDetails.map((reqSourceDetail) => (
+            {reqSourceDetails.map((reqSourceDetail) => {
+              let title = `${groupIndex === 0 ? `Requirement ${requirementIndex + 1}:` : ""} `;
+               if ( reqSourceDetail.condition_number) {
+                title += `Condition ${reqSourceDetail.condition_number} of`;
+               }
+               if (reqSourceDetail.section_number) {
+                title += `Section ${reqSourceDetail.section_number} of`;
+               }
+               if (reqSourceDetail.source_title) {
+                title += ` ${reqSourceDetail.source_title}`;
+               }
+               if (reqSourceDetail.requirement_source_id.toString() === RequirementSourceEnum.EACA) {
+                title += ` ${reqSourceDetail.amendment_number}`;
+               }
+               if (reqSourceDetail.requirement_source_id.toString() === RequirementSourceEnum.COMPLAINCE_AGREEMENT) {
+                title += ` ${reqSourceDetail.compliance_number}`;
+               }
+               if (reqSourceDetail.requirement_source_id.toString() === RequirementSourceEnum.REGULATION) {
+                title += ` ${reqSourceDetail.regulation_number}`;
+               }
+              return(
               <Box key={reqSourceDetail.id} sx={{ mb: 2 }}>
                 <DetailSection
-                  title={`${groupIndex === 0 ? `Requirement ${requirementIndex + 1}:` : ""} 
-                  ${reqSourceDetail.condition_number ? `Condition ${reqSourceDetail.condition_number}` : `Section ${reqSourceDetail.section_number}`}
-                  of ${reqSourceDetail.source_title || ""}`}
+                  title={title}
                   subTitle={reqSourceDetail.title || ""}
                   content={reqSourceDetail.description || ""}
                   appendixNo={reqSourceDetail.appendix?.appendix_no}
@@ -176,7 +194,7 @@ const IRRequirement = ({
                   />
                 ))}
               </Box>
-            ))}
+            )})}
           </Box>
         )
       )}

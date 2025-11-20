@@ -1,6 +1,6 @@
 """Restorative Justice Service."""
 
-from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, UnprocessableEntityError
+from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.db import session_scope
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
