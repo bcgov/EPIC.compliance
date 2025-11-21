@@ -23,6 +23,7 @@ import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import dayjs, { Dayjs } from "dayjs";
 import { APReferralStatus, APDecisionStatus } from "@/utils/constants";
+import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const administrativePenaltyUpdateSchema = yup.object().shape({
   referral_status: yup
@@ -76,20 +77,23 @@ const decisionOptions: DecisionOption[] = Object.values(APDecisionStatus).map(
 type AdministrativePenaltyUpdateModalProps = {
   administrativePenalty: AdministrativePenalty;
   inspectionData: Inspection;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSuccess?: (data: AdministrativePenalty) => void;
 };
 
 const AdministrativePenaltyUpdateModal: FC<
   AdministrativePenaltyUpdateModalProps
-> = ({ administrativePenalty, inspectionData, onSuccess }) => {
+> = ({ administrativePenalty, inspectionData, isPrimaryOfficerOrSuperUser, onSuccess }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
-
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
   // Calculate readonly mode based on inspection status and administrative penalty status
   const isReadonlyMode = useMemo(() => {
-    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
-    return isInspectionClosed && administrativePenalty.is_closed;
-  }, [inspectionData.inspection_status, administrativePenalty.is_closed]);
+    if (administrativePenalty.is_closed) {
+      return !isSuperUser;
+    }
+    return !isPrimaryOfficerOrSuperUser;
+  }, [administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
 
   const defaultValues = useMemo(() => {
     const currentReferralStatus =

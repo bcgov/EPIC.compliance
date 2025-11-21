@@ -114,7 +114,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
       }
     );
   }, [inspectionRequirementData, resetForm, inspectionRequirementTypesList]);
-
+  const isInspectionClosed = useMemo(() => inspectionData?.inspection_status?.toLowerCase() === "closed", [inspectionData]);
   const onCreateSuccess = useCallback(() => {
     onSubmit("Requirement created successfully!", true);
     resetForm();
@@ -389,7 +389,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           />
         </Box>
         <DrawerActionBarBottom
-          isShowActionBar={!!inspectionRequirementData}
+          isShowActionBar={!isInspectionClosed}
           onDeleteAction={onDeleteRequirement}
           onDeleteTitle="Delete Requirement"
           onDeleteDescription="You are about to delete this Requirement. Are you sure?"

@@ -44,6 +44,9 @@ import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
 import { useViolationTicketsData } from "@/hooks/useViolationTickets";
 import { useRestorativeJusticeByInspection } from "@/hooks/useRestorativeJustice";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
+import { KC_USER_GROUPS, useCurrentLoggedInUser, useIsRolesAllowed } from "@/hooks/useAuthorization";
+import { StaffUser } from "@/models/Staff";
+import { useStaffUsersData } from "@/hooks/useStaff";
 
 interface InspectionEnforcementsProps {
   inspectionData: Inspection;
@@ -56,6 +59,8 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
   const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
   const { setOpen: setDrawerOpen, setClose: setDrawerClose } = useDrawer();
   const [isDataLoading, setIsDataLoading] = React.useState<boolean>(true);
+  const { data: staffData } = useStaffUsersData();
+  const currentUser = useCurrentLoggedInUser();
   const [requirementEnforcements, setRequirementEnforcements] = React.useState<
     InspectionRequirement[]
   >([]);
@@ -76,7 +81,21 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
       ),
     [caseFile]
   );
-
+  // Memoize the current user's staff ID
+  const currentUserStaffId = useMemo(
+    () =>
+      staffData?.find(
+        (staff: StaffUser) => staff.auth_user_guid === currentUser?.preferred_username
+      )?.id ?? 0,
+    [staffData, currentUser]
+  );
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
+  const isPrimaryOfficerOrSuperUser = useMemo(() => {
+    return (
+      inspectionData.primary_officer_id === currentUserStaffId ||
+      isSuperUser
+    );
+  }, [inspectionData.primary_officer_id, currentUserStaffId, isSuperUser]);
   const {
     data: inspectionRequirementsData,
     isLoading: isInspectionRequirementsLoading,
@@ -473,7 +492,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
           inspection={inspectionData}
           enforcementOrder={order}
           staffUsersList={issuingOfficers || []}
-          isReadonlyMode={!isEnforcementsAllowed}
           openEnforcementOrderDrawer={openEnforcementOrderDrawer}
         />
       ),
@@ -512,6 +530,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <AdministrativePenaltyUpdateModal
           administrativePenalty={administrativePenalty}
           inspectionData={inspectionData}
+          isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
           onSuccess={() => {
             // Refresh the administrative penalties data
             queryClient.invalidateQueries({
@@ -535,6 +554,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <ChargeRecommendationUpdateModal
           chargeRecommendationData={chargeRecommendation}
           inspectionData={inspectionData}
+          isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
           onSubmit={() => {
             // Refresh the charge recommendations data
             queryClient.invalidateQueries({
@@ -553,6 +573,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <ViolationTicketUpdateModal
           violationTicket={violationTicket}
           inspectionData={inspectionData}
+          isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
           onSuccess={() => {
             // Refresh the violation tickets data
             queryClient.invalidateQueries({
@@ -573,13 +594,13 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         <RestorativeJusticeUpdateModal
           restorativeJustice={restorativeJustice}
           inspectionData={inspectionData}
+          isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
           onSuccess={() => {
             // Refresh the restorative justice data
             queryClient.invalidateQueries({
               queryKey: ["inspection-restorative-justice", inspectionData.id],
             });
           }}
-          isReadonlyMode={!isEnforcementsAllowed}
         />
       ),
       width: MODAL_WIDTHS.RESTORATIVE_JUSTICE,

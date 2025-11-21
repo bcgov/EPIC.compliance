@@ -17,6 +17,8 @@ import {
 } from "@/models/RestorativeJustice";
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
+import { RestorativeJusticeStatus } from "@/utils/constants";
+import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const restorativeJusticeUpdateSchema = yup.object().shape({
   restitution_details: yup.string().optional(),
@@ -28,18 +30,19 @@ type RestorativeJusticeUpdateFormType = yup.InferType<typeof restorativeJusticeU
 type RestorativeJusticeUpdateModalProps = {
   restorativeJustice: RestorativeJustice;
   inspectionData: Inspection;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSuccess: (data: RestorativeJustice) => void;
-  isReadonlyMode?: boolean;
 };
 
 const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
   restorativeJustice,
   inspectionData,
+  isPrimaryOfficerOrSuperUser,
   onSuccess,
-  isReadonlyMode = false,
 }) => {
   const queryClient = useQueryClient();
   const { setClose } = useModal();
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
 
   const defaultValues = useMemo(() => {
     return {
@@ -49,7 +52,15 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
         : null,
     };
   }, [restorativeJustice]);
-
+  const isReadonlyMode = useMemo(() => {
+    if (restorativeJustice.status.id === RestorativeJusticeStatus.CLOSED) {
+      return !isSuperUser;
+    }
+    if (restorativeJustice.status.id !== RestorativeJusticeStatus.CLOSED) {
+      return !isPrimaryOfficerOrSuperUser;
+    }
+    return true;
+  }, [restorativeJustice.status, isPrimaryOfficerOrSuperUser, isSuperUser]);
   const methods = useForm<RestorativeJusticeUpdateFormType>({
     resolver: yupResolver(restorativeJusticeUpdateSchema),
     mode: "onBlur",

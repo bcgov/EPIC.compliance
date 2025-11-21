@@ -182,11 +182,12 @@ class AdministrativePenaltyService:
             inspection_id=update_data.get("inspection_id")
             or administrative_penalty.inspection_id
         )
-        ServiceUtils.access_check_update_for_inspection(inspection)
-        # If administrative penalty is closed, then check the inspection status
-        # No more modification possible once the AP and IR is closed
+        #  Primary or super user can update ap if it is not closed
+        if not administrative_penalty.is_closed:
+            ServiceUtils.access_check_update_for_inspection(inspection)
+        #  Super user can update ap if it is closed
         if administrative_penalty.is_closed:
-            ServiceUtils.inspection_status_check(inspection)
+            ServiceUtils.access_check_for_super_user()
 
         requirement_ids = update_data.get("inspection_requirement_ids", [])
         if requirement_ids:

@@ -81,13 +81,10 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
     [warningLetter.progress]
   );
 
-  const isReadonly =
-    useMemo(
-      () =>
-        warningLetter.status?.id === WarningLetterStatusEnum.ISSUED ||
-        isReadonlyMode,
-      [warningLetter.status, isReadonlyMode]
-    ) || false;
+  const isWarningLetterClosed = useMemo(
+    () => warningLetter.status?.id === WarningLetterStatusEnum.ISSUED,
+    [warningLetter.status]
+  );
 
   const formatFormData = useCallback((data: InspectionWarningLetter) => {
     return {
@@ -253,7 +250,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
         </Box>
         <Stack
           /** 64px (DrawerTitleBar height) + 65px (DrawerActionBar height) + 64px (DrawerActionBarTop preview height) */
-          height={`calc(100vh - ${appHeaderHeight + 193 - (isReadonly ? 65 : 0)}px)`}
+          height={`calc(100vh - ${appHeaderHeight + 193 - (isWarningLetterClosed ? 65 : 0)}px)`}
           direction={"row"}
         >
           <Box
@@ -270,7 +267,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
               name="content"
               isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 235}px)`}
-              disabled={isReadonlyMode}
+              disabled={isWarningLetterClosed}
             />
           </Box>
           <Box
@@ -291,19 +288,19 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
               fullWidth
               isSortOptions
               isRequired={true}
-              disabled={isReadonlyMode}
+              disabled={isWarningLetterClosed}
             />
             <ControlledDateField
               className="cy-intended-issuance-date"
               name="intendedIssuanceDate"
               label="Intended Issuance Date"
               sx={{ width: "100%" }}
-              disabled={isReadonlyMode}
+              disabled={isWarningLetterClosed}
             />
           </Box>
         </Stack>
         <DrawerActionBarBottom
-          isShowActionBar={!!warningLetter && !isReadonly}
+          isShowActionBar={!!warningLetter && !isWarningLetterClosed}
           onDeleteAction={onDeleteWarningLetter}
           onDeleteTitle="Delete Warning Letter"
           onDeleteDescription={`You are about to delete Warning Letter ${warningLetter.warning_letter_number}. Are you sure?`}

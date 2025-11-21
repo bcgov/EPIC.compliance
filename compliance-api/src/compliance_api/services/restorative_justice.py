@@ -77,10 +77,18 @@ class RestorativeJusticeService:
     ) -> RestorativeJusticeModel:
         """Update an existing restorative justice."""
         # Check if restorative justice exists
-        cls.get_by_id(restorative_justice_id)
+        restorative_justice = cls.get_by_id(restorative_justice_id)
 
         # Extract inspection requirement IDs
         inspection_requirement_ids = update_data.pop("inspection_requirement_ids", None)
+        inspection = ServiceUtils.inspection_exist_check(
+            inspection_id=update_data.get("inspection_id")
+            or restorative_justice.inspection_id
+        )
+        if not restorative_justice.status == RestorativeJusticeStatusEnum.CLOSED:
+            ServiceUtils.access_check_update_for_inspection(inspection)
+        if restorative_justice.status == RestorativeJusticeStatusEnum.CLOSED:
+            ServiceUtils.access_check_for_super_user()
 
         with session_scope() as session:
             # Update the restorative justice

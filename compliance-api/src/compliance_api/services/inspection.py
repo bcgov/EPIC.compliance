@@ -497,14 +497,12 @@ class InspectionService:
         return output
 
     @classmethod
-    def get_pending_items(cls, inspection_id: int):
+    def get_pending_items(cls, inspection_id: int):  # pylint: disable=too-many-locals
         """Get pending items for an inspection (optimized with single query).
 
         Returns a list of items (enforcement actions, inspection records) that are mapped to requirements
         or the inspection but not yet created or not in proper status.
         """
-        from sqlalchemy.orm import aliased
-
         pending_items = []
         seen_item_numbers = set()
 
@@ -521,7 +519,7 @@ class InspectionService:
         order_map = aliased(OrderInspectionRequirementMapModel)
         order = aliased(OrderModel)
         wl_map = aliased(WarningLetterInspectionRequirementMapModel)
-        wl = aliased(WarningLetterModel)
+        warning_letter = aliased(WarningLetterModel)
         ap_map = aliased(AdministrativePenaltyInspectionRequirementMapModel)
         vt_map = aliased(ViolationTicketInspectionRequirementMapModel)
         cr_map = aliased(ChargeRecommendationInspectionRequirementMapModel)
@@ -535,8 +533,8 @@ class InspectionService:
                 enf_action.name.label("enforcement_action_name"),
                 order.order_number.label("order_number"),
                 order.order_status.label("order_status"),
-                wl.warning_letter_number.label("warning_letter_number"),
-                wl.status.label("warning_letter_status"),
+                warning_letter.warning_letter_number.label("warning_letter_number"),
+                warning_letter.status.label("warning_letter_status"),
                 order_map.id.label("order_map_id"),
                 wl_map.id.label("wl_map_id"),
                 ap_map.id.label("ap_map_id"),
@@ -574,7 +572,7 @@ class InspectionService:
                     wl_map.is_deleted.is_(False),
                 ),
             )
-            .outerjoin(wl, wl.id == wl_map.warning_letter_id)
+            .outerjoin(warning_letter, warning_letter.id == wl_map.warning_letter_id)
             .outerjoin(
                 ap_map,
                 and_(
@@ -1199,7 +1197,7 @@ def _set_charge_recommendation_enforcement_action_object(
 
 def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids):
     """Build the query for bulk fetching enforcement actions and requirement details."""
-    # pylint: disable=invalid-name
+    # pylint: disable=invalid-name,too-many-locals
     # Create aliases for mapping tables
     order_map_alias = aliased(OrderInspectionRequirementMapModel)
     warning_letter_map_alias = aliased(WarningLetterInspectionRequirementMapModel)
@@ -1339,7 +1337,9 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
     return results
 
 
-def _bulk_fetch_enforcement_actions_and_requirement_details(inspection_ids):
+def _bulk_fetch_enforcement_actions_and_requirement_details(
+    inspection_ids,
+):  # pylint: disable=too-many-locals,too-many-branches
     """Bulk fetch all enforcement actions and build requirement details in a single optimized query.
 
     Returns a dict with two keys per inspection:
@@ -1504,7 +1504,7 @@ def _bulk_fetch_enforcement_actions_and_requirement_details(inspection_ids):
     return result_data
 
 
-def _process_enforcement_status(
+def _process_enforcement_status(  # pylint: disable=too-many-return-statements,too-many-branches
     enforcement_action_id: int,
     order_map_id,
     order_number,
@@ -1544,7 +1544,7 @@ def _process_enforcement_status(
             return {"is_created": True, "item_number": order_number, "is_issued": False}
         return None
 
-    elif enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
         if not wl_map_id:
             return {"is_created": False, "item_number": None}
         if not warning_letter_number:
@@ -1557,7 +1557,7 @@ def _process_enforcement_status(
             }
         return None
 
-    elif (
+    if (
         enforcement_action_id
         == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
     ):
@@ -1565,12 +1565,12 @@ def _process_enforcement_status(
             return {"is_created": False, "item_number": None}
         return None
 
-    elif enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
         if not vt_map_id:
             return {"is_created": False, "item_number": None}
         return None
 
-    elif (
+    if (
         enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
     ):
         if not cr_map_id:

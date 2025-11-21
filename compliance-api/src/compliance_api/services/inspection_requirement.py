@@ -1323,30 +1323,29 @@ def _get_enforcement_number_by_type(result):
     return ""
 
 
-def _get_enforcement_status_by_type(result):
+def _get_enforcement_status_by_type(result):  # pylint: disable=too-many-return-statements
     """Get the correct enforcement status based on the enforcement action type."""
     enforcement_action_id = result.enforcement_action_id
 
     # Map enforcement action ID to the corresponding status field
     if enforcement_action_id == EnforcementActionOptionEnum.ORDER.value:
         return result.order_status
-    elif enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
         return result.warning_letter_status
-    elif enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
         return result.violation_ticket_status
-    elif (
+    if (
         enforcement_action_id
         == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
     ):
         return result.admin_penalty_status
-    elif (
+    if (
         enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
     ):
         return result.charge_rec_status
-    elif enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value:
         return result.restorative_justice_status
-    else:
-        return None
+    return None
 
 
 def _get_enforcement_progress_by_type(result):
@@ -1356,10 +1355,9 @@ def _get_enforcement_progress_by_type(result):
     # Only Order and Warning Letter have progress fields
     if enforcement_action_id == EnforcementActionOptionEnum.ORDER.value:
         return result.order_progress
-    elif enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
         return result.warning_letter_progress
-    else:
-        return None
+    return None
 
 
 def _apply_enforcement_number_sort(query, subq, sort_order):

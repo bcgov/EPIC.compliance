@@ -24,6 +24,7 @@ import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import { CRStatus, CRDecision, CRCourtDecision } from "@/utils/constants";
 import dayjs, { Dayjs } from "dayjs";
+import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const chargeRecommendationUpdateSchema = yup.object().shape({
   status: yup.mixed<StatusOption>().required("Status is required"),
@@ -82,21 +83,24 @@ const courtDecisionOptions: CourtDecisionOption[] = Object.values(CRCourtDecisio
 type ChargeRecommendationUpdateModalProps = {
   chargeRecommendationData: ChargeRecommendation;
   inspectionData: Inspection;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSubmit: (data: ChargeRecommendation) => void;
 };
 
 const ChargeRecommendationUpdateModal: FC<
   ChargeRecommendationUpdateModalProps
-> = ({ chargeRecommendationData, inspectionData, onSubmit }) => {
+> = ({ chargeRecommendationData, inspectionData, isPrimaryOfficerOrSuperUser, onSubmit }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
   const { data: sentenceTypeOptions = [], isLoading: isSentenceTypesLoading } = useSentenceTypeOptionsData();
-
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
   // Calculate readonly mode based on inspection status and charge recommendation status
   const isReadonlyMode = useMemo(() => {
-    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
-    return isInspectionClosed && chargeRecommendationData.is_closed;
-  }, [inspectionData.inspection_status, chargeRecommendationData.is_closed]);
+    if (chargeRecommendationData.is_closed) {
+      return !isSuperUser;
+    }
+    return !isPrimaryOfficerOrSuperUser;
+  }, [chargeRecommendationData.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
 
   const defaultValues = useMemo(() => {
     const currentStatus = chargeRecommendationData.status || CRStatus.DRAFTING;

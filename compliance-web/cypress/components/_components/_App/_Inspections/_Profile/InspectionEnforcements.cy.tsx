@@ -9,6 +9,8 @@ import { AdministrativePenalty } from "@/models/AdministrativePenalty";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box } from "@mui/material";
 import { EnforcementActionEnum } from "@/utils/constants";
+import { AuthProvider } from "react-oidc-context";
+import { OidcConfig } from "@/utils/config";
 
 describe("InspectionEnforcements", () => {
   let queryClient: QueryClient;
@@ -21,16 +23,18 @@ describe("InspectionEnforcements", () => {
   const mountComponent = (inspectionData = mockInspection) => {
     mount(
       <QueryClientProvider client={queryClient}>
-        <Box
-          sx={{
-            width: "800px",
-            height: "800px",
-            overflow: "visible",
-            position: "relative",
-          }}
-        >
-          <InspectionEnforcements inspectionData={inspectionData} />
-        </Box>
+        <AuthProvider {...OidcConfig}>
+          <Box
+            sx={{
+              width: "800px",
+              height: "800px",
+              overflow: "visible",
+              position: "relative",
+            }}
+          >
+            <InspectionEnforcements inspectionData={inspectionData} />
+          </Box>
+        </AuthProvider>
       </QueryClientProvider>
     );
   };
@@ -38,7 +42,7 @@ describe("InspectionEnforcements", () => {
   beforeEach(() => {
     // Set viewport to ensure proper dimensions
     cy.viewport(1200, 800);
-
+    
     // Add CSS overrides to fix overflow issues in testing
     cy.document().then((doc) => {
       const style = doc.createElement("style");
@@ -61,6 +65,21 @@ describe("InspectionEnforcements", () => {
         },
       },
     });
+
+    // Mock current user for useCurrentLoggedInUser hook
+    const mockCurrentUser = { preferred_username: "test.user@gov.bc.ca" };
+    queryClient.setQueryData(["current-user"], mockCurrentUser);
+
+    // Mock staff users data
+    const mockStaffUsers = [
+      {
+        id: 1,
+        name: "Test User",
+        auth_user_guid: "test.user@gov.bc.ca",
+        is_active: true,
+      },
+    ];
+    queryClient.setQueryData(["staff-users", true], mockStaffUsers);
 
     // Default mock inspection data
     mockInspection = {

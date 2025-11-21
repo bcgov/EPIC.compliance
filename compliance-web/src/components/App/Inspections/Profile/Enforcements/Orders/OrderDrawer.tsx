@@ -25,7 +25,11 @@ import ControlledDateField from "@/components/Shared/Controlled/ControlledDateFi
 import { useEnforcementSectionsData } from "@/hooks/useEnforcementSections";
 import { BCDesignTokens } from "epic.theme";
 import EnforcementDownloadPDFButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadPDFButton";
-import { EnforcementActionEnum, OrderProgressEnum } from "@/utils/constants";
+import {
+  EnforcementActionEnum,
+  OrderProgressEnum,
+  OrderStatusEnum,
+} from "@/utils/constants";
 import OrderApprovalButtons from "@/components/App/Inspections/Profile/Enforcements/Orders/OrderApprovalButtons";
 import EnforcementStatusFlag from "@/components/App/Inspections/Profile/Enforcements/EnforcementStatusFlag";
 import { RestartAltRounded } from "@mui/icons-material";
@@ -38,7 +42,6 @@ interface OrderDrawerProps {
   inspection: Inspection;
   enforcementOrder: InspectionOrder;
   staffUsersList: StaffUser[];
-  isReadonlyMode: boolean;
   openEnforcementOrderDrawer?: (order: InspectionOrder) => void;
 }
 
@@ -78,7 +81,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
   inspection,
   enforcementOrder,
   staffUsersList,
-  isReadonlyMode = false,
   openEnforcementOrderDrawer,
 }) => {
   const queryClient = useQueryClient();
@@ -91,13 +93,17 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
     [enforcementOrder.order_progress]
   );
 
-  const isReadonly = useMemo(
-    () =>
-      enforcementOrder.order_progress?.id === OrderProgressEnum.ISSUED ||
-      isReadonlyMode,
-    [enforcementOrder.order_progress, isReadonlyMode]
+  const CLOSED_ORDER_STATUSES: OrderStatusEnum[] = useMemo(
+    () => [OrderStatusEnum.OPEN, OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED],
+    []
   );
 
+  const isOrderClosed = useMemo(() => {
+    const statusId = enforcementOrder.order_status?.id as
+      | OrderStatusEnum
+      | undefined;
+    return statusId !== undefined && CLOSED_ORDER_STATUSES.includes(statusId);
+  }, [enforcementOrder.order_status?.id, CLOSED_ORDER_STATUSES]);
   const formatFormData = useCallback((data: InspectionOrder) => {
     return {
       whereAs: {
@@ -252,6 +258,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <OrderApprovalButtons
               inspectionOrder={enforcementOrder}
               inspection={inspection}
+              isOrderClosed={isOrderClosed}
               caseFileId={inspection.case_file_id ?? 0}
               openEnforcementOrderDrawer={openEnforcementOrderDrawer}
             />
@@ -265,7 +272,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
         </Box>
         <Stack
           /** 64px (DrawerTitleBar height) + 65px (DrawerActionBar height) + 64px (DrawerActionBarTop preview height) */
-          height={`calc(100vh - ${appHeaderHeight + 193 - (isReadonly ? 65 : 0)}px)`}
+          height={`calc(100vh - ${appHeaderHeight + 193 - (isOrderClosed ? 65 : 0)}px)`}
           direction={"row"}
         >
           <Box
@@ -282,7 +289,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               name="whereAs"
               isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 235}px)`}
-              disabled={isReadonlyMode}
+              disabled={isOrderClosed}
             />
           </Box>
           <Box
@@ -303,7 +310,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               fullWidth
               isSortOptions
               isRequired={true}
-              disabled={isReadonlyMode}
+              disabled={isOrderClosed}
             />
             <Stack direction={"row"} gap={2}>
               <ControlledAutoComplete
@@ -315,14 +322,14 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 fullWidth
                 isRequired={true}
-                disabled={isReadonlyMode}
+                disabled={isOrderClosed}
               />
               <ControlledDateField
                 className="cy-intended-issuance-date"
                 name="intendedIssuanceDate"
                 label="Intended Issuance Date"
                 sx={{ width: "100%" }}
-                disabled={isReadonlyMode}
+                disabled={isOrderClosed}
               />
             </Stack>
             <ControlledLexicalEditor
@@ -330,12 +337,12 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               name="nowTherefore"
               isAdvanced={true}
               height={`calc(100vh - ${appHeaderHeight + 428}px)`}
-              disabled={isReadonlyMode}
+              disabled={isOrderClosed}
             />
           </Box>
         </Stack>
         <DrawerActionBarBottom
-          isShowActionBar={!!enforcementOrder && !isReadonly}
+          isShowActionBar={!!enforcementOrder && !isOrderClosed}
           onDeleteAction={onDeleteOrder}
           onDeleteTitle="Delete Order"
           onDeleteDescription={`You are about to delete Order ${enforcementOrder.order_number}. Are you sure?`}
