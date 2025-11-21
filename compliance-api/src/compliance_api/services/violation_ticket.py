@@ -102,13 +102,14 @@ class ViolationTicketService:
             raise ResourceNotFoundError(
                 f"Violation ticket with ID {violation_ticket_id} not found"
             )
-
-        # Perform access and status checks
-        ServiceUtils.access_check_update_for_inspection(violation_ticket.inspection)
-        # If violation ticket is closed, then check the inspection status
-        # No more modification possible once the VT and IR is closed
+        inspection = ServiceUtils.inspection_exist_check(
+            inspection_id=violation_ticket_data.get("inspection_id")
+            or violation_ticket.inspection_id
+        )
+        if not violation_ticket.is_closed:
+            ServiceUtils.access_check_update_for_inspection(inspection)
         if violation_ticket.is_closed:
-            ServiceUtils.inspection_status_check(violation_ticket.inspection)
+            ServiceUtils.access_check_for_super_user()
 
         # Check if violation ticket can be updated based on status
         if violation_ticket.status == ViolationTicketStatusEnum.PAID:

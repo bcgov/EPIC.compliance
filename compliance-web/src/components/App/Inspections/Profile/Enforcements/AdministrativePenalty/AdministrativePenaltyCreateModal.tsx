@@ -21,7 +21,7 @@ import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import AdministrativePenaltyUpdateModal from "./AdministrativePenaltyUpdateModal";
 import AdministrativePenaltyCreationOptions from "./AdministrativePenaltyCreationOptions";
-import { MODAL_WIDTHS } from "@/utils/constants";
+import { EnforcementActionEnum, MODAL_WIDTHS } from "@/utils/constants";
 
 const administrativePenaltySchema = baseEnforcementSchema.shape({
   apCreationMethod: yup.string().required("Please select a creation method"),
@@ -47,12 +47,13 @@ type AdministrativePenaltyCreateModalProps = {
   requirement?: InspectionRequirement;
   nonProceededRequirements?: InspectionRequirement[];
   enforcementAction: EnforcementActionEnum;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSubmit: (data: AdministrativePenalty) => void;
 };
 
 const AdministrativePenaltyCreateModal: FC<
   AdministrativePenaltyCreateModalProps
-> = ({ inspectionData, requirementsList, requirement, nonProceededRequirements, enforcementAction, onSubmit }) => {
+> = ({ inspectionData, requirementsList, requirement, nonProceededRequirements, enforcementAction, isPrimaryOfficerOrSuperUser, onSubmit }) => {
   const queryClient = useQueryClient();
   const { setOpen: setModalOpen, setClose: setModalClose } = useModal();
 
@@ -99,6 +100,7 @@ const AdministrativePenaltyCreateModal: FC<
           <AdministrativePenaltyUpdateModal
             administrativePenalty={data}
             inspectionData={inspectionData}
+            isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
             onSuccess={(updatedData) => {
               onSubmit(updatedData);
             }}

@@ -8,11 +8,12 @@ from sqlalchemy import ForeignKey, Index, Integer, String, and_, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from compliance_api.models.base_model import BaseModelVersioned
+from compliance_api.models.base_model import BaseModelVersioned, db
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
+from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 
 
 class ChargeRecommendationStatusEnum(Enum):
@@ -376,3 +377,26 @@ class ChargeRecommendation(BaseModelVersioned):
             .first()
         )
         return result.charge_recommendation_count if result else 0
+
+    @classmethod
+    def get_latest_charge_recommendation_number_count(
+        cls, case_file_id: int, project_id: int, pattern
+    ):
+        """Return charge recommendation numbers for the case file/project.
+
+        Only numbers matching the provided pattern are returned.
+        """
+        rows = (
+            db.session.query(cls.charge_recommendation_number)
+            .join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
+            .filter(
+                CaseFileModel.project_id == project_id,
+                InspectionModel.case_file_id == case_file_id,
+                cls.charge_recommendation_number.op("~")(pattern),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+            )
+            .all()
+        )
+        return get_sorted_numbers_from_generated_code(rows, "CR")

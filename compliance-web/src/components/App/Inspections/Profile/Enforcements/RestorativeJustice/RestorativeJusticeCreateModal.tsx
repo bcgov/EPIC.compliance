@@ -17,11 +17,13 @@ import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { useQueryClient } from "@tanstack/react-query";
 import { notify } from "@/store/snackbarStore";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 type RestorativeJusticeCreateModalProps = {
   inspectionData: Inspection;
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
+  enforcementAction: EnforcementActionEnum;
   onSubmit: (data: RestorativeJustice) => void;
 };
 
@@ -29,6 +31,7 @@ const RestorativeJusticeCreateModal: FC<RestorativeJusticeCreateModalProps> = ({
   inspectionData,
   requirementsList,
   requirement,
+  enforcementAction,
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
@@ -89,6 +92,7 @@ const RestorativeJusticeCreateModal: FC<RestorativeJusticeCreateModalProps> = ({
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
+        enforcementAction={enforcementAction}
         title="Create Restorative Justice"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingRestorativeJustice}

@@ -89,3 +89,15 @@ def escape_wam_friendly_url(param):
     base64_org_name = base64.b64encode(bytes(param, encoding="utf-8")).decode("utf-8")
     encode_org_name = urllib.parse.quote(base64_org_name, safe="")
     return encode_org_name
+
+
+def get_sorted_numbers_from_generated_code(codes: list[str], replace):
+    """Return sorted numbers from the generated codes."""
+    existing = sorted([int(r[0].split("_")[-1].replace(replace, "")) for r in codes])
+    expected = 1
+    for num in existing:
+        if num != expected:
+            return expected
+        expected += 1
+
+    return expected

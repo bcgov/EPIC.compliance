@@ -30,7 +30,6 @@ const DrawerActionBarBottom: React.FC<DrawerActionBarBottomProps> = React.memo(
   }) => {
     const { setClose } = useDrawer();
     const { setOpen, setClose: setModalClose } = useModal();
-
     const {
       formState: { isValid, isDirty },
     } = useFormContext();

@@ -20,6 +20,7 @@ import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import dayjs, { Dayjs } from "dayjs";
+import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const violationTicketUpdateSchema = yup.object().shape({
   ticket_number: yup.string().required("Ticket Number is required"),
@@ -50,22 +51,26 @@ const statusOptions: StatusOption[] = [
 type ViolationTicketUpdateModalProps = {
   violationTicket: ViolationTicket;
   inspectionData: Inspection;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSuccess?: (data: ViolationTicket) => void;
 };
 
 const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   violationTicket,
   inspectionData,
+  isPrimaryOfficerOrSuperUser,
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
-
-  // Calculate readonly mode based on inspection status and violation ticket status
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
+  // Calculate readonly mode based on violation ticket status
   const isReadonlyMode = useMemo(() => {
-    const isInspectionClosed = inspectionData.inspection_status.toLowerCase() === "closed";
-    return isInspectionClosed && violationTicket.is_closed;
-  }, [inspectionData.inspection_status, violationTicket.is_closed]);
+    if (violationTicket.is_closed) {
+      return !isSuperUser;
+    }
+    return !isPrimaryOfficerOrSuperUser;
+  }, [violationTicket.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
 
   const defaultValues = useMemo(() => {
     const currentStatus = violationTicket.status?.id || "ISSUED";

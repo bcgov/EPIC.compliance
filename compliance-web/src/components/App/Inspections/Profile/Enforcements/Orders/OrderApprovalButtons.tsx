@@ -15,9 +15,10 @@ import {
 } from "@/hooks/useInspectionOrders";
 import { StaffUser } from "@/models/Staff";
 import { OrderApproval } from "@/models/OrderApproval";
-import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
+import { KC_USER_GROUPS, useCurrentLoggedInUser, useIsRolesAllowed } from "@/hooks/useAuthorization";
 import {
   APPROVAL_STATUS,
+  InspectionStatusEnum,
   OrderStatusEnum,
   STAFF_USER_POSITION,
 } from "@/utils/constants";
@@ -34,11 +35,13 @@ const OrderApprovalButtons = ({
   inspectionOrder,
   inspection,
   caseFileId,
+  isOrderClosed,
   openEnforcementOrderDrawer,
 }: {
   inspectionOrder: InspectionOrder;
   inspection: Inspection;
   caseFileId: number;
+  isOrderClosed: boolean;
   openEnforcementOrderDrawer?: (order: InspectionOrder) => void;
 }) => {
   const { setOpen, setClose } = useModal();
@@ -80,6 +83,14 @@ const OrderApprovalButtons = ({
         ].includes(staff.position_id ?? 0)
     );
   }, [staffData, currentUser]);
+
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
+  const isPrimaryOfficerOrSuperUser = useMemo(() => {
+    return (
+      inspection.primary_officer_id === currentUserStaffId ||
+      isSuperUser
+    );
+  }, [inspection.primary_officer_id, currentUserStaffId, isSuperUser]);
 
   const refetchDataAndClose = useCallback(
     (message: string) => {
@@ -197,18 +208,45 @@ const OrderApprovalButtons = ({
     [latestOrder]
   );
 
-  const isShowRescindCloseButton = useMemo(
-    () =>
-      latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
-      latestOrder.order_status?.id === OrderStatusEnum.OPEN,
-    [latestOrder]
+  const isShowRescindButton = useMemo(
+    () => {
+      if (latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
+        latestOrder.order_status?.id === OrderStatusEnum.OPEN) {
+        // Only show rescind button if you are the primary officer or superuser
+        // in case if the inspection is closed
+        // isReadOnly true means the Order is in closed state
+        if (isOrderClosed || inspection.inspection_status === InspectionStatusEnum.CLOSED) {
+          return isPrimaryOfficerOrSuperUser;
+        }
+        return true;
+      }
+    return false;
+    },
+    [latestOrder, inspection, isOrderClosed, isPrimaryOfficerOrSuperUser]
   );
-
+  const isShowCloseButton = useMemo(
+    () => {
+      if (latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
+        latestOrder.order_status?.id === OrderStatusEnum.OPEN) {
+        // Do not show close button if the inspection is open and readonly is true
+        if (inspection.inspection_status === InspectionStatusEnum.OPEN && isOrderClosed) {
+          return false;
+        }
+        // Show close button if the inspection is closed and readonly is true
+        if (inspection.inspection_status === InspectionStatusEnum.CLOSED && isOrderClosed) {
+          return true;
+        }
+        return true;
+      }
+      return false;
+    },
+    [latestOrder, inspection, isOrderClosed]
+  );
   const isShowReopenButton = useMemo(
     () =>
       latestOrder?.order_status?.id === OrderStatusEnum.CLOSED &&
-      !isShowRescindCloseButton,
-    [latestOrder, isShowRescindCloseButton]
+      !isShowCloseButton,
+    [latestOrder, isShowCloseButton]
   );
 
   const handleApprovalsButtonClick = useCallback(
@@ -360,18 +398,16 @@ const OrderApprovalButtons = ({
           Issue Order
         </Button>
       )}
-      {isShowRescindCloseButton && (
         <Box sx={{ display: "inline-flex", gap: 2 }}>
-          <Button color="secondary" onClick={handleRescindButtonClick}>
+          {isShowRescindButton && <Button color="secondary" onClick={handleRescindButtonClick}>
             Rescind Order
-          </Button>
-          <Button
+          </Button>}
+          {isShowCloseButton && <Button
             onClick={() => handleStatusButtonClick(OrderStatusEnum.CLOSED)}
           >
             Close Order
-          </Button>
-        </Box>
-      )}
+          </Button>}
+        </Box> 
       {isShowReopenButton && (
         <Button
           color="secondary"

@@ -497,14 +497,12 @@ class InspectionService:
         return output
 
     @classmethod
-    def get_pending_items(cls, inspection_id: int):
+    def get_pending_items(cls, inspection_id: int):  # pylint: disable=too-many-locals
         """Get pending items for an inspection (optimized with single query).
 
         Returns a list of items (enforcement actions, inspection records) that are mapped to requirements
         or the inspection but not yet created or not in proper status.
         """
-        from sqlalchemy.orm import aliased
-
         pending_items = []
         seen_item_numbers = set()
 
@@ -521,7 +519,7 @@ class InspectionService:
         order_map = aliased(OrderInspectionRequirementMapModel)
         order = aliased(OrderModel)
         wl_map = aliased(WarningLetterInspectionRequirementMapModel)
-        wl = aliased(WarningLetterModel)
+        warning_letter = aliased(WarningLetterModel)
         ap_map = aliased(AdministrativePenaltyInspectionRequirementMapModel)
         vt_map = aliased(ViolationTicketInspectionRequirementMapModel)
         cr_map = aliased(ChargeRecommendationInspectionRequirementMapModel)
@@ -535,8 +533,8 @@ class InspectionService:
                 enf_action.name.label("enforcement_action_name"),
                 order.order_number.label("order_number"),
                 order.order_status.label("order_status"),
-                wl.warning_letter_number.label("warning_letter_number"),
-                wl.status.label("warning_letter_status"),
+                warning_letter.warning_letter_number.label("warning_letter_number"),
+                warning_letter.status.label("warning_letter_status"),
                 order_map.id.label("order_map_id"),
                 wl_map.id.label("wl_map_id"),
                 ap_map.id.label("ap_map_id"),
@@ -574,7 +572,7 @@ class InspectionService:
                     wl_map.is_deleted.is_(False),
                 ),
             )
-            .outerjoin(wl, wl.id == wl_map.warning_letter_id)
+            .outerjoin(warning_letter, warning_letter.id == wl_map.warning_letter_id)
             .outerjoin(
                 ap_map,
                 and_(
@@ -978,10 +976,11 @@ def _create_inspection_record_number(
     if case_file.project_id != project_id:
         raise UnprocessableEntityError("Given project and case file doesn't match")
 
-    count = InspectionModel.get_count_by_project_nd_case_file_id(
-        project_id, case_file_id
+    pattern = rf"^{project_code}_{case_file.case_file_number}_IR[0-9]{{3}}$"
+    count = InspectionModel.get_latest_ir_number_count(
+        case_file_id, project_id, pattern
     )
-    serial_number = f"{count + 1:03}"
+    serial_number = f"{count:03}"
     return f"{project_code}_{case_file.case_file_number}_IR{serial_number}"
 
 
@@ -1199,7 +1198,7 @@ def _set_charge_recommendation_enforcement_action_object(
 
 def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids):
     """Build the query for bulk fetching enforcement actions and requirement details."""
-    # pylint: disable=invalid-name
+    # pylint: disable=invalid-name,too-many-locals
     # Create aliases for mapping tables
     order_map_alias = aliased(OrderInspectionRequirementMapModel)
     warning_letter_map_alias = aliased(WarningLetterInspectionRequirementMapModel)
@@ -1247,16 +1246,30 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
         .filter(InspectionRequirementModel.inspection_id.in_(inspection_ids))
         .outerjoin(
             enforcement_action_map_alias,
-            enforcement_action_map_alias.requirement_id == InspectionRequirementModel.id,
+            and_(
+                enforcement_action_map_alias.requirement_id
+                == InspectionRequirementModel.id,
+                enforcement_action_map_alias.is_active.is_(True),
+                enforcement_action_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             enforcement_action_option_alias,
-            enforcement_action_option_alias.id
-            == enforcement_action_map_alias.enforcement_action_id,
+            and_(
+                enforcement_action_option_alias.id
+                == enforcement_action_map_alias.enforcement_action_id,
+                enforcement_action_option_alias.is_active.is_(True),
+                enforcement_action_option_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             order_map_alias,
-            order_map_alias.inspection_requirement_id == InspectionRequirementModel.id,
+            and_(
+                order_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                order_map_alias.is_active.is_(True),
+                order_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             order_alias,
@@ -1268,8 +1281,12 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
         )
         .outerjoin(
             warning_letter_map_alias,
-            warning_letter_map_alias.inspection_requirement_id
-            == InspectionRequirementModel.id,
+            and_(
+                warning_letter_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                warning_letter_map_alias.is_active.is_(True),
+                warning_letter_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             warning_letter_alias,
@@ -1281,21 +1298,30 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
         )
         .outerjoin(
             violation_ticket_map_alias,
-            violation_ticket_map_alias.inspection_requirement_id
-            == InspectionRequirementModel.id,
+            and_(
+                violation_ticket_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                violation_ticket_map_alias.is_active.is_(True),
+                violation_ticket_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             violation_ticket_alias,
             and_(
-                violation_ticket_alias.id == violation_ticket_map_alias.violation_ticket_id,
+                violation_ticket_alias.id
+                == violation_ticket_map_alias.violation_ticket_id,
                 violation_ticket_alias.is_active.is_(True),
                 violation_ticket_alias.is_deleted.is_(False),
             ),
         )
         .outerjoin(
             administrative_penalty_map_alias,
-            administrative_penalty_map_alias.inspection_requirement_id
-            == InspectionRequirementModel.id,
+            and_(
+                administrative_penalty_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                administrative_penalty_map_alias.is_active.is_(True),
+                administrative_penalty_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             administrative_penalty_alias,
@@ -1308,8 +1334,12 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
         )
         .outerjoin(
             charge_recommendation_map_alias,
-            charge_recommendation_map_alias.inspection_requirement_id
-            == InspectionRequirementModel.id,
+            and_(
+                charge_recommendation_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                charge_recommendation_map_alias.is_active.is_(True),
+                charge_recommendation_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             charge_recommendation_alias,
@@ -1322,8 +1352,12 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
         )
         .outerjoin(
             restorative_justice_map_alias,
-            restorative_justice_map_alias.inspection_requirement_id
-            == InspectionRequirementModel.id,
+            and_(
+                restorative_justice_map_alias.inspection_requirement_id
+                == InspectionRequirementModel.id,
+                restorative_justice_map_alias.is_active.is_(True),
+                restorative_justice_map_alias.is_deleted.is_(False),
+            ),
         )
         .outerjoin(
             restorative_justice_alias,
@@ -1339,7 +1373,9 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
     return results
 
 
-def _bulk_fetch_enforcement_actions_and_requirement_details(inspection_ids):
+def _bulk_fetch_enforcement_actions_and_requirement_details(
+    inspection_ids,
+):  # pylint: disable=too-many-locals,too-many-branches
     """Bulk fetch all enforcement actions and build requirement details in a single optimized query.
 
     Returns a dict with two keys per inspection:
@@ -1504,7 +1540,7 @@ def _bulk_fetch_enforcement_actions_and_requirement_details(inspection_ids):
     return result_data
 
 
-def _process_enforcement_status(
+def _process_enforcement_status(  # pylint: disable=too-many-return-statements,too-many-branches
     enforcement_action_id: int,
     order_map_id,
     order_number,
@@ -1544,7 +1580,7 @@ def _process_enforcement_status(
             return {"is_created": True, "item_number": order_number, "is_issued": False}
         return None
 
-    elif enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
         if not wl_map_id:
             return {"is_created": False, "item_number": None}
         if not warning_letter_number:
@@ -1557,7 +1593,7 @@ def _process_enforcement_status(
             }
         return None
 
-    elif (
+    if (
         enforcement_action_id
         == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
     ):
@@ -1565,14 +1601,12 @@ def _process_enforcement_status(
             return {"is_created": False, "item_number": None}
         return None
 
-    elif enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
+    if enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
         if not vt_map_id:
             return {"is_created": False, "item_number": None}
         return None
 
-    elif (
-        enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
-    ):
+    if enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value:
         if not cr_map_id:
             return {"is_created": False, "item_number": None}
         return None

@@ -7,10 +7,12 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Index, Integer, String, Text, and_
 from sqlalchemy.orm import relationship
 
-from compliance_api.models.base_model import BaseModelVersioned
+from compliance_api.models.base_model import BaseModelVersioned, db
+from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.models.utils import with_session
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
+from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 
 
 class RestorativeJusticeStatusEnum(Enum):
@@ -301,3 +303,26 @@ class RestorativeJustice(BaseModelVersioned):
             )
             .count()
         )
+
+    @classmethod
+    def get_latest_restorative_justice_number_count(
+        cls, case_file_id: int, project_id: int, pattern
+    ):
+        """Return restorative justice numbers for the case file/project.
+
+        Only numbers matching the provided pattern are returned.
+        """
+        rows = (
+            db.session.query(cls.restorative_justice_number)
+            .join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
+            .filter(
+                CaseFileModel.project_id == project_id,
+                InspectionModel.case_file_id == case_file_id,
+                cls.restorative_justice_number.op("~")(pattern),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+            )
+            .all()
+        )
+        return get_sorted_numbers_from_generated_code(rows, "RJ")

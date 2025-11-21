@@ -8,6 +8,7 @@ from compliance_api.models.db import session_scope
 from compliance_api.models.department_detail import DepartmentDetail as DepartmentDetailModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
+from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum, OrderStatusEnum
@@ -181,8 +182,17 @@ class OrderService:
     def change_status(cls, order_id, status):
         """Close the order."""
         order = ServiceUtils.order_exist_check(order_id)
-        ServiceUtils.access_check_update_for_inspection(order.inspection)
         status_enum = OrderStatusEnum(status.get("status"))
+        # If the inspection is closed and the order is closed, the only allowed operations are CLOSE or RESCINDED
+        if (
+            order.inspection.inspection_status == InspectionStatusEnum.CLOSED
+            and order.is_closed
+            and status_enum not in [OrderStatusEnum.CLOSED, OrderStatusEnum.RESCINDED]
+        ):
+            raise UnprocessableEntityError(
+                "CLOSE or RESCINDED is the only allowed operations"
+            )
+        ServiceUtils.access_check_update_for_inspection(order.inspection)
         if order.order_status == status_enum:
             raise UnprocessableEntityError(
                 "The order is already in the requested status"
@@ -532,6 +542,7 @@ def _create_order_number(project_id: int, case_file_id: int) -> str:
     if case_file.project_id != project_id:
         raise UnprocessableEntityError("Given project and case file don't match")
 
-    count = OrderModel.get_count_by_project_nd_case_file_id(project_id, case_file_id)
-    serial_number = f"{count + 1:03}"
+    pattern = rf"^{project_code}_{case_file.case_file_number}_OR[0-9]{{3}}$"
+    count = OrderModel.get_latest_order_number_count(case_file_id, project_id, pattern)
+    serial_number = f"{count:03}"
     return f"{project_code}_{case_file.case_file_number}_OR{serial_number}"

@@ -19,6 +19,7 @@ import {
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
+import { EnforcementActionEnum } from "@/utils/constants";
 
 const violationTicketSchema = baseEnforcementSchema.shape({
   ticket_number: yup.string().required("Ticket Number is required").trim(),
@@ -45,7 +46,8 @@ type ViolationTicketCreateModalProps = {
   requirementsList: InspectionRequirement[];
   requirement?: InspectionRequirement;
   nonProceededRequirements?: InspectionRequirement[];
-  enforcementAction?: EnforcementActionEnum;
+  enforcementAction: EnforcementActionEnum;
+  isPrimaryOfficerOrSuperUser: boolean;
   onSubmit: (data: ViolationTicket) => void;
 };
 
@@ -54,6 +56,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
   requirementsList,
   requirement,
   nonProceededRequirements,
+  isPrimaryOfficerOrSuperUser,
   enforcementAction,
   onSubmit,
 }) => {
@@ -126,6 +129,7 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         requirement={requirement}
         nonProceededRequirements={nonProceededRequirements}
         enforcementAction={enforcementAction}
+        isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
         title="Create Violation Ticket"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingViolationTicket}

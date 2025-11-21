@@ -33,6 +33,7 @@ type ChargeRecommendationCreateModalProps = {
   requirementsList: InspectionRequirement[];
   nonProceededRequirements: InspectionRequirement[];
   enforcementAction: EnforcementActionEnum;
+  isPrimaryOfficerOrSuperUser: boolean;
   requirement?: InspectionRequirement;
   onSubmit: (data: ChargeRecommendation) => void;
 };
@@ -44,6 +45,7 @@ const ChargeRecommendationCreateModal: FC<
   requirementsList,
   nonProceededRequirements,
   enforcementAction,
+  isPrimaryOfficerOrSuperUser,
   requirement,
   onSubmit,
 }) => {
@@ -78,6 +80,7 @@ const ChargeRecommendationCreateModal: FC<
           <ChargeRecommendationUpdateModal
             inspectionData={inspectionData}
             chargeRecommendationData={data}
+            isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
             onSubmit={(updatedData) => {
               onSubmit(updatedData);
             }}

@@ -53,6 +53,14 @@ class ServiceUtils:
             )
 
     @staticmethod
+    def access_check_for_super_user():
+        """Access check for super user."""
+        if not auth.has_permission([PermissionEnum.SUPERUSER]):
+            raise PermissionDeniedError(
+                "Only the Superuser can perform this operation."
+            )
+
+    @staticmethod
     def inspection_exist_check(inspection_id: int):
         """Check if the inspection exist or not."""
         inspection = InspectionModel.find_by_id(inspection_id)

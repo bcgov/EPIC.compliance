@@ -57,6 +57,9 @@ const EnforcementModal = ({
 
   const selectedRequirements = watch("requirements") as InspectionRequirement[];
   const requirementsAlreadyUsed = useMemo(() => {
+    if (!nonProceededRequirements) {
+      return [];
+    }
     return selectedRequirements.filter(
       (requirement) => !nonProceededRequirements?.map((req:InspectionRequirement) => req.id)?.includes(requirement.id)
     );
@@ -108,7 +111,11 @@ const EnforcementModal = ({
                 background: BCDesignTokens.supportSurfaceColorInfo,
                 border: `1px solid ${BCDesignTokens.supportBorderColorDanger}`,
               };
-              const enforcementActionName = requirement.enforcement_action_data.filter((action) => action.id === enforcementAction)[0].name;
+              const enforcementActionNames = requirement.enforcement_action_data.filter((action) => action.id === enforcementAction);
+              let enforcementActionName = "Restorative Justice";
+              if (enforcementActionNames.length > 0) {
+                enforcementActionName = enforcementActionNames[0].name;
+              }
               return (
               <Box
                 key={requirement.id}

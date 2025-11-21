@@ -6,8 +6,9 @@ from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integ
 from sqlalchemy.orm import relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
+from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 
-from .base_model import BaseModelVersioned
+from .base_model import BaseModelVersioned, db
 from .case_file import CaseFile as CaseFileModel
 from .inspection import Inspection as InspectionModel
 from .utils import with_session
@@ -245,6 +246,24 @@ class Order(BaseModelVersioned):
             .first()
         )
         return result.order_count if result else 0
+
+    @classmethod
+    def get_latest_order_number_count(cls, case_file_id: int, project_id: int, pattern):
+        """Return all ir numbers based on the case file and project id where irno follows the given pattern."""
+        rows = (
+            db.session.query(cls.order_number)
+            .join(InspectionModel, InspectionModel.id == cls.inspection_id)
+            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
+            .filter(
+                CaseFileModel.project_id == project_id,
+                InspectionModel.case_file_id == case_file_id,
+                cls.order_number.op("~")(pattern),
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
+            )
+            .all()
+        )
+        return get_sorted_numbers_from_generated_code(rows, "OR")
 
     @classmethod
     def get_by_order_number(cls, order_number: str):
