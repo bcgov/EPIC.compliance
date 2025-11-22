@@ -1606,7 +1606,9 @@ def _process_enforcement_status(  # pylint: disable=too-many-return-statements,t
             return {"is_created": False, "item_number": None}
         return None
 
-    if enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value:
+    if (
+        enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
+    ):
         if not cr_map_id:
             return {"is_created": False, "item_number": None}
         return None

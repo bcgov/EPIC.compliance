@@ -1323,9 +1323,7 @@ def _get_enforcement_number_by_type(result):
     return ""
 
 
-def _get_enforcement_status_by_type(
-    result,
-):  # pylint: disable=too-many-return-statements
+def _get_enforcement_status_by_type(result):  # pylint: disable=too-many-return-statements
     """Get the correct enforcement status based on the enforcement action type."""
     enforcement_action_id = result.enforcement_action_id
 
@@ -1341,7 +1339,9 @@ def _get_enforcement_status_by_type(
         == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
     ):
         return result.admin_penalty_status
-    if enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value:
+    if (
+        enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
+    ):
         return result.charge_rec_status
     if enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value:
         return result.restorative_justice_status
