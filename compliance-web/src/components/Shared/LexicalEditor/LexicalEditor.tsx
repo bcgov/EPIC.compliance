@@ -5,7 +5,7 @@ import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
-import { Box, InputLabel } from "@mui/material";
+import { Box, Grid, InputLabel, Tooltip } from "@mui/material";
 import LexicalToolbar from "./LexicalToolbar";
 import { EditorState, LexicalEditor as Editor } from "lexical";
 import { $getRoot, $createParagraphNode, $createTextNode } from "lexical";
@@ -114,31 +114,33 @@ const LexicalEditor = ({
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <InputLabel
-          sx={{
-            position: "static",
-            transform: "none",
-            fontSize: "0.875rem",
-            lineHeight: "1.5rem",
-            color: errorMsg
-              ? BCDesignTokens.typographyColorDanger
-              : BCDesignTokens.typographyColorPrimary,
-            fontWeight: isRequired ? "bold" : "normal",
-          }}
-          htmlFor={name}
-          size="small"
-        >
-          {label}
-        </InputLabel>
-        {!disabled && <LexicalToolbar isAdvanced={isAdvanced} />}
-      </Box>
+      <Grid container>
+        <Grid item xs={2}>
+          <Tooltip title={label} arrow>
+            <span>
+              <InputLabel
+                sx={{
+                  position: "static",
+                  transform: "none",
+                  fontSize: "0.875rem",
+                  lineHeight: "1.5rem",
+                  color: errorMsg
+                    ? BCDesignTokens.typographyColorDanger
+                    : BCDesignTokens.typographyColorPrimary,
+                  fontWeight: isRequired ? "bold" : "normal",
+                }}
+                htmlFor={name}
+                size="small"
+              >
+                {label}
+              </InputLabel>
+            </span>
+          </Tooltip>
+        </Grid>
+        <Grid item xs={10} sx={{ textAlign: "right" }}>
+          {!disabled && <LexicalToolbar isAdvanced={isAdvanced} />}
+        </Grid>
+      </Grid>
       <Box
         className="editor-container"
         sx={{
