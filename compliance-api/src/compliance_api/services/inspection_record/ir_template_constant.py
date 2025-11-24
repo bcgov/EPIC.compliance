@@ -81,14 +81,14 @@ ENFORCEMENT_SUMMARY = {
     further information.</p>""",
     "WARNING_LETTER": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Warning Letter
-    {{ warning_letter_no }} has been issued for the non-compliance. See Requirement {{ req_sort_order }} for
+    {{ warning_letter_no }} has been issued for the non-compliance. See {{ sort_order_line }} for
     further information.</p>""",
     "ORDER": """<p class="editor-paragraph" dir="ltr">In Addition, {{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Order
-    {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i>. See Requirement
-    {{ req_sort_order }} for further information.</p>""",
+    {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i>. See {{ sort_order_line }}
+    for further information.</p>""",
     "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In Addition, the findings
-    for Requirement {{ req_sort_order }} may be referred to a decision maker for consideration of
+    for {{ sort_order_line }} may be referred to a decision maker for consideration of
     an Administrative Penalty.</p>""",
     "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of
     {{ eac }} was refered to {{ agency_name }}. See Requirement {{ req_sort_order }} for further

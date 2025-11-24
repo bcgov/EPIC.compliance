@@ -1,6 +1,9 @@
 """Inspection Record Data Builder."""
 
 from compliance_api.exceptions import UnprocessableEntityError
+from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
+from compliance_api.models.administrative_penalty import \
+    AdministrativePenaltyInspectionRequirementMap as AdministrativePenaltyInspectionRequirementMapModel
 from compliance_api.models.appendix import Appendix as AppendixModel
 from compliance_api.models.department_detail import DepartmentDetail as DepartmentDetailModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
@@ -165,13 +168,7 @@ class InspectionRecordDataBuilder:
         # Initialize an empty list to store attendance information
         attendance_list = []
         # Initialize inspecting officers list with primary officer
-        inspecting_officers = [
-            {
-                "id": self.inspection.primary_officer_id,
-                "name": f"{self.data['officer_details']['primary_officer']['name']}",
-                "position": self.data["officer_details"]["primary_officer"]["position"],
-            }
-        ]
+        inspecting_officers = []
         # Process each attendance option
         for option in attendance_options:
             # Skip officer attendance as per requirement
@@ -180,15 +177,13 @@ class InspectionRecordDataBuilder:
                 == InspectionAttendanceOptionEnum.ATTENDING_OFFICERS.value
             ):
                 for officer in option.data:
-                    # Avoid duplicate primary officer
-                    if officer.get("id") != self.inspection.primary_officer_id:
-                        inspecting_officers.append(
-                            {
-                                "id": officer.get("id"),
-                                "name": f"{officer.get('name')}",
-                                "position": officer.get("position").get("name"),
-                            }
-                        )
+                    inspecting_officers.append(
+                        {
+                            "id": officer.get("id"),
+                            "name": f"{officer.get('name')}",
+                            "position": officer.get("position").get("name"),
+                        }
+                    )
                 #  Iterate over the inspecting officers to fix their position name
                 for officer in inspecting_officers:
                     if (
@@ -419,12 +414,12 @@ class InspectionRecordDataBuilder:
             #  Actions that can be applied to individual requirements
             valid_actions_for_individual_requirements = {
                 EnforcementActionOptionEnum.NOTICE_OF_NON_COMPLIANCE,
-                EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION,
                 EnforcementActionOptionEnum.REFERRAL_TO_ANOTHER_AGENCY,
             }
             #  Actions that are mapped to multiple requirements
             special_actions = {
                 EnforcementActionOptionEnum.WARNING_LETTER,
+                EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION,
                 EnforcementActionOptionEnum.ORDER,
             }
             for action_id, requirements in grouped_enforcementactions.items():
@@ -449,20 +444,6 @@ class InspectionRecordDataBuilder:
                     )
                     if summary_lines:
                         enforcement_summary_lines.extend(summary_lines)
-            # actions = [
-            #     item[0]
-            #     for item in grouped_enforcementactions.items()
-            #     if EnforcementActionOptionEnum(item[0]) in special_actions
-            # ]
-            # for action_id in actions:
-            #     summary_lines = (
-            #         self._generate_enforcement_summary_lines_for_special_actions(
-            #             EnforcementActionOptionEnum(action_id),
-            #             IRStatusEnum.FINAL.value,
-            #         )
-            #     )
-            #     if summary_lines:
-            #         enforcement_summary_lines.extend(summary_lines)
             # Add a line for Regulatory Considerations in the requirements
             if any(
                 req.req_type == InspectionRequirementTypeEnum.REG
@@ -598,8 +579,15 @@ class InspectionRecordDataBuilder:
                 "template_data": ENFORCEMENT_SUMMARY.get("WARNING_LETTER"),
                 "get_map_method": WarningLetterInspectionRequirementMapModel.get_by_warning_letter_id,
             },
+            EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION: {
+                "template": "ENFORCEMENT_SUMMARY.ADMINISTRATIVE_PENALTY",
+                "template_data": ENFORCEMENT_SUMMARY.get("ADMINISTRATIVE_PENALTY"),
+                "get_map_method": AdministrativePenaltyInspectionRequirementMapModel.get_by_administrative_penalty_id,
+            },
         }
         results = []
+        if action == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION:
+            items = AdministrativePenaltyModel.get_by_inspection_id(self.inspection.id)
         if action == EnforcementActionOptionEnum.WARNING_LETTER:
             items = WarningLetterModel.get_by_inspection_id(self.inspection.id)
         if action == EnforcementActionOptionEnum.ORDER:
@@ -625,6 +613,7 @@ class InspectionRecordDataBuilder:
                 for requirement_map in requirement_maps
             ]
             grouped_requirements = {}
+            sort_order_line = []
             for requirement in requirements:
                 condition_lines = []
                 if len(requirement.requirement_source_details) == 0:
@@ -636,9 +625,11 @@ class InspectionRecordDataBuilder:
                 )
                 req_source_name = data_to_be_rendered["req_source_name"]
                 number = data_to_be_rendered["number"]
+                req_sort_order = data_to_be_rendered["req_sort_order"]
                 if req_source_name not in grouped_requirements:
                     grouped_requirements[req_source_name] = []
                 grouped_requirements[req_source_name].append({"number": number})
+                sort_order_line.append(f"Requirement {req_sort_order}")
             for source_name, reqs in grouped_requirements.items():
                 # Filter out None values before joining
                 valid_numbers = [
@@ -646,8 +637,9 @@ class InspectionRecordDataBuilder:
                 ]
                 if valid_numbers:
                     numbers = ", ".join(valid_numbers)
-                    condition_lines.append(f"{numbers} of {source_name}")
+                    condition_lines.append(f" {numbers} of {source_name}")
             data_to_be_rendered["condition_lines"] = condition_lines
+            data_to_be_rendered["sort_order_line"] = ", ".join(sort_order_line)
             if action == EnforcementActionOptionEnum.ORDER:
                 data_to_be_rendered["order_no"] = ServiceUtils.strip_project_code(
                     item.order_number
