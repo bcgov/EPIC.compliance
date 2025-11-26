@@ -9,7 +9,10 @@ import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import ModalActions from "@/components/Shared/Modals/ModalActions";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
-import { useUpdateRestorativeJustice, useDeleteRestorativeJustice } from "@/hooks/useRestorativeJustice";
+import {
+  useUpdateRestorativeJustice,
+  useDeleteRestorativeJustice,
+} from "@/hooks/useRestorativeJustice";
 import { useModal } from "@/store/modalStore";
 import {
   RestorativeJustice,
@@ -25,7 +28,9 @@ const restorativeJusticeUpdateSchema = yup.object().shape({
   date_restitution_complete: yup.mixed().nullable().optional(),
 });
 
-type RestorativeJusticeUpdateFormType = yup.InferType<typeof restorativeJusticeUpdateSchema>;
+type RestorativeJusticeUpdateFormType = yup.InferType<
+  typeof restorativeJusticeUpdateSchema
+>;
 
 type RestorativeJusticeUpdateModalProps = {
   restorativeJustice: RestorativeJustice;
@@ -52,6 +57,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
         : null,
     };
   }, [restorativeJustice]);
+
   const isReadonlyMode = useMemo(() => {
     if (restorativeJustice.status.id === RestorativeJusticeStatus.CLOSED) {
       return !isSuperUser;
@@ -67,7 +73,15 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
     defaultValues,
   });
 
-  const { reset, handleSubmit } = methods;
+  const { reset, handleSubmit, watch } = methods;
+  const dateRestitutionComplete = watch("date_restitution_complete");
+
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    return (
+      dateRestitutionComplete !== null && dateRestitutionComplete !== undefined
+    );
+  }, [dateRestitutionComplete]);
 
   useEffect(() => {
     reset(defaultValues);
@@ -100,7 +114,9 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
       const updateData: RestorativeJusticeUpdateAPIData = {
         restitution_details: data.restitution_details,
         date_restitution_complete: data.date_restitution_complete
-          ? (data.date_restitution_complete as dayjs.Dayjs).format("YYYY-MM-DDTHH:mm:ss.SSS[Z]")
+          ? (data.date_restitution_complete as dayjs.Dayjs).format(
+              "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+            )
           : undefined,
       };
 
@@ -123,7 +139,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
         <ModalTitleBar title={restorativeJustice.restorative_justice_number} />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
-            <Box >
+            <Box>
               <ControlledTextField
                 name="restitution_details"
                 label="Restitution Details"
@@ -151,8 +167,11 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
             primaryActionButtonText="Save"
             secondaryActionButtonText="Cancel"
             onDeleteAction={() => {
-              deleteRestorativeJustice({ restorativeJusticeId: restorativeJustice.id });
+              deleteRestorativeJustice({
+                restorativeJusticeId: restorativeJustice.id,
+              });
             }}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

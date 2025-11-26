@@ -10,7 +10,10 @@ import ModalActions from "@/components/Shared/Modals/ModalActions";
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
-import { useUpdateViolationTicket, useDeleteViolationTicket } from "@/hooks/useViolationTickets";
+import {
+  useUpdateViolationTicket,
+  useDeleteViolationTicket,
+} from "@/hooks/useViolationTickets";
 import {
   ViolationTicket,
   ViolationTicketAPIData,
@@ -24,15 +27,27 @@ import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const violationTicketUpdateSchema = yup.object().shape({
   ticket_number: yup.string().required("Ticket Number is required"),
-  date_issued: yup.mixed<Dayjs>().required("Date Issued is required").typeError("Invalid date"),
-  fine_amount: yup.number().transform((value, originalValue) => {
-    return originalValue === "" ? null : value;
-  }).required("Fine Amount is required").min(0, "Fine Amount must be positive"),
+  date_issued: yup
+    .mixed<Dayjs>()
+    .required("Date Issued is required")
+    .typeError("Invalid date"),
+  fine_amount: yup
+    .number()
+    .transform((value, originalValue) => {
+      return originalValue === "" ? null : value;
+    })
+    .required("Fine Amount is required")
+    .min(0, "Fine Amount must be positive"),
   status: yup.mixed<StatusOption>().required("Status is required"),
-  status_date: yup.mixed<Dayjs>().required("Status Date is required").typeError("Invalid date"),
+  status_date: yup
+    .mixed<Dayjs>()
+    .required("Status Date is required")
+    .typeError("Invalid date"),
 });
 
-type ViolationTicketUpdateFormType = yup.InferType<typeof violationTicketUpdateSchema> & {
+type ViolationTicketUpdateFormType = yup.InferType<
+  typeof violationTicketUpdateSchema
+> & {
   fine_amount?: number;
 };
 
@@ -64,6 +79,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
+
   // Calculate readonly mode based on violation ticket status
   const isReadonlyMode = useMemo(() => {
     if (violationTicket.is_closed) {
@@ -74,14 +90,23 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
 
   const defaultValues = useMemo(() => {
     const currentStatus = violationTicket.status?.id || "ISSUED";
-    const selectedStatusOption = statusOptions.find(option => option.id === currentStatus) || statusOptions[0];
+    const selectedStatusOption =
+      statusOptions.find((option) => option.id === currentStatus) ||
+      statusOptions[0];
 
     return {
       ticket_number: violationTicket.ticket_number || "",
-      date_issued: violationTicket.date_issued ? dayjs(violationTicket.date_issued) : undefined,
-      fine_amount: violationTicket.fine_amount && violationTicket.fine_amount !== "" ? Number(violationTicket.fine_amount) : undefined,
+      date_issued: violationTicket.date_issued
+        ? dayjs(violationTicket.date_issued)
+        : undefined,
+      fine_amount:
+        violationTicket.fine_amount && violationTicket.fine_amount !== ""
+          ? Number(violationTicket.fine_amount)
+          : undefined,
       status: selectedStatusOption,
-      status_date: violationTicket.status_date ? dayjs(violationTicket.status_date) : undefined,
+      status_date: violationTicket.status_date
+        ? dayjs(violationTicket.status_date)
+        : undefined,
     };
   }, [violationTicket]);
 
@@ -91,11 +116,25 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
     defaultValues,
   });
 
-  const { reset, handleSubmit } = methods;
+  const { reset, handleSubmit, watch } = methods;
+  const status = watch("status");
+  const statusDate = watch("status_date");
 
   useEffect(() => {
     reset(defaultValues);
   }, [reset, defaultValues]);
+
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    const isPaidWithStatusDate =
+      status?.id === ViolationTicketStatus.PAID &&
+      statusDate !== null &&
+      statusDate !== undefined;
+    const isDisputed = status?.id === ViolationTicketStatus.DISPUTED;
+    const isDeemedGuilty = status?.id === ViolationTicketStatus.DEEMED_GUILTY;
+
+    return isPaidWithStatusDate || isDisputed || isDeemedGuilty;
+  }, [status, statusDate]);
 
   const onUpdateSuccess = (data: ViolationTicket) => {
     queryClient.invalidateQueries({
@@ -125,13 +164,17 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
     (data: ViolationTicketUpdateFormType) => {
       const updateData: ViolationTicketAPIData = {
         inspection_id: inspectionData?.id ?? 0,
-        inspection_requirement_ids: violationTicket.violation_ticket_requirement_maps.map(
-          (map) => map.inspection_requirement_id
-        ),
+        inspection_requirement_ids:
+          violationTicket.violation_ticket_requirement_maps.map(
+            (map) => map.inspection_requirement_id
+          ),
         ticket_number: data.ticket_number,
         date_issued: data.date_issued.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]"),
         fine_amount: data.fine_amount?.toString() || "",
-        status: typeof data.status === 'string' ? data.status : data.status?.id || 'ISSUED',
+        status:
+          typeof data.status === "string"
+            ? data.status
+            : data.status?.id || "ISSUED",
         status_date: data.status_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]"),
       };
       updateViolationTicket({
@@ -186,10 +229,14 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
                   step: 0.01,
                 }}
                 InputProps={{
-                  startAdornment: <AttachMoneyRounded sx={{
-                    mr: 0.2,
-                    color: "#9F9D9C",
-                  }} />,
+                  startAdornment: (
+                    <AttachMoneyRounded
+                      sx={{
+                        mr: 0.2,
+                        color: "#9F9D9C",
+                      }}
+                    />
+                  ),
                 }}
                 isRequired={true}
                 disabled={isReadonlyMode}
@@ -225,6 +272,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isPendingDelete}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

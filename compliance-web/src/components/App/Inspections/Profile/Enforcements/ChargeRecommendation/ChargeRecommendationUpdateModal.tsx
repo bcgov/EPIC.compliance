@@ -73,12 +73,12 @@ const decisionOptions: DecisionOption[] = Object.values(CRDecision).map(
   })
 );
 
-const courtDecisionOptions: CourtDecisionOption[] = Object.values(CRCourtDecision).map(
-  (courtDecision) => ({
-    id: courtDecision.id,
-    name: courtDecision.name,
-  })
-);
+const courtDecisionOptions: CourtDecisionOption[] = Object.values(
+  CRCourtDecision
+).map((courtDecision) => ({
+  id: courtDecision.id,
+  name: courtDecision.name,
+}));
 
 type ChargeRecommendationUpdateModalProps = {
   chargeRecommendationData: ChargeRecommendation;
@@ -89,10 +89,16 @@ type ChargeRecommendationUpdateModalProps = {
 
 const ChargeRecommendationUpdateModal: FC<
   ChargeRecommendationUpdateModalProps
-> = ({ chargeRecommendationData, inspectionData, isPrimaryOfficerOrSuperUser, onSubmit }) => {
+> = ({
+  chargeRecommendationData,
+  inspectionData,
+  isPrimaryOfficerOrSuperUser,
+  onSubmit,
+}) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
-  const { data: sentenceTypeOptions = [], isLoading: isSentenceTypesLoading } = useSentenceTypeOptionsData();
+  const { data: sentenceTypeOptions = [], isLoading: isSentenceTypesLoading } =
+    useSentenceTypeOptionsData();
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
   // Calculate readonly mode based on inspection status and charge recommendation status
   const isReadonlyMode = useMemo(() => {
@@ -100,7 +106,11 @@ const ChargeRecommendationUpdateModal: FC<
       return !isSuperUser;
     }
     return !isPrimaryOfficerOrSuperUser;
-  }, [chargeRecommendationData.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
+  }, [
+    chargeRecommendationData.is_closed,
+    isPrimaryOfficerOrSuperUser,
+    isSuperUser,
+  ]);
 
   const defaultValues = useMemo(() => {
     const currentStatus = chargeRecommendationData.status || CRStatus.DRAFTING;
@@ -115,14 +125,16 @@ const ChargeRecommendationUpdateModal: FC<
 
     const currentCourtDecision = chargeRecommendationData.court_decision;
     const selectedCourtDecisionOption =
-      courtDecisionOptions.find((option) => option.id === currentCourtDecision?.id) ||
-      null;
+      courtDecisionOptions.find(
+        (option) => option.id === currentCourtDecision?.id
+      ) || null;
 
     // Convert sentence type mappings to sentence type options for form
-    const selectedSentenceTypes = chargeRecommendationData.sentence_type_mappings?.map(mapping => ({
-      id: mapping.sentence_type_option_id,
-      name: mapping.sentence_type_option.name,
-    })) || [];
+    const selectedSentenceTypes =
+      chargeRecommendationData.sentence_type_mappings?.map((mapping) => ({
+        id: mapping.sentence_type_option_id,
+        name: mapping.sentence_type_option.name,
+      })) || [];
 
     return {
       status: selectedStatusOption,
@@ -151,6 +163,22 @@ const ChargeRecommendationUpdateModal: FC<
     mode: "onBlur",
     defaultValues,
   });
+
+  const { watch } = methods;
+  const status = watch("status");
+  const chargeDecision = watch("charge_decision");
+  const sentenceDate = watch("sentence_date");
+
+  const requireSaveConfirmation = useMemo(() => {
+    const isCEBNotProceeding = status?.id === "CEB_NOT_PROCEEDING";
+    const isChargeDecisionNotProceeding =
+      chargeDecision?.id === "NOT_PROCEEDING";
+    const hasSentenceDate = sentenceDate !== null && sentenceDate !== undefined;
+
+    return (
+      isCEBNotProceeding || isChargeDecisionNotProceeding || hasSentenceDate
+    );
+  }, [status, chargeDecision, sentenceDate]);
 
   const onUpdateSuccess = (
     updatedChargeRecommendation: ChargeRecommendation
@@ -217,11 +245,15 @@ const ChargeRecommendationUpdateModal: FC<
       }
 
       if (data.court_decision_date) {
-        updateData.court_decision_date = data.court_decision_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+        updateData.court_decision_date = data.court_decision_date.format(
+          "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+        );
       }
 
       if (data.sentence_date) {
-        updateData.sentence_date = data.sentence_date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+        updateData.sentence_date = data.sentence_date.format(
+          "YYYY-MM-DDTHH:mm:ss.SSS[Z]"
+        );
       }
 
       if (data.sentence_description) {
@@ -330,25 +362,30 @@ const ChargeRecommendationUpdateModal: FC<
               />
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
-                <ControlledAutoComplete
-              name="sentence_types"
-              label="Sentence Type"
-              options={sentenceTypeOptions}
-              getOptionLabel={(option: SentenceTypeOption) => option.name}
-              getOptionKey={(option: SentenceTypeOption) => option.id}
-              isOptionEqualToValue={(option: SentenceTypeOption, value: SentenceTypeOption) =>
-                option.id.toString() === value.id.toString()
-              }
-              multiple
-              fullWidth
-              disabled={isReadonlyMode || isSentenceTypesLoading}
-              loading={isSentenceTypesLoading}
-            />
-            <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
+              <ControlledAutoComplete
+                name="sentence_types"
+                label="Sentence Type"
+                options={sentenceTypeOptions}
+                getOptionLabel={(option: SentenceTypeOption) => option.name}
+                getOptionKey={(option: SentenceTypeOption) => option.id}
+                isOptionEqualToValue={(
+                  option: SentenceTypeOption,
+                  value: SentenceTypeOption
+                ) => option.id.toString() === value.id.toString()}
+                multiple
+                fullWidth
+                disabled={isReadonlyMode || isSentenceTypesLoading}
+                loading={isSentenceTypesLoading}
+              />
+              <ControlledDateField
+                name="sentence_date"
+                label="Sentence Date"
+                disabled={isReadonlyMode}
+              />
             </Box>
-            <ControlledTextField 
-              name="sentence_description" 
-              label="Sentence Description" 
+            <ControlledTextField
+              name="sentence_description"
+              label="Sentence Description"
               disabled={isReadonlyMode}
               multiline
               rows={2}
@@ -364,6 +401,7 @@ const ChargeRecommendationUpdateModal: FC<
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isDeleting}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

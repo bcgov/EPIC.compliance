@@ -83,7 +83,12 @@ type AdministrativePenaltyUpdateModalProps = {
 
 const AdministrativePenaltyUpdateModal: FC<
   AdministrativePenaltyUpdateModalProps
-> = ({ administrativePenalty, inspectionData, isPrimaryOfficerOrSuperUser, onSuccess }) => {
+> = ({
+  administrativePenalty,
+  inspectionData,
+  isPrimaryOfficerOrSuperUser,
+  onSuccess,
+}) => {
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
@@ -93,7 +98,11 @@ const AdministrativePenaltyUpdateModal: FC<
       return !isSuperUser;
     }
     return !isPrimaryOfficerOrSuperUser;
-  }, [administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
+  }, [
+    administrativePenalty.is_closed,
+    isPrimaryOfficerOrSuperUser,
+    isSuperUser,
+  ]);
   const defaultValues = useMemo(() => {
     const currentReferralStatus =
       administrativePenalty.referral_status?.id || "DRAFTING";
@@ -129,6 +138,7 @@ const AdministrativePenaltyUpdateModal: FC<
 
   const { reset, handleSubmit, watch } = methods;
   const decision = watch("decision");
+  const referralStatus = watch("referral_status");
 
   useEffect(() => {
     reset(defaultValues);
@@ -146,6 +156,17 @@ const AdministrativePenaltyUpdateModal: FC<
     }
   }, [decision, methods]);
 
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    const isCEBNotProceeding =
+      referralStatus?.id === APReferralStatus.CEB_NOT_PROCEEDING.id;
+    const isReferredToDMWithDecision =
+      referralStatus?.id === APReferralStatus.REFERRED_TO_DM.id &&
+      decision !== null;
+
+    return isCEBNotProceeding || isReferredToDMWithDecision;
+  }, [referralStatus, decision]);
+
   const onUpdateSuccess = (data: AdministrativePenalty) => {
     //  Invalidate all administrative penalties because of the AP can be linked to
     //  other inspections
@@ -153,8 +174,8 @@ const AdministrativePenaltyUpdateModal: FC<
       queryKey: ["inspection-administrative-penalties"],
     });
     queryClient.invalidateQueries({
-      queryKey: ["administrative-penalty-links"]
-    })
+      queryKey: ["administrative-penalty-links"],
+    });
     notify.success("Administrative Penalty updated successfully");
     onSuccess?.(data);
     setModalClose();
@@ -168,8 +189,8 @@ const AdministrativePenaltyUpdateModal: FC<
       queryKey: ["inspection-administrative-penalties"],
     });
     queryClient.invalidateQueries({
-      queryKey: ["administrative-penalty-links"]
-    })
+      queryKey: ["administrative-penalty-links"],
+    });
     notify.success("Administrative Penalty deleted successfully");
     onSuccess?.(administrativePenalty);
     setModalClose();
@@ -179,14 +200,20 @@ const AdministrativePenaltyUpdateModal: FC<
     useDeleteAdministrativePenalty(onDeleteSuccess);
 
   // Fetch linked inspections and requirements for this AP
-  const { data: linkedData } = useAdministrativePenaltyLinksData(administrativePenalty.id);
+  const { data: linkedData } = useAdministrativePenaltyLinksData(
+    administrativePenalty.id
+  );
 
   // Check if AP is linked to other inspections by comparing inspection IDs
-  const isLinkedToOtherInspections = useMemo(()=>{
+  const isLinkedToOtherInspections = useMemo(() => {
     const isParent = administrativePenalty.inspection_id == inspectionData.id;
-    return (linkedData?.some(
-      (linkData) => linkData.inspection.id !== inspectionData.id
-    ) ?? false) && isParent;
+    return (
+      (linkedData?.some(
+        (linkData) => linkData.inspection.id !== inspectionData.id
+      ) ??
+        false) &&
+      isParent
+    );
   }, [linkedData, inspectionData, administrativePenalty]);
 
   const handleSubmitForm = useCallback(
@@ -195,10 +222,12 @@ const AdministrativePenaltyUpdateModal: FC<
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids:
           administrativePenalty.administrative_penalty_requirement_maps
-          .filter((ap_map) => ap_map.inspection_requirement.inspection_id === inspectionData.id)
-          .map(
-            (map) => map.inspection_requirement_id
-          ),
+            .filter(
+              (ap_map) =>
+                ap_map.inspection_requirement.inspection_id ===
+                inspectionData.id
+            )
+            .map((map) => map.inspection_requirement_id),
         referral_status:
           typeof data.referral_status === "string"
             ? data.referral_status
@@ -260,7 +289,9 @@ const AdministrativePenaltyUpdateModal: FC<
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(handleSubmitForm)}>
-        <ModalTitleBar title={administrativePenalty.administrative_penalty_number} />
+        <ModalTitleBar
+          title={administrativePenalty.administrative_penalty_number}
+        />
         <DialogContent dividers sx={{ p: 0 }}>
           <Box sx={{ p: "1rem 1.5rem" }}>
             <ControlledAutoComplete
@@ -323,6 +354,7 @@ const AdministrativePenaltyUpdateModal: FC<
                 ? "This AP is linked to other files. Deleting it will remove all linked APs."
                 : undefined
             }
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

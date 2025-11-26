@@ -17,6 +17,9 @@ type ModalActionsProps = {
   isLoading?: boolean;
   isDeleteActionLoading?: boolean;
   hideSecondaryButton?: boolean;
+  requireSaveConfirmation?: boolean;
+  onSaveConfirmationText?: string;
+  onSaveConfirmationTitle?: string;
 };
 
 const ModalActions: FC<ModalActionsProps> = ({
@@ -30,16 +33,28 @@ const ModalActions: FC<ModalActionsProps> = ({
   isLoading = false,
   isDeleteActionLoading = false,
   hideSecondaryButton = false,
+  requireSaveConfirmation = false,
+  onSaveConfirmationText = "All required information has been entered, so please review the details before continuing.",
+  onSaveConfirmationTitle = "Locking Enforcement",
 }) => {
   const { setClose } = useModal();
   const formContext = useFormContext();
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
 
   const isValid = isButtonValidation ? formContext?.formState.isValid : true;
 
+  const handlePrimaryAction = () => {
+    if (requireSaveConfirmation && !showSaveConfirmation) {
+      setShowSaveConfirmation(true);
+    } else {
+      onPrimaryAction?.();
+    }
+  };
+
   return (
     <>
-      {!showDeleteConfirmation && (
+      {!showDeleteConfirmation && !showSaveConfirmation && (
         <DialogActions
           sx={{
             padding: "1rem 1.5rem",
@@ -77,7 +92,7 @@ const ModalActions: FC<ModalActionsProps> = ({
               sx={{ minWidth: 100 }}
               type={onPrimaryAction ? "button" : "submit"}
               isLoading={isLoading}
-              onClick={onPrimaryAction}
+              onClick={handlePrimaryAction}
               disabled={
                 (!!isButtonValidation && !isValid) || showDeleteConfirmation
               }
@@ -131,6 +146,52 @@ const ModalActions: FC<ModalActionsProps> = ({
             isLoading={isDeleteActionLoading}
           >
             Yes, Delete
+          </LoadingButton>
+        </Box>
+      )}
+      {showSaveConfirmation && (
+        <Box
+          sx={{
+            background: BCDesignTokens.supportSurfaceColorDanger,
+            borderTop: `${BCDesignTokens.layoutBorderWidthSmall} solid ${BCDesignTokens.surfaceColorBorderDefault}`,
+            padding: ".5rem 1.5rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              flexWrap: "wrap",
+              flex: 1,
+            }}
+          >
+            <Typography variant="body1" fontWeight={"bold"}>
+              {onSaveConfirmationTitle}
+            </Typography>
+            <Typography variant="body1">{onSaveConfirmationText}</Typography>
+          </Box>
+          <Button
+            sx={{ minWidth: 100, height: 40 }}
+            color="secondary"
+            onClick={() => {
+              setShowSaveConfirmation(false);
+            }}
+            data-testid="save-confirmation-cancel-button"
+          >
+            No, Cancel
+          </Button>
+          <LoadingButton
+            sx={{ minWidth: 100, height: 40 }}
+            onClick={onPrimaryAction}
+            color="error"
+            data-testid="save-confirmation-button"
+            isLoading={isLoading}
+          >
+            Yes, Save
           </LoadingButton>
         </Box>
       )}
