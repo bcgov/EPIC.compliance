@@ -1243,7 +1243,11 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
             charge_recommendation_alias,
             restorative_justice_alias,
         )
-        .filter(InspectionRequirementModel.inspection_id.in_(inspection_ids))
+        .filter(
+            InspectionRequirementModel.inspection_id.in_(inspection_ids),
+            InspectionRequirementModel.is_active.is_(True),
+            InspectionRequirementModel.is_deleted.is_(False),
+        )
         .outerjoin(
             enforcement_action_map_alias,
             and_(
