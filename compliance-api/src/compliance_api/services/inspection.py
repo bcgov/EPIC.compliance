@@ -1477,8 +1477,10 @@ def _bulk_fetch_enforcement_actions_and_requirement_details(
                 first_requirement_details.requirement_source.name
             )
 
-        # Set enforcement-specific details based on type
-        action_type = EnforcementActionOptionEnum(enforcement_action_id)
+        # Set enforcement-specific details based on type (if available)
+        action_type = None
+        if enforcement_action_id is not None:
+            action_type = EnforcementActionOptionEnum(enforcement_action_id)
 
         if action_type == EnforcementActionOptionEnum.ORDER and order:
             item["enforcement_action"] = _set_order_enforcement_action_object(
