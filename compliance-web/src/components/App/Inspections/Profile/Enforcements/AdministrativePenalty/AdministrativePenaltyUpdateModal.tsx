@@ -129,6 +129,7 @@ const AdministrativePenaltyUpdateModal: FC<
 
   const { reset, handleSubmit, watch } = methods;
   const decision = watch("decision");
+  const referralStatus = watch("referral_status");
 
   useEffect(() => {
     reset(defaultValues);
@@ -145,6 +146,17 @@ const AdministrativePenaltyUpdateModal: FC<
       }
     }
   }, [decision, methods]);
+
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    const isCEBNotProceeding =
+      referralStatus?.id === APReferralStatus.CEB_NOT_PROCEEDING.id;
+    const isReferredToDMWithDecision =
+      referralStatus?.id === APReferralStatus.REFERRED_TO_DM.id &&
+      decision !== null;
+
+    return isCEBNotProceeding || isReferredToDMWithDecision;
+  }, [referralStatus, decision]);
 
   const onUpdateSuccess = (data: AdministrativePenalty) => {
     //  Invalidate all administrative penalties because of the AP can be linked to
@@ -185,7 +197,7 @@ const AdministrativePenaltyUpdateModal: FC<
   const isLinkedToOtherInspections = useMemo(()=>{
     const isParent = administrativePenalty.inspection_id == inspectionData.id;
     return (linkedData?.some(
-      (linkData) => linkData.inspection.id !== inspectionData.id
+        (linkData) => linkData.inspection.id !== inspectionData.id
     ) ?? false) && isParent;
   }, [linkedData, inspectionData, administrativePenalty]);
 
@@ -323,6 +335,7 @@ const AdministrativePenaltyUpdateModal: FC<
                 ? "This AP is linked to other files. Deleting it will remove all linked APs."
                 : undefined
             }
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

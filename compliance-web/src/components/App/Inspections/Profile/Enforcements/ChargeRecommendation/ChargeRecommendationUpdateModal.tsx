@@ -22,7 +22,7 @@ import {
 import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
-import { CRStatus, CRDecision, CRCourtDecision } from "@/utils/constants";
+import { CRStatus, CRDecision, CRCourtDecision, ChargeRecommendationStatus } from "@/utils/constants";
 import dayjs, { Dayjs } from "dayjs";
 import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
@@ -75,8 +75,8 @@ const decisionOptions: DecisionOption[] = Object.values(CRDecision).map(
 
 const courtDecisionOptions: CourtDecisionOption[] = Object.values(CRCourtDecision).map(
   (courtDecision) => ({
-    id: courtDecision.id,
-    name: courtDecision.name,
+  id: courtDecision.id,
+  name: courtDecision.name,
   })
 );
 
@@ -120,9 +120,9 @@ const ChargeRecommendationUpdateModal: FC<
 
     // Convert sentence type mappings to sentence type options for form
     const selectedSentenceTypes = chargeRecommendationData.sentence_type_mappings?.map(mapping => ({
-      id: mapping.sentence_type_option_id,
-      name: mapping.sentence_type_option.name,
-    })) || [];
+        id: mapping.sentence_type_option_id,
+        name: mapping.sentence_type_option.name,
+      })) || [];
 
     return {
       status: selectedStatusOption,
@@ -151,6 +151,22 @@ const ChargeRecommendationUpdateModal: FC<
     mode: "onBlur",
     defaultValues,
   });
+
+  const { watch } = methods;
+  const status = watch("status");
+  const chargeDecision = watch("charge_decision");
+  const sentenceDate = watch("sentence_date");
+
+  const requireSaveConfirmation = useMemo(() => {
+    const isCEBNotProceeding = status?.id === ChargeRecommendationStatus.CEB_NOT_PROCEEDING;
+    const isChargeDecisionNotProceeding =
+      chargeDecision?.id === CRDecision.NOT_PROCEEDING.id;
+    const hasSentenceDate = sentenceDate !== null && sentenceDate !== undefined;
+
+    return (
+      isCEBNotProceeding || isChargeDecisionNotProceeding || hasSentenceDate
+    );
+  }, [status, chargeDecision, sentenceDate]);
 
   const onUpdateSuccess = (
     updatedChargeRecommendation: ChargeRecommendation
@@ -330,25 +346,25 @@ const ChargeRecommendationUpdateModal: FC<
               />
             </Box>
             <Box sx={{ display: "flex", gap: 2 }}>
-                <ControlledAutoComplete
-              name="sentence_types"
-              label="Sentence Type"
-              options={sentenceTypeOptions}
-              getOptionLabel={(option: SentenceTypeOption) => option.name}
-              getOptionKey={(option: SentenceTypeOption) => option.id}
+              <ControlledAutoComplete
+                name="sentence_types"
+                label="Sentence Type"
+                options={sentenceTypeOptions}
+                getOptionLabel={(option: SentenceTypeOption) => option.name}
+                getOptionKey={(option: SentenceTypeOption) => option.id}
               isOptionEqualToValue={(option: SentenceTypeOption, value: SentenceTypeOption) =>
                 option.id.toString() === value.id.toString()
               }
-              multiple
-              fullWidth
-              disabled={isReadonlyMode || isSentenceTypesLoading}
-              loading={isSentenceTypesLoading}
-            />
+                multiple
+                fullWidth
+                disabled={isReadonlyMode || isSentenceTypesLoading}
+                loading={isSentenceTypesLoading}
+              />
             <ControlledDateField name="sentence_date" label="Sentence Date" disabled={isReadonlyMode} />
             </Box>
-            <ControlledTextField 
-              name="sentence_description" 
-              label="Sentence Description" 
+            <ControlledTextField
+              name="sentence_description"
+              label="Sentence Description"
               disabled={isReadonlyMode}
               multiline
               rows={2}
@@ -364,6 +380,7 @@ const ChargeRecommendationUpdateModal: FC<
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isDeleting}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>
