@@ -251,6 +251,8 @@ class InspectionRecordService:
             ir_data = ir_builder.build_finding_statement().build()
         elif field_name == "enforcement_summary":
             ir_data = ir_builder.build_enforcement_summary().build()
+        elif field_name == "date_issued":
+            ir_data = {"date_issued": None}
         change_info[f"{field_name}_changed"] = False
         update_data = {
             field_name: ir_data.get(field_name),

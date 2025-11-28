@@ -116,6 +116,7 @@ class ResetInspectionRecordFieldSchema(BaseSchema):
                 "preliminary_review_details",
                 "finding_statement",
                 "enforcement_summary",
+                "date_issued",
             ]
         ),
         metadata={"description": "The field to reset"},
