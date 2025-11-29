@@ -1377,15 +1377,8 @@ def _build_query_for_enforcement_actions_and_requirement_details(inspection_ids)
     return results
 
 
-def _bulk_fetch_enforcement_actions_and_requirement_details(
-    inspection_ids,
-):  # pylint: disable=too-many-locals,too-many-branches
-    """Bulk fetch all enforcement actions and build requirement details in a single optimized query.
-
-    Returns a dict with two keys per inspection:
-    - 'enforcement_actions': dict of enforcement lists (orders, warning_letters, etc.)
-    - 'requirement_details': list of requirement detail objects
-    """
+def initialize_result_data(inspection_ids):
+    """Initialize the result data structure for _bulk_fetch_enforcement_actions_and_requirement_details."""
     result_data = {}
     # Initialize data structure for each inspection
     for inspection_id in inspection_ids:
@@ -1400,6 +1393,19 @@ def _bulk_fetch_enforcement_actions_and_requirement_details(
             },
             "requirement_details": [],
         }
+    return result_data
+
+
+def _bulk_fetch_enforcement_actions_and_requirement_details(
+    inspection_ids,
+):  # pylint: disable=too-many-locals,too-many-branches
+    """Bulk fetch all enforcement actions and build requirement details in a single optimized query.
+
+    Returns a dict with two keys per inspection:
+    - 'enforcement_actions': dict of enforcement lists (orders, warning_letters, etc.)
+    - 'requirement_details': list of requirement detail objects
+    """
+    result_data = initialize_result_data(inspection_ids)
 
     if not inspection_ids:
         return result_data
