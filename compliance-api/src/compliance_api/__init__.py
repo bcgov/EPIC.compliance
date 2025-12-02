@@ -24,22 +24,21 @@ from compliance_api.utils.util import allowedorigins
 
 
 # Security Response headers
-csp = (
-    secure.ContentSecurityPolicy()
+secure_headers = secure.Secure(
+    csp=secure.ContentSecurityPolicy()
     .default_src("'self'")
     .script_src("'self' 'unsafe-inline'")
     .style_src("'self' 'unsafe-inline'")
     .img_src("'self' data:")
     .object_src("'self'")
-    .connect_src("'self'")
-)
-
-hsts = secure.StrictTransportSecurity().include_subdomains().preload().max_age(31536000)
-referrer = secure.ReferrerPolicy().no_referrer()
-cache_value = secure.CacheControl().no_store().max_age(0)
-xfo_value = secure.XFrameOptions().deny()
-secure_headers = secure.Secure(
-    csp=csp, hsts=hsts, referrer=referrer, cache=cache_value, xfo=xfo_value
+    .connect_src("'self'"),
+    hsts=secure.StrictTransportSecurity()
+    .include_subdomains()
+    .preload()
+    .max_age(31536000),
+    referrer=secure.ReferrerPolicy().no_referrer(),
+    cache=secure.CacheControl().no_store().max_age(0),
+    xfo=secure.XFrameOptions().deny()
 )
 
 
@@ -111,7 +110,7 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
         """Set CORS headers for security."""
         # if random.random() < 0.1:  # Only run GC 10% of the time
         #     gc.collect()
-        secure_headers.framework.flask(response)
+        secure_headers.set_headers(response)
         response.headers.add("Cross-Origin-Resource-Policy", "*")
         response.headers["Cross-Origin-Opener-Policy"] = "*"
         response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
