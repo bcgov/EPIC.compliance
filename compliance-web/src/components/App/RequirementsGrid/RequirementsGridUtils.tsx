@@ -130,26 +130,22 @@ export const useConvertFiltersToQueryParams = (
   );
 };
 
-const RequirementSourceNames = {
-  SCHEDULE_B: "Schedule B - Table of Conditions",
-  SCHEDULE_A: "Schedule A - Certified Project Description",
-}
-
-const RequirementSourceNameMap: Record<string, string> = {
-  [RequirementSourceNames.SCHEDULE_B]: "Schedule B",
-  [RequirementSourceNames.SCHEDULE_A]: "Schedule A",
-};
-
 // Create columns configuration
 export const useRequirementsGridColumns = (
   dataDependencies: RequirementsGridDataDependencies
 ): MRT_ColumnDef<InspectionRequirementGrid>[] => {
-  const {
-    topics,
-    complianceFindings,
-    enforcementActions,
-    requirementSources,
-  } = dataDependencies;
+  const RequirementSourceNames = {
+    SCHEDULE_B: "Schedule B - Table of Conditions",
+    SCHEDULE_A: "Schedule A - Certified Project Description",
+  };
+
+  const RequirementSourceNameMap: Record<string, string> = {
+    [RequirementSourceNames.SCHEDULE_B]: "Schedule B",
+    [RequirementSourceNames.SCHEDULE_A]: "Schedule A",
+  };
+
+  const { topics, complianceFindings, enforcementActions, requirementSources } =
+    dataDependencies;
 
   return [
     {
@@ -196,7 +192,7 @@ export const useRequirementsGridColumns = (
     },
     {
       accessorKey: "enf_stats",
-      header: "Enf. Status", 
+      header: "Enf. Status",
       Cell: ({ row }) => {
         const enforcementStatusFlagObj: InspectionMoreDetailsEnforcementAction =
           {
@@ -244,10 +240,14 @@ export const useRequirementsGridColumns = (
           row.requirement_sources
             ?.map((source) => {
               if (source.name === RequirementSourceNames.SCHEDULE_B) {
-                return RequirementSourceNameMap[RequirementSourceNames.SCHEDULE_B];
+                return RequirementSourceNameMap[
+                  RequirementSourceNames.SCHEDULE_B
+                ];
               }
               if (source.name === RequirementSourceNames.SCHEDULE_A) {
-                return RequirementSourceNameMap[RequirementSourceNames.SCHEDULE_A];
+                return RequirementSourceNameMap[
+                  RequirementSourceNames.SCHEDULE_A
+                ];
               }
               return source.name;
             })
