@@ -21,13 +21,13 @@ jobs:
       - uses: actions/checkout@v2
       - run: "true"
 
-  linting:
+  api-linting:
     needs: setup-job
     runs-on: ubuntu-24.04
 
     strategy:
       matrix:
-        python-version: [3.10]
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +56,7 @@ jobs:
         run: |
           make pylint
 
-  testing:
+  api-testing:
     needs: setup-job
     env:
       FLASK_ENV: "testing"
@@ -66,11 +66,11 @@ jobs:
       JWT_OIDC_TEST_WELL_KNOWN_CONFIG: "http://localhost:8081/auth/realms/eao-epic/.well-known/openid-configuration"
       DB_ECRPT_KEY: f1e3a5a4b9e86357d5b3041ac719d411
 
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        python-version: [3.10]
+        python-version: ["3.10"]
 
     services:
       postgres:
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        python-version: [3.10]
+        python-version: ["3.10"]
     name: Build
     steps:
       - uses: actions/checkout@v2
