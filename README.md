@@ -4,8 +4,8 @@ This document outlines the setup instructions for both the backend and front-end
 
 ## Backend Setup in WSL
 
-### 1. Install Python 3.12.4
-Ensure Python 3.12.4 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
+### 1. Install Python 3.10
+Ensure Python 3.10 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
 
 ### 2. Set Up PYTHONPATH
 Add the following line to your `.bashrc` or `.zshrc` file to set the `PYTHONPATH` environment variable:
@@ -29,7 +29,7 @@ make run
 
 ## Backend Setup on Windows
 
-## Step 1: Download the Latest Python Version
+## Step 1: Download the Python 3.10 Version
 
 1. Visit the official Python website: [Python Downloads](https://www.python.org/downloads/)
 2. Download and install the latest version of Python for your operating system.
@@ -79,11 +79,14 @@ make run
 Change to the front-end directory:
 cd compliance-web
 
-### 2. Install Dependencies
+### 2. Requirements
+- [Node.js](https://nodejs.org/en/) 18
+
+### 3. Install Dependencies
 Install necessary npm packages:
 npm install
 
-### 3. Run Development Server
+### 4. Run Development Server
 Launch the development server:
 npm run dev
 

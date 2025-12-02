@@ -18,8 +18,8 @@ class TestJWTStaffValidation:
         # Should not fail with staff validation error
         # (may fail with other errors, but not "No valid staff user found")
         assert (
-            response.status_code != 403
-            or "No valid staff user found" not in response.get_json().get("message", "")
+            response.status_code != 403 or
+            "No valid staff user found" not in response.get_json().get("message", "")
         )
 
     def test_super_user_token_has_valid_staff(self, client, jwt):
@@ -32,8 +32,8 @@ class TestJWTStaffValidation:
 
         # Should not fail with staff validation error
         assert (
-            response.status_code != 403
-            or "No valid staff user found" not in response.get_json().get("message", "")
+            response.status_code != 403 or
+            "No valid staff user found" not in response.get_json().get("message", "")
         )
 
     def test_nonexistent_staff_token_fails(self, client, jwt):
