@@ -4,6 +4,7 @@
 
 from datetime import datetime
 from io import BytesIO
+import json
 from typing import List
 
 import pandas as pd
@@ -461,6 +462,36 @@ def _get_first_requirement_source_sub_query():
     )
 
 
+def _get_all_requirement_sources_sub_query():
+    """Get all unique requirement source names for each requirement."""
+
+    return (
+        db.session.query(
+            InspectionReqSourceDetailModel.requirement_id,
+            func.array_agg(
+                func.distinct(
+                    cast(
+                        func.json_build_object(
+                            'id', RequirementSourceOptionModel.id,
+                            'name', RequirementSourceOptionModel.name
+                        ), db.Text
+                    )
+                )
+            ).label("all_sources"),
+        )
+        .join(
+            RequirementSourceOptionModel,
+            InspectionReqSourceDetailModel.requirement_source_id == RequirementSourceOptionModel.id,
+        )
+        .filter(
+            InspectionReqSourceDetailModel.is_active.is_(True),
+            InspectionReqSourceDetailModel.is_deleted.is_(False),
+        )
+        .group_by(InspectionReqSourceDetailModel.requirement_id)
+        .subquery("all_requirement_sources")
+    )
+
+
 def _get_requirement_order_sub_query():
     """Get requirement order sub query."""
     return (
@@ -633,6 +664,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
     # Get subqueries
     subqueries = {
         "first_requirement_source": _get_first_requirement_source_sub_query(),
+        "all_requirement_sources": _get_all_requirement_sources_sub_query(),
         "requirement_order": _get_requirement_order_sub_query(),
         "requirement_warning_letter": _get_requirement_warning_letter_sub_query(),
         "requirement_violation_ticket": _get_requirement_violation_ticket_sub_query(),
@@ -687,6 +719,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["restorative_justice"].restorative_justice_number.label(
                 "restorative_justice_number"
             ),
+            subqueries["all_requirement_sources"].c.all_sources.label("requirement_sources"),
         )
         .join(
             models["topic"],
@@ -834,6 +867,10 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
                 models["restorative_justice"].is_active.is_(True),
             ),
         )
+        .outerjoin(
+            subqueries["all_requirement_sources"],
+            models["req"].id == subqueries["all_requirement_sources"].c.requirement_id,
+        )
         .filter(models["req"].is_active.is_(True), models["req"].is_deleted.is_(False))
         .order_by(models["req"].id, models["enf_map"].enforcement_action_id)
         .options(
@@ -849,7 +886,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
 
     # Apply pagination if requested
     if enable_pagination:
-        return _apply_pagination(base_query, args, **models)
+        return _apply_pagination(base_query, args, subqueries, **models)
     return base_query
 
 
@@ -1025,12 +1062,13 @@ def _apply_filters(query, args, **kwargs):  # pylint: disable=too-many-arguments
     return query
 
 
-def _apply_pagination(query, args, **kwargs):
+def _apply_pagination(query, args, subqueries, **kwargs):
     """Apply pagination to the query.
 
     Args:
         query: The SQLAlchemy query to paginate
         args: Query arguments containing pagination parameters
+        subqueries: Dictionary containing subqueries
         **kwargs: Model aliases
 
     Returns:
@@ -1128,6 +1166,8 @@ def _apply_pagination(query, args, **kwargs):
         reference_models["restorative_justice"].restorative_justice_number.label(
             "restorative_justice_number"
         ),
+        # Include all requirement source IDs
+        subqueries["all_requirement_sources"].c.all_sources.label("requirement_sources"),
         # Include enforcement document IDs for distinct key
         reference_models["order"].id.label("order_id"),
         reference_models["warning_letter"].id.label("warning_letter_id"),
@@ -1179,6 +1219,7 @@ def _apply_pagination(query, args, **kwargs):
         subq.c.admin_penalty_number.label("admin_penalty_number"),
         subq.c.charge_rec_number.label("charge_rec_number"),
         subq.c.restorative_justice_number.label("restorative_justice_number"),
+        subq.c.requirement_sources.label("requirement_sources"),
         subq.c.order_id.label("order_id"),
         subq.c.warning_letter_id.label("warning_letter_id"),
         subq.c.violation_ticket_id.label("violation_ticket_id"),
@@ -1465,6 +1506,9 @@ def _process_inspection_requirement_query_results(query_results):
         )
         item["enforcement_number"] = _get_enforcement_number_by_type(result)
 
+        # Add all requirement source names
+        item["requirement_sources"] = getattr(result, "requirement_sources", None)
+
         processed_requirements.append(item)
     return processed_requirements
 
@@ -1514,6 +1558,12 @@ def _convert_enum_string_to_object(enum_string, enum_class_map):
 
 def _make_requirement_detail_object(requirements: list):
     """Make requirement detail object."""
+
+    def parse_requirement_sources(sources):
+        if not sources:
+            return []
+        return [json.loads(item) for item in sources]
+
     requirement_details = []
     for requirement in requirements:
         item = {
@@ -1535,6 +1585,7 @@ def _make_requirement_detail_object(requirements: list):
                 "name": requirement["inspection_status"].value,
             },
             "enforcement_number": requirement["enforcement_number"],
+            "requirement_sources": parse_requirement_sources(requirement.get("requirement_sources")),
         }
 
         # Handle status field - already converted to proper object format in

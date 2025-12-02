@@ -69,6 +69,10 @@ class InspectionRequirementGridItemSchema(Schema):
         KeyValueSchema,
         metadata={"description": "The project name of the inspection requirement"},
     )
+    requirement_sources = fields.List(
+        fields.Nested(KeyValueSchema),
+        metadata={"description": "The list of requirement sources"},
+    )
 
 
 class InspectionRequirementFilterSchema(BaseSchema):
