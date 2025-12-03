@@ -54,6 +54,7 @@ const initFormData: ComplaintFormData = {
   agency: undefined,
   firstNation: undefined,
   otherDescription: "",
+  allianceName: "",
   requirementSource: undefined,
   requirementSourceDescription: "",
   order: undefined,
@@ -109,6 +110,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           (item) => item.id === complaint.source_first_nation_id
         ),
         otherDescription: complaint.source_contact?.description ?? "",
+        allianceName: complaint.source_contact?.alliance_name ?? "",
         requirementSource: complaint.requirement_source,
         requirementSourceDescription:
           complaint.requirement_source_description ?? "",

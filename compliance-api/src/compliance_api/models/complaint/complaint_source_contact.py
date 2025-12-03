@@ -49,6 +49,9 @@ class ComplaintSourceContact(BaseModelVersioned):
         foreign_keys=[complaint_id],
         lazy="joined",
     )
+    alliance_name = Column(
+        String(), nullable=True, comment="The alliance name of the First Nations alliance contact"
+    )
 
     @classmethod
     @with_session

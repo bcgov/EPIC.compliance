@@ -81,6 +81,7 @@ export interface ComplaintFormData {
   agency?: Agency;
   firstNation?: FirstNation;
   otherDescription?: string;
+  allianceName?: string;
   requirementSource?: RequirementSource;
   requirementSourceDescription?: string;
   order?: InspectionOrder;
