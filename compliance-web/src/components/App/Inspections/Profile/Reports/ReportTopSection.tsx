@@ -313,6 +313,16 @@ export default function ReportTopSection() {
     });
   }, [setOpen, deleteInspectionRecord, inspectionData, inspectionReportsData]);
 
+  const canSeeChangeIRVersionChangeText = useMemo(() => {
+    if (
+      inspectionData?.inspection_status !== InspectionStatusEnum.OPEN ||
+      !inspectionReportsData?.date_issued
+    ) {
+      return true;
+    }
+    return false;
+  }, [inspectionData, inspectionReportsData]);
+
   return (
     <>
       <Box
@@ -337,18 +347,20 @@ export default function ReportTopSection() {
               />
             )}
           </Box>
-          {!isReportsReadOnly && !isHistorical && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2">Wrong Version?</Typography>
-              <Link
-                underline="hover"
-                sx={{ cursor: "pointer" }}
-                onClick={handleChangeIRVersion}
-              >
-                Change
-              </Link>
-            </Box>
-          )}
+          {!isReportsReadOnly &&
+            !isHistorical &&
+            canSeeChangeIRVersionChangeText && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="body2">Wrong Version?</Typography>
+                <Link
+                  underline="hover"
+                  sx={{ cursor: "pointer" }}
+                  onClick={handleChangeIRVersion}
+                >
+                  Change
+                </Link>
+              </Box>
+            )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {!isReportsReadOnly && (

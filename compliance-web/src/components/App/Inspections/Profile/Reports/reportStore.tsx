@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Inspection } from "@/models/Inspection";
-import { DEFAULT_REPORT_TAB_CONTENT } from "@/utils/constants";
+import { DEFAULT_REPORT_TAB_CONTENT, InspectionStatusEnum } from "@/utils/constants";
 import { CaseFile } from "@/models/CaseFile";
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { QueryClient } from "@tanstack/react-query";
@@ -21,7 +21,7 @@ interface ReportStore {
   enforcementSummary?: string;
   isReportsReadOnly?: boolean;
   isHistorical?: boolean;
-  
+
   setQueryClient: (queryClient: QueryClient) => void;
   setInspectionReportsData: (inspectionReportsData: InspectionRecord) => void;
   setIRApprovalsData: (irApprovalsData: IRApproval[]) => void;
@@ -76,7 +76,7 @@ export const useReportStore = create<ReportStore>((set) => ({
     set({
       inspectionData,
       isReportsReadOnly:
-        inspectionData?.inspection_status?.toLowerCase() === "closed",
+        inspectionData?.inspection_status === InspectionStatusEnum.CLOSED,
       isHistorical: inspectionData?.is_history ?? false,
     });
   },
