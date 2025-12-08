@@ -337,18 +337,20 @@ export default function ReportTopSection() {
               />
             )}
           </Box>
-          {!isReportsReadOnly && !isHistorical && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2">Wrong Version?</Typography>
-              <Link
-                underline="hover"
-                sx={{ cursor: "pointer" }}
-                onClick={handleChangeIRVersion}
-              >
-                Change
-              </Link>
-            </Box>
-          )}
+          {!isReportsReadOnly &&
+            !isHistorical &&
+            !inspectionReportsData?.date_issued && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="body2">Wrong Version?</Typography>
+                <Link
+                  underline="hover"
+                  sx={{ cursor: "pointer" }}
+                  onClick={handleChangeIRVersion}
+                >
+                  Change
+                </Link>
+              </Box>
+            )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {!isReportsReadOnly && (
