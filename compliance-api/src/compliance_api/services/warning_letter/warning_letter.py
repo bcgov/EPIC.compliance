@@ -249,7 +249,6 @@ class WarningLetterService:
         warning_letter = ServiceUtils.warning_letter_exist_check(warning_letter_id)
         if output_format == "pdf":
             ServiceUtils.access_check_update_for_inspection(warning_letter.inspection)
-            ServiceUtils.inspection_status_check(warning_letter.inspection)
         warning_letter_data = _create_warning_letter_data(warning_letter)
         response = DocGenService.render_template(
             "WARNING_LETTER_TEMPLATE", warning_letter_data, output_format
