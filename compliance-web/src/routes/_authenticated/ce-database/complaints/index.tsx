@@ -16,9 +16,12 @@ import {
   MRT_TableState,
   MRT_SortingState,
   MRT_TableInstance,
+  MRT_ColumnFiltersState,
+  MRT_Updater,
 } from "material-react-table";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
+import type { User } from "oidc-client-ts";
 import Pagination from "@/components/Shared/Pagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
@@ -28,12 +31,34 @@ import {
 import ComplaintsGridExport from "@/components/App/Complaints/ComplaintsGrid/ComplaintsGridExport";
 import ShowOnlyMyComplaintsSwitch from "@/components/App/Complaints/ComplaintsGrid/ShowOnlyMyComplaintsSwitch";
 import { AppConfig } from "@/utils/config";
+import { StaffUser } from "@/models/Staff";
 
 export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
   { component: Complaints }
 );
 
 const complaintsColumnFiltersCacheKey = "complaints-column-filters";
+
+// Helper to get current staff from user and staff list
+const getCurrentStaff = (currentUser: User | undefined | null, staffList: StaffUser[] | undefined) => {
+  if (!currentUser?.profile?.preferred_username || !staffList) return null;
+  return staffList.find(
+    (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
+  );
+};
+
+// Helper to create default filters for a staff member
+const createDefaultFilters = (staffId: string) => ({
+  externalFilters: {
+    primary_officer_ids: [staffId],
+  },
+  columnFilters: [
+    {
+      id: "primary_officer_ids",
+      value: [staffId],
+    },
+  ],
+});
 
 export function Complaints() {
   const { data: projects } = useProjectsData();
@@ -42,229 +67,135 @@ export function Complaints() {
   const { data: complaintResolutions } = useComplaintResolutionsData();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
-  const [sorting, setSorting] = useState<MRT_SortingState>([
+
+  const [sorting, setSorting] = useState<MRT_SortingState>(() => [
     { id: "date_received", desc: true },
   ]);
 
-  const [pagination, setPagination] = useState({
+  const [pagination, setPagination] = useState(() => ({
     pageIndex: 0,
     pageSize: AppConfig.defaultPageSize,
-  });
+  }));
 
   const [columnFilters, setColumnFilters] = useState<
     MRT_TableState<Complaint>["columnFilters"]
   >([]);
+  
   const [globalFilter, setGlobalFilter] = useState<string>("");
+  
   const [externalFilters, setExternalFilters] = useState<
     Record<string, string[] | string>
   >({});
 
-  // State for "My Files" switch - default to true for first-time users
   const [myFilesChecked, setMyFilesChecked] = useState(true);
-
-  // Track if we're in the initial load phase to prevent caching during restoration
-  const isInitialLoad = useRef(true);
+  
+  // Ref to track if filters have been initialized
+  const filtersInitialized = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
-
-  // Track previous values to prevent unnecessary caching
-  const prevFilters = useRef<{
-    columnFilters: MRT_TableState<Complaint>["columnFilters"];
-    externalFilters: Record<string, string[] | string>;
-    globalFilter: string;
-    sorting: MRT_SortingState;
-    myFilesChecked: boolean;
-  }>({
-    columnFilters: [],
-    externalFilters: {},
-    globalFilter: "",
-    sorting: [{ id: "complaint_number", desc: false }],
-    myFilesChecked: true, // Default to true for first-time users
-  });
 
   // Get cached filters store methods
   const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
-  const cachedColumnFilters = getFilters(complaintsColumnFiltersCacheKey);
-  const cachedExternalFilters = getExternalFilters(
-    complaintsColumnFiltersCacheKey
-  );
-  const cachedSorting = getSorting(complaintsColumnFiltersCacheKey);
 
-  // Restore cached filters on component mount
+  const cachedData = useMemo(() => {
+    return {
+      columnFilters: getFilters(complaintsColumnFiltersCacheKey),
+      externalFilters: getExternalFilters(complaintsColumnFiltersCacheKey),
+      sorting: getSorting(complaintsColumnFiltersCacheKey),
+    };
+  }, [getFilters, getExternalFilters, getSorting]);
+
+  const currentStaff = useMemo(() => {
+    return getCurrentStaff(currentUser, staffList);
+  }, [currentUser, staffList]);
+
   useEffect(() => {
-    // Reset the initial load flag on every mount
-    isInitialLoad.current = true;
-
-    if (cachedColumnFilters.length > 0) {
-      setColumnFilters(cachedColumnFilters);
+    // Don't initialize if already done, or if it isn't loaded yet
+    if (filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+      return;
     }
-    if (cachedExternalFilters) {
-      const restoredExternalFilters = cachedExternalFilters as Record<
-        string,
-        string[] | string
-      >;
-      setExternalFilters(restoredExternalFilters);
 
-      // Restore global filter if it was cached
-      if (restoredExternalFilters.globalFilter) {
-        setGlobalFilter(restoredExternalFilters.globalFilter as string);
+    filtersInitialized.current = true;
+
+    const hasCache = cachedData.columnFilters.length > 0 || 
+                     (cachedData.externalFilters && Object.keys(cachedData.externalFilters).length > 0);
+
+    if (hasCache) {
+      // Restore from cache
+      if (cachedData.columnFilters.length > 0) {
+        setColumnFilters(cachedData.columnFilters);
+      }
+      
+      if (cachedData.externalFilters) {
+        const restored = cachedData.externalFilters as Record<string, string[] | string>;
+        setExternalFilters(restored);
+
+        if (restored.globalFilter) {
+          setGlobalFilter(restored.globalFilter as string);
+        }
+
+        if (restored.myFilesChecked !== undefined) {
+          setMyFilesChecked(Boolean(restored.myFilesChecked));
+        } else {
+          // Get from primary officer filter
+          const primaryOfficer = restored.primary_officer_ids || [];
+          const derivedState = Array.isArray(primaryOfficer) && primaryOfficer.length > 0;
+          setMyFilesChecked(derivedState);
+        }
       }
 
-      // Restore "My Files" switch state if it was cached
-      if (restoredExternalFilters.myFilesChecked !== undefined) {
-        // Use the explicitly stored switch state
-        const restoredSwitchState = Boolean(
-          restoredExternalFilters.myFilesChecked
-        );
-        setMyFilesChecked(restoredSwitchState);
-
-        // If switch is ON, ensure column filters are set up for UI display
-        if (
-          restoredSwitchState &&
-          currentUser?.profile?.preferred_username &&
-          staffList
-        ) {
-          const currentStaff = staffList.find(
-            (staff) =>
-              staff.auth_user_guid === currentUser.profile.preferred_username
-          );
-          if (currentStaff) {
-            // Add primary_officer_ids column filter for UI display
-            const primaryOfficerColumnFilter = {
-              id: "primary_officer_ids",
-              value: [currentStaff.id.toString()],
-            };
-            setColumnFilters((prev) => {
-              const filtered = prev.filter(
-                (filter) => filter.id !== "primary_officer_ids"
-              );
-              return [...filtered, primaryOfficerColumnFilter];
-            });
-          }
-        }
-      } else {
-        // Fallback: derive from primary_officer filter if switch state not stored
-        const primaryOfficerFilter =
-          restoredExternalFilters.primary_officer_ids || [];
-        const derivedSwitchState = !!(primaryOfficerFilter?.length > 0);
-        setMyFilesChecked(derivedSwitchState);
-
-        // If derived state is ON, ensure column filters are set up
-        if (
-          derivedSwitchState &&
-          currentUser?.profile?.preferred_username &&
-          staffList
-        ) {
-          const currentStaff = staffList.find(
-            (staff) =>
-              staff.auth_user_guid === currentUser.profile.preferred_username
-          );
-          if (currentStaff) {
-            // Add primary_officer_ids column filter for UI display
-            const primaryOfficerColumnFilter = {
-              id: "primary_officer_ids",
-              value: [currentStaff.id.toString()],
-            };
-            setColumnFilters((prev) => {
-              const filtered = prev.filter(
-                (filter) => filter.id !== "primary_officer_ids"
-              );
-              return [...filtered, primaryOfficerColumnFilter];
-            });
-          }
+      if (cachedData.sorting && Array.isArray(cachedData.sorting) && cachedData.sorting.length > 0) {
+        if (cachedData.sorting[0]?.id) {
+          setSorting(cachedData.sorting);
         }
       }
     } else {
-      // No cached filters - apply default "My Files" filter for first-time users
-      if (currentUser?.profile?.preferred_username && staffList) {
-        const currentStaff = staffList.find(
-          (staff) =>
-            staff.auth_user_guid === currentUser.profile.preferred_username
-        );
-        if (currentStaff) {
-          const defaultExternalFilters = {
-            primary_officer_ids: [currentStaff.id.toString()],
-          };
-          const defaultColumnFilters = [
-            {
-              id: "primary_officer_ids",
-              value: [currentStaff.id.toString()],
-            },
-          ];
-
-          setExternalFilters(defaultExternalFilters);
-          setColumnFilters(defaultColumnFilters);
-          setMyFilesChecked(true);
-
-          // Update prevFilters to prevent unnecessary caching during initial setup
-          prevFilters.current = {
-            ...prevFilters.current,
-            externalFilters: defaultExternalFilters,
-            columnFilters: defaultColumnFilters,
-            myFilesChecked: true,
-          };
-        }
-      }
+      // Apply defaults for first-time users
+      const defaults = createDefaultFilters(currentStaff.id.toString());
+      setExternalFilters(defaults.externalFilters);
+      setColumnFilters(defaults.columnFilters);
+      setMyFilesChecked(true);
     }
 
-    // Restore sorting if it was cached
-    if (cachedSorting && Array.isArray(cachedSorting)) {
-      // Validate that it has the expected structure
-      if (cachedSorting.length > 0 && cachedSorting[0]?.id) {
-        setSorting(cachedSorting);
-      }
-    }
-
-    // Mark restoration as complete and initial load as complete
-    isInitialLoad.current = false;
     setIsRestored(true);
-  }, [
-    cachedColumnFilters,
-    cachedExternalFilters,
-    cachedSorting,
-    staffList,
-    currentUser,
-  ]);
+  }, [authLoading, staffLoading, currentStaff, cachedData]);
 
-  // Cache all filters when they change (but not during initial load)
+  // Debounced cache persistence - only after initialization
+  const cacheTimeoutRef = useRef<NodeJS.Timeout>();
+  
   useEffect(() => {
-    if (!isInitialLoad.current) {
-      // Check if any values have actually changed
-      const currentFilters = {
-        columnFilters,
-        externalFilters,
-        globalFilter,
-        sorting,
-        myFilesChecked,
-      };
+    // Only cache after filters are initialized
+    if (!filtersInitialized.current || !isRestored) return;
 
-      const hasChanged =
-        JSON.stringify(currentFilters) !== JSON.stringify(prevFilters.current);
-
-      if (hasChanged) {
-        cachedFiltersStore.getState().setFilters(
-          complaintsColumnFiltersCacheKey,
-          columnFilters,
-          {
-            ...externalFilters,
-            globalFilter,
-            myFilesChecked, // Store the switch state explicitly
-          },
-          sorting
-        );
-
-        // Update previous values
-        prevFilters.current = currentFilters;
-      }
+    // Clear previous timeout
+    if (cacheTimeoutRef.current) {
+      clearTimeout(cacheTimeoutRef.current);
     }
-  }, [columnFilters, externalFilters, globalFilter, sorting, myFilesChecked]);
 
-  // Use the extracted utility function
-  const convertFiltersToQueryParams =
-    useConvertFiltersToQueryParams(externalFilters);
+    // Debounce cache updates to reduce write frequency
+    cacheTimeoutRef.current = setTimeout(() => {
+      cachedFiltersStore.getState().setFilters(
+        complaintsColumnFiltersCacheKey,
+        columnFilters,
+        {
+          ...externalFilters,
+          globalFilter,
+          myFilesChecked,
+        },
+        sorting
+      );
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (cacheTimeoutRef.current) {
+        clearTimeout(cacheTimeoutRef.current);
+      }
+    };
+  }, [columnFilters, externalFilters, globalFilter, sorting, myFilesChecked, isRestored]);
+
+  const convertFiltersToQueryParams = useConvertFiltersToQueryParams(externalFilters);
 
   const queryParams: ComplaintGridQueryParams = useMemo(() => {
-    // Extract sorting information from the sorting state
-    const currentSort = sorting[0]; // Material React Table supports multiple sorts, but we'll use the first one
+    const currentSort = sorting[0];
 
     return {
       page_no: pagination.pageIndex + 1,
@@ -283,14 +214,15 @@ export function Complaints() {
     sorting,
   ]);
 
+  // Get data
   const { data, isLoading } = useComplaintsData(queryParams);
-  const complaintsList = useMemo(() => data?.items ?? [], [data]);
+  
+  const complaintsList = useMemo(() => data?.items ?? [], [data?.items]);
 
   // Use the custom hook for table handlers
   const {
     handlePaginationChange,
     handleSortingChange,
-    handleColumnFiltersChange,
     handleGlobalFilterChange,
   } = useTableHandlers({
     sorting,
@@ -302,53 +234,64 @@ export function Complaints() {
     setPagination,
   });
 
-  // Handle "My Files" switch changes
+  // Column filter handler that enforces "My Files" toggle
+  const handleColumnFiltersChange = useCallback(
+    (updater: MRT_Updater<MRT_ColumnFiltersState>) => {
+      setColumnFilters((prevFilters) => {
+        const newFilters = typeof updater === 'function' ? updater(prevFilters) : updater;
+        
+        // If "My Files" is checked, ensure primary_officer_ids filter is present
+        if (myFilesChecked && currentStaff) {
+          const hasPrimaryOfficerFilter = newFilters.some(
+            (filter) => filter.id === "primary_officer_ids"
+          );
+          
+          // If user removed the primary_officer_ids filter, re-add it
+          if (!hasPrimaryOfficerFilter) {
+            const primaryOfficerFilter = {
+              id: "primary_officer_ids",
+              value: [currentStaff.id.toString()],
+            };
+            return [...newFilters, primaryOfficerFilter];
+          }
+        }
+        
+        return newFilters;
+      });
+    },
+    [myFilesChecked, currentStaff]
+  );
+
   const handleMyFilesSwitchChange = useCallback(
     (filters: {
       checked: boolean;
       externalFilters: Record<string, string[] | string>;
       columnFilters?: MRT_TableState<Complaint>["columnFilters"];
     }) => {
-      // Only update if the values have actually changed
-      const filtersChanged =
-        JSON.stringify(filters.externalFilters) !==
-        JSON.stringify(externalFilters);
-      const checkedChanged = filters.checked !== myFilesChecked;
-
-      if (checkedChanged) {
-        setMyFilesChecked(filters.checked);
-      }
-
-      if (filtersChanged) {
-        setExternalFilters(filters.externalFilters);
-        // Reset pagination when filters change
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
+      // Batch state updates
+      setMyFilesChecked(filters.checked);
+      setExternalFilters(filters.externalFilters);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
       // Update column filters if provided
       if (filters.columnFilters !== undefined) {
         if (filters.checked) {
-          // When turning ON, merge with existing filters, replacing primary_officer_ids if it exists
           setColumnFilters((prevFilters) => {
-            const filteredFilters = prevFilters.filter(
+            const filtered = prevFilters.filter(
               (filter) => filter.id !== "primary_officer_ids"
             );
-            return [...filteredFilters, ...filters.columnFilters!];
+            return [...filtered, ...filters.columnFilters!];
           });
         } else {
-          // When turning OFF, remove primary_officer_ids filter but keep others
-          setColumnFilters((prevFilters) => {
-            return prevFilters.filter(
-              (filter) => filter.id !== "primary_officer_ids"
-            );
-          });
+          setColumnFilters((prevFilters) =>
+            prevFilters.filter((filter) => filter.id !== "primary_officer_ids")
+          );
         }
       }
     },
-    [externalFilters, myFilesChecked]
+    []
   );
 
-  // Use the extracted utility function for columns
   const columns = useComplaintsGridColumns({
     projectList: projects,
     topicList: topics,
@@ -357,22 +300,27 @@ export function Complaints() {
     complaintResolutionList: complaintResolutions,
   });
 
-  return authLoading || staffLoading || !isRestored ? (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      height="100%"
-    >
-      <CircularProgress size={60} />
-    </Box>
-  ) : (
+  // Show loading state during initialization
+  if (authLoading || staffLoading || !isRestored) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100%"
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  return (
     <MasterDataTable
       columns={columns}
-      data={complaintsList ?? []}
+      data={complaintsList}
       initialState={{
         sorting: sorting,
-        columnFilters: isRestored ? columnFilters : [],
+        columnFilters: columnFilters,
       }}
       state={{
         isLoading,

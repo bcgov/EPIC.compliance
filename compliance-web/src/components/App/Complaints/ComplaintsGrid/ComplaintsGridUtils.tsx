@@ -1,5 +1,5 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Chip } from "@mui/material";
 import dateUtils from "@/utils/dateUtils";
 import PageLink from "@/components/Shared/PageLink";
@@ -122,12 +122,15 @@ export const useComplaintsGridColumns = (
     complaintResolutionList,
   } = dataDependencies;
 
-  const statusOptions = [
+  const statusOptions = useMemo(()=> {
+    return [
     { text: "Open", value: ComplaintStatusEnum.OPEN },
     { text: "Closed", value: ComplaintStatusEnum.CLOSED },
   ];
+  }, []);
 
-  return [
+  return useMemo<MRT_ColumnDef<Complaint>[]>( 
+    ()=> [
     {
       accessorKey: "complaint_number",
       header: "Complaint #",
@@ -247,5 +250,5 @@ export const useComplaintsGridColumns = (
       ),
       size: 120,
     },
-  ];
+  ], [projectList, topicList, complaintSourceList, staffUserList, complaintResolutionList, statusOptions]);
 }; 

@@ -1,5 +1,5 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   APPROVAL_STATUS,
   APReferralStatus,
@@ -134,20 +134,21 @@ export const useConvertFiltersToQueryParams = (
 export const useRequirementsGridColumns = (
   dataDependencies: RequirementsGridDataDependencies
 ): MRT_ColumnDef<InspectionRequirementGrid>[] => {
-  const RequirementSourceNames = {
+  const RequirementSourceNames = useMemo(() => ({
     SCHEDULE_B: "Schedule B - Table of Conditions",
     SCHEDULE_A: "Schedule A - Certified Project Description",
-  };
+  }), []);
 
-  const RequirementSourceNameMap: Record<string, string> = {
+  const RequirementSourceNameMap: Record<string, string> = useMemo(() => ({
     [RequirementSourceNames.SCHEDULE_B]: "Schedule B",
     [RequirementSourceNames.SCHEDULE_A]: "Schedule A",
-  };
+  }), [RequirementSourceNames.SCHEDULE_B, RequirementSourceNames.SCHEDULE_A]);
 
   const { topics, complianceFindings, enforcementActions, requirementSources } =
     dataDependencies;
 
-  return [
+  return useMemo<MRT_ColumnDef<InspectionRequirementGrid>[]>(
+    () => [
     {
       accessorFn: (row) => row.topic?.name,
       id: "tpc",
@@ -285,7 +286,7 @@ export const useRequirementsGridColumns = (
       filterFn: "greaterThanOrEqual",
       size: 120,
     },
-  ];
+  ], [complianceFindings, enforcementActions, requirementSources, RequirementSourceNames, RequirementSourceNameMap, topics]);
 };
 
 export const enforcementStatusOptions = [

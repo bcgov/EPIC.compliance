@@ -20,6 +20,7 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import KeyValueSchema, StaffUserCreateSchema, StaffUserSchema, StaffUserUpdateSchema
+from compliance_api.services.cached_staff_user import CachedStaffUserService
 from compliance_api.services import StaffUserService
 from compliance_api.utils.enum import PermissionEnum
 from compliance_api.utils.util import cors_preflight
@@ -54,9 +55,8 @@ class StaffUsers(Resource):
     @auth.require
     def get():
         """Fetch all users."""
-        users = StaffUserService.get_all_staff_users()
-        user_list_schema = StaffUserSchema(many=True)
-        return user_list_schema.dump(users), HTTPStatus.OK
+        users = CachedStaffUserService.get_all_staff_users_with_auth()
+        return users, HTTPStatus.OK
 
     @staticmethod
     @auth.require

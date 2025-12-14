@@ -1,5 +1,5 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Chip } from "@mui/material";
 import dateUtils from "@/utils/dateUtils";
 import PageLink from "@/components/Shared/PageLink";
@@ -110,7 +110,8 @@ export const useInspectionsGridColumns = (
     inspectionStatusList,
   } = dataDependencies;
 
-  return [
+  return useMemo<MRT_ColumnDef<Inspection>[]>(
+    () => [
     {
       accessorKey: "ir_number",
       header: "IR #",
@@ -218,5 +219,7 @@ export const useInspectionsGridColumns = (
         />
       ),
     },
-  ];
+  ],
+  [projectList, initiationList, irProgressList, staffUserList, inspectionStatusList]
+);  
 };

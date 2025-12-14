@@ -1,5 +1,5 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { Chip } from "@mui/material";
 import dateUtils from "@/utils/dateUtils";
 import PageLink from "@/components/Shared/PageLink";
@@ -14,6 +14,12 @@ export interface CaseFileGridDataDependencies {
   initiationList?: Initiation[];
   staffUserList?: StaffUser[];
 }
+
+// Status options constant - can be moved outside since it never changes
+const STATUS_OPTIONS = [
+  { text: "Open", value: "Open" },
+  { text: "Closed", value: "Closed" },
+];
 
 // Convert column filters to API query parameters
 export const useConvertFiltersToQueryParams = (
@@ -35,7 +41,7 @@ export const useConvertFiltersToQueryParams = (
               params.project_ids = filter.value.join(",");
             }
             break;
-          case "initiation":  
+          case "initiation":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.initiation_ids = filter.value.join(",");
             }
@@ -80,97 +86,110 @@ export const useConvertFiltersToQueryParams = (
   );
 };
 
-// Create columns configuration
+// Create columns configuration with proper memoization
 export const useCaseFileGridColumns = (
   dataDependencies: CaseFileGridDataDependencies
 ): MRT_ColumnDef<CaseFile>[] => {
   const { projectList, initiationList, staffUserList } = dataDependencies;
 
-  const statusOptions = [
-    { text: "Open", value: "Open" },
-    { text: "Closed", value: "Closed" },
-  ];
+  // Memoize filter options to prevent unnecessary recalculations
+  const projectFilterOptions = useMemo(
+    () =>
+      projectList?.map((project) => ({
+        text: project.name,
+        value: project.id.toString(),
+      })) ?? [],
+    [projectList]
+  );
 
-  return [
-    {
-      accessorKey: "case_file_number",
-      header: "Case File #",
-      filterFn: "contains",
-      Cell: ({ row }) => (
-        <PageLink
-          to="/ce-database/case-files/$caseFileNumber"
-          params={{ caseFileNumber: row.original.case_file_number }}
-        />
-      ),
-      size: 120,
-    },
-    {
-      accessorFn: (row) => row.project?.name,
-      id: "project",
-      header: "Project",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        projectList?.map((project) => ({
-          text: project.name,
-          value: project.id.toString(),
-        })) ?? [],
-      size: 150,
-    },
-    {
-      accessorFn: (row) => row.initiation?.name,
-      id: "initiation",
-      header: "Initiation",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        initiationList?.map((initiation) => ({
-          text: initiation.name,
-          value: initiation.id.toString(),
-        })) ?? [],
-      size: 150,
-    },
-    {
-      accessorFn: (row) =>
-        row.date_created ? dateUtils.formatDate(row.date_created) : "",
-      id: "date_created",
-      header: "Date Created",
-      filterVariant: "date",
-      filterFn: "greaterThanOrEqual",
-      size: 120,
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      Cell: ({ row }) => {
-        return row.original.case_file_status ? (
-          <Chip
-            label={row.original.case_file_status}
-            color={
-              row.original.case_file_status?.toLowerCase() === "open"
-                ? "success"
-                : "error"
-            }
-            variant="outlined"
-            size="small"
+  const initiationFilterOptions = useMemo(
+    () =>
+      initiationList?.map((initiation) => ({
+        text: initiation.name,
+        value: initiation.id.toString(),
+      })) ?? [],
+    [initiationList]
+  );
+
+  const staffFilterOptions = useMemo(
+    () =>
+      staffUserList?.map((staffUser) => ({
+        text: staffUser.name,
+        value: staffUser.id.toString(),
+      })) ?? [],
+    [staffUserList]
+  );
+
+  // Memoize the columns array to prevent recreation on every render
+  return useMemo<MRT_ColumnDef<CaseFile>[]>(
+    () => [
+      {
+        accessorKey: "case_file_number",
+        header: "Case File #",
+        filterFn: "contains",
+        Cell: ({ row }) => (
+          <PageLink
+            to="/ce-database/case-files/$caseFileNumber"
+            params={{ caseFileNumber: row.original.case_file_number }}
           />
-        ) : (
-          <></>
-        );
+        ),
+        size: 120,
       },
-      filterVariant: "multi-select",
-      filterSelectOptions: statusOptions,
-      size: 80,
-    },
-    {
-      accessorFn: (row) => row.primary_officer?.name,
-      id: "primary_officer",
-      header: "Primary",
-      filterVariant: "multi-select",
-      filterSelectOptions:
-        staffUserList?.map((staffUser) => ({
-          text: staffUser.name,
-          value: staffUser.id.toString(),
-        })) ?? [],
-      size: 100,
-    },
-  ];
+      {
+        accessorFn: (row) => row.project?.name,
+        id: "project",
+        header: "Project",
+        filterVariant: "multi-select",
+        filterSelectOptions: projectFilterOptions,
+        size: 150,
+      },
+      {
+        accessorFn: (row) => row.initiation?.name,
+        id: "initiation",
+        header: "Initiation",
+        filterVariant: "multi-select",
+        filterSelectOptions: initiationFilterOptions,
+        size: 150,
+      },
+      {
+        accessorFn: (row) =>
+          row.date_created ? dateUtils.formatDate(row.date_created) : "",
+        id: "date_created",
+        header: "Date Created",
+        filterVariant: "date",
+        filterFn: "greaterThanOrEqual",
+        size: 120,
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        Cell: ({ row }) => {
+          return row.original.case_file_status ? (
+            <Chip
+              label={row.original.case_file_status}
+              color={
+                row.original.case_file_status?.toLowerCase() === "open"
+                  ? "success"
+                  : "error"
+              }
+              variant="outlined"
+              size="small"
+            />
+          ) : null;
+        },
+        filterVariant: "multi-select",
+        filterSelectOptions: STATUS_OPTIONS,
+        size: 80,
+      },
+      {
+        accessorFn: (row) => row.primary_officer?.name,
+        id: "primary_officer",
+        header: "Primary",
+        filterVariant: "multi-select",
+        filterSelectOptions: staffFilterOptions,
+        size: 100,
+      },
+    ],
+    [projectFilterOptions, initiationFilterOptions, staffFilterOptions]
+  );
 };
