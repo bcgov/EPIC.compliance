@@ -31,6 +31,7 @@ from .continuation_report import (
     ContinuationReportCreateSchema, ContinuationReportKeyCreateSchema, ContinuationReportKeySchema,
     ContinuationReportSchema, ContinuationReportUpdateSchema, CRGetQueryParamSchema)
 from .department_detail import DepartmentDetailsSchema
+from .document_job import DocumentJobSchema, DocumentJobUpdateSchema
 from .inspection import (
     InspectionAttendanceSchema, InspectionCreateSchema, InspectionFilterSchema, InspectionMoreDetailsSchema,
     InspectionOfficerSchema, InspectionSchema, InspectionStatusSchema, InspectionUpdateSchema, PendingItemSchema)

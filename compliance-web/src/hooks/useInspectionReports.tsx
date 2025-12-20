@@ -156,14 +156,11 @@ const inspectionRecordRender = ({
   inspectionRecordId: number;
   outputFormat: "html" | "pdf";
 }) => {
-  // If requesting PDF, specify responseType as 'blob'
-  const responseType = outputFormat === "pdf" ? "blob" : "json";
-
   return request({
     method: "POST",
     url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/render`,
     data: { output_format: outputFormat },
-    responseType: responseType,
+    responseType: "json",
   });
 };
 

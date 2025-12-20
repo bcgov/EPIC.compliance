@@ -31,6 +31,7 @@ from .continuation_report import ContinuationReport, ContinuationReportKey
 from .cr_sentence_type_mapping import CRSentenceTypeMapping
 from .db import db, ma, migrate
 from .department_detail import DepartmentDetail
+from .document_job import DocumentJob, DocumentJobStatusEnum
 from .document_type import DocumentType
 from .enforcement_action import EnforcementActionOption, EnforcementActionOptionEnum
 from .inspection import (

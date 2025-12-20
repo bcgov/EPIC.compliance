@@ -1,8 +1,8 @@
-import { downloadFile } from "@/utils/appUtils";
 import {
   ArrowDropDownRounded,
+  AutoAwesomeRounded,
   DownloadRounded,
-  PictureAsPdfOutlined,
+  PictureAsPdfRounded,
 } from "@mui/icons-material";
 import {
   Button,
@@ -11,8 +11,10 @@ import {
   Grow,
   Paper,
   Popper,
-  MenuList,
-  MenuItem,
+  Typography,
+  Link,
+  Box,
+  CircularProgress,
 } from "@mui/material";
 import { useMemo, useRef, useState } from "react";
 import { useInspectionRecordRender } from "@/hooks/useInspectionReports";
@@ -28,10 +30,22 @@ import { useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { InspectionStatusEnum } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
+import {
+  useDeleteDocumentJobs,
+  useMostRecentDocumentJobForUser,
+} from "@/hooks/useDocumentJobs";
+import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
+import dateUtils from "@/utils/dateUtils";
+import { useFetchPresignedGetURL } from "@/hooks/useImageUpload";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PreviewDownloadButton = () => {
   const { setOpen: setModalOpen } = useModal();
   const { inspectionData, inspectionReportsData } = useReportStore();
+  const { data: documentJob } = useMostRecentDocumentJobForUser(
+    inspectionReportsData?.id ?? 0
+  );
+
   const [previewClicked, setPreviewClicked] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -56,14 +70,12 @@ const PreviewDownloadButton = () => {
     [isInspectionOpen, isUserPrimary, isSuperUser]
   );
 
-  const onSuccess = (data: { html: string } | Blob) => {
+  const onSuccess = (data: DocumentJob | { html: string }) => {
     if ("html" in data) {
       setModalOpen({
         content: <ReportPreviewModal previewHtml={data.html ?? ""} />,
         width: "744px",
       });
-    } else {
-      downloadFile(data, `${inspectionData?.ir_number}.pdf`);
     }
     setPreviewClicked(false);
   };
@@ -78,6 +90,14 @@ const PreviewDownloadButton = () => {
     onError
   );
 
+  const isGenerating = useMemo(() => {
+    return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
+  }, [documentJob]);
+
+  const isCompleted = useMemo(() => {
+    return documentJob?.status === DocumentJobStatus.COMPLETED;
+  }, [documentJob]);
+
   const handlePreviewClick = async () => {
     setPreviewClicked(true);
     mutateIrPreviewData({
@@ -87,7 +107,20 @@ const PreviewDownloadButton = () => {
     });
   };
 
+  const queryClient = useQueryClient();
+  const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
+
   const handleDownloadClick = async (event: MouseEvent) => {
+    if (documentJob?.id) {
+      // Generating a new report invalidates the previous one
+      mutateDeleteDocumentJob(documentJob.id, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+          });
+        },
+      });
+    }
     setPreviewClicked(true);
     handleClose(event);
     mutateIrPreviewData({
@@ -112,6 +145,45 @@ const PreviewDownloadButton = () => {
     setOpen(false);
   };
 
+  const onPresignedUrlSuccess = async (data: { presigned_url: string }) => {
+    try {
+      const response = await fetch(data.presigned_url);
+      const blob = await response.blob();
+      const filename =
+        documentJob?.download_name || inspectionData?.ir_number || "report.pdf";
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      if (documentJob?.id) {
+        mutateDeleteDocumentJob(documentJob.id, {
+          onSuccess: () => {
+            queryClient.invalidateQueries({
+              queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+            });
+          },
+        });
+      }
+    } catch (error) {
+      notify.error("Failed to download PDF");
+    }
+    setOpen(false);
+  };
+
+  const { mutate: mutateFetchPresignedGetURL } = useFetchPresignedGetURL(
+    onPresignedUrlSuccess
+  );
+
+  const handleDownloadReportFromURL = () => {
+    if (documentJob?.relative_url) {
+      mutateFetchPresignedGetURL(documentJob.relative_url);
+    }
+  };
+
   return (
     <>
       <ButtonGroup
@@ -126,8 +198,13 @@ const PreviewDownloadButton = () => {
           },
         }}
       >
-        <Button onClick={handlePreviewClick} disabled={previewClicked}>
-          <PictureAsPdfOutlined sx={{ mr: 1, fontSize: 20 }} />
+        <Button
+          variant="contained"
+          color="secondary"
+          onClick={handlePreviewClick}
+          disabled={previewClicked}
+        >
+          <PictureAsPdfRounded sx={{ mr: 1, fontSize: 20 }} />
           {previewClicked ? "Loading..." : "Preview"}
         </Button>
         {isDownloadAllowed && (
@@ -136,6 +213,8 @@ const PreviewDownloadButton = () => {
             aria-expanded={open ? "true" : undefined}
             aria-label="download report"
             aria-haspopup="menu"
+            variant="contained"
+            color="secondary"
             onClick={handleToggle}
             sx={{
               padding: "0.5rem 0 !important",
@@ -148,7 +227,7 @@ const PreviewDownloadButton = () => {
       </ButtonGroup>
       <Popper
         sx={{
-          zIndex: 1,
+          zIndex: 2,
         }}
         open={open}
         anchorEl={anchorRef.current}
@@ -164,23 +243,97 @@ const PreviewDownloadButton = () => {
                 placement === "bottom" ? "center top" : "center bottom",
             }}
           >
-            <Paper>
-              <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  <MenuItem
-                    key="download-report-as-pdf"
+            <Paper elevation={3} sx={{ pt: 1, pb: 2 }}>
+              <ClickAwayListener
+                onClickAway={(e) => handleClose(e as MouseEvent)}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <Button
+                    variant="text"
                     onClick={(e) =>
                       handleDownloadClick(e as unknown as MouseEvent)
                     }
-                    disabled={previewClicked}
-                    component="button"
+                    disabled={isGenerating}
+                    fullWidth
+                    sx={{ justifyContent: "flex-start" }}
                   >
-                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
-                    {previewClicked
-                      ? "Downloading..."
-                      : "Download Report as PDF"}
-                  </MenuItem>
-                </MenuList>
+                    <AutoAwesomeRounded sx={{ mr: 1, fontSize: 20 }} />
+                    {isGenerating
+                      ? "Generating report..."
+                      : "Generate Report as PDF"}
+                    {isGenerating && (
+                      <CircularProgress
+                        size={20}
+                        color="primary"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Button>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "flex-end",
+                      gap: 1,
+                      width: "100%",
+                    }}
+                  >
+                    {isCompleted ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0.25,
+                          pl: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color={BCDesignTokens.typographyColorPlaceholder}
+                        >
+                          Last Generated:
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color={BCDesignTokens.typographyColorPrimary}
+                        >
+                          {dateUtils.formatDate(
+                            documentJob?.completed_at ?? "",
+                            "MMM D, YYYY hh:mm A"
+                          )}
+                        </Typography>
+                      </Box>
+                    ) : (
+                      <Typography variant="caption" px={2}>
+                        Nothing generated yet.
+                      </Typography>
+                    )}
+                    <Link
+                      onClick={
+                        isCompleted ? handleDownloadReportFromURL : () => {}
+                      }
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        pr: 2,
+                        fontSize: 14,
+                        color: isCompleted ? "primary" : "text.disabled",
+                        pointerEvents: isCompleted ? "auto" : "none",
+                        cursor: isCompleted ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      <DownloadRounded sx={{ fontSize: 16 }} />
+                      Download
+                    </Link>
+                  </Box>
+                </Box>
               </ClickAwayListener>
             </Paper>
           </Grow>
