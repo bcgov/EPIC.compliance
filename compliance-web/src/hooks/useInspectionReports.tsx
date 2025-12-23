@@ -204,10 +204,11 @@ export const useUpdateInspectionRecord = (onSuccess: OnSuccessType) => {
   });
 };
 
-export const useResetInspectionRecord = (onSuccess: OnSuccessType) => {
+export const useResetInspectionRecord = (onSuccess: OnSuccessType, onError?: OnErrorType) => {
   return useMutation({
     mutationFn: resetInspectionRecord,
     onSuccess,
+    onError,
   });
 };
 

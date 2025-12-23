@@ -7,6 +7,7 @@ import {
   SxProps,
   Button,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { useState } from "react";
@@ -22,6 +23,7 @@ type IRBoxContainerProps = {
   defaultValue?: string;
   onEditSubmit?: (editorValue: string) => void;
   onReset?: () => void;
+  isResetting?: boolean;
 };
 
 const IRBoxContainer = ({
@@ -32,6 +34,7 @@ const IRBoxContainer = ({
   defaultValue,
   onEditSubmit,
   onReset,
+  isResetting = false,
 }: IRBoxContainerProps) => {
   const { setOpen, setClose } = useModal();
   const [isEdit, setIsEdit] = useState<boolean>(false);
@@ -92,10 +95,21 @@ const IRBoxContainer = ({
         <Typography variant="body1">{title}</Typography>
         <Box display="flex" gap={1}>
           {onReset && (
-            <Tooltip title="Reset Template">
-              <IconButton size="small" color="secondary" onClick={handleReset}>
-                <RestartAltRounded />
-              </IconButton>
+            <Tooltip title={isResetting ? "Regenerating..." : "Reset Template"}>
+            <span>
+                <IconButton 
+                  size="small" 
+                  color="secondary" 
+                  onClick={handleReset}
+                  disabled={isResetting}
+                >
+                  {isResetting ? (
+                    <CircularProgress size={24} color="primary" />
+                  ) : (
+                    <RestartAltRounded />
+                  )}
+                </IconButton>
+              </span>
             </Tooltip>
           )}
           {(onEdit || onEditSubmit) && (
@@ -104,6 +118,7 @@ const IRBoxContainer = ({
               color="secondary"
               onClick={onEdit || handleEdit}
               data-testid={`irbox-container-edit`}
+              disabled={isResetting}
             >
               <EditOutlined />
             </IconButton>
