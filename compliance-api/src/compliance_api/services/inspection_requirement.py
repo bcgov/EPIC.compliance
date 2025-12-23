@@ -1599,12 +1599,14 @@ def _make_requirement_detail_object(requirements: list):
         item["progress"] = progress
         if requirement["requirement_source_details"]:
             first_requirement_details = requirement["requirement_source_details"][0]
-            number_field = ServiceUtils.get_requirement_source_number_field(
-                first_requirement_details
-            )
-            item["requirement_number"] = (
-                number_field.split(" ")[1] if number_field else None
-            )
+            requirement_numbers = []
+            req_sources = []
+            for detail in requirement["requirement_source_details"]:
+                if detail.requirement_source not in req_sources:
+                    req_sources.append(detail.requirement_source)
+                    number_field = ServiceUtils.get_requirement_source_number_field(detail)
+                    requirement_numbers.append(number_field.split(" ")[1] if number_field else [])
+            item["requirement_number"] = requirement_numbers
             item["requirement_source"] = first_requirement_details.requirement_source
         requirement_details.append(item)
     return requirement_details
