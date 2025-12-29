@@ -397,11 +397,14 @@ class InspectionRequirementService:
 
 def _create_excel_from_dataframe(data_frame):
     """Create Excel file from DataFrame with proper column formatting."""
-    # Print columns for debugging
-    print(f"Available columns: {data_frame.columns.tolist()}")
-
     # Get existing columns and headers
     existing_columns, headers = _get_excel_columns_and_headers(data_frame)
+
+    # Format requirement_number column as comma-separated values instead of array
+    if 'requirement_number' in data_frame.columns:
+        data_frame['requirement_number'] = data_frame['requirement_number'].apply(
+            lambda x: ', '.join(str(item) for item in x if item is not None) if isinstance(x, list) and x else ''
+        )
 
     # Create Excel file in memory
     output = BytesIO()
@@ -1605,7 +1608,14 @@ def _make_requirement_detail_object(requirements: list):
                 if detail.requirement_source not in req_sources:
                     req_sources.append(detail.requirement_source)
                     number_field = ServiceUtils.get_requirement_source_number_field(detail)
-                    requirement_numbers.append(number_field.split(" ")[1] if number_field else [])
+                    prefixes = ["Condition ", "Section "]
+                    if number_field:
+                        requirement_numbers.append(
+                            next(
+                                (number_field.split(prefix)[1] for prefix in prefixes if prefix in number_field),
+                                None
+                            )
+                        )
             item["requirement_number"] = requirement_numbers
             item["requirement_source"] = first_requirement_details.requirement_source
         requirement_details.append(item)

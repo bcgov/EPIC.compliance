@@ -73,7 +73,7 @@ class DocumentJobById(Resource):
         auth_user_guid = g.token_info.get("preferred_username")
         current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         DocumentJobService.delete(job_id, current_staff_user.id)
-        return {"message": "Document job marked as deleted"}, HTTPStatus.OK
+        return {}, HTTPStatus.NO_CONTENT
 
     @staticmethod
     @API.response(code=200, description="Success", model=DocumentJob)
@@ -88,8 +88,4 @@ class DocumentJobById(Resource):
         data = DocumentJobUpdateSchema().load(request.get_json())
         current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         job = DocumentJobService.update(job_id, current_staff_user.id, data)
-
-        if not job:
-            return {"message": "Document job not found"}, HTTPStatus.NOT_FOUND
-
         return DocumentJobSchema().dump(job), HTTPStatus.OK

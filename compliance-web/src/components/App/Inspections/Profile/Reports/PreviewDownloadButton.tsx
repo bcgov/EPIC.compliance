@@ -123,11 +123,20 @@ const PreviewDownloadButton = () => {
     }
     setPreviewClicked(true);
     handleClose(event);
-    mutateIrPreviewData({
-      inspectionId: inspectionData?.id ?? 0,
-      inspectionRecordId: inspectionReportsData?.id ?? 0,
-      outputFormat: "pdf",
-    });
+    mutateIrPreviewData(
+      {
+        inspectionId: inspectionData?.id ?? 0,
+        inspectionRecordId: inspectionReportsData?.id ?? 0,
+        outputFormat: "pdf",
+      },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+          });
+        },
+      }
+    );
   };
 
   const handleToggle = () => {

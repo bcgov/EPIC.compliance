@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from compliance_api.exceptions import BusinessError, UnprocessableEntityError
+from compliance_api.exceptions import BusinessError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.inspection_record.inspection_record import InspectionRecordService
@@ -38,7 +38,9 @@ class DocumentJobService:
         })
         document_job = document_job[0] if document_job else None
         if not document_job:
-            return None
+            raise ResourceNotFoundError(
+                f"Document Job with id: {document_job_id} not found"
+            )
         document_job.update(update_data)
         return document_job
 
@@ -51,7 +53,9 @@ class DocumentJobService:
         })
 
         if not document_job:
-            return None
+            raise ResourceNotFoundError(
+                f"Document Job with id: {document_job_id} not found"
+            )
 
         document_job = document_job[0]
 
