@@ -69,7 +69,7 @@ const RequirementCard: React.FC<RequirementCardProps> = memo(
           <GridLabelValuePair label="Summary" value={requirement.summary} />
           <GridLabelValuePair
             label="Topic"
-            value={requirement.topic.name}
+            value={requirement.topic?.name ?? ""}
             gridProps={{ xs: 4 }}
           />
           <GridLabelValuePair
@@ -85,7 +85,7 @@ const RequirementCard: React.FC<RequirementCardProps> = memo(
     const renderRequirementContent = useCallback(
       () => (
         <>
-          <GridLabelValuePair label="Topic" value={requirement.topic.name} />
+          <GridLabelValuePair label="Topic" value={requirement.topic?.name ?? ""} />
           <GridLabelValuePair
             label="Source"
             value={

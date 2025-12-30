@@ -58,7 +58,7 @@ const LinkCaseFileModal: FC<LinkCaseFileModalProps> = ({
 
   const methods = useForm<LinkCaseFileFormType>({
     resolver: yupResolver(linkCaseFileSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues: initFormData,
   });
 

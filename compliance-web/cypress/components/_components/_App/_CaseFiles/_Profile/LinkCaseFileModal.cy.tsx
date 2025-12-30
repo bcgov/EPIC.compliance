@@ -37,7 +37,7 @@ describe("LinkCaseFileModal Component", () => {
   beforeEach(() => {
     // Reset the query client before each test
     queryClient.clear();
-    
+
     // Set the query data directly to ensure it's available
     // The useCaseFileOptions hook uses ["case-file-options"] as the key
     queryClient.setQueryData(["case-file-options"], mockCaseFiles);
