@@ -8,6 +8,7 @@ declare global {
       VITE_ENV: string;
       VITE_VERSION: string;
       VITE_APP_TITLE: string;
+      VITE_APP_BASE_PATH: string;
       VITE_APP_URL: string;
       VITE_OIDC_AUTHORITY: string;
       VITE_CLIENT_ID: string;
@@ -30,6 +31,7 @@ const APP_VERSION =
   window._env_?.VITE_VERSION || import.meta.env.VITE_VERSION || "";
 const APP_TITLE =
   window._env_?.VITE_APP_TITLE || import.meta.env.VITE_APP_TITLE || "";
+const APP_BASE_PATH = window._env_?.VITE_APP_BASE_PATH || import.meta.env.VITE_APP_BASE_PATH;
 const APP_URL = window._env_?.VITE_APP_URL || import.meta.env.VITE_APP_URL;
 const OIDC_AUTHORITY = window._env_?.VITE_OIDC_AUTHORITY || import.meta.env.VITE_OIDC_AUTHORITY;
 const CLIENT_ID = window._env_?.VITE_CLIENT_ID || import.meta.env.VITE_CLIENT_ID;
@@ -44,6 +46,7 @@ export const AppConfig = {
   environment: APP_ENVIRONMENT,
   version: APP_VERSION,
   appTitle: APP_TITLE,
+  appBasePath: APP_BASE_PATH,
   inprogressFeatures: INPROGRESS_FEATURES,
   defaultPageSize: DEFAULT_PAGE_SIZE,
 };
@@ -51,8 +54,8 @@ export const AppConfig = {
 export const OidcConfig = {
   authority: OIDC_AUTHORITY,
   client_id: CLIENT_ID,
-  redirect_uri: `${APP_URL}/oidc-callback`,
-  post_logout_redirect_uri: `${APP_URL}/`,
+  redirect_uri: `${APP_URL}${APP_BASE_PATH || ''}/oidc-callback`,
+  post_logout_redirect_uri: `${APP_URL}${APP_BASE_PATH || ''}/`,
   scope: "openid profile email",
   response_type: "code",
   automaticSilentRenew: false,
