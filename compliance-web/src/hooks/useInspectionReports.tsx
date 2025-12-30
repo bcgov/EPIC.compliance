@@ -156,14 +156,11 @@ const inspectionRecordRender = ({
   inspectionRecordId: number;
   outputFormat: "html" | "pdf";
 }) => {
-  // If requesting PDF, specify responseType as 'blob'
-  const responseType = outputFormat === "pdf" ? "blob" : "json";
-
   return request({
     method: "POST",
     url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/render`,
     data: { output_format: outputFormat },
-    responseType: responseType,
+    responseType: "json",
   });
 };
 
@@ -204,10 +201,11 @@ export const useUpdateInspectionRecord = (onSuccess: OnSuccessType) => {
   });
 };
 
-export const useResetInspectionRecord = (onSuccess: OnSuccessType) => {
+export const useResetInspectionRecord = (onSuccess: OnSuccessType, onError?: OnErrorType) => {
   return useMutation({
     mutationFn: resetInspectionRecord,
     onSuccess,
+    onError,
   });
 };
 

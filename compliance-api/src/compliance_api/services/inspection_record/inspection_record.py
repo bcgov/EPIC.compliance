@@ -270,7 +270,6 @@ class InspectionRecordService:
         """Preview inspection record."""
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         if output_format == "pdf":
-            ServiceUtils.access_check_update_for_inspection(inspection)
             ServiceUtils.inspection_status_check(inspection)
         inspection_record = ServiceUtils.inspection_record_exist_check(
             inspection_record_id

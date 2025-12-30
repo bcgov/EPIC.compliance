@@ -226,7 +226,7 @@ export const useRequirementsGridColumns = (
       size: 80,
     },
     {
-      accessorFn: (row) => row.requirement_number,
+      accessorFn: (row) => (row.requirement_number ?? []).join(", "),
       id: "req_src_num",
       header: "Condition #",
       filterFn: "contains",

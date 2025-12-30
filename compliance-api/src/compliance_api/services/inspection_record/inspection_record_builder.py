@@ -1,5 +1,7 @@
 """Inspection Record Data Builder."""
 
+from sqlalchemy.orm import joinedload
+
 from compliance_api.exceptions import UnprocessableEntityError
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import \
@@ -15,6 +17,7 @@ from compliance_api.models.inspection import IRStatusOption as IRStatusOptionMod
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
 from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval as InspectionRecordApprovalModel
+from compliance_api.models.inspection.inspection_req_source_detail import InspectionReqSourceDetail
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum
@@ -254,6 +257,9 @@ class InspectionRecordDataBuilder:
 
     def build_project_details(self):
         """Populate project specific details."""
+        if self.data.get("project_details"):
+            return self
+
         project_id = self.inspection.case_file.project_id
         self.data["project_details"] = ServiceUtils.get_project_details(
             project_id, self.inspection.case_file.id, self.inspection.project_status_id
@@ -405,9 +411,19 @@ class InspectionRecordDataBuilder:
             #  Order needs to be checked and returned from here
         elif self.ir_status == IRStatusEnum.FINAL.value:
             if not self.requirements:
-                self.requirements = InspectionRequirementModel.get_by_inspection_id(
-                    self.inspection.id
+                self.requirements = (
+                    InspectionRequirementModel.query
+                    .filter_by(inspection_id=self.inspection.id, is_deleted=False, is_active=True)
+                    .options(
+                        joinedload(InspectionRequirementModel.enforcement_actions),
+                        joinedload(InspectionRequirementModel.requirement_source_details)
+                        .joinedload(InspectionReqSourceDetail.requirement_source),
+                        joinedload(InspectionRequirementModel.agency)
+                    )
+                    .all()
                 )
+            if not self.data.get("project_details"):
+                self.build_project_details()
             grouped_enforcementactions = self._get_requirements_by_enforcement_action(
                 self.requirements
             )
@@ -567,55 +583,98 @@ class InspectionRecordDataBuilder:
         self, action, ir_status_id
     ):
         """Generate enforcement summary lines for special actions."""
-        #  Object map to handle both Orders and Warning letters using single method
+        from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
+
         object_map = {
             EnforcementActionOptionEnum.ORDER: {
                 "template": "ENFORCEMENT_SUMMARY.ORDER",
                 "template_data": ENFORCEMENT_SUMMARY.get("ORDER"),
-                "get_map_method": OrderInspectionRequirementMapModel.get_by_order_id,
+                "map_model": OrderInspectionRequirementMapModel,
+                "foreign_key": "order_id",
             },
             EnforcementActionOptionEnum.WARNING_LETTER: {
                 "template": "ENFORCEMENT_SUMMARY.WARNING_LETTER",
                 "template_data": ENFORCEMENT_SUMMARY.get("WARNING_LETTER"),
-                "get_map_method": WarningLetterInspectionRequirementMapModel.get_by_warning_letter_id,
+                "map_model": WarningLetterInspectionRequirementMapModel,
+                "foreign_key": "warning_letter_id",
             },
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION: {
                 "template": "ENFORCEMENT_SUMMARY.ADMINISTRATIVE_PENALTY",
                 "template_data": ENFORCEMENT_SUMMARY.get("ADMINISTRATIVE_PENALTY"),
-                "get_map_method": AdministrativePenaltyInspectionRequirementMapModel.get_by_administrative_penalty_id,
+                "map_model": AdministrativePenaltyInspectionRequirementMapModel,
+                "foreign_key": "administrative_penalty_id",
             },
         }
+
         results = []
+
+        # Get items based on action type
         if action == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION:
             items = AdministrativePenaltyModel.get_by_inspection_id(self.inspection.id)
-        if action == EnforcementActionOptionEnum.WARNING_LETTER:
+        elif action == EnforcementActionOptionEnum.WARNING_LETTER:
             items = WarningLetterModel.get_by_inspection_id(self.inspection.id)
-        if action == EnforcementActionOptionEnum.ORDER:
+        elif action == EnforcementActionOptionEnum.ORDER:
             items = OrderModel.get_by_inspection_id(self.inspection.id)
             if items:
                 items = [
-                    item
-                    for item in items
+                    item for item in items
                     if item.order_replace_status == OrderReplaceStatusEnum.ORIGINAL
                 ]
             if ir_status_id == IRStatusEnum.PRELIMINARY.value:
                 items = [
-                    item
-                    for item in items
+                    item for item in items
                     if item.order_progress == OrderProgressEnum.ISSUED
                 ]
-        if len(items) == 0:
+
+        if not items:
             return []
+
+        if not self.data.get("project_details"):
+            self.build_project_details()
+
+        # Batch fetch all requirement maps at once
+        item_ids = [item.id for item in items]
+        map_model = object_map[action]["map_model"]
+        foreign_key = object_map[action]["foreign_key"]
+
+        # Query with prefetching
+        all_requirement_maps = (
+            map_model.query
+            .filter(
+                getattr(map_model, foreign_key).in_(item_ids),
+                map_model.is_deleted.is_(False),
+                map_model.is_active.is_(True),
+            )
+            .options(
+                joinedload(map_model.inspection_requirement)
+                .joinedload(InspectionRequirementModel.requirement_source_details)
+                .joinedload(InspectionReqSourceDetail.requirement_source),
+                joinedload(map_model.inspection_requirement)
+                .joinedload(InspectionRequirementModel.agency)
+            )
+            .all()
+        )
+
+        # Group maps by item ID for lookup
+        maps_by_item_id = {}
+        for req_map in all_requirement_maps:
+            item_id = getattr(req_map, foreign_key)
+            if item_id not in maps_by_item_id:
+                maps_by_item_id[item_id] = []
+            maps_by_item_id[item_id].append(req_map)
+
+        # Process without additional queries
         for item in items:
-            requirement_maps = object_map[action]["get_map_method"](item.id)
-            requirements = [
-                requirement_map.inspection_requirement
-                for requirement_map in requirement_maps
-            ]
+            requirement_maps = maps_by_item_id.get(item.id, [])
+            if not requirement_maps:
+                continue
+
+            requirements = [req_map.inspection_requirement for req_map in requirement_maps]
+
             grouped_requirements = {}
             sort_order_line = []
+
             for requirement in requirements:
-                condition_lines = []
                 if len(requirement.requirement_source_details) == 0:
                     raise UnprocessableEntityError(
                         f"Requirement {requirement.sort_order} doesn't have any requirement source details"
@@ -626,12 +685,14 @@ class InspectionRecordDataBuilder:
                 req_source_name = data_to_be_rendered["req_source_name"]
                 number = data_to_be_rendered["number"]
                 req_sort_order = data_to_be_rendered["req_sort_order"]
+
                 if req_source_name not in grouped_requirements:
                     grouped_requirements[req_source_name] = []
                 grouped_requirements[req_source_name].append({"number": number})
                 sort_order_line.append(f"Requirement {req_sort_order}")
+
+            condition_lines = []
             for source_name, reqs in grouped_requirements.items():
-                # Filter out None values before joining
                 valid_numbers = [
                     req["number"] for req in reqs if req["number"] is not None
                 ]
@@ -640,15 +701,17 @@ class InspectionRecordDataBuilder:
                     condition_lines.append(f" {numbers} of {source_name}")
             data_to_be_rendered["condition_lines"] = condition_lines
             data_to_be_rendered["sort_order_line"] = ", ".join(sort_order_line)
+
             if action == EnforcementActionOptionEnum.ORDER:
                 data_to_be_rendered["order_no"] = ServiceUtils.strip_project_code(
                     item.order_number
                 )
                 data_to_be_rendered["section_no"] = item.section.name
-            if action == EnforcementActionOptionEnum.WARNING_LETTER:
+            elif action == EnforcementActionOptionEnum.WARNING_LETTER:
                 data_to_be_rendered["warning_letter_no"] = (
                     ServiceUtils.strip_project_code(item.warning_letter_number)
                 )
+
             results.append(
                 render_template_with_data(
                     object_map[action]["template"],
@@ -656,6 +719,7 @@ class InspectionRecordDataBuilder:
                     data_to_be_rendered,
                 )
             )
+
         return results
 
     def _get_basic_data_for_enforcement_summary(self, requirement):
