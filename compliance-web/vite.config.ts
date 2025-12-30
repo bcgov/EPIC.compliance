@@ -13,6 +13,7 @@ const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(file
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+  base: process.env.VITE_APP_BASE_PATH || '/',
   plugins: [TanStackRouterVite(), react(), tsconfigPaths(), istanbul({
     cypress: true,
     requireEnv: false
