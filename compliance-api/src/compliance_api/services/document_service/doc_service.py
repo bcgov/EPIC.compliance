@@ -1,7 +1,7 @@
 """Class to manage document service."""
 
 import requests
-from flask import current_app, g, json
+from flask import current_app, g
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from compliance_api.exceptions import BusinessError
@@ -14,10 +14,10 @@ class DocService:
     """Doc service."""
 
     @staticmethod
-    def get_presigned_url(payload: dict):
+    def get_presigned_url(payload: dict, params: dict = None) -> dict:
         """Get presigned url for the given action on the given file."""
         response = _request_doc_service(
-            "storage-operations/presigned-urls", HttpMethod.POST, payload
+            "storage-operations/presigned-urls", HttpMethod.POST, payload, params
         )
         if response.status_code != 200:
             raise BusinessError("Error contacting the document service")
@@ -30,7 +30,7 @@ class DocService:
     wait=wait_fixed(2),  # Wait 2 seconds between retries
 )
 def _request_doc_service(
-    relative_url, http_method: HttpMethod = HttpMethod.GET, data=None
+    relative_url, http_method: HttpMethod = HttpMethod.GET, data=None, params=None
 ):
     """REST Api call to doc service."""
     token = getattr(g, "access_token", None)
@@ -48,7 +48,7 @@ def _request_doc_service(
         response = requests.get(url, headers=headers, timeout=60)
     elif http_method == HttpMethod.POST:
         response = requests.post(
-            url=url, headers=headers, data=json.dumps(data), timeout=API_REQUEST_TIMEOUT
+            url=url, headers=headers, json=data, timeout=API_REQUEST_TIMEOUT, params=params
         )
     else:
         raise ValueError("Invalid HTTP method")

@@ -1,18 +1,22 @@
 """Resources for inspection record."""
 
+import threading
+from datetime import datetime, timezone
 from http import HTTPStatus
-from io import BytesIO
 
-from flask import send_file
+from flask import current_app, g
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
+from compliance_api.models.document_job import DocumentJobStatusEnum
 from compliance_api.schemas import (
-    CreateInspectionRecordApprovalSchema, InspectionRecordApprovalSchema, InspectionRecordCreateSchema,
-    InspectionRecordSchema, RenderRequestSchema, ResetInspectionRecordFieldSchema, UpdateInspectionRecordApprovalSchema,
-    UpdateInspectionRecordApprovalStatusSchema, UpdateInspectionRecordSchema)
-from compliance_api.services import InspectionRecordApprovalService, InspectionRecordService
+    CreateInspectionRecordApprovalSchema, DocumentJobSchema, InspectionRecordApprovalSchema,
+    InspectionRecordCreateSchema, InspectionRecordSchema, RenderRequestSchema, ResetInspectionRecordFieldSchema,
+    UpdateInspectionRecordApprovalSchema, UpdateInspectionRecordApprovalStatusSchema, UpdateInspectionRecordSchema)
+from compliance_api.services import (
+    DocumentJobService, InspectionRecordApprovalService, InspectionRecordService, StaffUserService)
+from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
@@ -289,14 +293,43 @@ class InspectionRecordPreview(Resource):
         """Preview inspection record."""
         render_request = RenderRequestSchema().load(API.payload or {})
         output_format = render_request.get("output_format", "html")
-        response, inspection = InspectionRecordService.render(
-            inspection_id, inspection_record_id, output_format
-        )
+        auth_user_guid = g.token_info["preferred_username"]
+        current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
+        staff_user_id = current_staff_user.id if current_staff_user else None
+
+        if not staff_user_id:
+            raise ResourceNotFoundError("Staff user not found for the current user")
+
         if output_format == "pdf":
-            return send_file(
-                BytesIO(response.content),
-                mimetype="application/pdf",
-                as_attachment=True,
-                download_name=f"{inspection.ir_number}.pdf",
+            inspection = ServiceUtils.inspection_exist_check(inspection_id)
+            ServiceUtils.access_check_update_for_inspection(inspection)
+            DocumentJobService.invalidate_all_previous_documents_for_user(staff_user_id, inspection_record_id)
+            document_job = DocumentJobService.create({
+                "user_id": staff_user_id,
+                "inspection_record_id": inspection_record_id,
+                "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+                "started_at": datetime.now(timezone.utc),
+            })
+            access_token = getattr(g, "access_token", None)
+            jwt_oidc_token_info = getattr(g, "jwt_oidc_token_info", None)
+            thread = threading.Thread(
+                target=DocumentJobService.handle_background_job,
+                args=(
+                    current_app._get_current_object(),  # pylint: disable=protected-access
+                    document_job.id,
+                    access_token,
+                    jwt_oidc_token_info,
+                    inspection_id,
+                    inspection_record_id,
+                    staff_user_id,
+                ),
             )
+            thread.start()
+            return DocumentJobSchema().dump(document_job), HTTPStatus.ACCEPTED
+
+        response, _ = InspectionRecordService.render(
+            inspection_id,
+            inspection_record_id,
+            output_format,
+        )
         return response.json(), HTTPStatus.OK

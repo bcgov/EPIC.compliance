@@ -19,6 +19,7 @@ export enum ComplaintSourceEnum {
   FIRST_NATION = "2",
   AGENCY = "3",
   OTHER = "4",
+  FIRST_NATIONS_ALLIANCE = "5",
 }
 
 export enum ComplaintResolutionEnum {
@@ -72,6 +73,12 @@ export const ComplaintFormSchema = yup.object().shape({
     then: (schema) => schema.required("First Nation is required"),
     otherwise: (schema) => schema.notRequired(),
   }),
+  allianceName: yup.string().nullable().notRequired().when("complaintSource", {
+    is: (compSource: ComplaintSource) =>
+      compSource?.id === ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE,
+    then: (schema) => schema.notRequired().nullable(),
+    otherwise: (schema) => schema.notRequired().nullable(),
+  }),
   otherDescription: yup.string().when("complaintSource", {
     is: (compSource: ComplaintSource) =>
       compSource?.id === ComplaintSourceEnum.OTHER,
@@ -120,6 +127,10 @@ export const formatComplaintData = (
         complaintData.source_first_nation_id = (
           formData.firstNation as FirstNation
         )?.id;
+        break;
+      case ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE:
+        complaintData.complaint_source_contact.alliance_name =
+          formData.allianceName ?? "";
         break;
       case ComplaintSourceEnum.AGENCY:
         complaintData.source_agency_id = (formData.agency as Agency)?.id;

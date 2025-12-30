@@ -7,9 +7,6 @@ const iconStyles = { color: BCDesignTokens.themeBlue90, fontSize: "1rem" };
 
 const CopyButton = ({ ...props }) => {
   const copyHandler = (text: string) => {
-    // showNotification("Copied to clipboard", {
-    //   type: "success",
-    // });
     navigator.clipboard.writeText(text);
   };
 

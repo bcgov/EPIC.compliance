@@ -249,7 +249,6 @@ class OrderService:
         order = ServiceUtils.order_exist_check(order_id)
         if output_format == "pdf":
             ServiceUtils.access_check_update_for_inspection(order.inspection)
-            ServiceUtils.inspection_status_check(order.inspection)
         order_data = _create_order_data(order.inspection, order)
         response = DocGenService.render_template(
             "ORDER_TEMPLATE", order_data, output_format

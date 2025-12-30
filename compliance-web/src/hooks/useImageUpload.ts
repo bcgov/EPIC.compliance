@@ -1,4 +1,8 @@
-import { OnSuccessType, requestAxios, requestDocumentAPI } from "@/utils/axiosUtils";
+import {
+  OnSuccessType,
+  requestAxios,
+  requestDocumentAPI,
+} from "@/utils/axiosUtils";
 import { useMutation } from "@tanstack/react-query";
 import { ImageUploadAPIData, PresignedUrlRequestPayload } from "@/models/Image";
 
@@ -39,6 +43,14 @@ export const useImageUpload = (onSuccess: OnSuccessType) => {
       getPresignedUrlData.fileName = imageData.fileName;
       return getPresignedUrlData;
     },
+    onSuccess,
+  });
+};
+
+export const useFetchPresignedGetURL = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: (relativeUrl: string) =>
+      getPresignedUrl({ relative_url: relativeUrl, action: "GET" }),
     onSuccess,
   });
 };

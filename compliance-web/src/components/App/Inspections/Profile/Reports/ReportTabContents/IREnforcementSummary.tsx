@@ -1,11 +1,12 @@
 import { Typography } from "@mui/material";
 import IRBoxContainer from "./IRBoxContainer";
 import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { notify } from "@/store/snackbarStore";
 import { useResetInspectionRecord, useUpdateInspectionRecord } from "@/hooks/useInspectionReports";
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { DEFAULT_REPORT_TAB_CONTENT } from "@/utils/constants";
+import { AxiosError } from "axios";
 
 const IREnforcementSummary = () => {
   const {
@@ -17,13 +18,25 @@ const IREnforcementSummary = () => {
     setInspectionReportsData,
   } = useReportStore();
 
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
   useEffect(() => {
     setEnforcementSummary(inspectionReportsData?.enforcement_summary ?? "");
   }, [inspectionReportsData, setEnforcementSummary]);
 
   const handleOnSuccess = (data: InspectionRecord) => {
     setInspectionReportsData(data);
+    setIsRegenerating(false); 
     notify.success("Enforcement summary updated");
+  };
+
+   const handleOnError = (error: AxiosError) => {
+    setIsRegenerating(false);
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      notify.error("Request timed out. Please try again or contact support if the issue persists.");
+    } else {
+      notify.error("Failed to update Enforcement Summary");
+    }
   };
 
   const { mutate: updateInspectionRecord } =
@@ -44,13 +57,18 @@ const IREnforcementSummary = () => {
     useResetInspectionRecord(handleOnSuccess);
 
   const handleResetEnforcementSummary = () => {
-    resetInspectionRecord({
+    setIsRegenerating(true); 
+    resetInspectionRecord(
+      {
       inspectionId: inspectionData?.id ?? 0,
       inspectionRecordId: inspectionReportsData?.id ?? 0,
       resetPayload: {
         field_name: "enforcement_summary",
       },
-    });
+    }, {
+        onError: handleOnError,
+      }
+  );
   };
 
   return (
@@ -59,6 +77,7 @@ const IREnforcementSummary = () => {
       defaultValue={enforcementSummary}
       onEditSubmit={!isReportsReadOnly ? handleSaveEnforcementSummary : undefined}
       onReset={!isReportsReadOnly ? handleResetEnforcementSummary : undefined}
+      isResetting={isRegenerating}
     >
       <Typography
         variant="body1"

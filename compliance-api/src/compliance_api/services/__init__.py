@@ -18,6 +18,7 @@ from .case_file import CaseFileService
 from .complaint import ComplaintService
 from .compliance_finding import ComplianceFindingService
 from .continuation_report import ContinuationReportService
+from .document_job import DocumentJobService
 from .document_type import DocumentTypeService
 from .enforcement_action import EnforcementActionService
 from .inspection import InspectionService

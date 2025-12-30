@@ -9,6 +9,7 @@ import {
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { notify } from "@/store/snackbarStore";
 import { IR_STATUS } from "@/utils/constants";
+import { AxiosError } from "axios";
 
 const InspectionSummary = () => {
   const {
@@ -23,6 +24,7 @@ const InspectionSummary = () => {
     setFindingsStatement,
     setInspectionReportsData,
   } = useReportStore();
+
   const [isFindingsStatementChanged, setIsFindingsStatementChanged] =
     useState(false);
   const [
@@ -30,6 +32,7 @@ const InspectionSummary = () => {
     setIsPreliminaryReviewDetailsChanged,
   ] = useState(false);
   const [isFinalReport, setIsFinalReport] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
     setInspectionScope(inspectionReportsData?.inspection_scope ?? "");
@@ -39,7 +42,7 @@ const InspectionSummary = () => {
     setFindingsStatement(inspectionReportsData?.finding_statement ?? "");
     setIsFindingsStatementChanged(
       inspectionReportsData?.field_change_info?.finding_statement_changed ??
-        false
+      false
     );
     setIsPreliminaryReviewDetailsChanged(
       inspectionReportsData?.field_change_info
@@ -55,7 +58,17 @@ const InspectionSummary = () => {
 
   const handleOnSuccess = (data: InspectionRecord) => {
     setInspectionReportsData(data);
+    setIsRegenerating(false);
     notify.success("Inspection summary updated");
+  };
+
+  const handleOnError = (error: AxiosError) => {
+    setIsRegenerating(false);
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      notify.error("Request timed out. Please try again or contact support if the issue persists.");
+    } else {
+      notify.error("Failed to update Inspection Summary");
+    }
   };
 
   const { mutate: updateInspectionRecord } =
@@ -76,14 +89,20 @@ const InspectionSummary = () => {
   };
 
   const handleResetInspectionSummary = (fieldName: string) => {
-    resetInspectionRecord({
-      inspectionId: inspectionData?.id ?? 0,
-      inspectionRecordId: inspectionReportsData?.id ?? 0,
-      resetPayload: {
-        field_name: fieldName,
+    setIsRegenerating(true);
+    resetInspectionRecord(
+      {
+        inspectionId: inspectionData?.id ?? 0,
+        inspectionRecordId: inspectionReportsData?.id ?? 0,
+        resetPayload: {
+          field_name: fieldName,
+        },
       },
-    });
+      {
+        onError: handleOnError,
+      });
   };
+
   return (
     <>
       <IRBoxContainer
@@ -93,7 +112,7 @@ const InspectionSummary = () => {
         onEditSubmit={
           !isReportsReadOnly
             ? (editorValue) =>
-                handleSaveInspectionSummary(editorValue, "inspection_scope")
+              handleSaveInspectionSummary(editorValue, "inspection_scope")
             : undefined
         }
         onReset={
@@ -117,10 +136,10 @@ const InspectionSummary = () => {
           onEditSubmit={
             !isReportsReadOnly
               ? (editorValue) =>
-                  handleSaveInspectionSummary(
-                    editorValue,
-                    "preliminary_review_details"
-                  )
+                handleSaveInspectionSummary(
+                  editorValue,
+                  "preliminary_review_details"
+                )
               : undefined
           }
           onReset={
@@ -143,7 +162,7 @@ const InspectionSummary = () => {
         onEditSubmit={
           !isReportsReadOnly
             ? (editorValue) =>
-                handleSaveInspectionSummary(editorValue, "finding_statement")
+              handleSaveInspectionSummary(editorValue, "finding_statement")
             : undefined
         }
         onReset={
@@ -151,6 +170,7 @@ const InspectionSummary = () => {
             ? () => handleResetInspectionSummary("finding_statement")
             : undefined
         }
+        isResetting={isRegenerating}
       >
         <Typography
           variant="body1"

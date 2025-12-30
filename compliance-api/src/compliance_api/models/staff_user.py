@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Optional
 
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload, relationship
 
 from .base_model import BaseModelVersioned
 from .utils import with_session
@@ -52,10 +52,16 @@ class StaffUser(BaseModelVersioned):
     )
     position = relationship("Position", foreign_keys=[position_id], lazy="joined")
     deputy_director = relationship(
-        "StaffUser", remote_side=[id], foreign_keys=[deputy_director_id]
+        "StaffUser",
+        remote_side=[id],
+        foreign_keys=[deputy_director_id],
+        lazy="selectin"
     )
     supervisor = relationship(
-        "StaffUser", remote_side=[id], foreign_keys=[supervisor_id]
+        "StaffUser",
+        remote_side=[id],
+        foreign_keys=[supervisor_id],
+        lazy="selectin"
     )
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
     __table_args__ = (
@@ -107,3 +113,31 @@ class StaffUser(BaseModelVersioned):
         user.is_active = False
         session.flush()
         return user
+
+    @classmethod
+    def get_all_with_relationships(cls, default_filters=True, sort_by=None):
+        """
+        Fetch all staff users with eager loading of relationships.
+
+        This prevents DetachedInstanceError when accessing relationships
+        after objects are cached or detached from the session.
+        """
+        query = cls.query
+
+        # Apply filters
+        if default_filters:
+            query = query.filter_by(is_active=True)
+        query = query.filter_by(is_deleted=False)
+
+        # Eager load all relationships to prevent lazy loading issues
+        query = query.options(
+            joinedload(cls.position),
+            joinedload(cls.deputy_director),
+            joinedload(cls.supervisor)
+        )
+
+        # Apply sorting
+        if sort_by and hasattr(cls, sort_by):
+            query = query.order_by(getattr(cls, sort_by))
+
+        return query.all()

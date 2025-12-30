@@ -2,6 +2,7 @@ import { Box, Typography, Button, Chip, Link } from "@mui/material";
 import { SendRounded } from "@mui/icons-material";
 import {
   APPROVAL_STATUS,
+  InspectionStatusEnum,
   IRProgressEnum,
   STAFF_USER_POSITION,
   VARIANT_COLORS,
@@ -24,6 +25,7 @@ import { useModal } from "@/store/modalStore";
 import OfficerStepper from "./OfficerSteppr/OfficerStepper";
 import PreviewDownloadButton from "./PreviewDownloadButton";
 import IssueIRModal from "./IssueIRModal";
+import ReopenIRModal from "./ReopenIRModal";
 import { StaffUser } from "@/models/Staff";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 
@@ -147,6 +149,13 @@ export default function ReportTopSection() {
     [irProgressId, inspectionReportsData?.intended_issuance_date]
   );
 
+  const isShowReopenIRButton = useMemo(
+    () =>
+      irProgressId === IRProgressEnum.ISSUED &&
+      inspectionData?.inspection_status === InspectionStatusEnum.OPEN,
+    [irProgressId, inspectionData?.inspection_status]
+  );
+
   const onSuccess = (data: IRApproval) => {
     setIRApprovalsData([data]);
     notify.success("Approval request sent");
@@ -188,6 +197,29 @@ export default function ReportTopSection() {
     setOpen({
       content: (
         <IssueIRModal
+          onSubmit={(message) => {
+            notify.success(message);
+            setClose();
+            refetchInspectionReportsData();
+            queryClient.invalidateQueries({
+              queryKey: ["inspection", inspectionData?.ir_number],
+            });
+          }}
+        />
+      ),
+    });
+  }, [
+    setOpen,
+    setClose,
+    refetchInspectionReportsData,
+    queryClient,
+    inspectionData,
+  ]);
+
+  const handleReopenIR = useCallback(() => {
+    setOpen({
+      content: (
+        <ReopenIRModal
           onSubmit={(message) => {
             notify.success(message);
             setClose();
@@ -305,18 +337,20 @@ export default function ReportTopSection() {
               />
             )}
           </Box>
-          {!isReportsReadOnly && !isHistorical && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-              <Typography variant="body2">Wrong Version?</Typography>
-              <Link
-                underline="hover"
-                sx={{ cursor: "pointer" }}
-                onClick={handleChangeIRVersion}
-              >
-                Change
-              </Link>
-            </Box>
-          )}
+          {!isReportsReadOnly &&
+            !isHistorical &&
+            !inspectionReportsData?.date_issued && (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Typography variant="body2">Wrong Version?</Typography>
+                <Link
+                  underline="hover"
+                  sx={{ cursor: "pointer" }}
+                  onClick={handleChangeIRVersion}
+                >
+                  Change
+                </Link>
+              </Box>
+            )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {!isReportsReadOnly && (
@@ -352,6 +386,9 @@ export default function ReportTopSection() {
               )}
               {isShowIssueIRButton && (
                 <Button onClick={handleIssueIR}>Issue IR</Button>
+              )}
+              {isShowReopenIRButton && (
+                <Button onClick={handleReopenIR}>Reopen IR</Button>
               )}
             </>
           )}

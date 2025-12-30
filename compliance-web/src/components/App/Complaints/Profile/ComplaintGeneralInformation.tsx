@@ -93,6 +93,12 @@ const ComplaintGeneralInformation: React.FC<
         value: complaintData.source_contact?.description ?? "",
       });
       break;
+    case ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE:
+      complaintProperties.push({
+        name: "Alliance Name",
+        value: complaintData.source_contact?.alliance_name ?? "",
+      });
+      break;
   }
 
   complaintProperties = [
@@ -102,10 +108,12 @@ const ComplaintGeneralInformation: React.FC<
         name: "Full Name",
         value: complaintData.source_contact?.full_name ?? "",
       },
-      {
-        name: "Title",
-        value: complaintData.source_contact?.title ?? "",
-      },
+      ...(complaintData.source_type?.id === ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE
+        ? []
+        : [{
+          name: "Title",
+          value: complaintData.source_contact?.title ?? "",
+        }]),
       { name: "Email", value: complaintData.source_contact?.email ?? "" },
       {
         name: "Phone Number",

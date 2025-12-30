@@ -358,6 +358,7 @@ def _create_source_type_contact_object(complaint_data: dict, complaint_id):
         "email": contact_info.get("email", None),
         "phone": contact_info.get("phone", None),
         "comment": contact_info.get("comment", None),
+        "alliance_name": contact_info.get("alliance_name", None),
         "description": contact_info.get("description", None),
     }
 

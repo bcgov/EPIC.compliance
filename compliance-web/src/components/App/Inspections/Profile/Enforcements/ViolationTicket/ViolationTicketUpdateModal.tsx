@@ -26,7 +26,7 @@ const violationTicketUpdateSchema = yup.object().shape({
   ticket_number: yup.string().required("Ticket Number is required"),
   date_issued: yup.mixed<Dayjs>().required("Date Issued is required").typeError("Invalid date"),
   fine_amount: yup.number().transform((value, originalValue) => {
-    return originalValue === "" ? null : value;
+      return originalValue === "" ? null : value;
   }).required("Fine Amount is required").min(0, "Fine Amount must be positive"),
   status: yup.mixed<StatusOption>().required("Status is required"),
   status_date: yup.mixed<Dayjs>().required("Status Date is required").typeError("Invalid date"),
@@ -91,11 +91,25 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
     defaultValues,
   });
 
-  const { reset, handleSubmit } = methods;
+  const { reset, handleSubmit, watch } = methods;
+  const status = watch("status");
+  const statusDate = watch("status_date");
 
   useEffect(() => {
     reset(defaultValues);
   }, [reset, defaultValues]);
+
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    const isPaidWithStatusDate =
+      status?.id === ViolationTicketStatus.PAID &&
+      statusDate !== null &&
+      statusDate !== undefined;
+    const isDisputed = status?.id === ViolationTicketStatus.DISPUTED;
+    const isDeemedGuilty = status?.id === ViolationTicketStatus.DEEMED_GUILTY;
+
+    return isPaidWithStatusDate || isDisputed || isDeemedGuilty;
+  }, [status, statusDate]);
 
   const onUpdateSuccess = (data: ViolationTicket) => {
     queryClient.invalidateQueries({
@@ -126,8 +140,8 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
       const updateData: ViolationTicketAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids: violationTicket.violation_ticket_requirement_maps.map(
-          (map) => map.inspection_requirement_id
-        ),
+            (map) => map.inspection_requirement_id
+          ),
         ticket_number: data.ticket_number,
         date_issued: data.date_issued.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]"),
         fine_amount: data.fine_amount?.toString() || "",
@@ -187,8 +201,8 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
                 }}
                 InputProps={{
                   startAdornment: <AttachMoneyRounded sx={{
-                    mr: 0.2,
-                    color: "#9F9D9C",
+                        mr: 0.2,
+                        color: "#9F9D9C",
                   }} />,
                 }}
                 isRequired={true}
@@ -225,6 +239,7 @@ const ViolationTicketUpdateModal: FC<ViolationTicketUpdateModalProps> = ({
             secondaryActionButtonText="Cancel"
             onDeleteAction={handleDelete}
             isDeleteActionLoading={isPendingDelete}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

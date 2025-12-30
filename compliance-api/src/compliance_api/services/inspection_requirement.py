@@ -4,6 +4,7 @@
 
 from datetime import datetime
 from io import BytesIO
+import json
 from typing import List
 
 import pandas as pd
@@ -396,11 +397,14 @@ class InspectionRequirementService:
 
 def _create_excel_from_dataframe(data_frame):
     """Create Excel file from DataFrame with proper column formatting."""
-    # Print columns for debugging
-    print(f"Available columns: {data_frame.columns.tolist()}")
-
     # Get existing columns and headers
     existing_columns, headers = _get_excel_columns_and_headers(data_frame)
+
+    # Format requirement_number column as comma-separated values instead of array
+    if 'requirement_number' in data_frame.columns:
+        data_frame['requirement_number'] = data_frame['requirement_number'].apply(
+            lambda x: ', '.join(str(item) for item in x if item is not None) if isinstance(x, list) and x else ''
+        )
 
     # Create Excel file in memory
     output = BytesIO()
@@ -458,6 +462,36 @@ def _get_first_requirement_source_sub_query():
         )
         .group_by(InspectionReqSourceDetailModel.requirement_id)
         .subquery("first_requirement_source")
+    )
+
+
+def _get_all_requirement_sources_sub_query():
+    """Get all unique requirement source names for each requirement."""
+
+    return (
+        db.session.query(
+            InspectionReqSourceDetailModel.requirement_id,
+            func.array_agg(
+                func.distinct(
+                    cast(
+                        func.json_build_object(
+                            'id', RequirementSourceOptionModel.id,
+                            'name', RequirementSourceOptionModel.name
+                        ), db.Text
+                    )
+                )
+            ).label("all_sources"),
+        )
+        .join(
+            RequirementSourceOptionModel,
+            InspectionReqSourceDetailModel.requirement_source_id == RequirementSourceOptionModel.id,
+        )
+        .filter(
+            InspectionReqSourceDetailModel.is_active.is_(True),
+            InspectionReqSourceDetailModel.is_deleted.is_(False),
+        )
+        .group_by(InspectionReqSourceDetailModel.requirement_id)
+        .subquery("all_requirement_sources")
     )
 
 
@@ -633,6 +667,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
     # Get subqueries
     subqueries = {
         "first_requirement_source": _get_first_requirement_source_sub_query(),
+        "all_requirement_sources": _get_all_requirement_sources_sub_query(),
         "requirement_order": _get_requirement_order_sub_query(),
         "requirement_warning_letter": _get_requirement_warning_letter_sub_query(),
         "requirement_violation_ticket": _get_requirement_violation_ticket_sub_query(),
@@ -687,6 +722,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["restorative_justice"].restorative_justice_number.label(
                 "restorative_justice_number"
             ),
+            subqueries["all_requirement_sources"].c.all_sources.label("requirement_sources"),
         )
         .join(
             models["topic"],
@@ -834,6 +870,10 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
                 models["restorative_justice"].is_active.is_(True),
             ),
         )
+        .outerjoin(
+            subqueries["all_requirement_sources"],
+            models["req"].id == subqueries["all_requirement_sources"].c.requirement_id,
+        )
         .filter(models["req"].is_active.is_(True), models["req"].is_deleted.is_(False))
         .order_by(models["req"].id, models["enf_map"].enforcement_action_id)
         .options(
@@ -849,7 +889,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
 
     # Apply pagination if requested
     if enable_pagination:
-        return _apply_pagination(base_query, args, **models)
+        return _apply_pagination(base_query, args, subqueries, **models)
     return base_query
 
 
@@ -1025,12 +1065,13 @@ def _apply_filters(query, args, **kwargs):  # pylint: disable=too-many-arguments
     return query
 
 
-def _apply_pagination(query, args, **kwargs):
+def _apply_pagination(query, args, subqueries, **kwargs):
     """Apply pagination to the query.
 
     Args:
         query: The SQLAlchemy query to paginate
         args: Query arguments containing pagination parameters
+        subqueries: Dictionary containing subqueries
         **kwargs: Model aliases
 
     Returns:
@@ -1128,6 +1169,8 @@ def _apply_pagination(query, args, **kwargs):
         reference_models["restorative_justice"].restorative_justice_number.label(
             "restorative_justice_number"
         ),
+        # Include all requirement source IDs
+        subqueries["all_requirement_sources"].c.all_sources.label("requirement_sources"),
         # Include enforcement document IDs for distinct key
         reference_models["order"].id.label("order_id"),
         reference_models["warning_letter"].id.label("warning_letter_id"),
@@ -1179,6 +1222,7 @@ def _apply_pagination(query, args, **kwargs):
         subq.c.admin_penalty_number.label("admin_penalty_number"),
         subq.c.charge_rec_number.label("charge_rec_number"),
         subq.c.restorative_justice_number.label("restorative_justice_number"),
+        subq.c.requirement_sources.label("requirement_sources"),
         subq.c.order_id.label("order_id"),
         subq.c.warning_letter_id.label("warning_letter_id"),
         subq.c.violation_ticket_id.label("violation_ticket_id"),
@@ -1465,6 +1509,9 @@ def _process_inspection_requirement_query_results(query_results):
         )
         item["enforcement_number"] = _get_enforcement_number_by_type(result)
 
+        # Add all requirement source names
+        item["requirement_sources"] = getattr(result, "requirement_sources", None)
+
         processed_requirements.append(item)
     return processed_requirements
 
@@ -1514,6 +1561,12 @@ def _convert_enum_string_to_object(enum_string, enum_class_map):
 
 def _make_requirement_detail_object(requirements: list):
     """Make requirement detail object."""
+
+    def parse_requirement_sources(sources):
+        if not sources:
+            return []
+        return [json.loads(item) for item in sources]
+
     requirement_details = []
     for requirement in requirements:
         item = {
@@ -1535,6 +1588,7 @@ def _make_requirement_detail_object(requirements: list):
                 "name": requirement["inspection_status"].value,
             },
             "enforcement_number": requirement["enforcement_number"],
+            "requirement_sources": parse_requirement_sources(requirement.get("requirement_sources")),
         }
 
         # Handle status field - already converted to proper object format in
@@ -1548,12 +1602,21 @@ def _make_requirement_detail_object(requirements: list):
         item["progress"] = progress
         if requirement["requirement_source_details"]:
             first_requirement_details = requirement["requirement_source_details"][0]
-            number_field = ServiceUtils.get_requirement_source_number_field(
-                first_requirement_details
-            )
-            item["requirement_number"] = (
-                number_field.split(" ")[1] if number_field else None
-            )
+            requirement_numbers = []
+            req_sources = []
+            for detail in requirement["requirement_source_details"]:
+                if detail.requirement_source not in req_sources:
+                    req_sources.append(detail.requirement_source)
+                    number_field = ServiceUtils.get_requirement_source_number_field(detail)
+                    prefixes = ["Condition ", "Section "]
+                    if number_field:
+                        requirement_numbers.append(
+                            next(
+                                (number_field.split(prefix)[1] for prefix in prefixes if prefix in number_field),
+                                None
+                            )
+                        )
+            item["requirement_number"] = requirement_numbers
             item["requirement_source"] = first_requirement_details.requirement_source
         requirement_details.append(item)
     return requirement_details

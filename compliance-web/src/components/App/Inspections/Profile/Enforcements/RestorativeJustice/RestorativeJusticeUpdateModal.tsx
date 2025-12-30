@@ -67,7 +67,15 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
     defaultValues,
   });
 
-  const { reset, handleSubmit } = methods;
+  const { reset, handleSubmit, watch } = methods;
+  const dateRestitutionComplete = watch("date_restitution_complete");
+
+  // Determine if save confirmation is required
+  const requireSaveConfirmation = useMemo(() => {
+    return (
+      dateRestitutionComplete !== null && dateRestitutionComplete !== undefined
+    );
+  }, [dateRestitutionComplete]);
 
   useEffect(() => {
     reset(defaultValues);
@@ -153,6 +161,7 @@ const RestorativeJusticeUpdateModal: FC<RestorativeJusticeUpdateModalProps> = ({
             onDeleteAction={() => {
               deleteRestorativeJustice({ restorativeJusticeId: restorativeJustice.id });
             }}
+            requireSaveConfirmation={requireSaveConfirmation}
           />
         )}
       </form>

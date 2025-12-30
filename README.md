@@ -4,32 +4,32 @@ This document outlines the setup instructions for both the backend and front-end
 
 ## Backend Setup in WSL
 
-### 1. Install Python 3.12.4
-Ensure Python 3.12.4 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
+### 1. Install Python 3.10
+Ensure Python 3.10 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
 
 ### 2. Set Up PYTHONPATH
 Add the following line to your `.bashrc` or `.zshrc` file to set the `PYTHONPATH` environment variable:
-export PYTHONPATH="/path/to/compliance-api:${PYTHONPATH}"
+* `export PYTHONPATH="/path/to/compliance-api:${PYTHONPATH}"`
 
 ### 3. Configure Environment Variables
 Create a `.env` file in your compliance-api with the necessary configurations. Reference sample.env to see what variables you need to configure
 
 ### 4. Start Docker Compose
 In a separate terminal, launch Docker Compose to set up your containers:
-docker-compose up
+* `docker-compose up`
 
 ### 5. Run Setup
 Navigate to your project directory and run the setup command to prepare your development environment:
-make setup
+* `make setup`
 
 ### 5. Run Server
 Once the setup is completed use make run to start the server:
-make run
+* `make run`
 
 
 ## Backend Setup on Windows
 
-## Step 1: Download the Latest Python Version
+## Step 1: Download the Python 3.10 Version
 
 1. Visit the official Python website: [Python Downloads](https://www.python.org/downloads/)
 2. Download and install the latest version of Python for your operating system.
@@ -38,64 +38,67 @@ make run
 ## Step 4: Set Environment Variables
 
 1. Set the `FLASK_APP` and `FLASK_ENV` environment variables:
-    - set FLASK_APP=app.py 
-      set FLASK_ENV=development
-      
+    - `set FLASK_APP=app.py`
+    - `set FLASK_ENV=development`
+
 2. Configure `PYTHONPATH` to your project's folder location up to `compliance-api/src`:
-    - set PYTHONPATH=path\to\compliance-api\src &&    PYTHONPATH=path\to\compliance-api
+    - `set PYTHONPATH=path\to\compliance-api\src &&    PYTHONPATH=path\to\compliance-api`
 
 ## Step 2: Start Docker
 
 1. Open a terminal.
 2. Navigate to the `compliance-api` directory:
-    cd compliance-api
+    * `cd compliance-api`
 
 3. Run the following command to start the services using Docker Compose:
-    docker-compose up
+    * `docker-compose up`
 
 ## Step 3: Set Up `compliance-api`
 
 1. Open a separate terminal.
 
-2. Navigate to the `` directory:
-    cd compliance-api
+2. Navigate to the directory:
+    `cd compliance-api`
 
 3. Create a virtual environment. Refer to the official Python documentation on how to create a virtual environment: [Python venv](https://docs.python.org/3/library/venv.html).
-    python -m venv venv
+    * `python -m venv venv`
 
 4. Activate the virtual environment:
-    - venv\Scripts\activate
+    * `source venv\Scripts\activate`
 
 5. Install the required Python packages from both `dev.txt` and `prod.txt` requirements files:
-    python -m pip install -r path/to/requirements/dev.txt
-    python -m pip install -r path/to/requirements/prod.txt
+    * `python -m pip install -r ./requirements/dev.txt`
+    * `python -m pip install -r ./requirements/prod.txt`
 
 6. Run your Flask app using the Flask CLI:
-    - python -m flask run -p 5000
+    - `python -m flask run -p 5000`
 
 ## Front End Setup
 
 ### 1. Navigate to Front End Directory
 Change to the front-end directory:
-cd compliance-web
+* `cd compliance-web`
 
-### 2. Install Dependencies
+### 2. Requirements
+- [Node.js](https://nodejs.org/en/) 18
+
+### 3. Install Dependencies
 Install necessary npm packages:
-npm install
+* `npm install`
 
-### 3. Run Development Server
+### 4. Run Development Server
 Launch the development server:
-npm run dev
+* `npm run dev`
 
 # Helm
 In openshift, you should have namespaces as such:
-xxxx-tools
-xxxx-dev
-xxxx-test
-xxxx-prod
+* xxxx-tools
+* xxxx-dev
+* xxxx-test
+* xxxx-prod
 
 After the oc login which can be gotten from the openshift command line tool page
-install command https://helm.sh/docs/helm/helm_install/
+* `install command https://helm.sh/docs/helm/helm_install/`
 
 ## Patroni
 You can reuse a patroni chart like https://github.com/bcgov/nr-patroni-chart
@@ -129,23 +132,23 @@ The tools namespace will be common to dev, test and prod and you will need to al
 
 You need a policy to allow pods in xxxx-dev to connect with each other
     spec:
-    
+
     podSelector: {}
-    
+
     ingress:
-    
+
     - from:
-    
+
     - namespaceSelector:
-    
+
     matchLabels:
-    
+
     environment: dev
-    
+
     name: c8b80a
-    
+
     policyTypes:
-    
+
     - Ingress
 
 
@@ -160,36 +163,36 @@ if you intend to use codecov in your CI workflows, you have to go to the bcgov c
 
 ### JEST
 example work yml for jest:
-
+```
   testing:
     needs: setup-job
     runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v3
-    
+
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-    
+
       - name: Install dependencies
         run: |
           npm install --legacy-peer-deps
         env:
           FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
-    
+
       - name: Test with jest
         id: test
         run: |
           npm test -- --coverage
-    
+
       # Set codecov branch name with prefix if pull request
       - name: Sets Codecov branch name
         run: |
           echo "CODECOV_BRANCH=PR_${{github.head_ref}}" >> $GITHUB_ENV
         if: github.event_name == 'pull_request'
-    
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
@@ -199,35 +202,36 @@ example work yml for jest:
           verbose: true
           override_branch: ${{env.CODECOV_BRANCH}}
           token: ${{ secrets.CODECOV_TOKEN }}
+```
 ### Cypress
 you have to add a some dev dependencies and set them up in the app and then you can use the below example yml for cypress:
-
+```
       testing:
         needs: setup-job
         runs-on: ubuntu-20.04
-    
+
         steps:
           - uses: actions/checkout@v2
-    
+
           - name: Use Node.js ${{ matrix.node-version }}
             uses: actions/setup-node@v1
             with:
               node-version: ${{ matrix.node-version }}
-    
+
           - name: Install dependencies
             run: |
               npm install --legacy-peer-deps
-    
+
           - name: Test with Cypress
             id: test
             run: |
               npx cypress run --component --headed --browser chrome
-    
+
           - name: Sets Codecov branch name
             run: |
               echo "CODECOV_BRANCH=PR_${{ github.head_ref }}" >> $GITHUB_ENV
             if: github.event_name == 'pull_request'
-    
+
           - name: Upload coverage to Codecov
             uses: codecov/codecov-action@v4
             with:
@@ -238,7 +242,7 @@ you have to add a some dev dependencies and set them up in the app and then you 
               override_branch: ${{ env.CODECOV_BRANCH }}
               token: ${{ secrets.CODECOV_TOKEN }}
               directory: ./app-web/coverage
-
+```
 
 ## Application Overview
 ![alt text](https://github.com/bcgov/EPIC.compliance/blob/develop/docs/application_overview.png?raw=true)
@@ -267,7 +271,7 @@ By digitizing and streamlining C&E workflows, EPIC.compliance enhances data inte
 * **Type** : Frontend application.
 
 * **Built With** :
-  
+
   - **React** (JS library for building user interfaces)
 
   - **TypeScript**  (adds type safety to JavaScript)

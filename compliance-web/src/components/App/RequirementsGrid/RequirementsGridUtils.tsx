@@ -1,5 +1,5 @@
 import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   APPROVAL_STATUS,
   APReferralStatus,
@@ -134,14 +134,21 @@ export const useConvertFiltersToQueryParams = (
 export const useRequirementsGridColumns = (
   dataDependencies: RequirementsGridDataDependencies
 ): MRT_ColumnDef<InspectionRequirementGrid>[] => {
-  const {
-    topics,
-    complianceFindings,
-    enforcementActions,
-    requirementSources,
-  } = dataDependencies;
+  const RequirementSourceNames = useMemo(() => ({
+    SCHEDULE_B: "Schedule B - Table of Conditions",
+    SCHEDULE_A: "Schedule A - Certified Project Description",
+  }), []);
 
-  return [
+  const RequirementSourceNameMap: Record<string, string> = useMemo(() => ({
+    [RequirementSourceNames.SCHEDULE_B]: "Schedule B",
+    [RequirementSourceNames.SCHEDULE_A]: "Schedule A",
+  }), [RequirementSourceNames.SCHEDULE_B, RequirementSourceNames.SCHEDULE_A]);
+
+  const { topics, complianceFindings, enforcementActions, requirementSources } =
+    dataDependencies;
+
+  return useMemo<MRT_ColumnDef<InspectionRequirementGrid>[]>(
+    () => [
     {
       accessorFn: (row) => row.topic?.name,
       id: "tpc",
@@ -186,7 +193,7 @@ export const useRequirementsGridColumns = (
     },
     {
       accessorKey: "enf_stats",
-      header: "Enf. Status", 
+      header: "Enf. Status",
       Cell: ({ row }) => {
         const enforcementStatusFlagObj: InspectionMoreDetailsEnforcementAction =
           {
@@ -219,7 +226,7 @@ export const useRequirementsGridColumns = (
       size: 80,
     },
     {
-      accessorFn: (row) => row.requirement_number,
+      accessorFn: (row) => (row.requirement_number ?? []).join(", "),
       id: "req_src_num",
       header: "Condition #",
       filterFn: "contains",
@@ -229,7 +236,25 @@ export const useRequirementsGridColumns = (
       size: 80,
     },
     {
-      accessorFn: (row) => row.requirement_source?.name,
+      accessorFn: (row) => {
+        return (
+          row.requirement_sources
+            ?.map((source) => {
+              if (source.name === RequirementSourceNames.SCHEDULE_B) {
+                return RequirementSourceNameMap[
+                  RequirementSourceNames.SCHEDULE_B
+                ];
+              }
+              if (source.name === RequirementSourceNames.SCHEDULE_A) {
+                return RequirementSourceNameMap[
+                  RequirementSourceNames.SCHEDULE_A
+                ];
+              }
+              return source.name;
+            })
+            .join(", ") ?? ""
+        );
+      },
       id: "req_src",
       header: "Source",
       filterVariant: "multi-select",
@@ -261,7 +286,7 @@ export const useRequirementsGridColumns = (
       filterFn: "greaterThanOrEqual",
       size: 120,
     },
-  ];
+  ], [complianceFindings, enforcementActions, requirementSources, RequirementSourceNames, RequirementSourceNameMap, topics]);
 };
 
 export const enforcementStatusOptions = [

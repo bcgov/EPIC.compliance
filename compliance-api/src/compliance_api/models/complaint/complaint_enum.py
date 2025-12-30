@@ -10,6 +10,7 @@ class ComplaintSourceEnum(Enum):
     FIRSTNATION = 2
     AGENCY = 3
     OTHER = 4
+    FIRST_NATIONS_ALLIANCE = 5
 
 
 class ComplaintRequirementSourceEnum(Enum):

@@ -251,6 +251,8 @@ class InspectionRecordService:
             ir_data = ir_builder.build_finding_statement().build()
         elif field_name == "enforcement_summary":
             ir_data = ir_builder.build_enforcement_summary().build()
+        elif field_name == "date_issued":
+            ir_data = {"date_issued": None}
         change_info[f"{field_name}_changed"] = False
         update_data = {
             field_name: ir_data.get(field_name),
@@ -268,7 +270,6 @@ class InspectionRecordService:
         """Preview inspection record."""
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         if output_format == "pdf":
-            ServiceUtils.access_check_update_for_inspection(inspection)
             ServiceUtils.inspection_status_check(inspection)
         inspection_record = ServiceUtils.inspection_record_exist_check(
             inspection_record_id

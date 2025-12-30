@@ -17,8 +17,8 @@ export interface InspectionRequirementGrid {
   sort_order: number;
   date_issued: string;
   ir_number: string;
-  requirement_number: string;
-  requirement_source: RequirementSource;
+  requirement_number: string[];
+  requirement_sources: RequirementSource[];
   approved_by: StaffUser;
   approved_by_id: number;
   progress?: Option;

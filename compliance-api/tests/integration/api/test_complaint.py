@@ -22,7 +22,7 @@ def test_get_complaint_sources(client, auth_header):
     url = urljoin(API_BASE_URL, "complaints/sources")
     print(url)
     result = client.get(url, headers=auth_header)
-    assert len(result.json) == 4
+    assert len(result.json) == len(ComplaintSourceEnum)
     assert result.status_code == HTTPStatus.OK
 
 

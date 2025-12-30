@@ -1,8 +1,11 @@
-"""Cached service for staff user validation during token authentication."""
+"""Integrated caching strategy for staff users."""
 
-from flask import current_app
+import hashlib
+from flask import current_app, g
 
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
+from compliance_api.schemas.staff_user import StaffUserSchema
+from compliance_api.services.authorize_service.auth_service import AuthService
 from compliance_api.utils.cache import cache
 
 
@@ -12,6 +15,7 @@ class CachedStaffUserService:
     CACHE_TIMEOUT = 3600  # 1 hour
     STAFF_CACHE_KEY_PREFIX = "staff_user:"
     ALL_STAFF_CACHE_KEY = "all_staff_users"
+    ALL_STAFF_WITH_AUTH_PREFIX = "all_staff_with_auth:"
 
     @classmethod
     def exists_staff_by_auth_guid(cls, auth_guid: str) -> bool:
@@ -47,8 +51,59 @@ class CachedStaffUserService:
 
         return cache_value
 
-    @classmethod
-    def invalidate_staff_cache(cls, auth_guid: str = None):
+    @staticmethod
+    def get_all_staff_users_with_auth():
+        """
+        Get all staff users with merged auth data (cached as serialized data).
+
+        Returns:
+            List of serialized staff user dictionaries
+        """
+        # pylint: disable=import-outside-toplevel
+        from compliance_api.services.staff_user import _set_permission_level_in_compliance_user_obj
+
+        # Create cache key that includes token hash for security
+        token_hash = CachedStaffUserService._get_token_hash()
+
+        version = cache.get("all_staff_with_auth_version")
+        if version is None:
+            version = 0
+
+        cache_key = (
+            f"{CachedStaffUserService.ALL_STAFF_WITH_AUTH_PREFIX}"
+            f"{token_hash}:v{version}"
+        )
+
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            current_app.logger.debug("Cache hit for all staff users with auth data")
+            return cached_result
+
+        current_app.logger.debug("Cache miss for all staff users with auth data")
+
+        # Get users from compliance database with eager loading
+        users = StaffUserModel.get_all_with_relationships(default_filters=False)
+
+        # Get compliance users from epic system
+        auth_users = AuthService.get_epic_users_by_app()
+
+        # Merge the two sets of users to set the permission in the result
+        index_auth_users = {user["username"]: user for user in auth_users}
+        for user in users:
+            auth_user = index_auth_users.get(user.auth_user_guid, None)
+            user = _set_permission_level_in_compliance_user_obj(user, auth_user)
+
+        # Serialize the data BEFORE caching to avoid detached instance issues
+        user_schema = StaffUserSchema(many=True)
+        serialized_users = user_schema.dump(users)
+
+        # Cache the serialized data
+        cache.set(cache_key, serialized_users, timeout=300)  # 5 minutes
+
+        return serialized_users
+
+    @staticmethod
+    def invalidate_staff_cache(auth_guid: str = None):
         """
         Invalidate cached staff user data.
 
@@ -56,12 +111,24 @@ class CachedStaffUserService:
             auth_guid: Specific auth_guid to invalidate, or None to clear all staff cache
         """
         if auth_guid:
-            cache_key = f"{cls.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
+            cache_key = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
             cache.delete(cache_key)
             current_app.logger.info(f"Invalidated cache for staff user: {auth_guid}")
-        else:
-            cls._clear_all_staff_cache()
-            current_app.logger.info("Invalidated all staff user cache")
+
+        # Always invalidate the aggregate cache when any staff user changes
+        CachedStaffUserService._invalidate_all_staff_with_auth_cache()
+
+    @staticmethod
+    def _invalidate_all_staff_with_auth_cache():
+        try:
+            current_version = cache.get("all_staff_with_auth_version")
+            if current_version is None:
+                current_version = 0
+
+            cache.set("all_staff_with_auth_version", current_version + 1)
+            current_app.logger.info("Bumped staff+auth cache version")
+        except (AttributeError, RuntimeError) as e:
+            current_app.logger.error(f"Error invalidating staff+auth cache: {e}")
 
     @classmethod
     def _clear_all_staff_cache(cls):
@@ -71,3 +138,19 @@ class CachedStaffUserService:
             current_app.logger.info("Cleared all cache (simple cache type)")
         except (AttributeError, RuntimeError) as e:
             current_app.logger.error(f"Error clearing cache: {str(e)}")
+
+    @staticmethod
+    def _get_token_hash():
+        """
+        Generate a cache key suffix based on the current user's token.
+
+        This ensures different users get different cached data while
+        not exposing the actual token in cache keys.
+        """
+        token = getattr(g, "access_token", None)
+        if not token:
+            return "no_token"
+
+        # Use first 16 chars of SHA256 hash
+        token_hash = hashlib.sha256(token.encode()).hexdigest()[:16]
+        return token_hash

@@ -5,4 +5,5 @@ export interface Contact {
   phone?: string;
   comment?: string;
   description?: string;
+  alliance_name?: string;
 }

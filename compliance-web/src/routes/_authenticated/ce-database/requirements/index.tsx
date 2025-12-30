@@ -1,34 +1,36 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useAuth } from "react-oidc-context";
+import { Box, CircularProgress, Typography } from "@mui/material";
+import { BCDesignTokens } from "epic.theme";
+import type {
+  MRT_ColumnFiltersState,
+  MRT_SortingState,
+  MRT_TableInstance,
+  MRT_TableState,
+  MRT_Updater,
+} from "material-react-table";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
+import Pagination from "@/components/Shared/Pagination";
+import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
+import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
+import RequirementsGridExport from "@/components/App/RequirementsGrid/RequirementsGridExport";
+import { useTopicsData } from "@/hooks/useTopics";
 import { useRequirementSourcesData } from "@/hooks/useComplaints";
 import {
   useComplianceFindingsData,
   useEnforcementActionsData,
 } from "@/hooks/useInspectionRequirements";
 import { useInspectionRequirementsGrid } from "@/hooks/useInspectionRequirementsGrid";
-import { useTopicsData } from "@/hooks/useTopics";
-import {
-  InspectionRequirementGrid,
-  InspectionRequirementGridQueryParams,
-} from "@/models/InspectionRequirementGrid";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import { createFileRoute } from "@tanstack/react-router";
-import { BCDesignTokens } from "epic.theme";
-import {
-  MRT_TableState,
-  MRT_SortingState,
-  MRT_TableInstance,
-} from "material-react-table";
-import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { useAuth } from "react-oidc-context";
-import RequirementsExternalFilters from "@/components/App/RequirementsGrid/RequirementsExternalFilters";
-import ShowOnlyMyRequirementsSwitch from "@/components/App/RequirementsGrid/ShowOnlyMyRequirementsSwitch";
-import Pagination from "@/components/Shared/Pagination";
-import RequirementsGridExport from "@/components/App/RequirementsGrid/RequirementsGridExport";
+import { useStaffUsersData } from "@/hooks/useStaff";
 import {
   useConvertFiltersToQueryParams,
   useRequirementsGridColumns,
 } from "@/components/App/RequirementsGrid/RequirementsGridUtils";
-import { useStaffUsersData } from "@/hooks/useStaff";
+import type {
+  InspectionRequirementGrid,
+  InspectionRequirementGridQueryParams,
+} from "@/models/InspectionRequirementGrid";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import { AppConfig } from "@/utils/config";
@@ -69,215 +71,136 @@ function Requirements() {
     Record<string, string[] | string>
   >({});
 
-  // Track if we're in the initial load phase to prevent caching during restoration
-  const isInitialLoad = useRef(true);
+  // Ref to ensure filters are only initialized once
+  const filtersInitialized = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
-
-  // Track previous values to prevent unnecessary caching
-  const prevFilters = useRef<{
-    columnFilters: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
-    externalFilters: Record<string, string[] | string>;
-    myRequirementsChecked: boolean;
-    globalFilter: string;
-    sorting: MRT_SortingState;
-  }>({
-    columnFilters: [],
-    externalFilters: {},
-    myRequirementsChecked: true, // Default to true for first-time users
-    globalFilter: "",
-    sorting: [{ id: "tpc", desc: false }],
-  });
 
   // Get cached filters store methods
   const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
-  const cachedColumnFilters = getFilters(requirementsColumnFiltersCacheKey);
-  const cachedExternalFilters = getExternalFilters(
-    requirementsColumnFiltersCacheKey
-  );
-  const cachedSorting = getSorting(requirementsColumnFiltersCacheKey);
 
-  // Restore cached filters on component mount
+  const cachedData = useMemo(() => {
+    return {
+      columnFilters: getFilters(requirementsColumnFiltersCacheKey),
+      externalFilters: getExternalFilters(requirementsColumnFiltersCacheKey),
+      sorting: getSorting(requirementsColumnFiltersCacheKey),
+    };
+  }, [getFilters, getExternalFilters, getSorting]);
+
+  const currentStaff = useMemo(() => {
+    if (!currentUser?.profile?.preferred_username || !staffUsers) return null;
+    return staffUsers.find(
+      (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
+    );
+  }, [currentUser, staffUsers]);
+
+  // Initialize filters only once when all data is ready
   useEffect(() => {
-    // Reset the initial load flag on every mount
-    isInitialLoad.current = true;
-
-    if (cachedColumnFilters.length > 0) {
-      setColumnFilters(cachedColumnFilters);
+    // Don't initialize if already done, or if required data isn't loaded yet
+    if (filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+      return;
     }
-    if (cachedExternalFilters) {
-      const restoredExternalFilters = cachedExternalFilters as Record<
-        string,
-        string[] | string
-      >;
-      setExternalFilters(restoredExternalFilters);
 
-      // Restore "My Requirements" switch state if it was cached
-      if (restoredExternalFilters.myRequirementsChecked !== undefined) {
-        // Use the explicitly stored switch state
-        const restoredSwitchState = Boolean(
-          restoredExternalFilters.myRequirementsChecked
-        );
-        setMyRequirementsChecked(restoredSwitchState);
+    filtersInitialized.current = true;
 
-        // If switch is ON, ensure column filters are set up for UI display
-        if (
-          restoredSwitchState &&
-          currentUser?.profile?.preferred_username &&
-          staffUsers
-        ) {
-          const currentStaff = staffUsers.find(
-            (staff) =>
-              staff.auth_user_guid === currentUser.profile.preferred_username
-          );
-          if (currentStaff) {
-            // Add primary_officer column filter for UI display
-            const primaryOfficerColumnFilter = {
-              id: "primary_officer",
-              value: [currentStaff.id.toString()],
-            };
-            setColumnFilters((prev) => {
-              const filtered = prev.filter(
-                (filter) => filter.id !== "primary_officer"
-              );
-              return [...filtered, primaryOfficerColumnFilter];
-            });
-          }
+    // Check if we have cached filters
+    const hasCachedFilters = cachedData.columnFilters.length > 0 || 
+                             (cachedData.externalFilters && Object.keys(cachedData.externalFilters).length > 0);
+
+    if (hasCachedFilters) {
+      // Restore from cache
+      if (cachedData.columnFilters.length > 0) {
+        setColumnFilters(cachedData.columnFilters);
+      }
+      
+      if (cachedData.externalFilters) {
+        const restoredExternalFilters = cachedData.externalFilters as Record<
+          string,
+          string[] | string
+        >;
+        
+        // Restore external filters
+        setExternalFilters(restoredExternalFilters);
+
+        // Restore switch state
+        if (restoredExternalFilters.myRequirementsChecked !== undefined) {
+          setMyRequirementsChecked(Boolean(restoredExternalFilters.myRequirementsChecked));
+        } else {
+          // Derive from primary_officer filter
+          const primaryOfficerFilter = restoredExternalFilters.primary_officer_id || [];
+          setMyRequirementsChecked(!!(primaryOfficerFilter?.length > 0));
         }
-      } else {
-        // Fallback: derive from primary_officer filter if switch state not stored
-        const primaryOfficerFilter =
-          restoredExternalFilters.primary_officer_id || [];
-        const derivedSwitchState = !!(primaryOfficerFilter?.length > 0);
-        setMyRequirementsChecked(derivedSwitchState);
 
-        // If derived state is ON, ensure column filters are set up
-        if (
-          derivedSwitchState &&
-          currentUser?.profile?.preferred_username &&
-          staffUsers
-        ) {
-          const currentStaff = staffUsers.find(
-            (staff) =>
-              staff.auth_user_guid === currentUser.profile.preferred_username
-          );
-          if (currentStaff) {
-            // Add primary_officer column filter for UI display
-            const primaryOfficerColumnFilter = {
-              id: "primary_officer",
-              value: [currentStaff.id.toString()],
-            };
-            setColumnFilters((prev) => {
-              const filtered = prev.filter(
-                (filter) => filter.id !== "primary_officer"
-              );
-              return [...filtered, primaryOfficerColumnFilter];
-            });
-          }
+        // Restore global filter
+        if (restoredExternalFilters.globalFilter) {
+          setGlobalFilter(restoredExternalFilters.globalFilter as string);
         }
       }
 
-      // Restore global filter if it was cached
-      if (restoredExternalFilters.globalFilter) {
-        setGlobalFilter(restoredExternalFilters.globalFilter as string);
+      // Restore sorting
+      if (cachedData.sorting && Array.isArray(cachedData.sorting) && cachedData.sorting.length > 0 && cachedData.sorting[0]?.id) {
+        setSorting(cachedData.sorting);
       }
     } else {
-      // No cached filters - apply default "My Requirements" filter for first-time users
-      if (currentUser?.profile?.preferred_username && staffUsers) {
-        const currentStaff = staffUsers.find(
-          (staff) =>
-            staff.auth_user_guid === currentUser.profile.preferred_username
-        );
-        if (currentStaff) {
-          const defaultExternalFilters = {
-            primary_officer_id: [currentStaff.id.toString()],
-          };
-          const defaultColumnFilters = [
-            {
-              id: "primary_officer",
-              value: [currentStaff.id.toString()],
-            },
-          ];
+      // No cached filters - apply default "My Requirements" filter
+      const defaultExternalFilters = {
+        primary_officer_id: [currentStaff.id.toString()],
+      };
+      const defaultColumnFilters = [
+        {
+          id: "primary_officer",
+          value: [currentStaff.id.toString()],
+        },
+      ];
 
-          setExternalFilters(defaultExternalFilters);
-          setColumnFilters(defaultColumnFilters);
-          setMyRequirementsChecked(true);
-
-          // Update prevFilters to prevent unnecessary caching during initial setup
-          prevFilters.current = {
-            ...prevFilters.current,
-            externalFilters: defaultExternalFilters,
-            columnFilters: defaultColumnFilters,
-            myRequirementsChecked: true,
-          };
-        }
-      }
+      setExternalFilters(defaultExternalFilters);
+      setColumnFilters(defaultColumnFilters);
+      setMyRequirementsChecked(true);
     }
 
-    // Restore sorting if it was cached
-    if (cachedSorting && Array.isArray(cachedSorting)) {
-      // Validate that it has the expected structure
-      if (cachedSorting.length > 0 && cachedSorting[0]?.id) {
-        setSorting(cachedSorting);
-      }
-    }
-
-    // Mark restoration as complete and initial load as complete
-    isInitialLoad.current = false;
     setIsRestored(true);
   }, [
-    cachedColumnFilters,
-    cachedExternalFilters,
-    cachedSorting,
-    staffUsers,
-    currentUser,
+    authLoading,
+    staffLoading,
+    currentStaff,
+    cachedData,
   ]);
 
-  // Cache all filters when they change (but not during initial load)
+  // Cache filters when they change
+  const cacheTimeoutRef = useRef<NodeJS.Timeout>();
   useEffect(() => {
-    if (!isInitialLoad.current) {
-      // Check if any values have actually changed
-      const currentFilters = {
-        columnFilters,
-        externalFilters,
-        myRequirementsChecked,
-        globalFilter,
-        sorting,
-      };
+    // Only cache after filters are initialized
+    if (!filtersInitialized.current || !isRestored) return;
 
-      const hasChanged =
-        JSON.stringify(currentFilters) !== JSON.stringify(prevFilters.current);
-
-      if (hasChanged) {
-        cachedFiltersStore.getState().setFilters(
-          requirementsColumnFiltersCacheKey,
-          columnFilters,
-          {
-            ...externalFilters,
-            myRequirementsChecked, // Store the switch state explicitly
-            globalFilter,
-          },
-          sorting
-        );
-
-        // Update previous values
-        prevFilters.current = currentFilters;
-      }
+    // Clear existing timeout
+    if (cacheTimeoutRef.current) {
+      clearTimeout(cacheTimeoutRef.current);
     }
-  }, [
-    columnFilters,
-    externalFilters,
-    myRequirementsChecked,
-    globalFilter,
-    sorting,
-  ]);
 
-  // Use the extracted utility function
-  const convertFiltersToQueryParams =
-    useConvertFiltersToQueryParams(externalFilters);
+    // Debounce the cache operation
+    cacheTimeoutRef.current = setTimeout(() => {
+      cachedFiltersStore.getState().setFilters(
+        requirementsColumnFiltersCacheKey,
+        columnFilters,
+        {
+          ...externalFilters,
+          myRequirementsChecked,
+          globalFilter,
+        },
+        sorting
+      );
+    }, 300);
+
+    return () => {
+      if (cacheTimeoutRef.current) {
+        clearTimeout(cacheTimeoutRef.current);
+      }
+    };
+  }, [columnFilters, externalFilters, myRequirementsChecked, globalFilter, sorting, isRestored]);
+
+  const convertFiltersToQueryParams = useConvertFiltersToQueryParams(externalFilters);
 
   const queryParams: InspectionRequirementGridQueryParams = useMemo(() => {
-    // Extract sorting information from the sorting state
-    const currentSort = sorting[0]; // Material React Table supports multiple sorts, but we'll use the first one
+    const currentSort = sorting[0];
 
     return {
       page_no: pagination.pageIndex + 1,
@@ -303,7 +226,6 @@ function Requirements() {
   const {
     handlePaginationChange,
     handleSortingChange,
-    handleColumnFiltersChange,
     handleGlobalFilterChange,
   } = useTableHandlers({
     sorting,
@@ -314,6 +236,39 @@ function Requirements() {
     setGlobalFilter,
     setPagination,
   });
+
+// Column filter handler that enforces "My Requirements" toggle
+  const handleColumnFiltersChange = useCallback(
+    (updater: MRT_Updater<MRT_ColumnFiltersState>) => {
+      setColumnFilters((prevFilters) => {
+        const newFilters = typeof updater === 'function' ? updater(prevFilters) : updater;
+        
+        // If "My Requirements" is checked, ensure primary_officer filter is present
+        if (myRequirementsChecked && currentStaff) {
+          const hasPrimaryOfficerFilter = newFilters.some(
+            (filter) => filter.id === "primary_officer"
+          );
+          
+          // If user removed the primary_officer filter, re-add it
+          if (!hasPrimaryOfficerFilter) {
+            const primaryOfficerFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            // Update external filters to keep them in sync
+            setExternalFilters((prev) => ({
+              ...prev,
+              primary_officer_id: [currentStaff.id.toString()],
+            }));
+            return [...newFilters, primaryOfficerFilter];
+          }
+        }
+        
+        return newFilters;
+      });
+    },
+    [myRequirementsChecked, currentStaff]
+  );
 
   const handleExternalFilterChange = useCallback(
     (filterId: string, value: string[] | string) => {
@@ -331,13 +286,10 @@ function Requirements() {
     setColumnFilters([]);
     setGlobalFilter("");
     setMyRequirementsChecked(false);
-    setSorting([{ id: "tpc", desc: false }]); // Reset to default sorting
+    setSorting([{ id: "tpc", desc: false }]);
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
-    // Clear cached filters
-    cachedFiltersStore
-      .getState()
-      .clearFilters(requirementsColumnFiltersCacheKey);
+    cachedFiltersStore.getState().clearFilters(requirementsColumnFiltersCacheKey);
   }, []);
 
   // Handle "My Requirements" switch changes
@@ -347,46 +299,28 @@ function Requirements() {
       externalFilters: Record<string, string[] | string>;
       columnFilters?: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
     }) => {
-      // Only update if the values have actually changed
-      const filtersChanged =
-        JSON.stringify(filters.externalFilters) !==
-        JSON.stringify(externalFilters);
-      const checkedChanged = filters.checked !== myRequirementsChecked;
+      setMyRequirementsChecked(filters.checked);
+      setExternalFilters(filters.externalFilters);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
-      if (checkedChanged) {
-        setMyRequirementsChecked(filters.checked);
-      }
-
-      if (filtersChanged) {
-        setExternalFilters(filters.externalFilters);
-        // Reset pagination when filters change
-        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-      }
-
-      // Update column filters if provided
       if (filters.columnFilters !== undefined) {
         if (filters.checked) {
-          // When turning ON, merge with existing filters, replacing primary_officer if it exists
-          handleColumnFiltersChange((prevFilters) => {
+          setColumnFilters((prevFilters) => {
             const filteredFilters = prevFilters.filter(
               (filter) => filter.id !== "primary_officer"
             );
             return [...filteredFilters, ...filters.columnFilters!];
           });
         } else {
-          // When turning OFF, remove primary_officer filter but keep others
-          handleColumnFiltersChange((prevFilters) => {
-            return prevFilters.filter(
-              (filter) => filter.id !== "primary_officer"
-            );
-          });
+          setColumnFilters((prevFilters) =>
+            prevFilters.filter((filter) => filter.id !== "primary_officer")
+          );
         }
       }
     },
-    [externalFilters, handleColumnFiltersChange, myRequirementsChecked]
+    []
   );
 
-  // Use the extracted utility function for columns
   const columns = useRequirementsGridColumns({
     topics,
     complianceFindings,
@@ -394,22 +328,27 @@ function Requirements() {
     requirementSources,
   });
 
-  return authLoading || staffLoading || !isRestored ? (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      height="100%"
-    >
-      <CircularProgress size={60} />
-    </Box>
-  ) : (
+  // Show loading state until everything is ready
+  if (authLoading || staffLoading || !isRestored) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100%"
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  return (
     <MasterDataTable
       columns={columns}
-      data={requirementsList ?? []}
+      data={requirementsList}
       initialState={{
         sorting: sorting,
-        columnFilters: isRestored ? columnFilters : [],
+        columnFilters: columnFilters,
       }}
       state={{
         isLoading,

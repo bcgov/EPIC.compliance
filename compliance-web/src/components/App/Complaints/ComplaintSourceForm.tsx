@@ -53,7 +53,9 @@ const ComplaintSourceForm: FC<ComplaintSourceProps> = ({
 
     const fieldNames: string[] = [
       "contactFullName",
-      "contactTitle",
+         ...(selectedComplaintSource?.id === ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE
+      ? []
+      : ["contactTitle"]),
       "contactEmail",
       "contactPhoneNumber",
       "contactComments",
@@ -130,6 +132,13 @@ const ComplaintSourceForm: FC<ComplaintSourceProps> = ({
       label: "First Nation",
       options: firstNationsList,
       required: true,
+    },
+    [ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE]: {
+      type: "text",
+      name: "allianceName",
+      label: "Alliance Name",
+      options: undefined,
+      required: false,
     },
     [ComplaintSourceEnum.OTHER]: {
       type: "text",

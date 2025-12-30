@@ -91,6 +91,9 @@ class ContactCreateSchema(BaseSchema):
     description = fields.Str(
         metadata={"description": "Any description about the contact"}, allow_none=True
     )
+    alliance_name = fields.Str(
+        metadata={"description": "The alliance name of the First Nations alliance contact"}, allow_none=True
+    )
     comment = fields.Str(metadata={"description": "Any comments"}, allow_none=True)
 
 
