@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import DrawerTitleBar from "@/components/Shared/Drawer/DrawerTitleBar"; // Adjust path accordingly
 import { FormProvider, useForm } from "react-hook-form";
 import { useDrawer } from "@/store/drawerStore";

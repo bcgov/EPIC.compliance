@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import ComplaintFormLeft from "@/components/App/Complaints/ComplaintFormLeft"; // Adjust the path accordingly
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
@@ -75,7 +75,7 @@ describe("ComplaintFormLeft Component", () => {
 
   it("allows selecting a date received", () => {
     cy.get('button[aria-label="Choose date"]').click();
-    cy.get(".MuiPickersDay-root").contains("15").click(); 
+    cy.get(".MuiPickersDay-root").contains("15").click();
     cy.get('input[name="dateReceived"]').should("contain.value", "15");
   });
 });

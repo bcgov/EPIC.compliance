@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionFileActions from "@/components/App/Inspections/Profile/InspectionFileActions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Inspection } from "@/models/Inspection";
@@ -138,14 +138,14 @@ describe("InspectionFileActions Component", () => {
   //       return win.fetch(url);
   //     });
   //   });
-    
+
   //   mountComponent("open");
   //   cy.contains("button", "Actions").click();
   //   cy.get("li[id='Close']").last().click();
 
   //   // Wait for the "Checking Pending Items..." modal to appear
   //   cy.contains("Checking Pending Items...").should("exist");
-    
+
   //   // Wait for the fetch to complete
   //   cy.wait(1000);
 
@@ -153,7 +153,7 @@ describe("InspectionFileActions Component", () => {
   //   cy.contains("Close Inspection?").should("exist");
   //   cy.contains("Are you sure you want to close inspection?").should("exist");
   //   cy.contains("button", "Close Inspection").should("exist");
-    
+
   //   // Close the modal to clean up
   //   cy.contains("button", "Cancel").should("exist").click();
   //   cy.contains("Close Inspection?").should("not.exist");
@@ -197,24 +197,24 @@ describe("InspectionFileActions Component", () => {
 
   //   // Wait for the "Checking Pending Items..." modal to appear
   //   cy.contains("Checking Pending Items...").should("exist");
-    
+
   //   // Wait for the fetch to complete
   //   cy.wait(1000);
 
   //   // Verify the blocking modal appears
   //   cy.contains("Cannot Close Inspection").should("exist");
   //   cy.contains("button", "Return to Inspection").should("exist").click();
-    
+
   //   // Verify modal is closed
   //   cy.contains("Cannot Close Inspection").should("not.exist");
   // });
 
   it("handles Delete Inspection click", () => {
     mountComponent("open");
-    
+
     // Wait a bit to ensure any previous modals are fully closed
     cy.wait(200);
-    
+
     cy.contains("button", "Actions").click();
     cy.contains("Delete Inspection").click();
 
@@ -224,7 +224,7 @@ describe("InspectionFileActions Component", () => {
       "You are about to delete this inspection. Are you sure?"
     ).should("exist");
     cy.contains("button", "Delete").should("exist");
-    
+
     // Close the modal to clean up
     cy.contains("button", "Cancel").should("exist").click();
     cy.contains("Delete Inspection?").should("not.exist");

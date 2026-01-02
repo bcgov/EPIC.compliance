@@ -1,5 +1,5 @@
 import React from "react";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import LinkCaseFileModal from "@/components/App/CaseFiles/Profile/LinkCaseFileModal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CaseFile } from "@/models/CaseFile";

@@ -1,4 +1,4 @@
-// import { mount } from "cypress/react18";
+// import { mount } from "cypress/react";
 // import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { CaseFiles } from "@/routes/_authenticated/ce-database/case-files";
 // import router from "@/router/router";
@@ -49,7 +49,7 @@
 //   //   mount(mountCaseFiles());
 
 //   //   cy.get("button").contains("Case File").click();
-    
+
 //   //   cy.get(".MuiTypography-subtitle1").should("contain.text", "Create Case File")
 
 //   // });

@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 import { useMenuStore } from "@/store/menuStore";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 
 const TestComponent = () => {
   const { openMenus, expandMenu, appHeaderHeight, toggleMenu, toggleExpandMenu, setAppHeaderHeight } = useMenuStore();

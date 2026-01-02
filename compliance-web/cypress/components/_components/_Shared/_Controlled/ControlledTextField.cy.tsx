@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
 import { FormProvider, useForm } from "react-hook-form";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 
 describe("ControlledTextField Component", () => {
   const setup = (props = {}) => {

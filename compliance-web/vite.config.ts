@@ -4,33 +4,63 @@ import react from "@vitejs/plugin-react-swc";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import istanbul from "vite-plugin-istanbul";
 import tsconfigPaths from "vite-tsconfig-paths";
-
-// https://vitejs.dev/config/
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
-  plugins: [TanStackRouterVite(), react(), tsconfigPaths(), istanbul({
-    cypress: true,
-    requireEnv: false
-  })],
+  plugins: [
+    TanStackRouterVite(),
+    react(),
+    tsconfigPaths(),
+    istanbul({
+      cypress: true,
+      requireEnv: false
+    })
+  ],
   resolve: {
     alias: {
-      "@": path.resolve(dirname, "src")
+      "@": path.resolve(dirname, "src"),
+      // Fix for MUI imports in Node 24
+      // '@mui/system': '@mui/system/esm',
+      // '@mui/material': '@mui/material/esm',
     }
+  },
+  // Fix for dynamic imports in Cypress and CI
+  optimizeDeps: {
+    include: [
+      '@mui/material',
+      '@mui/system',
+      '@tanstack/react-router',
+    ],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
+  build: {
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  // Help with module resolution in CI
+  server: {
+    fs: {
+      strict: false,
+    },
   },
   test: {
     projects: [{
       extends: true,
       plugins: [
-      // The plugin will run tests for the stories defined in your Storybook config
-      // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-      storybookTest({
-        configDir: path.join(dirname, '.storybook')
-      })],
+        storybookTest({
+          configDir: path.join(dirname, '.storybook')
+        })
+      ],
       test: {
         name: 'storybook',
         browser: {

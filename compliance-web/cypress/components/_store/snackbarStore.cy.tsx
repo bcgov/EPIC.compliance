@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { useSnackbar, notify } from "@/store/snackbarStore";
 
 describe("Snackbar Zustand Store", () => {

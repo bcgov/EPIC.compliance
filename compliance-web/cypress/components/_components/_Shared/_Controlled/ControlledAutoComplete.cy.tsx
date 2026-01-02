@@ -1,5 +1,5 @@
 // cypress/components/ControlledAutoComplete.cy.tsx
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { useForm, FormProvider } from "react-hook-form";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 

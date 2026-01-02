@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /// <reference types="cypress" />
 import MasterDataTable, { MaterialReactTableProps } from "@/components/Shared/MasterDataTable/MasterDataTable";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { MRT_ColumnDef } from "material-react-table";
 
 describe("MasterDataTable Component", () => {

@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import CaseFileCreateInspection from "@/components/App/CaseFiles/Profile/CaseFileCreateInspection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -40,4 +40,4 @@ describe("CaseFileCreateInspection", () => {
     mountComponent(false);
     cy.contains("button", "Inspection").should("exist");
   });
-}); 
+});

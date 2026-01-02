@@ -1,7 +1,7 @@
 /// <reference types="cypress" />
 import { useModal } from "@/store/modalStore";
 import { Box } from "@mui/material";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { act } from "react";
 
 const TestComponent = () => {

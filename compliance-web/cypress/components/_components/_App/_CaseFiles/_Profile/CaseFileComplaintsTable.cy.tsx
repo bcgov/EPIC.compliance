@@ -1,8 +1,8 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import CaseFileComplaintsTable from "@/components/App/CaseFiles/Profile/CaseFileComplaintsTable";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { 
-  RouterProvider, 
+import {
+  RouterProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
@@ -58,13 +58,13 @@ describe("CaseFileComplaintsTable", () => {
 
     // Create a simple router for testing
     const rootRoute = createRootRoute();
-    
+
     const complaintsRoute = createRoute({
       getParentRoute: () => rootRoute,
       path: '/ce-database/complaints/$complaintNumber',
       component: () => <div>Complaint Detail Page</div>
     });
-    
+
     const indexRoute = createRoute({
       getParentRoute: () => rootRoute,
       path: '/',
@@ -76,11 +76,11 @@ describe("CaseFileComplaintsTable", () => {
     });
 
     const routeTree = rootRoute.addChildren([indexRoute, complaintsRoute]);
-    
+
     const memoryHistory = createMemoryHistory({
       initialEntries: ['/'],
     });
-    
+
     const router = createRouter({
       routeTree,
       history: memoryHistory,
@@ -117,12 +117,12 @@ describe("CaseFileComplaintsTable", () => {
   it("expands accordion when clicked", () => {
     // Click on the first accordion to expand it
     cy.get('[role="button"]').first().click();
-    
+
     // Should show expanded content
     cy.contains("Concern Description").should("exist");
     cy.contains("Source").should("exist");
     cy.contains("Date Received").should("exist");
-    
+
     // Should show ExpandLessRounded icon when expanded
     cy.get('[data-testid="ExpandLessRoundedIcon"]').should("exist");
   });
@@ -130,13 +130,13 @@ describe("CaseFileComplaintsTable", () => {
   it("displays complaint details when expanded", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Check for concern description
     cy.contains("Test concern description 1").should("exist");
-    
+
     // Check for source
     cy.contains("Source 1").should("exist");
-    
+
     // Check for formatted date
     cy.contains("2023-04-15").should("exist");
   });
@@ -155,7 +155,7 @@ describe("CaseFileComplaintsTable", () => {
     // Just check that the link has the correct href
     cy.get('a').contains("COMP_123").should('have.attr', 'href')
       .and('include', '/ce-database/complaints/');
-    
+
     // And that clicking doesn't throw errors
     cy.get('a').contains("COMP_123").click();
   });
@@ -163,13 +163,13 @@ describe("CaseFileComplaintsTable", () => {
   it("collapses accordion when clicked again", () => {
     // Expand the first accordion
     cy.get('[role="button"]').first().click();
-    
+
     // Verify it's expanded
     cy.contains("Concern Description").should("exist");
-    
+
     // Click again to collapse
     cy.get('[role="button"]').first().click();
-    
+
     // Verify it's collapsed (content should not be visible)
     cy.contains("Concern Description").should("not.be.visible");
   });
@@ -177,7 +177,7 @@ describe("CaseFileComplaintsTable", () => {
   it("shows no complaints message when there are no complaints", () => {
     // Set empty complaints data
     queryClient.setQueryData(["complaints-by-caseFileId", 1], []);
-    
+
     // Re-mount with empty data
     const rootRoute = createRootRoute();
     const indexRoute = createRoute({
@@ -192,9 +192,9 @@ describe("CaseFileComplaintsTable", () => {
     const routeTree = rootRoute.addChildren([indexRoute]);
     const memoryHistory = createMemoryHistory({ initialEntries: ['/'] });
     const router = createRouter({ routeTree, history: memoryHistory });
-    
+
     mount(<RouterProvider router={router as never} />);
-    
+
     cy.contains("You do not have any created complaints on this file.").should("exist");
   });
-}); 
+});

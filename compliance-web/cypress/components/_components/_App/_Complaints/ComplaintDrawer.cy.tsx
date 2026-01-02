@@ -1,6 +1,6 @@
 /// <reference types="cypress" />
 import React from "react";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import ComplaintDrawer from "@/components/App/Complaints/ComplaintDrawer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -101,8 +101,8 @@ describe("ComplaintDrawer Component", () => {
   const mockFirstNations = [{ id: 1, name: "Test First Nation" }];
   const mockTopics = [{ id: 1, name: "Water" }];
   const mockCurrentUser = { preferred_username: "user-guid-1" };
-  const mockOrders = [{ 
-    id: 1, 
+  const mockOrders = [{
+    id: 1,
     order_number: "B1",
     order_status: { id: "OPEN", name: "Open" }
   }];
@@ -218,13 +218,13 @@ describe("ComplaintDrawer Component", () => {
     );
     cy.get('input[name="primaryOfficer"]').should("have.value", "John Doe");
     cy.get('input[name="dateReceived"]').should("contain.value", "2023-01-01");
-    
+
     // Check complaint source - should now work with drawer state mocked
     cy.get('input[name="complaintSource"]').should(
       "have.value",
       "First Nation"
     );
-    
+
     cy.get('input[name="firstNation"]').should(
       "have.value",
       "Test First Nation"
@@ -233,20 +233,20 @@ describe("ComplaintDrawer Component", () => {
       "have.value",
       "Order"
     );
-    
+
     // Wait for order field to be populated (it's initialized asynchronously)
     // First, ensure the requirement source is set to "Order"
     cy.get('input[name="requirementSource"]').should("have.value", "Order");
-    
+
     // Wait for the order field to be visible (it only shows when requirement source is Order)
     cy.get('input[name="order"]', { timeout: 10000 }).should("be.visible");
-    
+
     // Debug: Check if order data is loaded and dropdown works
     cy.get('input[name="order"]').click();
-    
+
     // Wait for dropdown to open and check if options are available
     cy.get('li[data-option-index]', { timeout: 5000 }).should('have.length.at.least', 1);
-    
+
     // Log the dropdown options for debugging
     cy.get('li[data-option-index]').then(($options) => {
       cy.log(`Found ${$options.length} dropdown options`);
@@ -254,16 +254,16 @@ describe("ComplaintDrawer Component", () => {
         cy.log(`Option ${index}: ${option.textContent}`);
       });
     });
-    
+
     // Check if the first option contains "B1"
     cy.get('li[data-option-index="0"]').should('contain.text', 'B1');
-    
+
     // Select the first option
     cy.get('li[data-option-index="0"]').click();
-    
+
     // Verify the order field has the correct value
     cy.get('input[name="order"]').should("have.value", "B1");
-    
+
     cy.get('input[name="topic"]').should("have.value", "Water");
   });
 

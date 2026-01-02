@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import RequirementsGridExport from "@/components/App/RequirementsGrid/RequirementsGridExport";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box } from "@mui/material";
@@ -71,28 +71,28 @@ describe("RequirementsGridExport", () => {
   describe("Rendering", () => {
     it("should render export button with correct text", () => {
       mountComponent();
-      
+
       cy.get('button').should("contain", "Export as Excel");
       cy.get('button').should("be.visible");
     });
 
     it("should render button with correct variant and size", () => {
       mountComponent();
-      
+
       cy.get('button').should("have.class", "MuiButton-text");
       cy.get('button').should("have.class", "MuiButton-sizeSmall");
     });
 
     it("should render download icon when not loading", () => {
       mountComponent();
-      
+
       // Check for download icon (may need to adjust selector based on actual component)
       cy.get('button').should("be.visible");
     });
 
     it("should render loading spinner when exporting", () => {
       mountComponent();
-      
+
       // Should show loading state
       cy.get('button').should("be.visible");
     });
@@ -101,14 +101,14 @@ describe("RequirementsGridExport", () => {
   describe("Button Functionality", () => {
     it("should render export button", () => {
       mountComponent();
-      
+
       cy.get('button').should("exist");
       cy.get('button').should("contain", "Export as Excel");
     });
 
     it("should have correct button styling", () => {
       mountComponent();
-      
+
       cy.get('button').should("have.class", "MuiButton-text");
       cy.get('button').should("have.class", "MuiButton-sizeSmall");
     });
@@ -117,16 +117,16 @@ describe("RequirementsGridExport", () => {
   describe("Export Process", () => {
     it("should render with query parameters", () => {
       mountComponent();
-      
+
       // Component should render with the provided query parameters
       cy.get('button').should("be.visible");
     });
 
     it("should handle empty query parameters", () => {
       const emptyQueryParams = {};
-      
+
       mountComponent({ queryParams: emptyQueryParams });
-      
+
       cy.get('button').should("be.visible");
     });
 
@@ -139,9 +139,9 @@ describe("RequirementsGridExport", () => {
         tpc_ids: "1,2,3,4,5",
         summary: "complex requirement with spaces",
       };
-      
+
       mountComponent({ queryParams: complexQueryParams });
-      
+
       cy.get('button').should("be.visible");
     });
   });
@@ -149,13 +149,13 @@ describe("RequirementsGridExport", () => {
   describe("Loading States", () => {
     it("should render when not loading", () => {
       mountComponent();
-      
+
       cy.get('button').should("contain", "Export as Excel");
     });
 
     it("should render when loading", () => {
       mountComponent();
-      
+
       cy.get('button').should("be.visible");
     });
   });
@@ -163,7 +163,7 @@ describe("RequirementsGridExport", () => {
   describe("Button Styling", () => {
     it("should have start icon", () => {
       mountComponent();
-      
+
       // The button should have an icon, but the exact class may vary
       cy.get('button').should("be.visible");
       // Check that the button has some icon-related content
@@ -178,9 +178,9 @@ describe("RequirementsGridExport", () => {
         tpc_ids: "1,2,3",
         sort_by: "summary",
       };
-      
+
       mountComponent({ queryParams: specialQueryParams });
-      
+
       cy.get('button').should("be.visible");
     });
   });
@@ -188,14 +188,14 @@ describe("RequirementsGridExport", () => {
   describe("Accessibility", () => {
     it("should have proper button element", () => {
       mountComponent();
-      
+
       cy.get('button').should("exist");
       cy.get('button').should("have.attr", "type", "button");
     });
 
     it("should be clickable when not disabled", () => {
       mountComponent();
-      
+
       cy.get('button').should("not.be.disabled");
       cy.get('button').should("be.visible");
     });
@@ -213,7 +213,7 @@ describe("RequirementsGridExport", () => {
 
       testCases.forEach((testCase) => {
         mountComponent({ queryParams: testCase });
-        
+
         cy.get('button').should("be.visible");
       });
     });

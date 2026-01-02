@@ -1,9 +1,11 @@
 {
-  "extends": "../tsconfig.json", 
+  "extends": "../tsconfig.json",
   "compilerOptions": {
+    "target": "es6",
+    "lib": ["es6", "dom"],
     "types": ["cypress", "node"],
     "jsx": "react-jsx",
-    "baseUrl": "../", 
+    "baseUrl": "../",
     "paths": {
       "@/*": ["src/*"]
     },

@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionGeneralInformation from "@/components/App/Inspections/Profile/InspectionGeneralInformation";
 import { Inspection } from "@/models/Inspection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

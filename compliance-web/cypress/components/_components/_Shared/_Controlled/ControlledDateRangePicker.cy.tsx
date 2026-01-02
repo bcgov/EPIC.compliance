@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { FormProvider, useForm } from "react-hook-form";
 import ControlledDateRangePicker from "@/components/Shared/Controlled/ControlledDateRangePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers";

@@ -1,5 +1,5 @@
 // cypress/components/CopyButton.cy.tsx
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import CopyButton from "@/components/Shared/CopyButton"; // Adjust the import path if needed
 
 describe("<CopyButton />", () => {

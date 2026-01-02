@@ -1,5 +1,5 @@
 // cypress/component/InspectionDrawer.spec.tsx
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import InspectionDrawer from "@/components/App/Inspections/InspectionDrawer";
 import { Inspection } from "@/models/Inspection";
@@ -96,7 +96,7 @@ describe("InspectionDrawer Component", () => {
 
   // Create a wrapper component that provides the mock auth context
   const TestWrapper = ({ children }: { children: React.ReactNode }) => {
-    
+
     return (
       <QueryClientProvider client={queryClient}>
         <AuthProvider {...OidcConfig}>

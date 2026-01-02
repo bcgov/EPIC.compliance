@@ -1,4 +1,5 @@
 import { defineConfig } from "cypress";
+import { defineConfig as defineViteConfig } from "vite";
 
 import react from "@vitejs/plugin-react-swc";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
@@ -15,7 +16,7 @@ export default defineConfig({
     devServer: {
       framework: "react",
       bundler: "vite",
-      viteConfig: {
+      viteConfig: defineViteConfig({
         plugins: [
           TanStackRouterVite(),
           react(),
@@ -27,7 +28,7 @@ export default defineConfig({
             "@": path.resolve(dirname, "src"),
           },
         },
-      },
+      }),
     },
   },
 });

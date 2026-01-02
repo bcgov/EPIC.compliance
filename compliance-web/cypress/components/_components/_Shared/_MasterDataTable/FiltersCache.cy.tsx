@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { MRT_TableInstance } from "material-react-table";
 import { FiltersCache } from "@/components/Shared/MasterDataTable/FiltersCache";
 

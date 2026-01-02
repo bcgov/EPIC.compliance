@@ -1,4 +1,4 @@
-// import { mount } from "cypress/react18";
+// import { mount } from "cypress/react";
 // import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { Complaints } from "@/routes/_authenticated/ce-database/complaints";
 // import router from "@/router/router";
@@ -50,7 +50,7 @@
 //   //   mount(mountComplaints());
 
 //   //   cy.get("button").contains("Complaint").click();
-    
+
 //   //   cy.get(".MuiTypography-subtitle1").should("contain.text", "Create Complaint")
 
 //   // });

@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import CaseFileGeneralInformation from "@/components/App/CaseFiles/Profile/CaseFileGeneralInformation";
 import { CaseFile } from "@/models/CaseFile";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
