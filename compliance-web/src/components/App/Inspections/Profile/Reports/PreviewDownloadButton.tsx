@@ -47,6 +47,7 @@ const PreviewDownloadButton = () => {
   );
 
   const [previewClicked, setPreviewClicked] = useState(false);
+  const [generatingDocx, setGeneratingDocx] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentLoggedInUser();
@@ -83,6 +84,7 @@ const PreviewDownloadButton = () => {
   const onError = (error: AxiosError) => {
     notify.error(error.message ?? "Error processing report");
     setPreviewClicked(false);
+    setGeneratingDocx(false);
   };
 
   const { mutate: mutateIrPreviewData } = useInspectionRecordRender(
@@ -90,12 +92,21 @@ const PreviewDownloadButton = () => {
     onError
   );
 
+  console.log("Document Job:", documentJob);
+
   const isGenerating = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
   }, [documentJob]);
 
   const isCompleted = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.COMPLETED;
+  }, [documentJob]);
+
+  const generatedDocType = useMemo(() => {
+    if (documentJob?.download_name?.toLowerCase().endsWith(".docx")) {
+      return "DOCX";
+    }
+    return "PDF";
   }, [documentJob]);
 
   const handlePreviewClick = async () => {
@@ -110,7 +121,17 @@ const PreviewDownloadButton = () => {
   const queryClient = useQueryClient();
   const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
 
-  const handleDownloadClick = async (event: MouseEvent) => {
+  const handleDownloadClick = async (
+    event: MouseEvent,
+    outputFormat: "html" | "pdf" | "docx" = "pdf"
+  ) => {
+    // DOCX is handled differently - direct download, no job tracking
+    if (outputFormat === "docx") {
+      handleDownloadDocx(event);
+      return;
+    }
+
+    // PDF generation - async job
     if (documentJob?.id) {
       // Generating a new report invalidates the previous one
       mutateDeleteDocumentJob(documentJob.id, {
@@ -127,13 +148,49 @@ const PreviewDownloadButton = () => {
       {
         inspectionId: inspectionData?.id ?? 0,
         inspectionRecordId: inspectionReportsData?.id ?? 0,
-        outputFormat: "pdf",
+        outputFormat: outputFormat,
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({
             queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
           });
+        },
+      }
+    );
+  };
+
+  const handleDownloadDocx = async (event: MouseEvent) => {
+    setGeneratingDocx(true);
+    handleClose(event);
+
+    mutateIrPreviewData(
+      {
+        inspectionId: inspectionData?.id ?? 0,
+        inspectionRecordId: inspectionReportsData?.id ?? 0,
+        outputFormat: "docx",
+      },
+      {
+        onSuccess: (blob: Blob) => {
+          // Create download link from blob
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `inspection_report_${
+            inspectionData?.ir_number || inspectionReportsData?.id || "report"
+          }.docx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+
+          notify.success("DOCX report downloaded successfully");
+          setGeneratingDocx(false);
+        },
+        onError: (error: any) => {
+          console.error("Error downloading DOCX:", error);
+          notify.error("Failed to download DOCX report");
+          setGeneratingDocx(false);
         },
       }
     );
@@ -267,7 +324,7 @@ const PreviewDownloadButton = () => {
                   <Button
                     variant="text"
                     onClick={(e) =>
-                      handleDownloadClick(e as unknown as MouseEvent)
+                      handleDownloadClick(e as unknown as MouseEvent, "pdf")
                     }
                     disabled={isGenerating}
                     fullWidth
@@ -275,9 +332,30 @@ const PreviewDownloadButton = () => {
                   >
                     <AutoAwesomeRounded sx={{ mr: 1, fontSize: 20 }} />
                     {isGenerating
-                      ? "Generating report..."
+                      ? "Generating PDF..."
                       : "Generate Report as PDF"}
                     {isGenerating && (
+                      <CircularProgress
+                        size={20}
+                        color="primary"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Button>
+                  <Button
+                    variant="text"
+                    onClick={(e) =>
+                      handleDownloadClick(e as unknown as MouseEvent, "docx")
+                    }
+                    disabled={generatingDocx}
+                    fullWidth
+                    sx={{ justifyContent: "flex-start" }}
+                  >
+                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
+                    {generatingDocx
+                      ? "Downloading DOCX..."
+                      : "Download Report as DOCX"}
+                    {generatingDocx && (
                       <CircularProgress
                         size={20}
                         color="primary"
@@ -307,7 +385,7 @@ const PreviewDownloadButton = () => {
                           variant="caption"
                           color={BCDesignTokens.typographyColorPlaceholder}
                         >
-                          Last Generated:
+                          Last PDF Generated:
                         </Typography>
                         <Typography
                           variant="caption"
@@ -321,7 +399,7 @@ const PreviewDownloadButton = () => {
                       </Box>
                     ) : (
                       <Typography variant="caption" px={2}>
-                        Nothing generated yet.
+                        No PDF generated yet.
                       </Typography>
                     )}
                     <Link
@@ -339,7 +417,7 @@ const PreviewDownloadButton = () => {
                       }}
                     >
                       <DownloadRounded sx={{ fontSize: 16 }} />
-                      Download
+                      Download Last PDF
                     </Link>
                   </Box>
                 </Box>
