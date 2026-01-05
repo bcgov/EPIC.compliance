@@ -92,21 +92,12 @@ const PreviewDownloadButton = () => {
     onError
   );
 
-  console.log("Document Job:", documentJob);
-
   const isGenerating = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
   }, [documentJob]);
 
   const isCompleted = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.COMPLETED;
-  }, [documentJob]);
-
-  const generatedDocType = useMemo(() => {
-    if (documentJob?.download_name?.toLowerCase().endsWith(".docx")) {
-      return "DOCX";
-    }
-    return "PDF";
   }, [documentJob]);
 
   const handlePreviewClick = async () => {
@@ -187,8 +178,7 @@ const PreviewDownloadButton = () => {
           notify.success("DOCX report downloaded successfully");
           setGeneratingDocx(false);
         },
-        onError: (error: any) => {
-          console.error("Error downloading DOCX:", error);
+        onError: () => {
           notify.error("Failed to download DOCX report");
           setGeneratingDocx(false);
         },
