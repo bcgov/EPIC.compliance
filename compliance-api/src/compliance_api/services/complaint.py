@@ -542,11 +542,13 @@ def _apply_complaints_sorting(query, args):
     sort_order = args.get("sort_order", "asc").lower()
 
     # Handle project sorting with join to ProjectModel
-    if sort_by == "project":
-        # Join with ProjectModel to sort by project name
-        query = query.outerjoin(
-            ProjectModel, CaseFileModel.project_id == ProjectModel.id
-        )
+    if sort_by == "project_name":
+        # Only join if ProjectModel isn't already joined
+        if not any(isinstance(desc['entity'], type(ProjectModel))
+                   for desc in query.column_descriptions):
+            query = query.outerjoin(
+                ProjectModel, CaseFileModel.project_id == ProjectModel.id
+            )
         sort_field = ProjectModel.name
         return query.order_by(
             sort_field.asc() if sort_order == "asc" else sort_field.desc()
