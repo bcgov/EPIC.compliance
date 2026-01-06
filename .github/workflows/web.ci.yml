@@ -73,9 +73,11 @@ jobs:
         run: |
           npx cypress run --component --headed --browser chrome
 
-      - name: Coverage Report
-        run: |
-          npx nyc report --reporter=lcov --reporter=text-summary
+      # Disabled because nyc is not supported and needs to be replaced.
+      # [COMP-769]
+      # - name: Coverage Report
+      #   run: |
+      #     npx nyc report --reporter=lcov --reporter=text-summary
 
   build-check:
     needs: setup-job
