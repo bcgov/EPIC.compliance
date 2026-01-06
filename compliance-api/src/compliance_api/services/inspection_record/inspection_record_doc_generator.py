@@ -56,6 +56,22 @@ def _set_cell_background(cell, fill):
     cell._element.get_or_add_tcPr().append(shading_elm)
 
 
+def set_cell_border(cell, **kwargs):
+    """Set cell borders."""
+    tc = cell._tc
+    tc_para = tc.get_or_add_tcPr()
+
+    tc_borders = OxmlElement('w:tcBorders')
+    for edge in ('start', 'top', 'end', 'bottom', 'insideH', 'insideV'):
+        if edge in kwargs:
+            edge_data = kwargs[edge]
+            edge_el = OxmlElement(f'w:{edge}')
+            for key, value in edge_data.items():
+                edge_el.set(qn(f'w:{key}'), str(value))
+            tc_borders.append(edge_el)
+    tc_para.append(tc_borders)
+
+
 def _add_html_to_container(container, html_text, *, font_size=None, clear_first=True):
     if not html_text:
         return
@@ -88,6 +104,10 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
         elif element.name in ("ol", "ul"):
             _add_list(container, element, font_size)
             first_para_used = True  # Mark as used after adding list
+
+        elif element.name == "table":
+            add_html_table_to_container(container, element)
+            first_para_used = True  # Mark as used after adding table
 
 
 def _add_paragraph(container, p_tag, font_size):
@@ -216,6 +236,115 @@ def _remove_cell_margins(cell):
     table_cell_pr.append(tc_margin)
 
 
+def add_html_table_to_container(container, table_element):
+    """Convert an HTML table to a docx table."""
+    rows = table_element.find_all('tr')
+    if not rows:
+        return
+
+    max_cols = max(len(row.find_all(['th', 'td'])) for row in rows)
+
+    # Create docx table
+    docx_table = container.add_table(rows=len(rows), cols=max_cols)
+    docx_table.style = 'Table Grid'
+
+    # Populate table
+    for row_idx, tr in enumerate(rows):
+        docx_row = docx_table.rows[row_idx]
+
+        # Try to extract row height from style attribute
+        style = tr.get('style', '')
+        if 'height:' in style:
+            # Extract height value (e.g., "66px")
+            import re as regex
+            height_match = regex.search(r'height:\s*(\d+)px', style)
+            if height_match:
+                height_px = int(height_match.group(1))
+                # Convert pixels to inches (roughly 96 DPI)
+                height_inches = height_px / 96
+                docx_row.height = Inches(height_inches)
+
+        cells = tr.find_all(['th', 'td'])
+        for col_idx, cell in enumerate(cells):
+            docx_cell = docx_row.cells[col_idx]
+
+            # Clear default paragraph
+            docx_cell.paragraphs[0].text = ""
+
+            # Process cell content - handle paragraphs, lists, and formatting
+            first_element = True
+            for element in cell.children:
+                if element.name == 'p':
+                    # Use first paragraph or create new one
+                    if first_element and docx_cell.paragraphs:
+                        para = docx_cell.paragraphs[0]
+                        first_element = False
+                    else:
+                        para = docx_cell.add_paragraph()
+
+                    # Add formatted text to paragraph
+                    _add_formatted_text_to_table_para(para, element)
+
+                elif element.name in ('ul', 'ol'):
+                    # Add list to cell
+                    _add_list_to_table_cell(docx_cell, element)
+                    first_element = False
+
+            # Make header cells bold
+            if cell.name == 'th':
+                for para in docx_cell.paragraphs:
+                    for run in para.runs:
+                        run.bold = True
+
+            # Set borders
+            set_cell_border(
+                docx_cell,
+                top={"sz": 4, "val": "single", "color": "000000"},
+                bottom={"sz": 4, "val": "single", "color": "000000"},
+                start={"sz": 4, "val": "single", "color": "000000"},
+                end={"sz": 4, "val": "single", "color": "000000"}
+            )
+
+
+def _add_formatted_text_to_table_para(para, p_element):
+    """Add text with formatting (bold, italic) to a paragraph from a <p> element."""
+    for child in p_element.children:
+        if isinstance(child, str):
+            text = re.sub(r' {2,}', ' ', child)
+            if text.strip():
+                run = para.add_run(text)
+                run.font.size = Pt(11)
+        elif child.name in ['strong', 'b']:
+            text = re.sub(r' {2,}', ' ', child.get_text())
+            run = para.add_run(text)
+            run.bold = True
+            run.font.size = Pt(11)
+        elif child.name in ['em', 'i']:
+            text = re.sub(r' {2,}', ' ', child.get_text())
+            run = para.add_run(text)
+            run.italic = True
+            run.font.size = Pt(11)
+        elif child.name == 'span':
+            text = re.sub(r' {2,}', ' ', child.get_text())
+            if text.strip():
+                run = para.add_run(text)
+                run.font.size = Pt(11)
+        elif child.name == 'br':
+            para.add_run('\n')
+
+
+def _add_list_to_table_cell(cell, list_element):
+    """Add a list (ordered or unordered) to a table cell."""
+    style = "List Number" if list_element.name == "ol" else "List Bullet"
+
+    for li in list_element.find_all('li', recursive=False):
+        para = cell.add_paragraph(style=style)
+        text = li.get_text(strip=True)
+        text = re.sub(r' {2,}', ' ', text)
+        run = para.add_run(text)
+        run.font.size = Pt(11)
+
+
 def _add_photo(photo, cell):
     photo_url = photo.get('photo_url')
     caption_text = f"Photo {photo.get('photo_number', '')}. {photo.get('photo_caption', '')}"
@@ -297,6 +426,7 @@ def _add_requirement_details_table(doc, req):
 
             # Add title if present
             if source.get('title'):
+                run = para.add_run('\n')
                 run = para.add_run(source.get('title'))
                 run.bold = True
 
@@ -307,6 +437,30 @@ def _add_requirement_details_table(doc, req):
                     source["requirement_source_description"],
                     clear_first=False,
                 )
+
+            # Add req source images
+            for img in source.get('requirement_source_images', []):
+                image_url = img.get('image_url')
+                if image_url:
+                    try:
+                        response = requests.get(image_url)
+                        response.raise_for_status()
+                        image_stream = BytesIO(response.content)
+
+                        # Insert the image
+                        img_para = cell.add_paragraph()
+                        run = img_para.add_run()
+                        run.add_picture(image_stream, width=Inches(4))
+
+                        # Add filename as caption if available
+                        if img.get('original_file_name'):
+                            caption_para = cell.add_paragraph()
+                            caption_run = caption_para.add_run(img.get('original_file_name'))
+                            caption_run.font.size = Pt(9)
+                    except RequestException:
+                        # If image fails, show placeholder text
+                        error_para = cell.add_paragraph()
+                        error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
 
             # Add document details
             for doc_group in source.get('requirement_documents', []):
@@ -413,7 +567,7 @@ def generate_inspection_report_docx(preview_data):
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
     logo_para.paragraph_format.space_after = Pt(0)
-    logo_para.paragraph_format.left_indent = Inches(-0.35)
+    logo_para.paragraph_format.left_indent = Inches(-0.25)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
