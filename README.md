@@ -84,7 +84,7 @@ Change to the front-end directory:
 
 ### 3. Install Dependencies
 Install necessary npm packages:
-* `npm install`
+* `npm install --legacy-peer-deps`
 
 ### 4. Run Development Server
 Launch the development server:
