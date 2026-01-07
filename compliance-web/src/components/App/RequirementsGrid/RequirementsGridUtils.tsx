@@ -134,16 +134,6 @@ export const useConvertFiltersToQueryParams = (
 export const useRequirementsGridColumns = (
   dataDependencies: RequirementsGridDataDependencies
 ): MRT_ColumnDef<InspectionRequirementGrid>[] => {
-  const RequirementSourceNames = useMemo(() => ({
-    SCHEDULE_B: "Schedule B - Table of Conditions",
-    SCHEDULE_A: "Schedule A - Certified Project Description",
-  }), []);
-
-  const RequirementSourceNameMap: Record<string, string> = useMemo(() => ({
-    [RequirementSourceNames.SCHEDULE_B]: "Schedule B",
-    [RequirementSourceNames.SCHEDULE_A]: "Schedule A",
-  }), [RequirementSourceNames.SCHEDULE_B, RequirementSourceNames.SCHEDULE_A]);
-
   const { topics, complianceFindings, enforcementActions, requirementSources } =
     dataDependencies;
 
@@ -226,7 +216,7 @@ export const useRequirementsGridColumns = (
       size: 80,
     },
     {
-      accessorFn: (row) => (row.requirement_number ?? []).join(", "),
+      accessorFn: (row) => row?.condition_numbers || "",
       id: "req_src_num",
       header: "Condition #",
       filterFn: "contains",
@@ -236,25 +226,7 @@ export const useRequirementsGridColumns = (
       size: 80,
     },
     {
-      accessorFn: (row) => {
-        return (
-          row.requirement_sources
-            ?.map((source) => {
-              if (source.name === RequirementSourceNames.SCHEDULE_B) {
-                return RequirementSourceNameMap[
-                  RequirementSourceNames.SCHEDULE_B
-                ];
-              }
-              if (source.name === RequirementSourceNames.SCHEDULE_A) {
-                return RequirementSourceNameMap[
-                  RequirementSourceNames.SCHEDULE_A
-                ];
-              }
-              return source.name;
-            })
-            .join(", ") ?? ""
-        );
-      },
+      accessorFn: (row) => row?.requirement_sources_names || "",
       id: "req_src",
       header: "Source",
       filterVariant: "multi-select",
@@ -286,7 +258,7 @@ export const useRequirementsGridColumns = (
       filterFn: "greaterThanOrEqual",
       size: 120,
     },
-  ], [complianceFindings, enforcementActions, requirementSources, RequirementSourceNames, RequirementSourceNameMap, topics]);
+  ], [complianceFindings, enforcementActions, requirementSources, topics]);
 };
 
 export const enforcementStatusOptions = [

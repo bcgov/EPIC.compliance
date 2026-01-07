@@ -52,10 +52,6 @@ class InspectionRequirementGridItemSchema(Schema):
     ir_number = fields.Str(
         metadata={"description": "The inspection requirement number"}
     )
-    requirement_number = fields.List(
-        fields.Str(),
-        metadata={"description": "The list of requirement numbers"}
-    )
     requirement_source = fields.Nested(
         KeyValueSchema, metadata={"description": "The requirement source"}
     )
@@ -75,6 +71,12 @@ class InspectionRequirementGridItemSchema(Schema):
     requirement_sources = fields.List(
         fields.Nested(KeyValueSchema),
         metadata={"description": "The list of requirement sources"},
+    )
+    condition_numbers = fields.Str(
+        metadata={"description": "The condition numbers as a comma separated string"},
+    )
+    requirement_sources_names = fields.Str(
+        metadata={"description": "The requirement source names as a comma separated string"},
     )
 
 
