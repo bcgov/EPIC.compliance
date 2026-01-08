@@ -60,7 +60,7 @@ const PreliminaryReview: React.FC<PreliminaryReviewProps> = ({
 
   const methods = useForm<PreliminaryReviewSchemaType>({
     resolver: yupResolver(preliminaryReviewFormSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   });
 

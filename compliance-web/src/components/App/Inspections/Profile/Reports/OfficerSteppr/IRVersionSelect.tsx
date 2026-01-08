@@ -34,7 +34,7 @@ const IRVersionSelect: React.FC<IRVersionSelectProps> = ({
 
   const methods = useForm<IRVersionSelectSchemaType>({
     resolver: yupResolver(irVersionSelectFormSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   });
 
