@@ -36,7 +36,7 @@ API = Namespace(
 
 @cors_preflight("GET, OPTIONS")
 @API.route("/inspections/<int:inspection_record_id>/recent", methods=["GET", "OPTIONS"])
-class DocumentJobs(Resource):
+class DocumentJobRecent(Resource):
     """Resource for managing document jobs per inspection."""
 
     @staticmethod
@@ -54,6 +54,27 @@ class DocumentJobs(Resource):
         )
         schema = DocumentJobSchema(many=False)
         return schema.dump(document_job), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route("/inspections/<int:inspection_record_id>/last-generated", methods=["GET", "OPTIONS"])
+class DocumentJobLastGenerated(Resource):
+    """Resource for managing document jobs per inspection."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=[DocumentJob])
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Fetch most recent document job for user and inspection"
+    )
+    @auth.require
+    def get(inspection_record_id):
+        """Fetch the last time a document was generated for user and inspection."""
+        auth_user_guid = g.token_info.get("preferred_username")
+        current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
+        last_generated_time = DocumentJobService.get_last_generated_time_for_user(
+            current_staff_user.id, inspection_record_id
+        )
+        return {"last_generated_time": last_generated_time}, HTTPStatus.OK
 
 
 @cors_preflight("OPTIONS, DELETE, PUT")

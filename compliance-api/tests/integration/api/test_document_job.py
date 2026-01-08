@@ -403,3 +403,104 @@ def test_get_document_job_requires_auth(client, inspection_record):
     url = urljoin(API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/recent")
     result = client.get(url)
     assert result.status_code in (HTTPStatus.UNAUTHORIZED, 401)
+
+
+def test_last_generated_success(client, created_staff, jwt, inspection_record, mock_track_service, mock_auth_service):
+    """Test getting last-generated time for user and inspection."""
+    staff_user = created_staff
+    # Create a document job for the staff user
+    now = datetime.now(timezone.utc)
+    job_data = {
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.COMPLETED.value,
+        "download_name": "last_generated.pdf",
+        "relative_url": "documents/last_generated.pdf",
+        "started_at": now,
+        "completed_at": now,
+    }
+    DocumentJobService.create(job_data)
+
+    config = get_named_config("testing")
+    header_claims = make_header_claims(staff_user, config)
+    auth_header = factory_auth_header(jwt=jwt, claims=header_claims)
+
+    url = urljoin(API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated")
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.OK
+    response_data = result.json
+    assert "last_generated_time" in response_data
+    assert response_data["last_generated_time"] == now.isoformat()
+
+
+def test_last_generated_requires_auth(client, inspection_record):
+    """Test last-generated endpoint requires auth."""
+    url = urljoin(API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated")
+    result = client.get(url)
+    assert result.status_code in (HTTPStatus.UNAUTHORIZED, 401)
+
+
+def test_last_generated_no_jobs_returns_null(
+    client,
+    created_staff,
+    jwt,
+    inspection_record,
+    mock_track_service,
+    mock_auth_service
+):
+    """Test last-generated returns null if no jobs exist for user/inspection."""
+    staff_user = created_staff
+    config = get_named_config("testing")
+    header_claims = make_header_claims(staff_user, config)
+    auth_header = factory_auth_header(jwt=jwt, claims=header_claims)
+
+    url = urljoin(API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated")
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.OK
+    response_data = result.json
+    assert "last_generated_time" in response_data
+    assert response_data["last_generated_time"] is None
+
+
+def test_last_generated_other_user_job_returns_null(
+    client,
+    created_staff,
+    jwt,
+    inspection_record,
+    mock_track_service,
+    mock_auth_service
+):
+    """Test last-generated returns null if only a different user has a job for the inspection."""
+    staff_user = created_staff
+    # Create a different staff user
+    user_data = StaffScenario.default_data.value
+    auth_user_guid = f"other_{datetime.now().timestamp()}"
+    user_data["auth_user_guid"] = auth_user_guid
+    other_staff = StaffScenario.create(user_data)
+    assert other_staff.id != staff_user.id
+
+    # Create a document job for the other staff user
+    job_data = {
+        "user_id": other_staff.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.COMPLETED.value,
+        "download_name": "other_user_last_generated.pdf",
+        "relative_url": "documents/other_user_last_generated.pdf",
+        "started_at": datetime.now(timezone.utc),
+        "completed_at": datetime.now(timezone.utc),
+    }
+    DocumentJobService.create(job_data)
+
+    config = get_named_config("testing")
+    header_claims = make_header_claims(staff_user, config)
+    auth_header = factory_auth_header(jwt=jwt, claims=header_claims)
+
+    url = urljoin(API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated")
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.OK
+    response_data = result.json
+    assert "last_generated_time" in response_data
+    assert response_data["last_generated_time"] is None

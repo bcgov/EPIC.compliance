@@ -30,6 +30,16 @@ class DocumentJobService:
         return jobs[-1] if jobs else None
 
     @staticmethod
+    def get_last_generated_time_for_user(user_id, inspection_record_id):
+        """Get the last time a document was generated for a user."""
+        jobs = DocumentJob.query.filter_by(
+            user_id=user_id,
+            inspection_record_id=inspection_record_id,
+        ).order_by(DocumentJob.completed_at.desc()).all()
+        document_job = jobs[0] if jobs else None
+        return document_job.completed_at.isoformat() if document_job else None
+
+    @staticmethod
     def update(document_job_id, user_id, update_data):
         """Update a document job by its ID."""
         document_job = DocumentJob.get_by_params({

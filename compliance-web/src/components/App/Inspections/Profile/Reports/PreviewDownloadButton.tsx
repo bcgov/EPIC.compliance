@@ -32,6 +32,7 @@ import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
   useDeleteDocumentJobs,
+  useLastGeneratedTimeForUser,
   useMostRecentDocumentJobForUser,
 } from "@/hooks/useDocumentJobs";
 import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
@@ -45,6 +46,11 @@ const PreviewDownloadButton = () => {
   const { data: documentJob } = useMostRecentDocumentJobForUser(
     inspectionReportsData?.id ?? 0
   );
+
+  const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
+    inspectionReportsData?.id ?? 0
+  );
+  const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
 
   const [previewClicked, setPreviewClicked] = useState(false);
   const [generatingDocx, setGeneratingDocx] = useState(false);
@@ -362,36 +368,43 @@ const PreviewDownloadButton = () => {
                       width: "100%",
                     }}
                   >
-                    {isCompleted ? (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 0.25,
-                          pl: 2,
-                        }}
-                      >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.25,
+                        pl: 2,
+                      }}
+                    >
+                      {isCompleted || lastGeneratedTime ? (
+                        <>
+                          <Typography
+                            variant="caption"
+                            color={BCDesignTokens.typographyColorPlaceholder}
+                          >
+                            Last PDF Generated:
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color={BCDesignTokens.typographyColorPrimary}
+                          >
+                            {dateUtils.formatDate(
+                              isCompleted
+                                ? (documentJob?.completed_at ?? "")
+                                : (lastGeneratedTime ?? ""),
+                              "MMM D, YYYY hh:mm A"
+                            )}
+                          </Typography>
+                        </>
+                      ) : (
                         <Typography
                           variant="caption"
                           color={BCDesignTokens.typographyColorPlaceholder}
                         >
-                          Last PDF Generated:
+                          Nothing generated yet
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color={BCDesignTokens.typographyColorPrimary}
-                        >
-                          {dateUtils.formatDate(
-                            documentJob?.completed_at ?? "",
-                            "MMM D, YYYY hh:mm A"
-                          )}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography variant="caption" px={2}>
-                        No PDF generated yet.
-                      </Typography>
-                    )}
+                      )}
+                    </Box>
                     <Link
                       onClick={
                         isCompleted ? handleDownloadReportFromURL : () => {}
@@ -407,7 +420,7 @@ const PreviewDownloadButton = () => {
                       }}
                     >
                       <DownloadRounded sx={{ fontSize: 16 }} />
-                      Download Last PDF
+                      Download
                     </Link>
                   </Box>
                 </Box>

@@ -10,6 +10,14 @@ const fetchMostRecentDocumentJobForUser = (
   });
 };
 
+const fetchLastGeneratedTimeForUser = (
+  inspectionReportID: number
+): Promise<{ last_generated_time: string }> => {
+  return request({
+    url: `/document-jobs/inspections/${inspectionReportID}/last-generated`,
+  });
+};
+
 const updateDocumentJob = (
   jobId: string,
   data: Partial<DocumentJob>
@@ -55,6 +63,15 @@ export const useMostRecentDocumentJobForUser = (inspectionReportID: number) => {
       }
       return 5000;
     },
+    enabled: !!inspectionReportID,
+  });
+};
+
+export const useLastGeneratedTimeForUser = (inspectionReportID: number) => {
+  return useQuery<{ last_generated_time: string }, Error>({
+    queryKey: ["lastGeneratedTime", inspectionReportID],
+    queryFn: () => fetchLastGeneratedTimeForUser(inspectionReportID ?? 0),
+    refetchInterval: 30000,
     enabled: !!inspectionReportID,
   });
 };
