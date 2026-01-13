@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Staff } from "@/routes/_authenticated/admin/staff";
 import router from "@/router/router";

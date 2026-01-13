@@ -145,7 +145,7 @@ export const useComplaintsGridColumns = (
     },
     {
       accessorFn: (row) => row.case_file?.project?.name,
-      id: "project",
+      id: "project_name",
       header: "Project",
       filterVariant: "multi-select",
       filterSelectOptions:

@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionFormLeft from "@/components/App/Inspections/InspectionFormLeft"; // Adjust the path accordingly
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
@@ -124,11 +124,11 @@ describe("InspectionFormLeft Component", () => {
 
     cy.get('.cy-start-date').should("exist");
     cy.get('.cy-end-date').should("exist");
-    
+
     cy.get('.cy-start-date button[aria-label="Choose date"]').click();
     cy.get(".MuiPickersDay-root", { timeout: 10000 }).contains("10").click(); // Select the start date
     cy.get('input[name="startDate"]').should("contain.value", "10");
-    
+
     cy.get('.cy-end-date button[aria-label="Choose date"]').click();
     cy.get(".MuiPickersDay-root", { timeout: 10000 }).contains("20").click(); // Select the end date
     cy.get('input[name="endDate"]').should("contain.value", "20");

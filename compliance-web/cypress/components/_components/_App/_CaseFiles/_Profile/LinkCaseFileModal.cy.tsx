@@ -1,5 +1,5 @@
 import React from "react";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import LinkCaseFileModal from "@/components/App/CaseFiles/Profile/LinkCaseFileModal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CaseFile } from "@/models/CaseFile";
@@ -37,7 +37,7 @@ describe("LinkCaseFileModal Component", () => {
   beforeEach(() => {
     // Reset the query client before each test
     queryClient.clear();
-    
+
     // Set the query data directly to ensure it's available
     // The useCaseFileOptions hook uses ["case-file-options"] as the key
     queryClient.setQueryData(["case-file-options"], mockCaseFiles);

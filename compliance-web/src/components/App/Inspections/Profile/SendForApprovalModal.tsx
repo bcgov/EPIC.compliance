@@ -48,7 +48,7 @@ const SendForApprovalModal: FC<SendForApprovalModalProps> = ({
 
   const methods = useForm<SendForApprovalFormType>({
     resolver: yupResolver(sendForApprovalSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues: initFormData,
   });
 

@@ -1,10 +1,10 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
-import InspectionFormRight from "@/components/App/Inspections/InspectionFormRight"; 
+import { mount } from "cypress/react";
+import InspectionFormRight from "@/components/App/Inspections/InspectionFormRight";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { FormProvider, useForm } from "react-hook-form";
 import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"; 
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useModal } from "@/store/modalStore";
 
 // Mock data for the test

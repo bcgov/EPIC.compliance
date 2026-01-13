@@ -31,6 +31,6 @@ class RenderRequestSchema(BaseSchema):
         required=False,
         missing="html",
         default="html",
-        validate=validate.OneOf(["html", "pdf"]),
+        validate=validate.OneOf(["html", "pdf", "docx"]),
         metadata={"description": "The output format of the document"},
     )

@@ -32,6 +32,7 @@ import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
   useDeleteDocumentJobs,
+  useLastGeneratedTimeForUser,
   useMostRecentDocumentJobForUser,
 } from "@/hooks/useDocumentJobs";
 import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
@@ -46,7 +47,13 @@ const PreviewDownloadButton = () => {
     inspectionReportsData?.id ?? 0
   );
 
+  const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
+    inspectionReportsData?.id ?? 0
+  );
+  const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
+
   const [previewClicked, setPreviewClicked] = useState(false);
+  const [generatingDocx, setGeneratingDocx] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentLoggedInUser();
@@ -83,6 +90,7 @@ const PreviewDownloadButton = () => {
   const onError = (error: AxiosError) => {
     notify.error(error.message ?? "Error processing report");
     setPreviewClicked(false);
+    setGeneratingDocx(false);
   };
 
   const { mutate: mutateIrPreviewData } = useInspectionRecordRender(
@@ -110,7 +118,17 @@ const PreviewDownloadButton = () => {
   const queryClient = useQueryClient();
   const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
 
-  const handleDownloadClick = async (event: MouseEvent) => {
+  const handleDownloadClick = async (
+    event: MouseEvent,
+    outputFormat: "html" | "pdf" | "docx" = "pdf"
+  ) => {
+    // DOCX is handled differently - direct download, no job tracking
+    if (outputFormat === "docx") {
+      handleDownloadDocx(event);
+      return;
+    }
+
+    // PDF generation - async job
     if (documentJob?.id) {
       // Generating a new report invalidates the previous one
       mutateDeleteDocumentJob(documentJob.id, {
@@ -127,13 +145,48 @@ const PreviewDownloadButton = () => {
       {
         inspectionId: inspectionData?.id ?? 0,
         inspectionRecordId: inspectionReportsData?.id ?? 0,
-        outputFormat: "pdf",
+        outputFormat: outputFormat,
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({
             queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
           });
+        },
+      }
+    );
+  };
+
+  const handleDownloadDocx = async (event: MouseEvent) => {
+    setGeneratingDocx(true);
+    handleClose(event);
+
+    mutateIrPreviewData(
+      {
+        inspectionId: inspectionData?.id ?? 0,
+        inspectionRecordId: inspectionReportsData?.id ?? 0,
+        outputFormat: "docx",
+      },
+      {
+        onSuccess: (blob: Blob) => {
+          // Create download link from blob
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `inspection_report_${
+            inspectionData?.ir_number || inspectionReportsData?.id || "report"
+          }.docx`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+
+          notify.success("DOCX report downloaded successfully");
+          setGeneratingDocx(false);
+        },
+        onError: () => {
+          notify.error("Failed to download DOCX report");
+          setGeneratingDocx(false);
         },
       }
     );
@@ -267,7 +320,7 @@ const PreviewDownloadButton = () => {
                   <Button
                     variant="text"
                     onClick={(e) =>
-                      handleDownloadClick(e as unknown as MouseEvent)
+                      handleDownloadClick(e as unknown as MouseEvent, "pdf")
                     }
                     disabled={isGenerating}
                     fullWidth
@@ -275,9 +328,30 @@ const PreviewDownloadButton = () => {
                   >
                     <AutoAwesomeRounded sx={{ mr: 1, fontSize: 20 }} />
                     {isGenerating
-                      ? "Generating report..."
+                      ? "Generating PDF..."
                       : "Generate Report as PDF"}
                     {isGenerating && (
+                      <CircularProgress
+                        size={20}
+                        color="primary"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Button>
+                  <Button
+                    variant="text"
+                    onClick={(e) =>
+                      handleDownloadClick(e as unknown as MouseEvent, "docx")
+                    }
+                    disabled={generatingDocx}
+                    fullWidth
+                    sx={{ justifyContent: "flex-start" }}
+                  >
+                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
+                    {generatingDocx
+                      ? "Downloading DOCX..."
+                      : "Download Report as DOCX"}
+                    {generatingDocx && (
                       <CircularProgress
                         size={20}
                         color="primary"
@@ -294,36 +368,43 @@ const PreviewDownloadButton = () => {
                       width: "100%",
                     }}
                   >
-                    {isCompleted ? (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 0.25,
-                          pl: 2,
-                        }}
-                      >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.25,
+                        pl: 2,
+                      }}
+                    >
+                      {isCompleted || lastGeneratedTime ? (
+                        <>
+                          <Typography
+                            variant="caption"
+                            color={BCDesignTokens.typographyColorPlaceholder}
+                          >
+                            Last PDF Generated:
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color={BCDesignTokens.typographyColorPrimary}
+                          >
+                            {dateUtils.formatDate(
+                              isCompleted
+                                ? (documentJob?.completed_at ?? "")
+                                : (lastGeneratedTime ?? ""),
+                              "MMM D, YYYY hh:mm A"
+                            )}
+                          </Typography>
+                        </>
+                      ) : (
                         <Typography
                           variant="caption"
                           color={BCDesignTokens.typographyColorPlaceholder}
                         >
-                          Last Generated:
+                          Nothing generated yet
                         </Typography>
-                        <Typography
-                          variant="caption"
-                          color={BCDesignTokens.typographyColorPrimary}
-                        >
-                          {dateUtils.formatDate(
-                            documentJob?.completed_at ?? "",
-                            "MMM D, YYYY hh:mm A"
-                          )}
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Typography variant="caption" px={2}>
-                        Nothing generated yet.
-                      </Typography>
-                    )}
+                      )}
+                    </Box>
                     <Link
                       onClick={
                         isCompleted ? handleDownloadReportFromURL : () => {}

@@ -1,4 +1,5 @@
 """Service for inspection record."""
+from io import BytesIO
 
 from compliance_api.exceptions import ResourceExistsError, UnprocessableEntityError
 from compliance_api.models import Inspection as InspectionModel
@@ -11,6 +12,7 @@ from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
 from compliance_api.models.staff_user import StaffUser
 from compliance_api.schemas import InspectionRecordPreviewSchema
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
+from compliance_api.services.inspection_record.inspection_record_doc_generator import generate_inspection_report_docx
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 
@@ -362,10 +364,21 @@ class InspectionRecordService:
                 )
             )
 
-        response = DocGenService.render_template(
-            "IR_TEMPLATE", preview_data, output_format
-        )
-        return response, inspection
+        # If docx is the requested format
+        if output_format == "docx":
+            doc = generate_inspection_report_docx(preview_data)
+            # Save to BytesIO object
+            file_stream = BytesIO()
+            doc.save(file_stream)
+            file_stream.seek(0)
+
+            # Return the file stream and inspection
+            return file_stream, inspection
+        else:  # Default to HTML/PDF rendering
+            response = DocGenService.render_template(
+                "IR_TEMPLATE", preview_data, output_format
+            )
+            return response, inspection
 
 
 def _create_ir_object(ir_data, ir_status, inspection_id):

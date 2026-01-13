@@ -1,15 +1,15 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Button } from "@mui/material";
 import { InspectionStatusEnum } from "@/utils/constants";
 
 // Create a mock component that mimics the behavior of RequirementsExternalFilters
 // This avoids the need to mock hooks in the browser environment
-const MockRequirementsExternalFilters = ({ 
-  onFilterChange, 
-  onClearAll, 
-  externalFilters 
+const MockRequirementsExternalFilters = ({
+  onFilterChange,
+  onClearAll,
+  externalFilters
 }: {
   onFilterChange: (filterId: string, value: string[] | string) => void;
   onClearAll: () => void;
@@ -42,28 +42,28 @@ const MockRequirementsExternalFilters = ({
   const getFilterDisplayValue = (filterId: string) => {
     const value = externalFilters[filterId];
     if (!value || (Array.isArray(value) && value.length === 0)) return "";
-    
+
     if (filterId === "project_id") {
       const selectedProjects = Array.isArray(value) ? value : [value];
       return selectedProjects
         .map(id => projects.find(p => p.id.toString() === id)?.name || id)
         .join(", ");
     }
-    
+
     if (filterId === "primary_officer_id") {
       const selectedOfficers = Array.isArray(value) ? value : [value];
       return selectedOfficers
         .map(id => staffUsers.find(u => u.id.toString() === id)?.name || id)
         .join(", ");
     }
-    
+
     if (filterId === "inspection_status") {
       const selectedStatuses = Array.isArray(value) ? value : [value];
       return selectedStatuses
         .map(status => InspectionStatusEnum[status as keyof typeof InspectionStatusEnum] || status)
         .join(", ");
     }
-    
+
     return Array.isArray(value) ? value.join(", ") : value;
   };
 
@@ -81,7 +81,7 @@ const MockRequirementsExternalFilters = ({
           }}
         />
       </div>
-      
+
       {/* Primary Officer Filter */}
       <div>
         <input
@@ -94,7 +94,7 @@ const MockRequirementsExternalFilters = ({
           }}
         />
       </div>
-      
+
       {/* Inspection Status Filter */}
       <div>
         <input
@@ -107,7 +107,7 @@ const MockRequirementsExternalFilters = ({
           }}
         />
       </div>
-      
+
       {hasActiveFilters && (
         <Button variant="outlined" size="small" onClick={onClearAll}>
           Clear All
@@ -188,20 +188,20 @@ describe("RequirementsExternalFilters", () => {
   describe("Rendering", () => {
     it("should render all three filter components", () => {
       mountComponent();
-      
+
       // Project filter
       cy.get('input[placeholder="Project"]').should("exist");
-      
+
       // Primary officer filter
       cy.get('input[placeholder="Primary"]').should("exist");
-      
+
       // Inspection status filter
       cy.get('input[placeholder="Inspection Status"]').should("exist");
     });
 
     it("should render filters with correct placeholders", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Project"]').should("be.visible");
       cy.get('input[placeholder="Primary"]').should("be.visible");
       cy.get('input[placeholder="Inspection Status"]').should("exist");
@@ -209,13 +209,13 @@ describe("RequirementsExternalFilters", () => {
 
     it("should render clear all button when filters are active", () => {
       mountComponent();
-      
+
       cy.get('button').should("contain", "Clear All");
     });
 
     it("should not render clear all button when no filters are active", () => {
       mountComponent({ externalFilters: {} });
-      
+
       cy.get('button').should("not.exist");
     });
   });
@@ -223,21 +223,21 @@ describe("RequirementsExternalFilters", () => {
   describe("Filter Options", () => {
     it("should display project filter input", () => {
       mountComponent();
-      
+
       // Should show project filter input
       cy.get('input[placeholder="Project"]').should("exist");
     });
 
     it("should display primary officer filter input", () => {
       mountComponent();
-      
+
       // Should show officer filter input
       cy.get('input[placeholder="Primary"]').should("exist");
     });
 
     it("should display inspection status filter input", () => {
       mountComponent();
-      
+
       // Should show inspection status filter input
       cy.get('input[placeholder="Inspection Status"]').should("exist");
     });
@@ -246,33 +246,33 @@ describe("RequirementsExternalFilters", () => {
   describe("Filter Interactions", () => {
     it("should call onFilterChange when project filter is clicked", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Project"]').click();
-      
+
       cy.get("@onFilterChange").should("have.been.calledWith", "project_id", ["1"]);
     });
 
     it("should call onFilterChange when primary officer filter is clicked", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Primary"]').click();
-      
+
       cy.get("@onFilterChange").should("have.been.calledWith", "primary_officer_id", ["10"]);
     });
 
     it("should call onFilterChange when inspection status filter is clicked", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Inspection Status"]').click();
-      
+
       cy.get("@onFilterChange").should("have.been.calledWith", "inspection_status", ["OPEN"]);
     });
 
     it("should call onFilterChange with correct filter ID and value", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Project"]').click();
-      
+
       cy.get("@onFilterChange").should("have.been.calledWith", "project_id", ["1"]);
     });
   });
@@ -280,9 +280,9 @@ describe("RequirementsExternalFilters", () => {
   describe("Clear All Functionality", () => {
     it("should call onClearAll when clear all button is clicked", () => {
       mountComponent();
-      
+
       cy.get('button').contains("Clear All").click();
-      
+
       cy.get("@onClearAll").should("have.been.called");
     });
 
@@ -290,17 +290,17 @@ describe("RequirementsExternalFilters", () => {
       const activeFilters = {
         project_id: ["1"],
       };
-      
+
       mountComponent({ externalFilters: activeFilters });
-      
+
       cy.get('button').should("contain", "Clear All");
     });
 
     it("should not show clear all button when no filters are active", () => {
       const noFilters = {};
-      
+
       mountComponent({ externalFilters: noFilters });
-      
+
       cy.get('button').should("not.exist");
     });
 
@@ -308,9 +308,9 @@ describe("RequirementsExternalFilters", () => {
       const onlyMyRequirements = {
         showOnlyMyRequirements: true,
       };
-      
+
       mountComponent({ externalFilters: onlyMyRequirements });
-      
+
       cy.get('button').should("not.exist");
     });
   });
@@ -318,13 +318,13 @@ describe("RequirementsExternalFilters", () => {
   describe("Filter States", () => {
     it("should display current filter values correctly", () => {
       mountComponent();
-      
+
       // Project filter should show selected values
       cy.get('input[placeholder="Project"]').should("have.value", "Project Alpha, Project Beta");
-      
+
       // Primary officer filter should show selected values
       cy.get('input[placeholder="Primary"]').should("have.value", "John Officer, Jane Officer");
-      
+
       // Inspection status filter should show selected values
       cy.get('input[placeholder="Inspection Status"]').should("have.value", "Open");
     });
@@ -335,9 +335,9 @@ describe("RequirementsExternalFilters", () => {
         primary_officer_id: [],
         inspection_status: [],
       };
-      
+
       mountComponent({ externalFilters: emptyFilters });
-      
+
       // Should not show clear all button
       cy.get('button').should("not.exist");
     });
@@ -346,9 +346,9 @@ describe("RequirementsExternalFilters", () => {
       const singleFilters = {
         project_id: ["1"],
       };
-      
+
       mountComponent({ externalFilters: singleFilters });
-      
+
       // Should show clear all button
       cy.get('button').should("contain", "Clear All");
     });
@@ -363,9 +363,9 @@ describe("RequirementsExternalFilters", () => {
         primary_officer_id: [],
         inspection_status: [],
       };
-      
+
       mountComponent({ externalFilters: emptyFilters });
-      
+
       // Should not show clear all button
       cy.get('button').should("not.exist");
     });
@@ -374,9 +374,9 @@ describe("RequirementsExternalFilters", () => {
       const singleFilters = {
         project_id: ["1"],
       };
-      
+
       mountComponent({ externalFilters: singleFilters });
-      
+
       // Should show clear all button
       cy.get('button').should("contain", "Clear All");
     });
@@ -385,7 +385,7 @@ describe("RequirementsExternalFilters", () => {
   describe("Styling and Layout", () => {
     it("should have correct flexbox layout", () => {
       mountComponent();
-      
+
       // Check that the Box component has flexbox properties
       cy.get('.MuiBox-root').should("exist");
       // The actual CSS properties might be different in the test environment
@@ -394,7 +394,7 @@ describe("RequirementsExternalFilters", () => {
 
     it("should have correct button styling", () => {
       mountComponent();
-      
+
       cy.get('button').should("have.class", "MuiButton-outlined");
       cy.get('button').should("have.class", "MuiButton-sizeSmall");
     });
@@ -403,7 +403,7 @@ describe("RequirementsExternalFilters", () => {
   describe("Accessibility", () => {
     it("should have proper input elements", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Project"]').should("exist");
       cy.get('input[placeholder="Primary"]').should("exist");
       cy.get('input[placeholder="Inspection Status"]').should("exist");
@@ -411,7 +411,7 @@ describe("RequirementsExternalFilters", () => {
 
     it("should have proper button element", () => {
       mountComponent();
-      
+
       cy.get('button').should("exist");
       cy.get('button').should("have.attr", "type", "button");
     });
@@ -428,12 +428,12 @@ describe("RequirementsExternalFilters", () => {
 
       filterCombinations.forEach((combination) => {
         mountComponent({ externalFilters: combination });
-        
+
         // Check if clear all button should be shown
         const hasActiveFilters = Object.values(combination).some(
           (value) => Array.isArray(value) ? value.length > 0 : value !== ""
         );
-        
+
         if (hasActiveFilters) {
           cy.get('button').should("contain", "Clear All");
         } else {
@@ -444,15 +444,15 @@ describe("RequirementsExternalFilters", () => {
 
     it("should handle filter changes correctly", () => {
       mountComponent();
-      
+
       // Change project filter
       cy.get('input[placeholder="Project"]').click();
       cy.get("@onFilterChange").should("have.been.calledWith", "project_id", ["1"]);
-      
+
       // Change primary officer filter
       cy.get('input[placeholder="Primary"]').click();
       cy.get("@onFilterChange").should("have.been.calledWith", "primary_officer_id", ["10"]);
-      
+
       // Change inspection status filter
       cy.get('input[placeholder="Inspection Status"]').click();
       cy.get("@onFilterChange").should("have.been.calledWith", "inspection_status", ["OPEN"]);

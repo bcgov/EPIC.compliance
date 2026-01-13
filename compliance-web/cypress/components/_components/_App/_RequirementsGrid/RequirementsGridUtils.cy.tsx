@@ -1,10 +1,10 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Box, Button } from "@mui/material";
-import { 
-  useConvertFiltersToQueryParams, 
-  useRequirementsGridColumns 
+import {
+  useConvertFiltersToQueryParams,
+  useRequirementsGridColumns
 } from "@/components/App/RequirementsGrid/RequirementsGridUtils";
 
 // Create a simple test component that uses the utilities
@@ -104,7 +104,7 @@ describe("RequirementsGridUtils", () => {
   describe("Component Integration", () => {
     it("should render the test component", () => {
       mountComponent();
-      
+
       cy.get('[data-testid="test-filters"]').should("exist");
       cy.get('[data-testid="test-columns"]').should("exist");
       cy.get('[data-testid="columns-count"]').should("exist");
@@ -112,13 +112,13 @@ describe("RequirementsGridUtils", () => {
 
     it("should show correct number of generated columns", () => {
       mountComponent();
-      
+
       cy.get('[data-testid="columns-count"]').should("contain", "Generated 10 columns");
     });
 
     it("should have test buttons", () => {
       mountComponent();
-      
+
       cy.get('[data-testid="test-filters"]').should("contain", "Test Filter Conversion");
       cy.get('[data-testid="test-columns"]').should("contain", "Test Column Generation");
     });
@@ -127,14 +127,14 @@ describe("RequirementsGridUtils", () => {
   describe("Utility Functions", () => {
     it("should use convertFilters utility function", () => {
       mountComponent();
-      
+
       // The component should render without errors when using the utility
       cy.get('[data-testid="test-filters"]').should("be.visible");
     });
 
     it("should use columns utility function", () => {
       mountComponent();
-      
+
       // The component should render without errors when using the utility
       cy.get('[data-testid="test-columns"]').should("be.visible");
     });
@@ -143,21 +143,21 @@ describe("RequirementsGridUtils", () => {
   describe("Data Dependencies", () => {
     it("should handle topics data", () => {
       mountComponent();
-      
+
       // Component should render with topics data
       cy.get('[data-testid="columns-count"]').should("contain", "10 columns");
     });
 
     it("should handle compliance findings data", () => {
       mountComponent();
-      
+
       // Component should render with compliance findings data
       cy.get('[data-testid="test-columns"]').should("be.visible");
     });
 
     it("should handle enforcement actions data", () => {
       mountComponent();
-      
+
       // Component should render with enforcement actions data
       cy.get('[data-testid="test-filters"]').should("be.visible");
     });

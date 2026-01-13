@@ -1,5 +1,5 @@
 import LexicalEditor from "@/components/Shared/LexicalEditor/LexicalEditor";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { MentionData } from "@/components/Shared/LexicalEditor/LexicalUtils";
 
 describe("LexicalEditor Component", () => {
@@ -147,7 +147,7 @@ describe("LexicalEditor Component", () => {
 
 //   it("inserts column right", () => {
 //     doTableCellClick();
-    
+
 //     // Break up the chain as suggested by the Cypress error message
 //     cy.get('li[data-test-id="table-insert-column-after"').as('insertColumnBtn');
 //     cy.get('@insertColumnBtn').should("exist");
@@ -269,28 +269,28 @@ describe("LexicalEditor Component", () => {
 //   it("should resize column width when dragging column resizer", () => {
 //     cy.wait(500);
 //     cy.get(".editor-tableCell").first().scrollIntoView().trigger("mousemove", { force: true });
-    
+
 //     cy.get(".TableCellResizer__resizer")
 //       .first()
 //       .should('be.visible')
 //       .trigger("mousedown", { which: 1, force: true })
 //       .trigger("mousemove", { clientX: 200, force: true })
 //       .trigger("mouseup", { force: true });
-    
+
 //     cy.get(".editor-tableCell").first().invoke('outerWidth').should('be.gt', 50);
 //   });
 
 //   it("should resize row height when dragging row resizer", () => {
 //     cy.wait(500);
 //     cy.get(".editor-tableCell").first().scrollIntoView().trigger("mousemove", { force: true });
-    
+
 //     cy.get(".TableCellResizer__resizer")
 //       .last()
 //       .should('be.visible')
 //       .trigger("mousedown", { which: 1, force: true })
 //       .trigger("mousemove", { clientY: 200, force: true })
 //       .trigger("mouseup", { force: true });
-    
+
 //     cy.get(".editor-tableCell").first().invoke('height').should('be.gt', 20);
 //   });
 // });

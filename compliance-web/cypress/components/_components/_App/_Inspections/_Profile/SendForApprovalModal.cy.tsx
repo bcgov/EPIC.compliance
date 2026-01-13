@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import SendForApprovalModal from "@/components/App/Inspections/Profile/SendForApprovalModal";
 import { StaffUser } from "@/models/Staff";
 import { STAFF_USER_POSITION } from "@/utils/constants";
@@ -112,27 +112,27 @@ describe("SendForApprovalModal", () => {
   describe("Rendering", () => {
     it("should render the modal with correct title", () => {
       mountComponent();
-      
+
       // The title is rendered in ModalTitleBar as h5 variant
       cy.get('h5').should("contain", "Send for Deputy Approval?");
     });
 
     it("should render the director selection field", () => {
       mountComponent();
-      
+
       cy.get('label').should("contain", "Deputy Director");
       cy.get('input[placeholder="Select Deputy Director"]').should("be.visible");
     });
 
     it("should render the send button when directors are available", () => {
       mountComponent();
-      
+
       cy.get('[data-testid="primary-action-modal-button"]').should("contain", "Send");
     });
 
     it("should not render the send button when no directors are available", () => {
       mountComponent({ staffUsers: [] });
-      
+
       cy.get('[data-testid="primary-action-modal-button"]').should("not.exist");
     });
   });
@@ -140,10 +140,10 @@ describe("SendForApprovalModal", () => {
   describe("Director Selection", () => {
     it("should filter and display only directors and deputy directors", () => {
       mountComponent();
-      
+
       // Open the autocomplete dropdown
       cy.get('input[placeholder="Select Deputy Director"]').click();
-      
+
       // Should only show directors and deputy directors
       cy.get('[role="option"]').should("have.length", 2);
       cy.get('[role="option"]').first().should("contain", "John Director");
@@ -152,19 +152,19 @@ describe("SendForApprovalModal", () => {
 
     it("should display full names in the options", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Select Deputy Director"]').click();
-      
+
       cy.get('[role="option"]').first().should("contain", "John Director");
       cy.get('[role="option"]').last().should("contain", "Jane Deputy");
     });
 
     it("should allow selecting a director", () => {
       mountComponent();
-      
+
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Should display selected value
       cy.get('input[placeholder="Select Deputy Director"]').should("have.value", "John Director");
     });
@@ -173,38 +173,38 @@ describe("SendForApprovalModal", () => {
   describe("Form Validation", () => {
     it("should show validation error when trying to submit without selecting director", () => {
       mountComponent();
-      
+
       // Try to submit without selection - button should be disabled due to validation
       cy.get('[data-testid="primary-action-modal-button"]').should("be.disabled");
-      
+
       // The button should show as disabled when form is invalid
       cy.get('[data-testid="primary-action-modal-button"]').should("have.attr", "disabled");
     });
 
     it("should clear validation error when director is selected", () => {
       mountComponent();
-      
+
       // Button should be disabled initially
       cy.get('[data-testid="primary-action-modal-button"]').should("be.disabled");
-      
+
       // Select a director
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Button should be enabled after selection
       cy.get('[data-testid="primary-action-modal-button"]').should("not.be.disabled");
     });
 
     it("should allow submission when director is selected", () => {
       mountComponent();
-      
+
       // Select a director
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Submit form
       cy.get('[data-testid="primary-action-modal-button"]').click();
-      
+
       // Should call onSubmitHandler
       cy.get("@onSubmitHandler").should("have.been.called");
     });
@@ -213,14 +213,14 @@ describe("SendForApprovalModal", () => {
   describe("Form Submission", () => {
     it("should call onSubmitHandler with correct data when form is submitted", () => {
       mountComponent();
-      
+
       // Select a director
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Submit form
       cy.get('[data-testid="primary-action-modal-button"]').click();
-      
+
       // Should call onSubmitHandler with correct data
       cy.get("@onSubmitHandler").should("have.been.calledWith", {
         director: mockDirectors[0],
@@ -229,14 +229,14 @@ describe("SendForApprovalModal", () => {
 
     it("should call onSubmitHandler with deputy director when selected", () => {
       mountComponent();
-      
+
       // Select deputy director
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').last().click();
-      
+
       // Submit form
       cy.get('[data-testid="primary-action-modal-button"]').click();
-      
+
       // Should call onSubmitHandler with correct data
       cy.get("@onSubmitHandler").should("have.been.calledWith", {
         director: mockDirectors[1],
@@ -247,11 +247,11 @@ describe("SendForApprovalModal", () => {
   describe("Loading State", () => {
     it("should show loading state when isPending is true", () => {
       mountComponent({ isPending: true });
-      
+
       // Select a director first
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Button should show loading state with CircularProgress instead of text
       cy.get('[data-testid="primary-action-modal-button"]').should("not.contain", "Send");
       // Should contain CircularProgress component
@@ -260,25 +260,25 @@ describe("SendForApprovalModal", () => {
 
     it("should disable form submission when loading", () => {
       mountComponent({ isPending: true });
-      
+
       // Select a director first
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Button should be disabled when loading (LoadingButton disables when isLoading is true)
       cy.get('[data-testid="primary-action-modal-button"]').should("be.disabled");
-      
+
       // Form submission should be prevented when button is disabled
       // Note: The button is disabled during loading to prevent multiple submissions
     });
 
     it("should show loading text when isPending is true", () => {
       mountComponent({ isPending: true });
-      
+
       // Select a director first
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Should show loading text instead of "Send"
       cy.get('[data-testid="primary-action-modal-button"]').should("contain", "Loading...");
     });
@@ -287,10 +287,10 @@ describe("SendForApprovalModal", () => {
   describe("Edge Cases", () => {
     it("should handle empty staff users array", () => {
       mountComponent({ staffUsers: [] });
-      
+
       // Should not show send button
       cy.get('[data-testid="primary-action-modal-button"]').should("not.exist");
-      
+
       // Should show disabled autocomplete
       cy.get('input[placeholder="Select Deputy Director"]').should("be.disabled");
     });
@@ -299,12 +299,12 @@ describe("SendForApprovalModal", () => {
       const regularStaff = mockStaffUsers.filter(
         (user) => ![STAFF_USER_POSITION.DIRECTOR, STAFF_USER_POSITION.DEPUTY_DIRECTOR].includes(user.position_id ?? 0)
       );
-      
+
       mountComponent({ staffUsers: regularStaff });
-      
+
       // Should not show send button
       cy.get('[data-testid="primary-action-modal-button"]').should("not.exist");
-      
+
       // Should show disabled autocomplete
       cy.get('input[placeholder="Select Deputy Director"]').should("be.disabled");
     });
@@ -320,12 +320,12 @@ describe("SendForApprovalModal", () => {
           is_active: true,
         },
       ];
-      
+
       mountComponent({ staffUsers: staffWithNullPosition });
-      
+
       // Should not show send button
       cy.get('[data-testid="primary-action-modal-button"]').should("not.exist");
-      
+
       // Should show disabled autocomplete
       cy.get('input[placeholder="Select Deputy Director"]').should("be.disabled");
     });
@@ -341,9 +341,9 @@ describe("SendForApprovalModal", () => {
           is_active: false,
         },
       ];
-      
+
       mountComponent({ staffUsers: inactiveDirectors });
-      
+
       // Should still show inactive directors in the list
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').should("contain", "Inactive Director");
@@ -353,13 +353,13 @@ describe("SendForApprovalModal", () => {
   describe("Accessibility", () => {
     it("should have proper form labels", () => {
       mountComponent();
-      
+
       cy.get('label').should("contain", "Deputy Director");
     });
 
     it("should have required field indicator", () => {
       mountComponent();
-      
+
       // The field should be marked as required through the label
       cy.get('label').should("contain", "Deputy Director");
       // Note: Material-UI doesn't always set aria-required on the input itself
@@ -368,7 +368,7 @@ describe("SendForApprovalModal", () => {
 
     it("should have proper button type", () => {
       mountComponent();
-      
+
       cy.get('[data-testid="primary-action-modal-button"]').should("have.attr", "type", "submit");
     });
   });
@@ -376,17 +376,17 @@ describe("SendForApprovalModal", () => {
   describe("Form Reset", () => {
     it("should reset form when component remounts", () => {
       mountComponent();
-      
+
       // Select a director
       cy.get('input[placeholder="Select Deputy Director"]').click();
       cy.get('[role="option"]').first().click();
-      
+
       // Verify selection
       cy.get('input[placeholder="Select Deputy Director"]').should("have.value", "John Director");
-      
+
       // Remount component
       mountComponent();
-      
+
       // Form should be reset
       cy.get('input[placeholder="Select Deputy Director"]').should("have.value", "");
     });

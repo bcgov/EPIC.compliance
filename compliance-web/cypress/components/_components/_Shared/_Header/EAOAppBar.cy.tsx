@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from 'cypress/react18';
+import { mount } from 'cypress/react';
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import EAOAppBar from "@/components/Shared/Header/EAOAppBar";
 import { AuthProvider } from "react-oidc-context";
@@ -47,7 +47,7 @@ describe('EAOAppBar Component', () => {
 
   it('should render the app bar with the mocked app title and logo', () => {
     mountComponent();
-    
+
     cy.get('img').should('have.attr', 'src').and('include', 'bcgovLogoWhite.svg');
     // cy.get('h3').contains(mockAppConfig.appTitle).should('exist');
   });

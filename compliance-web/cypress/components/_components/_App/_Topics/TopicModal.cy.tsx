@@ -1,5 +1,5 @@
 // cypress/components/TopicModal.cy.tsx
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import TopicModal from "@/components/App/Topics/TopicModal"; // Adjust the path as necessary
 import { Topic } from "@/models/Topic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

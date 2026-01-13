@@ -23,4 +23,5 @@ data:
         "VITE_AWS_S3_URL": "{{ .Values.aws.s3_url }}",
         "VITE_AWS_S3_BUCKET_NAME": "{{ .Values.aws.s3_bucket}}",
         "VITE_CLIENT_ID": "{{ .Values.app.client_id }}",
+        "VITE_APP_BASE_PATH": "{{ .Values.app.relative_path }}",
       }

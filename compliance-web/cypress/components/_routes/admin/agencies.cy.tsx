@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Agencies } from "@/routes/_authenticated/admin/agencies";
 import ModalProvider from "@/components/Shared/Modals/ModalProvider";

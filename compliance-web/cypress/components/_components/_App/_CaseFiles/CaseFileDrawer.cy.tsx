@@ -1,5 +1,5 @@
 import React from "react";
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import CaseFileDrawer from "@/components/App/CaseFiles/CaseFileDrawer";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CaseFile } from "@/models/CaseFile";
@@ -90,13 +90,13 @@ describe("CaseFileDrawer Component", () => {
 
   function mountComponent(isEditMode = false) {
     const onSubmitSpy = cy.spy().as("onSubmitSpy");
-    
+
     return mount(
       <QueryClientProvider client={queryClient}>
         <AuthProvider {...OidcConfig}>
-          <CaseFileDrawer 
-            onSubmit={onSubmitSpy} 
-            caseFile={isEditMode ? mockCaseFile : undefined} 
+          <CaseFileDrawer
+            onSubmit={onSubmitSpy}
+            caseFile={isEditMode ? mockCaseFile : undefined}
           />
         </AuthProvider>
       </QueryClientProvider>
@@ -108,12 +108,12 @@ describe("CaseFileDrawer Component", () => {
 
     // Check title
     cy.contains("Create Case File").should("be.visible");
-    
+
     // Check form fields are present
     cy.get('input[name="project"]').should("be.visible");
     cy.get('input[name="initiation"]').should("be.visible");
     cy.get('input[name="primaryOfficer"]').should("be.visible");
-    
+
     // Check submit button
     cy.contains("button", "Create").should("be.visible");
   });
@@ -123,12 +123,12 @@ describe("CaseFileDrawer Component", () => {
 
     // Check title shows case file number
     cy.contains("CF-2023-001").should("be.visible");
-    
+
     // Check form fields are populated with case file data
     cy.get('input[name="project"]').should("have.value", "Project 1");
     cy.get('input[name="initiation"]').should("have.value", "Initiation 1");
     cy.get('input[name="primaryOfficer"]').should("have.value", "User 1");
-    
+
     // Check submit button
     cy.contains("button", "Save").should("be.visible");
   });

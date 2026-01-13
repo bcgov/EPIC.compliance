@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import ComplaintFileActions from "@/components/App/Complaints/Profile/ComplaintFileActions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Complaint } from "@/models/Complaint";
@@ -118,7 +118,7 @@ describe("ComplaintFileActions Component", () => {
     cy.contains("Close Complaint?").should("exist");
     cy.contains("You are about to close complaint").should("exist");
     cy.contains("COMP-2023-001").should("exist");
-    
+
     // Test the close button
     cy.get("button[aria-label='close']").should("exist").click();
     cy.contains("Close Complaint?").should("not.exist");
@@ -132,7 +132,7 @@ describe("ComplaintFileActions Component", () => {
     // Check if confirmation modal appears
     cy.contains("Reopen Complaint?").should("exist");
     cy.contains("Are you sure you want to reopen this complaint?").should("exist");
-    
+
     // Test the close button
     cy.get("button[aria-label='close']").should("exist").click();
     cy.contains("Reopen Complaint?").should("not.exist");
@@ -146,7 +146,7 @@ describe("ComplaintFileActions Component", () => {
     // Check if confirmation modal appears
     cy.contains("Delete Complaint?").should("exist");
     cy.contains("You are about to delete this complaint. Are you sure?").should("exist");
-    
+
     // Test the close button
     cy.get("button[aria-label='close']").should("exist").click();
     cy.contains("Delete Complaint?").should("not.exist");

@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionRequirements from "@/components/App/Inspections/Profile/InspectionRequirements";
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
@@ -235,7 +235,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       // Wait for data to load
       cy.wait(100);
       cy.get('body').should('contain', 'Test Requirement 1');
@@ -247,7 +247,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithRegulatory);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Regulatory Consideration');
     });
@@ -256,7 +256,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], []);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
       // Should not show any requirements
       cy.get('body').should('not.contain', 'Test Requirement 1');
@@ -266,7 +266,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], undefined);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
   });
@@ -279,7 +279,7 @@ describe("InspectionRequirements", () => {
     it("displays requirements in correct order", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Requirement 1');
       cy.get('body').should('contain', 'Test Requirement 2');
@@ -289,7 +289,7 @@ describe("InspectionRequirements", () => {
       const requirementsWithRegulatory = [...mockRequirements, mockRegulatoryConsideration];
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithRegulatory);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Regulatory Consideration');
     });
@@ -305,10 +305,10 @@ describe("InspectionRequirements", () => {
           req_type: { id: "REG", name: "Regulatory Consideration" },
         }
       ];
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mixedRequirements);
       mountComponent();
-      
+
       cy.wait(200);
       // Should show regular requirements
       cy.get('body').should('contain', 'Test Requirement 1');
@@ -325,10 +325,10 @@ describe("InspectionRequirements", () => {
         ...req,
         req_type: undefined
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithoutType);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -337,10 +337,10 @@ describe("InspectionRequirements", () => {
         ...req,
         req_type: { ...req.req_type, id: undefined }
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithoutTypeId);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
   });
@@ -361,7 +361,7 @@ describe("InspectionRequirements", () => {
       const requirementsWithRegulatory = [...mockRequirements, mockRegulatoryConsideration];
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithRegulatory);
       mountComponent();
-      
+
       cy.wait(100);
       cy.contains("Regulatory Consideration").should('be.disabled');
     });
@@ -369,7 +369,7 @@ describe("InspectionRequirements", () => {
     it("enables Regulatory Consideration button when none exists", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       mountComponent();
-      
+
       cy.wait(100);
       cy.contains("Regulatory Consideration").should('not.be.disabled');
     });
@@ -390,7 +390,7 @@ describe("InspectionRequirements", () => {
     it("handles requirement display when data is available", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Requirement 1');
       cy.get('body').should('contain', 'Test Requirement 2');
@@ -400,7 +400,7 @@ describe("InspectionRequirements", () => {
       const requirementsWithRegulatory = [...mockRequirements, mockRegulatoryConsideration];
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithRegulatory);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Regulatory Consideration');
     });
@@ -416,10 +416,10 @@ describe("InspectionRequirements", () => {
           req_type: { id: "REQ", name: "Requirement" },
         }
       ];
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mixedRequirements);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Requirement 1');
       cy.get('body').should('contain', 'Test Requirement 2');
@@ -432,7 +432,7 @@ describe("InspectionRequirements", () => {
     it("handles missing inspection data gracefully", () => {
       const emptyInspection = { ...mockInspection, id: undefined };
       mountComponent(emptyInspection);
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -440,7 +440,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], undefined);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -448,7 +448,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], undefined);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -456,7 +456,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], { photos: [], figures: [] });
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
   });
@@ -466,7 +466,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
       cy.get('body').should('contain', 'New Requirement');
       cy.get('body').should('contain', 'Regulatory Consideration');
@@ -476,7 +476,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], []);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
       cy.get('body').should('not.contain', 'Test Requirement 1');
     });
@@ -485,7 +485,7 @@ describe("InspectionRequirements", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], [mockRegulatoryConsideration]);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Regulatory Consideration');
       cy.get('body').should('not.contain', 'Test Requirement 1');
@@ -498,11 +498,11 @@ describe("InspectionRequirements", () => {
         summary: `Test Requirement ${i + 1}`,
         sort_order: i + 1,
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], manyRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.wait(100);
       cy.get('body').should('contain', 'Test Requirement 1');
       cy.get('body').should('contain', 'Test Requirement 10');
@@ -517,11 +517,11 @@ describe("InspectionRequirements", () => {
         summary: req.summary,
         // Missing other properties
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], incompleteRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -532,11 +532,11 @@ describe("InspectionRequirements", () => {
         agency: null,
         compliance_finding: null,
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithNulls);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -547,11 +547,11 @@ describe("InspectionRequirements", () => {
         agency: undefined,
         compliance_finding: undefined,
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithUndefined);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -561,7 +561,7 @@ describe("InspectionRequirements", () => {
         inspection_status: "Open",
         // Missing other properties
       };
-      
+
       mountComponent(incompleteInspection as Inspection);
       cy.get('body').should('contain', 'Requirements');
     });
@@ -571,50 +571,50 @@ describe("InspectionRequirements", () => {
     it("handles rapid status changes efficiently", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
-      
+
       mountComponent();
       cy.wait(100);
-      
+
       // Change status multiple times
       mockInspection.inspection_status = "Closed";
       mountComponent();
       cy.wait(100);
-      
+
       mockInspection.inspection_status = "Open";
       mountComponent();
       cy.wait(100);
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
     it("handles data updates efficiently", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
-      
+
       mountComponent();
       cy.wait(100);
-      
+
       // Update data
       const updatedRequirements = [...mockRequirements, { ...mockRequirements[0], id: 10, summary: "Updated Requirement" }];
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], updatedRequirements);
-      
+
       mountComponent();
       cy.wait(100);
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
     it("handles component unmounting and remounting", () => {
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
-      
+
       mountComponent();
       cy.wait(100);
-      
+
       // Unmount and remount
       mountComponent();
       cy.wait(100);
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
   });
@@ -626,11 +626,11 @@ describe("InspectionRequirements", () => {
         summary: "A".repeat(1000),
         findings: "B".repeat(2000),
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], [longTextRequirement]);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -640,11 +640,11 @@ describe("InspectionRequirements", () => {
         summary: "Test & Special < > \" ' Characters",
         findings: "Findings with & < > \" ' symbols",
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], [specialCharRequirement]);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -654,11 +654,11 @@ describe("InspectionRequirements", () => {
         summary: "Test 🚀 Unicode 🌟 Characters",
         findings: "Findings with 🎯 emoji 🎨 and unicode 🚀",
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], [unicodeRequirement]);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -668,11 +668,11 @@ describe("InspectionRequirements", () => {
         id: Number.MAX_SAFE_INTEGER,
         inspection_status: "Open",
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", extremeInspection.id], mockRequirements);
       queryClient.setQueryData(["inspection-requirement-images", extremeInspection.id], mockImages);
       mountComponent(extremeInspection);
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
 
@@ -684,11 +684,11 @@ describe("InspectionRequirements", () => {
           sort_order: Number.MAX_SAFE_INTEGER,
         }
       ];
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], extremeRequirements);
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);
       mountComponent();
-      
+
       cy.get('body').should('contain', 'Requirements');
     });
   });

@@ -17,13 +17,14 @@ export interface InspectionRequirementGrid {
   sort_order: number;
   date_issued: string;
   ir_number: string;
-  requirement_number: string[];
   requirement_sources: RequirementSource[];
   approved_by: StaffUser;
   approved_by_id: number;
   progress?: Option;
   status?: Option;
   enforcement_number?: string;
+  condition_numbers?: string;
+  requirement_sources_names?: string;
 }
 
 export interface InspectionRequirementGridQueryParams extends BaseTableQueryParams {

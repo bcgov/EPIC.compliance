@@ -59,7 +59,7 @@ const RegPartyResponse: React.FC<RegPartyResponseProps> = ({
 
   const methods = useForm<RegPartyResponseSchemaType>({
     resolver: yupResolver(regPartyResponseFormSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   });
 

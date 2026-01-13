@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import RequirementSourceForm from "@/components/App/Complaints/RequirementSourceForm";
 import { FormProvider, useForm } from "react-hook-form";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -60,13 +60,13 @@ describe("RequirementSourceForm Component", () => {
   beforeEach(() => {
     // Reset the query client before each test
     queryClient.clear();
-    
+
     // Mock the API endpoint
     cy.intercept('GET', '**/api/orders/projectwise*', {
       statusCode: 200,
       body: mockOrders
     }).as('getOrdersProjectwise');
-    
+
     // Also pre-populate the query cache
     queryClient.setQueryData(["inspection-orders-projectwise", 1], mockOrders);
   });
@@ -146,7 +146,7 @@ describe("RequirementSourceForm Component", () => {
     // Wait for the order field to appear and verify it's an autocomplete
     cy.get('input[name="order"]').should("be.visible");
     cy.get('input[name="order"]').should("have.attr", "autocomplete", "off");
-    
+
     // Verify the field is enabled and can receive input
     cy.get('input[name="order"]').should("not.be.disabled");
     cy.get('input[name="order"]').type("test");
@@ -181,10 +181,10 @@ describe("RequirementSourceForm Component", () => {
 
     // Wait for the order field to appear
     cy.get('input[name="order"]').should("be.visible");
-    
+
     // Wait for data to load and initialization to complete
     cy.wait(500);
-    
+
     // The order field should be pre-populated with the matching order
     cy.get('input[name="order"]').should("have.value", "ORD-001");
   });

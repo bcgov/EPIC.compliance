@@ -400,12 +400,6 @@ def _create_excel_from_dataframe(data_frame):
     # Get existing columns and headers
     existing_columns, headers = _get_excel_columns_and_headers(data_frame)
 
-    # Format requirement_number column as comma-separated values instead of array
-    if 'requirement_number' in data_frame.columns:
-        data_frame['requirement_number'] = data_frame['requirement_number'].apply(
-            lambda x: ', '.join(str(item) for item in x if item is not None) if isinstance(x, list) and x else ''
-        )
-
     # Create Excel file in memory
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
@@ -429,8 +423,8 @@ def _get_excel_columns_and_headers(data_frame):
         ("enforcement_action.name", "Enforcement Action"),
         ("enforcement_number", "Enforcement Document #"),
         ("status.name", "Enforcement Status"),
-        ("requirement_number", "Condition #"),
-        ("requirement_source.name", "Requirement Source"),
+        ("condition_numbers", "Condition #"),
+        ("requirement_sources_names", "Requirement Source"),
         ("ir_number", "IR Number"),
         ("date_issued", "Date Issued"),
         ("primary_officer.name", "Primary Officer"),
@@ -1535,30 +1529,6 @@ def _convert_enum_to_object(enum_value):
     }
 
 
-def _convert_enum_string_to_object(enum_string, enum_class_map):
-    """Convert enum string back to proper enum object structure."""
-    if not enum_string:
-        return None
-
-    # Try to find the enum in any of the provided enum classes
-    for enum_class in enum_class_map:
-        try:
-            for enum_item in enum_class:
-                if enum_item.name == enum_string:
-                    return {
-                        "id": enum_item.name,
-                        "name": enum_item.value,
-                    }
-        except (AttributeError, TypeError, ValueError):
-            continue
-
-    # If no enum found, return as string
-    return {
-        "id": enum_string,
-        "name": enum_string,
-    }
-
-
 def _make_requirement_detail_object(requirements: list):
     """Make requirement detail object."""
 
@@ -1602,21 +1572,18 @@ def _make_requirement_detail_object(requirements: list):
         item["progress"] = progress
         if requirement["requirement_source_details"]:
             first_requirement_details = requirement["requirement_source_details"][0]
-            requirement_numbers = []
             req_sources = []
+            condition_num_string = ""
+            source_string = ""
             for detail in requirement["requirement_source_details"]:
                 if detail.requirement_source not in req_sources:
                     req_sources.append(detail.requirement_source)
-                    number_field = ServiceUtils.get_requirement_source_number_field(detail)
-                    prefixes = ["Condition ", "Section "]
-                    if number_field:
-                        requirement_numbers.append(
-                            next(
-                                (number_field.split(prefix)[1] for prefix in prefixes if prefix in number_field),
-                                None
-                            )
-                        )
-            item["requirement_number"] = requirement_numbers
+                    number_field = ServiceUtils.get_requirement_grid_source_number_field(detail)
+                    name_field = ServiceUtils.get_requirement_grid_source_name_field(detail)
+                    condition_num_string += f", {number_field}" if condition_num_string else number_field or ""
+                    source_string += f", {name_field}" if source_string else name_field
+            item["condition_numbers"] = condition_num_string
+            item["requirement_sources_names"] = source_string
             item["requirement_source"] = first_requirement_details.requirement_source
         requirement_details.append(item)
     return requirement_details

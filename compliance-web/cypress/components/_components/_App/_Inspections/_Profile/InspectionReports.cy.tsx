@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionReports from "@/components/App/Inspections/Profile/InspectionReports";
 import { Inspection } from "@/models/Inspection";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -122,7 +122,7 @@ describe("InspectionReports", () => {
         { id: "1", name: "Preliminary" },
         { id: "2", name: "Final" },
       ]);
-      
+
       mountComponent();
 
       // Check for CircularProgress component (MUI component)
@@ -157,7 +157,7 @@ describe("InspectionReports", () => {
 
       cy.contains("Preliminary Inspection Record").should("be.visible");
       cy.contains("Final Inspection Record").should("be.visible");
-      
+
       // Check that radio buttons are rendered
       cy.get('input[type="radio"]').should("have.length", 2);
     });
@@ -173,7 +173,7 @@ describe("InspectionReports", () => {
 
       // Select a report version
       cy.contains("Preliminary Inspection Record").click();
-      
+
       cy.contains("button", "Proceed to Report").should("not.be.disabled");
     });
 
@@ -182,11 +182,11 @@ describe("InspectionReports", () => {
 
       // Initially no version should be selected
       cy.get('input[type="radio"]:checked').should("have.length", 0);
-      
+
       // Select Preliminary version
       cy.contains("Preliminary Inspection Record").click();
       cy.get('input[value="1"]').should("be.checked");
-      
+
       // Select Final version
       cy.contains("Final Inspection Record").click();
       cy.get('input[value="2"]').should("be.checked");
@@ -210,7 +210,7 @@ describe("InspectionReports", () => {
       // Should not show the report version selection UI
       cy.contains("Select Report Version").should("not.exist");
       cy.contains("Choose the IR report version you want to work on.").should("not.exist");
-      
+
       // Should show proceed button with "Final Report" text
       cy.contains("button", "Proceed to Final Report").should("be.visible");
     });
@@ -248,11 +248,11 @@ describe("InspectionReports", () => {
     it("handles missing IR statuses data gracefully", () => {
       // Pre-populate query cache with empty IR statuses
       queryClient.setQueryData(["ir-statuses"], []);
-      
+
       mockInspection.inspection_status = "Open";
       queryClient.clear();
       queryClient.setQueryData(["ir-statuses"], []);
-      
+
       mountComponent();
 
       // Should still render the component without errors
@@ -263,7 +263,7 @@ describe("InspectionReports", () => {
     it("handles inspection with undefined status", () => {
       mockInspection.inspection_status = undefined;
       queryClient.clear();
-      
+
       mountComponent();
 
       // Should treat undefined status as not open
@@ -273,7 +273,7 @@ describe("InspectionReports", () => {
     it("handles inspection with null status", () => {
       mockInspection.inspection_status = null;
       queryClient.clear();
-      
+
       mountComponent();
 
       // Should treat null status as not open
@@ -290,7 +290,7 @@ describe("InspectionReports", () => {
         { id: "1", name: "Preliminary" },
         { id: "2", name: "Final" },
       ]);
-      
+
       mountComponent();
       cy.contains("Select Report Version").should("be.visible");
     });
@@ -304,7 +304,7 @@ describe("InspectionReports", () => {
         { id: "1", name: "Preliminary" },
         { id: "2", name: "Final" },
       ]);
-      
+
       mountComponent();
       cy.contains("Select Report Version").should("be.visible");
       cy.contains("Preliminary Inspection Record").should("be.visible");

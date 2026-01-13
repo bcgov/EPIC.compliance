@@ -154,13 +154,13 @@ const inspectionRecordRender = ({
 }: {
   inspectionId: number;
   inspectionRecordId: number;
-  outputFormat: "html" | "pdf";
+  outputFormat: "html" | "pdf" | "docx";
 }) => {
   return request({
     method: "POST",
     url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/render`,
     data: { output_format: outputFormat },
-    responseType: "json",
+    responseType: outputFormat === "docx" ? "blob" : "json",
   });
 };
 

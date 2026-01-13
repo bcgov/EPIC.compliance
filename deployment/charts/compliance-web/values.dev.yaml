@@ -10,6 +10,7 @@ app:
   in_progress_features: []
   client_id: "epic-compliance"
   default_page_size: "15"
+  relative_path: "/compliance"
 aws:
   s3_bucket: "dev-epic"
   s3_url: "https://nrs.objectstore.gov.bc.ca"

@@ -1,4 +1,4 @@
-// import { mount } from "cypress/react18";
+// import { mount } from "cypress/react";
 // import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // import { Inspections } from "@/routes/_authenticated/ce-database/inspections";
 // import router from "@/router/router";
@@ -50,7 +50,7 @@
 //   //   mount(mountInspections());
 
 //   //   cy.get("button").contains("Inspection").click();
-    
+
 //   //   cy.get(".MuiTypography-subtitle1").should("contain.text", "Create Inspection")
 
 //   // });

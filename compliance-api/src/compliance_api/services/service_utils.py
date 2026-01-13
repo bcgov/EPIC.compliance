@@ -37,7 +37,7 @@ from .document_service.doc_service_enum import ActionOnFileEnum
 from .epic_track_service.track_service import TrackService
 
 
-class ServiceUtils:
+class ServiceUtils:  # pylint: disable=too-many-public-methods
     """ServiceUtils class."""
 
     @staticmethod
@@ -493,6 +493,61 @@ class ServiceUtils:
                 else None
             )
         return None
+
+    @staticmethod
+    def get_requirement_grid_source_number_field(
+        detail_obj: InspectionReqSourceDetailModel
+    ):  # pylint: disable=too-many-return-statements
+        """Identify the number field based on the requirement source id for the requirements grid."""
+        requirement_source = RequirementSourceEnum(detail_obj.requirement_source_id)
+        section_sources = {
+            RequirementSourceEnum.ACT_2018,
+            RequirementSourceEnum.ACT_2002,
+            RequirementSourceEnum.CERTIFIED_PROJECT_DESCRIPTION
+        }
+        condition_sources = {
+            RequirementSourceEnum.EAC_CERTIFICATE,
+            RequirementSourceEnum.SCHEDULE_B,
+        }
+        amendment_sources = {
+            RequirementSourceEnum.EAC_AMENDMENT,
+        }
+        order_sources = {
+            RequirementSourceEnum.ORDER,
+        }
+        regulation_sources = {
+            RequirementSourceEnum.REGULATION,
+        }
+        exemption_sources = {
+            RequirementSourceEnum.EXEMPTION_ORDER,
+        }
+        agreement_sources = {
+            RequirementSourceEnum.COMPLIANCE_AGREEMENT,
+        }
+        if requirement_source in section_sources:
+            return getattr(detail_obj, "section_number", "")
+        if requirement_source in condition_sources:
+            return getattr(detail_obj, "condition_number", "")
+        if requirement_source in amendment_sources:
+            return getattr(detail_obj, "amendment_number", "")
+        if requirement_source in order_sources:
+            return getattr(detail_obj.order, "order_number", "")
+        if requirement_source in regulation_sources:
+            return getattr(detail_obj, "regulation_number", "")
+        if requirement_source in exemption_sources:
+            return getattr(detail_obj, "clause_number", "")
+        if requirement_source in agreement_sources:
+            return getattr(detail_obj, "compliance_number", "")
+        return getattr(detail_obj, "section_number", "")
+
+    @staticmethod
+    def get_requirement_grid_source_name_field(detail_obj: InspectionReqSourceDetailModel):
+        """Get the requirement source name."""
+        if detail_obj.requirement_source_id == RequirementSourceEnum.CERTIFIED_PROJECT_DESCRIPTION.value:
+            return "Schedule A"
+        if detail_obj.requirement_source_id == RequirementSourceEnum.SCHEDULE_B.value:
+            return "Schedule B"
+        return detail_obj.requirement_source.name
 
     @staticmethod
     def check_requirement_for_enforcement_action(

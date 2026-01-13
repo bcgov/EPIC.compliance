@@ -52,10 +52,12 @@ build-req: clean ## Upgrade requirements
 	pip install -Ur requirements/repo-libraries.txt
 
 install: clean ## Install python virtrual environment
-	test -f venv/bin/activate || python3 -m venv  $(CURRENT_ABS_DIR)/venv ;\
+	test -f venv/bin/activate || python3.10 -m venv  $(CURRENT_ABS_DIR)/venv ;\
 	. venv/bin/activate ;\
 	pip install --upgrade pip ;\
-	pip install -Ur requirements.txt
+	pip install -Ur requirements.txt ;\
+	pip install -Ur requirements/dev.txt ;\
+	pip install -Ur requirements/prod.txt
 
 install-dev: ## Install local application
 	. venv/bin/activate ; \
@@ -139,7 +141,7 @@ tag: push ## tag image
 # COMMANDS - Local                                                              #
 #################################################################################
 run: db ## Run the project in local
-	. venv/bin/activate && python -m flask run -p 3200
+	. venv/bin/activate && python -m flask run -p 5000
 
 db: ## Update the local database
 	. venv/bin/activate && flask db upgrade

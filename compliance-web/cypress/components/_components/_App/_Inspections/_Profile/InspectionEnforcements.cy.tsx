@@ -1,5 +1,5 @@
 /// <reference types="cypress" />
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import InspectionEnforcements from "@/components/App/Inspections/Profile/InspectionEnforcements";
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
@@ -42,7 +42,7 @@ describe("InspectionEnforcements", () => {
   beforeEach(() => {
     // Set viewport to ensure proper dimensions
     cy.viewport(1200, 800);
-    
+
     // Add CSS overrides to fix overflow issues in testing
     cy.document().then((doc) => {
       const style = doc.createElement("style");
@@ -223,7 +223,7 @@ describe("InspectionEnforcements", () => {
         date_issued: "2023-04-15T12:00:00Z",
         order_status: { id: "DRAFT", name: "Draft" },
         order_requirement_maps: [
-          { 
+          {
             id: 1,
             inspection_requirement_id: 1,
             inspection_requirement: {
@@ -244,7 +244,7 @@ describe("InspectionEnforcements", () => {
         warning_letter_number: "WL-001",
         date_issued: "2023-04-15T12:00:00Z",
         warning_letter_requirement_maps: [
-          { 
+          {
             id: 1,
             inspection_requirement_id: 2,
             inspection_requirement: {
@@ -267,7 +267,7 @@ describe("InspectionEnforcements", () => {
         decision_date: "2023-04-15T12:00:00Z",
         referral_status: { id: "DRAFTING", value: "Drafting" },
         administrative_penalty_requirement_maps: [
-          { 
+          {
             id: 1,
             inspection_requirement_id: 3,
             inspection_requirement: {
@@ -330,7 +330,7 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
       cy.contains("Enforcement").should("be.visible");
     });
@@ -340,7 +340,7 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
       cy.contains("Enforcement").should("be.visible");
     });
@@ -363,9 +363,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should show notification cards for requirements with enforcement actions
       cy.contains("Test Requirement 1").should("be.visible");
       cy.contains("Test Requirement 2").should("be.visible");
@@ -379,14 +379,14 @@ describe("InspectionEnforcements", () => {
         ...req,
         enforcement_action_data: []
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithoutEnforcement);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should not show any notification cards
       cy.contains("Test Requirement 1").should("not.exist");
       cy.contains("Test Requirement 2").should("not.exist");
@@ -398,14 +398,14 @@ describe("InspectionEnforcements", () => {
         ...req,
         enforcement_action_data: undefined
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithUndefinedEnforcement);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should not show any notification cards
       cy.contains("Test Requirement 1").should("not.exist");
     });
@@ -422,9 +422,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], mockOrders);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should show notification cards for requirements that haven't been processed
       cy.contains("Test Requirement 2").should("be.visible");
       cy.contains("Test Requirement 3").should("be.visible");
@@ -436,9 +436,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], mockWarningLetters);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should show notification cards for requirements that haven't been processed
       cy.contains("Test Requirement 1").should("be.visible");
       cy.contains("Test Requirement 3").should("be.visible");
@@ -450,9 +450,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], mockAdministrativePenalties);
-      
+
       mountComponent();
-      
+
       // Should show notification cards for requirements that haven't been processed
       cy.contains("Test Requirement 1").should("be.visible");
       cy.contains("Test Requirement 2").should("be.visible");
@@ -464,9 +464,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should show all requirements with enforcement actions
       cy.contains("Test Requirement 1").should("be.visible");
       cy.contains("Test Requirement 2").should("be.visible");
@@ -485,9 +485,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], mockOrders);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       cy.contains("ORDER-001").should("be.visible");
     });
 
@@ -495,9 +495,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], mockWarningLetters);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       cy.contains("WL-001").should("be.visible");
     });
 
@@ -505,9 +505,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], mockAdministrativePenalties);
-      
+
       mountComponent();
-      
+
       cy.contains("AP-001").should("be.visible");
     });
 
@@ -515,9 +515,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], mockOrders);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], mockWarningLetters);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], mockAdministrativePenalties);
-      
+
       mountComponent();
-      
+
       cy.contains("ORDER-001").should("be.visible");
       cy.contains("WL-001").should("be.visible");
       cy.contains("AP-001").should("be.visible");
@@ -568,12 +568,12 @@ describe("InspectionEnforcements", () => {
           officers: undefined
         }
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], []);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent(inspectionWithoutOfficers);
       cy.contains("Enforcement").should("be.visible");
     });
@@ -586,12 +586,12 @@ describe("InspectionEnforcements", () => {
           officers: []
         }
       };
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], []);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent(inspectionWithNoOfficers);
       cy.contains("Enforcement").should("be.visible");
     });
@@ -601,12 +601,12 @@ describe("InspectionEnforcements", () => {
         ...req,
         enforcement_action_data: null
       }));
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], requirementsWithNullEnforcement);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
       cy.contains("Enforcement").should("be.visible");
     });
@@ -630,14 +630,14 @@ describe("InspectionEnforcements", () => {
           enforcement_action_data: null
         }
       ];
-      
+
       queryClient.setQueryData(["inspection-requirements", mockInspection.id], mixedRequirements);
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should only show requirement 1 (has enforcement action)
       cy.contains("Test Requirement 1").should("be.visible");
       cy.contains("Test Requirement 2").should("not.exist");
@@ -654,9 +654,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], mockOrders);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should render orders
       cy.contains("ORDER-001").should("be.visible");
     });
@@ -668,9 +668,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], mockWarningLetters);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], []);
-      
+
       mountComponent();
-      
+
       // Should render warning letters
       cy.contains("WL-001").should("be.visible");
     });
@@ -682,9 +682,9 @@ describe("InspectionEnforcements", () => {
       queryClient.setQueryData(["inspection-orders", mockInspection.id], []);
       queryClient.setQueryData(["inspection-warning-letters", mockInspection.id], []);
       queryClient.setQueryData(["inspection-administrative-penalties", mockInspection.id], mockAdministrativePenalties);
-      
+
       mountComponent();
-      
+
       // Should render administrative penalties
       cy.contains("AP-001").should("be.visible");
     });

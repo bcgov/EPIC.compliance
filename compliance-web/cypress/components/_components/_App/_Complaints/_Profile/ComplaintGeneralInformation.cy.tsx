@@ -1,4 +1,4 @@
-import { mount } from "cypress/react18";
+import { mount } from "cypress/react";
 import ComplaintGeneralInformation from "@/components/App/Complaints/Profile/ComplaintGeneralInformation";
 import { Complaint } from "@/models/Complaint";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -83,9 +83,9 @@ describe("ComplaintGeneralInformation", () => {
   const mountComponent = (complaintData = mockComplaint, allowEdit = true) => {
     mount(
       <QueryClientProvider client={queryClient}>
-        <Box sx={{ 
-          width: "800px", 
-          height: "800px", 
+        <Box sx={{
+          width: "800px",
+          height: "800px",
           overflow: "visible",
           position: "relative"
         }}>
@@ -102,7 +102,7 @@ describe("ComplaintGeneralInformation", () => {
   beforeEach(() => {
     // Set viewport to ensure proper dimensions for DynamicHeightBox calculations
     cy.viewport(1200, 800);
-    
+
     // Add CSS overrides to fix overflow issues in testing
     cy.document().then((doc) => {
       const style = doc.createElement('style');
@@ -117,7 +117,7 @@ describe("ComplaintGeneralInformation", () => {
       `;
       doc.head.appendChild(style);
     });
-    
+
     mockOnEdit = cy.stub().as("onEditStub");
     queryClient = new QueryClient({
       defaultOptions: {
@@ -158,7 +158,7 @@ describe("ComplaintGeneralInformation", () => {
       requirement_detail: { id: 1, complaint_id: 1, order_number: "ORDER-123" },
     };
     mountComponent(orderComplaint);
-    
+
     cy.contains("Requirement Source").should("be.visible");
     cy.contains("Order").should("be.visible");
     cy.contains("Order Number").should("be.visible");
@@ -182,7 +182,7 @@ describe("ComplaintGeneralInformation", () => {
       source_type: { id: ComplaintSourceEnum.FIRST_NATION, name: "First Nation" },
     };
     mountComponent(firstNationComplaint);
-    
+
     cy.contains("Organization Name").should("be.visible");
     cy.contains("Test First Nation").should("be.visible");
   });
@@ -193,7 +193,7 @@ describe("ComplaintGeneralInformation", () => {
       source_type: { id: ComplaintSourceEnum.OTHER, name: "Other" },
     };
     mountComponent(otherComplaint);
-    
+
     cy.contains("Description").should("be.visible");
     cy.contains("Test description").should("be.visible");
   });
@@ -201,7 +201,7 @@ describe("ComplaintGeneralInformation", () => {
   it("renders contact information", () => {
     // Wait for the component to fully render and calculate dimensions
     cy.wait(100);
-    
+
     // Check for text content first (more reliable than visibility)
     cy.get("body").should("contain.text", "Full Name");
     cy.get("body").should("contain.text", "Test Contact");
@@ -211,7 +211,7 @@ describe("ComplaintGeneralInformation", () => {
     cy.get("body").should("contain.text", "(123) 456-7890");
     cy.get("body").should("contain.text", "Comments");
     cy.get("body").should("contain.text", "Test comment");
-    
+
     // Now try to check visibility with scrolling if needed
     cy.contains("Full Name").scrollIntoView().should("be.visible");
     cy.contains("Test Contact").scrollIntoView().should("be.visible");
