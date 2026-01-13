@@ -5,6 +5,10 @@ FROM node:20-alpine as build-stage
 # set working directory
 WORKDIR /app
 
+# Build argument for base path
+ARG VITE_APP_BASE_PATH=/compliance
+ENV VITE_APP_BASE_PATH=$VITE_APP_BASE_PATH
+
 # add `/app/node_modules/.bin` to $PATH
 ENV PATH /app/node_modules/.bin:$PATH
 
