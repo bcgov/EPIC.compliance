@@ -151,16 +151,16 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   return (
     <FormProvider {...methods}>
       <EnforcementModal
-      requirementsList={requirementsList}
-      requirement={requirement}
-      nonProceededRequirements={nonProceededRequirements}
-      enforcementAction={enforcementAction}
-      title="Create Order"
-      onSubmit={handleBaseSubmit}
-      isLoading={isPendingOrder}
-      additionalFormFields={
-        defaultValues.isHistoricalRecord ? <OrderFormFields /> : undefined
-      }
+        requirementsList={requirementsList}
+        requirement={requirement}
+        nonProceededRequirements={nonProceededRequirements}
+        enforcementAction={enforcementAction}
+        title="Create Order"
+        onSubmit={handleBaseSubmit}
+        isLoading={isPendingOrder}
+        additionalFormFields={
+          defaultValues.isHistoricalRecord ? <OrderFormFields /> : undefined
+        }
       />
     </FormProvider>
   );
