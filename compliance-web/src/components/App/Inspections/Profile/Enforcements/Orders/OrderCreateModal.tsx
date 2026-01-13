@@ -58,7 +58,6 @@ const ManualOrderNumberInfo = () => {
 const OrderFormFields = () => {
   const { watch } = useFormContext<OrderFormType>();
   const isHistoricalRecord = watch("isHistoricalRecord");
-
   return (
     <>
       <ControlledCheckbox
@@ -102,7 +101,6 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   const defaultValues = useMemo(() => {
     return getDefaultFormValues(requirement, false, undefined);
   }, [requirement]);
-
   const methods = useForm<OrderFormType>({
     resolver: yupResolver(orderSchema),
     mode: "onBlur",
@@ -153,14 +151,16 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   return (
     <FormProvider {...methods}>
       <EnforcementModal
-        requirementsList={requirementsList}
-        requirement={requirement}
-        nonProceededRequirements={nonProceededRequirements}
-        enforcementAction={enforcementAction}
-        title="Create Order"
-        onSubmit={handleBaseSubmit}
-        isLoading={isPendingOrder}
-        additionalFormFields={<OrderFormFields />}
+      requirementsList={requirementsList}
+      requirement={requirement}
+      nonProceededRequirements={nonProceededRequirements}
+      enforcementAction={enforcementAction}
+      title="Create Order"
+      onSubmit={handleBaseSubmit}
+      isLoading={isPendingOrder}
+      additionalFormFields={
+        defaultValues.isHistoricalRecord ? <OrderFormFields /> : undefined
+      }
       />
     </FormProvider>
   );
