@@ -85,7 +85,12 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
     else:
         first_para_used = True
 
-    for element in soup.children:
+    # if div, get its children
+    children = soup.children
+    if len(list(soup.children)) == 1 and list(soup.children)[0].name == 'div':
+        children = list(soup.children)[0].children
+
+    for element in children:
         if element.name == "p":
             # Use the first empty paragraph if available
             if not first_para_used and hasattr(container, 'paragraphs') and container.paragraphs:
@@ -410,7 +415,7 @@ def _add_requirement_details_table(doc, req):
         para = cell.paragraphs[0]
 
         for idx, source in enumerate(source_details):
-            # Add requirement header
+            # Add requirement header for first source
             if idx == 0:
                 run = para.add_run(f"Requirement {req.get('sort_order', '')}: ")
                 run.bold = True
@@ -424,9 +429,10 @@ def _add_requirement_details_table(doc, req):
             if source.get('appendix_no'):
                 run = para.add_run(f" (Appendix {source.get('appendix_no')})")
 
-            # Add title if present
+            para.add_run('\n')
+
+            # Add title if present (comes right after requirement title)
             if source.get('title'):
-                run = para.add_run('\n')
                 run = para.add_run(source.get('title'))
                 run.bold = True
 
@@ -462,8 +468,10 @@ def _add_requirement_details_table(doc, req):
                         error_para = cell.add_paragraph()
                         error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
 
-            # Add document details
+            # Add document details (come after source description and images)
             for doc_group in source.get('requirement_documents', []):
+                para = cell.add_paragraph()  # New paragraph for document group
+                para.add_run('\n')
                 run = para.add_run(doc_group.get('document_title', ''))
                 run.bold = True
 
@@ -482,7 +490,7 @@ def _add_requirement_details_table(doc, req):
                             section_text = f"Section {document.get('section_number')} "
                         if document.get('section_title'):
                             section_text += document.get('section_title')
-                        run = para.add_run(section_text + '\n')
+                        run = para.add_run(section_text)
                         run.bold = True
 
                     # Add description
@@ -492,9 +500,32 @@ def _add_requirement_details_table(doc, req):
                             document.get('description'),
                             clear_first=False,
                         )
+                    # Add document images
+                    for img in document.get('document_images', []):
+                        image_url = img.get('image_url')
+                        if image_url:
+                            try:
+                                response = requests.get(image_url)
+                                response.raise_for_status()
+                                image_stream = BytesIO(response.content)
 
+                                img_para = cell.add_paragraph()
+                                run = img_para.add_run()
+                                run.add_picture(image_stream, width=Inches(4))
+
+                                if img.get('original_file_name'):
+                                    caption_para = cell.add_paragraph()
+                                    caption_run = caption_para.add_run(img.get('original_file_name'))
+                                    caption_run.font.size = Pt(9)
+                            except RequestException:
+                                error_para = cell.add_paragraph()
+                                error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
+
+            # Add spacing between multiple sources
             if idx < len(source_details) - 1:
+                para = cell.add_paragraph()
                 para.add_run('\n')
+                para = cell.add_paragraph()  # New paragraph for next source
 
     # Inspection Details/Findings
     row = req_table.add_row()
@@ -661,18 +692,21 @@ def generate_inspection_report_docx(preview_data):
         _add_html_to_container(
             merged_cell,
             preview_data["inspection_scope"],
+            clear_first=True,
         )
 
     if preview_data.get("preliminary_review_details"):
         _add_html_to_container(
             merged_cell,
             preview_data["preliminary_review_details"],
+            clear_first=False,
         )
 
     if preview_data.get("finding_statement"):
         _add_html_to_container(
             merged_cell,
             preview_data["finding_statement"],
+            clear_first=False,
         )
 
     # Row 9: In Attendance
