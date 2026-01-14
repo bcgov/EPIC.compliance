@@ -339,7 +339,7 @@ export default function ReportTopSection() {
           </Box>
           {!isReportsReadOnly &&
             !isHistorical &&
-            !inspectionReportsData?.date_issued && (
+            inspectionReportsData?.is_open_for_editing && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Typography variant="body2">Wrong Version?</Typography>
                 <Link

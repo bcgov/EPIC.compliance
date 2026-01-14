@@ -2,6 +2,7 @@ import RequirementDrawer from "@/components/App/Inspections/Profile/Requirements
 import { baseRequirement, mockInspection } from "./mockData";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
+import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
 
 describe("RequirementDrawer Component", () => {
   const queryClient = new QueryClient();
@@ -31,6 +32,19 @@ describe("RequirementDrawer Component", () => {
           { id: "REG", name: "Regulatory Consideration" },
         ]),
     });
+    // Set Zustand store state for useReportStore
+    useReportStore.setState({
+      inspectionReportsData: { is_open_for_editing: true },
+    });
+  });
+  it("does not show action buttons when is_open_for_editing is false", () => {
+    useReportStore.setState({
+      inspectionReportsData: { is_open_for_editing: false },
+    });
+    mountComponent(baseRequirement);
+    cy.contains("Delete").should("not.exist");
+    cy.contains("Edit Requirement #1").should("not.exist");
+    // If there are other action buttons, add similar checks here
   });
 
   it("renders create requirement drawer correctly", () => {
@@ -54,7 +68,7 @@ describe("RequirementDrawer Component", () => {
 
     // Confirm deletion
     cy.contains("button", "Delete").click();
-    
+
   });
 
 });

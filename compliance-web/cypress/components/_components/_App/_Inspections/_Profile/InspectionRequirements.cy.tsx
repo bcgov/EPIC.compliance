@@ -1,5 +1,6 @@
 /// <reference types="cypress" />
 import { mount } from "cypress/react";
+import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
 import InspectionRequirements from "@/components/App/Inspections/Profile/InspectionRequirements";
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
@@ -58,6 +59,11 @@ describe("InspectionRequirements", () => {
           retry: false,
         },
       },
+    });
+
+    // Set Zustand store state for useReportStore
+    useReportStore.setState({
+      inspectionReportsData: { is_open_for_editing: true }
     });
 
     // Default mock inspection data
@@ -346,6 +352,14 @@ describe("InspectionRequirements", () => {
   });
 
   describe("Action Button Functionality", () => {
+      it("does not show action buttons when is_open_for_editing is false", () => {
+        useReportStore.setState({
+          inspectionReportsData: { is_open_for_editing: false },
+        });
+        mountComponent();
+        cy.contains("New Requirement").should("not.exist");
+        cy.contains("Regulatory Consideration").should("not.exist");
+      });
     beforeEach(() => {
       mockInspection.inspection_status = "Open";
       queryClient.setQueryData(["inspection-requirement-images", mockInspection.id], mockImages);

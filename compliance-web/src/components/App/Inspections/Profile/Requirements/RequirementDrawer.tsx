@@ -34,6 +34,8 @@ import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { MQ } from "@/styles/responsive";
+import { useReportStore } from "../Reports/reportStore";
+import { InspectionStatusEnum } from "@/utils/constants";
 
 type RequirementDrawerProps = {
   inspectionData: Inspection;
@@ -81,12 +83,16 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
     restoreRequirementStoreFromSnapshot,
   } = useRequirementStore();
 
+  const { inspectionReportsData } = useReportStore();
+
   const { data: inspectionRequirementTypesList } =
     useInspectionRequirementTypesData();
 
   const isRequirementEditable = useMemo(
-    () => inspectionData?.inspection_status?.toLowerCase() === "open",
-    [inspectionData]
+    () =>
+      inspectionData?.inspection_status === InspectionStatusEnum.OPEN &&
+      inspectionReportsData?.is_open_for_editing,
+    [inspectionData, inspectionReportsData]
   );
 
   const GeneratedFormSchema = RequirementFormSchema(isRegulatoryConsideration);
@@ -114,7 +120,13 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
       }
     );
   }, [inspectionRequirementData, resetForm, inspectionRequirementTypesList]);
-  const isInspectionClosed = useMemo(() => inspectionData?.inspection_status?.toLowerCase() === "closed", [inspectionData]);
+
+  const isInspectionClosed = useMemo(
+    () =>
+      inspectionData?.inspection_status === InspectionStatusEnum.CLOSED ||
+      !inspectionReportsData?.is_open_for_editing,
+    [inspectionData, inspectionReportsData]
+  );
   const onCreateSuccess = useCallback(() => {
     onSubmit("Requirement created successfully!", true);
     resetForm();

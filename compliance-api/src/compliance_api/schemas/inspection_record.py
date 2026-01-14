@@ -42,11 +42,9 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
     )
     record_prepared_by_position = fields.Nested(KeyValueSchema, dump_only=True)
 
-    @post_dump
-    def post_dump_actions(
-        self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
-        """Extract the value of the inspection record status enum."""
+    @post_dump(pass_original=True)
+    def post_dump_actions(self, data, original, many, **kwargs):  # pylint: disable=no-self-use, unused-argument
+        """Post dump actions."""
         if "ir_progress" in data and data["ir_progress"] is not None:
             data["ir_progress"] = {
                 "id": data["ir_progress"].name,
@@ -54,6 +52,7 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
             }
         else:
             data["ir_progress"] = ""
+        data["is_open_for_editing"] = getattr(original, "is_open_for_editing", False)
         return data
 
 

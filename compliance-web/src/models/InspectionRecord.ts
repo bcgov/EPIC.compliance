@@ -24,6 +24,7 @@ export interface InspectionRecord {
   record_prepared_by_position_id?: number;
   record_prepared_by?: StaffUser;
   record_prepared_by_position?: Position;
+  is_open_for_editing?: boolean;
   field_change_info?: {
     inspection_scope_changed?: boolean;
     finding_statement_changed?: boolean;

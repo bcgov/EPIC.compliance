@@ -23,9 +23,11 @@ import {
   CR_CONTEXT_TYPE,
   DRAWER_WIDTHS,
   FILE_PROFILE_CONTEXT,
+  InspectionStatusEnum,
 } from "@/utils/constants";
 import InspectionEnforcements from "@/components/App/Inspections/Profile/InspectionEnforcements";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
+import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/$inspectionNumber"
@@ -53,6 +55,7 @@ function InspectionProfilePage() {
     error,
     isLoading,
   } = useInspectionByNumber(inspectionNumber!);
+  const { inspectionReportsData } = useReportStore();
 
   const { data: caseFileData } = useCaseFileByNumber(
     inspectionData?.case_file.case_file_number ?? ""
@@ -71,9 +74,11 @@ function InspectionProfilePage() {
 
   const isInspectionEditable = useMemo(() => {
     return (
-      isUserEditAllowed && inspectionData?.inspection_status?.toLowerCase() === "open"
+      isUserEditAllowed &&
+      inspectionData?.inspection_status === InspectionStatusEnum.OPEN &&
+      inspectionReportsData?.is_open_for_editing
     );
-  }, [inspectionData, isUserEditAllowed]);
+  }, [inspectionData, isUserEditAllowed, inspectionReportsData]);
 
   // Event handlers
   const handleOnSubmit = useCallback(

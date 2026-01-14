@@ -27,6 +27,7 @@ import { useRequirementStore } from "./Requirements/requirementStore";
 import RequirementLoading from "./Requirements/RequirementLoading";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
+import { useReportStore } from "./Reports/reportStore";
 
 interface InspectionRequirementsProps {
   inspectionData: Inspection;
@@ -44,6 +45,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
     setRequirementFigures,
     setRequirementsList,
   } = useRequirementStore();
+  const { inspectionReportsData } = useReportStore();
   const [activeRequirementId, setActiveRequirementId] = React.useState<
     number | null
   >(null);
@@ -303,30 +305,32 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
     >
       <Box display={"flex"} justifyContent={"space-between"} mt={3} mb={2}>
         <Typography variant="h6">Requirements</Typography>
-        {!isDataLoading && isRequirementsAllowed && (
-          <Box display={"flex"} gap={2}>
-            <Button
-              variant="text"
-              color="primary"
-              size="small"
-              onClick={handleOpenAddRegulatoryConsiderationModal}
-              startIcon={<AddRounded />}
-              data-cy="new-regulatory-consideration-button"
-              disabled={!!regulatoryConsideration}
-            >
-              Regulatory Consideration
-            </Button>
-            <Button
-              color="secondary"
-              size="small"
-              onClick={handleOpenAddRequirementModal}
-              startIcon={<AddRounded />}
-              data-cy="new-requirement-button"
-            >
-              New Requirement
-            </Button>
-          </Box>
-        )}
+        {!isDataLoading &&
+          isRequirementsAllowed &&
+          inspectionReportsData?.is_open_for_editing && (
+            <Box display={"flex"} gap={2}>
+              <Button
+                variant="text"
+                color="primary"
+                size="small"
+                onClick={handleOpenAddRegulatoryConsiderationModal}
+                startIcon={<AddRounded />}
+                data-cy="new-regulatory-consideration-button"
+                disabled={!!regulatoryConsideration}
+              >
+                Regulatory Consideration
+              </Button>
+              <Button
+                color="secondary"
+                size="small"
+                onClick={handleOpenAddRequirementModal}
+                startIcon={<AddRounded />}
+                data-cy="new-requirement-button"
+              >
+                New Requirement
+              </Button>
+            </Box>
+          )}
       </Box>
       {isDataLoading ? (
         <RequirementLoading />
