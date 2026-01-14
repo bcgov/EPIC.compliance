@@ -46,9 +46,6 @@ export const formatInspectionRecordsToReviewBoardItems = (
     date_report_sent: record.date_report_sent,
     expected_return_date: record.expected_return_date,
     date_response: record.date_response,
-    issuing_officer: record.intended_issuance_date
-      ? record.deputy_director
-      : undefined,
   }));
 };
 
