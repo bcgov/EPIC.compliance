@@ -35,6 +35,7 @@ const REPORT_TYPES = [
   { label: "First Nation Report", value: ReportType.FirstNation },
 ];
 
+// Prep for COMP-744 - System Reports
 // export const Route = createFileRoute("/_authenticated/ce-database/reports/")({
 //   component: ReportsTab,
 // });
