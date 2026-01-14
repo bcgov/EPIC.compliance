@@ -15,7 +15,7 @@ export default function RouteItemsList() {
   const routeMenuItems: RouteMenuItem[] = [
     {
       routeName: "C&E Database",
-      icon: <FormatListBulletedRounded />,
+      icon: <FormatListBulletedRounded />, 
       subRoutes: [
         {
           routeName: "Case Files",
@@ -33,6 +33,10 @@ export default function RouteItemsList() {
           routeName: "Requirements",
           path: "/ce-database/requirements",
         },
+        // {
+        //   routeName: "Reports",
+        //   path: "/ce-database/reports",
+        // },
       ],
     },
     {
