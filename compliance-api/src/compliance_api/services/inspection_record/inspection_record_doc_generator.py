@@ -485,13 +485,15 @@ def _add_requirement_details_table(doc, req):
                 for document in documents:
                     # Add section info
                     if document.get('section_number') or document.get('section_title'):
+                        section_para = cell.add_paragraph()
                         section_text = ''
                         if document.get('section_number'):
                             section_text = f"Section {document.get('section_number')} "
                         if document.get('section_title'):
                             section_text += document.get('section_title')
-                        run = para.add_run(section_text)
+                        run = section_para.add_run(section_text)
                         run.bold = True
+                        section_para.add_run('\n')
 
                     # Add description
                     if document.get('description'):
