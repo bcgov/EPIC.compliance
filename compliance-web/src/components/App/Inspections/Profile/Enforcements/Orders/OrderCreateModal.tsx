@@ -158,9 +158,7 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
         title="Create Order"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingOrder}
-        additionalFormFields={
-          defaultValues.isHistoricalRecord ? <OrderFormFields /> : undefined
-        }
+        additionalFormFields={<OrderFormFields />}
       />
     </FormProvider>
   );
