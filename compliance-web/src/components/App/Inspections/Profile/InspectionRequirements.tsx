@@ -307,7 +307,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
         <Typography variant="h6">Requirements</Typography>
         {!isDataLoading &&
           isRequirementsAllowed &&
-          inspectionReportsData?.is_open_for_editing && (
+          !inspectionReportsData?.date_issued && (
             <Box display={"flex"} gap={2}>
               <Button
                 variant="text"
