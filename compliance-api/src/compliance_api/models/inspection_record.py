@@ -7,8 +7,6 @@ from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
-from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
-
 from .base_model import BaseModelVersioned
 from .utils import with_session
 
@@ -163,8 +161,3 @@ class InspectionRecord(BaseModelVersioned):
         return cls.query.filter_by(
             inspection_id=inspection_id, is_deleted=False, is_active=True
         ).first()
-
-    @property
-    def is_open_for_editing(self):
-        """Check if the associated inspection has been reopened."""
-        return self.inspection.inspection_status == InspectionStatusEnum.OPEN and self.date_issued is None
