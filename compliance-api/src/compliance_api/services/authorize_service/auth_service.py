@@ -91,6 +91,12 @@ class AuthService:
                 f"Update group in the auth server failed for user : {auth_user_guid}"
             )
 
+        # Invalidate auth caches for this specific user
+        AuthService._invalidate_auth_user_cache(auth_user_guid)
+
+        # Invalidate the "all users by app" cache since this user's groups changed
+        AuthService._invalidate_auth_users_by_app_cache()
+
         # Invalidate ALL staff caches since permissions changed
         CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
 
@@ -110,10 +116,50 @@ class AuthService:
         if delete_response.status_code != 204:
             raise BusinessError("Delete group mapping failed")
 
+        # Invalidate auth caches for this specific user
+        AuthService._invalidate_auth_user_cache(auth_user_guid)
+
+        # Invalidate the "all users by app" cache since this user's groups changed
+        AuthService._invalidate_auth_users_by_app_cache()
+
         # Invalidate ALL staff caches since permissions changed
         CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
 
         return delete_response
+
+    @staticmethod
+    def _invalidate_auth_user_cache(auth_user_guid: str):
+        """
+        Invalidate the individual auth user cache.
+
+        Since cache keys include token hashes, we can't delete all variations.
+        Instead, we use a pattern-based approach or accept that cache will expire naturally.
+        """
+        from compliance_api.services.cached_staff_user import CachedStaffUserService
+
+        # Get current token hash
+        token_hash = CachedStaffUserService._get_token_hash()
+        cache_key = f"auth_user:{auth_user_guid}:{token_hash}"
+
+        cache.delete(cache_key)
+        current_app.logger.info(f"Invalidated auth user cache for {auth_user_guid}")
+
+    @staticmethod
+    def _invalidate_auth_users_by_app_cache():
+        """
+        Invalidate the "all users by app" cache.
+
+        Since cache keys include token hashes, we can't delete all variations.
+        Instead, we delete for the current token.
+        """
+        from compliance_api.services.cached_staff_user import CachedStaffUserService
+
+        # Get current token hash
+        token_hash = CachedStaffUserService._get_token_hash()
+        cache_key = f"auth_users_app:{AUTH_APP}:{token_hash}"
+
+        cache.delete(cache_key)
+        current_app.logger.info("Invalidated auth users by app cache")
 
 
 def _request_auth_service(

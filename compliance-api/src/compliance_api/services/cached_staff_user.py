@@ -16,6 +16,7 @@ class CachedStaffUserService:
     STAFF_CACHE_KEY_PREFIX = "staff_user:"
     ALL_STAFF_CACHE_KEY = "all_staff_users"
     ALL_STAFF_WITH_AUTH_PREFIX = "all_staff_with_auth:"
+    CACHE_VERSION_KEY = "all_staff_with_auth_version"
 
     @classmethod
     def exists_staff_by_auth_guid(cls, auth_guid: str) -> bool:
@@ -62,13 +63,13 @@ class CachedStaffUserService:
         # pylint: disable=import-outside-toplevel
         from compliance_api.services.staff_user import _set_permission_level_in_compliance_user_obj
 
-        # Create cache key that includes token hash for security
-        token_hash = CachedStaffUserService._get_token_hash()
-
-        version = cache.get("all_staff_with_auth_version")
+        # Get current version
+        version = cache.get(CachedStaffUserService.CACHE_VERSION_KEY)
         if version is None:
             version = 0
 
+        # Create cache key that includes token hash AND version
+        token_hash = CachedStaffUserService._get_token_hash()
         cache_key = (
             f"{CachedStaffUserService.ALL_STAFF_WITH_AUTH_PREFIX}"
             f"{token_hash}:v{version}"
@@ -120,13 +121,22 @@ class CachedStaffUserService:
 
     @staticmethod
     def _invalidate_all_staff_with_auth_cache():
+        """
+        Invalidate all staff+auth cache by bumping version number.
+
+        This invalidates cache for all tokens/users since the version
+        is part of every cache key.
+        """
         try:
-            current_version = cache.get("all_staff_with_auth_version")
+            current_version = cache.get(CachedStaffUserService.CACHE_VERSION_KEY)
             if current_version is None:
                 current_version = 0
 
-            cache.set("all_staff_with_auth_version", current_version + 1)
-            current_app.logger.info("Bumped staff+auth cache version")
+            new_version = current_version + 1
+            cache.set(CachedStaffUserService.CACHE_VERSION_KEY, new_version)
+            current_app.logger.info(
+                f"Bumped staff+auth cache version from {current_version} to {new_version}"
+            )
         except (AttributeError, RuntimeError) as e:
             current_app.logger.error(f"Error invalidating staff+auth cache: {e}")
 

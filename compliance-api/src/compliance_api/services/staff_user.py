@@ -88,7 +88,7 @@ class StaffUserService:
                 # Update user group in auth service
                 AuthService.update_user_group(
                     auth_user_guid,
-                    {"group": permission, "app_name": AUTH_APP}
+                    {"group_name": permission, "app_name": AUTH_APP}
                 )
             except (AttributeError, RuntimeError) as e:
                 # Log the error but don't fail the user creation
@@ -127,6 +127,19 @@ class StaffUserService:
         updated_user = StaffUserModel.update_staff(user_id, user_data)
 
         if updated_user:
+            # Handle permission (group) assignment
+            permission = user_data.get("permission")
+            if permission:
+                auth_guid_to_update = new_auth_guid if new_auth_guid else existing_user.auth_user_guid
+                try:
+                    # Update user group
+                    AuthService.update_user_group(
+                        auth_guid_to_update,
+                        {"group_name": permission, "app_name": AUTH_APP}
+                    )
+                except (AttributeError, RuntimeError) as e:
+                    logging.error("Failed to update user group in auth service: %s", e)
+
             # Invalidate caches for both old and new auth_guid (if changed)
             CachedStaffUserService.invalidate_staff_cache(existing_user.auth_user_guid)
 
