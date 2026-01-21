@@ -83,6 +83,8 @@ def upgrade():
 def downgrade():
     # Remove alliance_name column
     op.drop_column("complaint_source_contacts", "alliance_name")
+    op.drop_column("complaint_source_contacts_version", "alliance_name")
+    op.drop_column("complaint_source_contacts_version", "alliance_name_mod")
     # Remove the inserted row
     op.execute("""
         DELETE FROM complaint_sources
