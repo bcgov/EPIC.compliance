@@ -44,7 +44,7 @@ export const useStaffUsersData = (filters: {
   otherPositions: true,
 }) => {
   return useQuery({
-    queryKey: ["staff-users"],
+    queryKey: ["staff-users", filters],
     queryFn: async () => {
       let staffUsers = await fetchStaffUsers();
       staffUsers = staffUsers.sort((a, b) => a.name.localeCompare(b.name));
