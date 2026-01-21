@@ -48,7 +48,7 @@ const areFiltersEqual = (a: unknown, b: unknown): boolean => {
 export function CaseFiles() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
   const { user: currentUser, isLoading: authLoading } = useAuth();
   
   const [sorting, setSorting] = useState<MRT_SortingState>([

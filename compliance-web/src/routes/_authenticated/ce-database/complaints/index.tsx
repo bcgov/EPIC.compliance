@@ -65,7 +65,7 @@ export function Complaints() {
   const { data: topics } = useTopicsData();
   const { data: complaintSources } = useComplaintSourcesData();
   const { data: complaintResolutions } = useComplaintResolutionsData();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
   const [sorting, setSorting] = useState<MRT_SortingState>(() => [
