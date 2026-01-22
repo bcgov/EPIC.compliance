@@ -35,7 +35,8 @@ const IREnforcementSummary = () => {
     if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       notify.error("Request timed out. Please try again or contact support if the issue persists.");
     } else {
-      notify.error("Failed to update Enforcement Summary");
+      const errorData = error.response?.data as { message?: string } | undefined;
+      notify.error(`Failed to update Enforcement Summary. ${errorData?.message || error.message}`);
     }
   };
 
