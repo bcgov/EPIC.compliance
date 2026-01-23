@@ -193,17 +193,8 @@ def test_get_case_files_by_project_id(client, auth_header):
 #     assert filtered_case_file is not None, f"Created case file with ID {created_case.id} not found in API response"
 
 
-def test_get_case_file_by_id(client, auth_header, mocker):
+def test_get_case_file_by_id(client, auth_header, mock_track_service):
     """Test case file by id."""
-    mock_get_user_by_guid = mocker.patch(
-        "compliance_api.services.epic_track_service.track_service.TrackService.get_project_by_id"
-    )
-    mock_get_user_by_guid.return_value = {
-        "ea_certificate": fake.word(),
-        "type": {"name": fake.word()},
-        "sub_type": {"name": fake.word()},
-        "proponent": {"name": fake.word()},
-    }
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["project_id"] = 2
     case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
@@ -237,17 +228,8 @@ def test_get_case_file_officers(client, auth_header_super_user, mocker):
     assert result.json[0].get("id") == new_user.id
 
 
-def test_get_case_file_by_number(client, auth_header_super_user, mocker):
+def test_get_case_file_by_number(client, auth_header_super_user, mock_track_service):
     """Get case file by case file number."""
-    mock_get_user_by_guid = mocker.patch(
-        "compliance_api.services.epic_track_service.track_service.TrackService.get_project_by_id"
-    )
-    mock_get_user_by_guid.return_value = {
-        "ea_certificate": fake.word(),
-        "type": {"name": fake.word()},
-        "sub_type": {"name": fake.word()},
-        "proponent": {"name": fake.word()},
-    }
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"
     result = CaseFileModel.create_case_file(case_file_data)
@@ -262,17 +244,8 @@ def test_get_case_file_by_number(client, auth_header_super_user, mocker):
     assert result.json["case_file_number"] == case_file_data["case_file_number"]
 
 
-def test_case_file_update(client, auth_header_super_user, created_staff, mocker):
+def test_case_file_update(client, auth_header_super_user, created_staff, mock_track_service):
     """Update case file."""
-    mock_get_user_by_guid = mocker.patch(
-        "compliance_api.services.epic_track_service.track_service.TrackService.get_project_by_id"
-    )
-    mock_get_user_by_guid.return_value = {
-        "ea_certificate": fake.word(),
-        "type": {"name": fake.word()},
-        "sub_type": {"name": fake.word()},
-        "proponent": {"name": fake.word()},
-    }
     #  creating case file without officers or primary officer
     case_file_data = copy.copy(CasefileScenario.default_value.value)
     case_file_data["case_file_number"] = f"test_{datetime.utcnow().timestamp()}"

@@ -51,6 +51,7 @@ def mock_track_service(mocker):
         "abbreviation": "PRJ",
         "sub_type": {"name": fake.word()},
         "proponent": {"name": fake.word()},
+        "name": fake.word(),
     }
 
     mock_get_project_statuses = mocker.patch(
