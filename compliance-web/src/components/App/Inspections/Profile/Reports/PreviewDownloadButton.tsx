@@ -53,7 +53,7 @@ const PreviewDownloadButton = () => {
   const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
 
   const [previewClicked, setPreviewClicked] = useState(false);
-  // const [generatingDocx, generatingDocx] = useState(false); Comp-779
+  const [generatingDocx, setGeneratingDocx] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentLoggedInUser();
@@ -158,7 +158,7 @@ const PreviewDownloadButton = () => {
   };
 
   const handleDownloadDocx = async (event: MouseEvent) => {
-    // setGeneratingDocx(true);
+    setGeneratingDocx(true);
     handleClose(event);
 
     mutateIrPreviewData(
@@ -182,11 +182,11 @@ const PreviewDownloadButton = () => {
           window.URL.revokeObjectURL(url);
 
           notify.success("DOCX report downloaded successfully");
-          // setGeneratingDocx(false);
+          setGeneratingDocx(false);
         },
         onError: () => {
           notify.error("Failed to download DOCX report");
-          // setGeneratingDocx(false);
+          setGeneratingDocx(false);
         },
       }
     );
@@ -338,7 +338,6 @@ const PreviewDownloadButton = () => {
                       />
                     )}
                   </Button>
-                  {/* Comp-779
                   <Button
                     variant="text"
                     onClick={(e) =>
@@ -359,7 +358,7 @@ const PreviewDownloadButton = () => {
                         sx={{ ml: 1 }}
                       />
                     )}
-                  </Button> */}
+                  </Button>
                   <Box
                     sx={{
                       display: "flex",
