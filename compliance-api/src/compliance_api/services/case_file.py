@@ -410,8 +410,11 @@ def _set_project_parameters(case_file):
     """Set project parameters."""
     if case_file:
         project_id = case_file.project_id
+        date_time = case_file.date_created
+        date = date_time.date() if date_time else None
         if project_id:
-            project = TrackService.get_project_by_id(project_id)
+            project = TrackService.get_project_by_id(project_id, as_of_date=date)
+            setattr(case_file.project, "name", project.get("name", None))
             setattr(case_file, "authorization", project.get("ea_certificate", None))
             setattr(case_file, "type", project.get("type").get("name"))
             setattr(case_file, "sub_type", project.get("sub_type").get("name"))
