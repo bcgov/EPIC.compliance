@@ -1,6 +1,6 @@
-// import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
-import { useForm, FormProvider, Controller } from "react-hook-form";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
+import { useForm, FormProvider } from "react-hook-form";
 import {
   Box,
   Button,
@@ -19,8 +19,11 @@ import { useFirstNationsData } from "@/hooks/useFirstNations";
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
 import { useProjectsData } from "@/hooks/useProjects";
 import { BCDesignTokens } from "epic.theme";
-import { StaffUser } from "@/models/Staff";
 import { ReportType } from "@/models/ReportType";
+import { downloadFile } from "@/utils/appUtils";
+import { ReportFormValues } from "@/models/Report";
+import { useSystemReportsExport } from "@/hooks/useSystemReports";
+import dateUtils from "@/utils/dateUtils";
 
 const REPORT_TYPES = [
   {
@@ -35,55 +38,50 @@ const REPORT_TYPES = [
   { label: "First Nation Report", value: ReportType.FirstNation },
 ];
 
-// Prep for COMP-744 - System Reports
-// export const Route = createFileRoute("/_authenticated/ce-database/reports/")({
-//   component: ReportsTab,
-// });
-
-interface ReportFormValues {
-  reportType: ReportType;
-  project: { id: number; name: string } | null;
-  dateRangeType: "none" | "range";
-  startDate: string | null;
-  endDate: string | null;
-  officers: StaffUser[];
-  firstNation: { id: number; name: string } | null;
-}
+export const Route = createFileRoute("/_authenticated/ce-database/reports/")({
+  component: ReportsTab,
+});
 
 export function ReportsTab() {
+  const [dateRangeType, setDateRangeType] = useState<"none" | "range">("none");
+
   const methods = useForm<ReportFormValues>({
     defaultValues: {
-      reportType: ReportType.ProjectCompliance,
+      report_type: ReportType.ProjectCompliance,
       project: null,
-      dateRangeType: "none",
-      startDate: null,
-      endDate: null,
+      start_date: null,
+      end_date: null,
       officers: [],
-      firstNation: null,
+      first_nation: null,
     },
   });
-  const { handleSubmit, watch, control, setValue } = methods;
+  const { handleSubmit, watch, setValue } = methods;
   const { data: projects = [] } = useProjectsData();
   const { data: staffUsers = [] } = useStaffUsersData();
   const { data: firstNations = [] } = useFirstNationsData();
 
-  const reportType = watch("reportType");
-  const dateRangeType = watch("dateRangeType");
+  const report_type = watch("report_type");
   const officers = watch("officers");
 
   const hasManuallyChangedOfficers = useRef(false);
 
   useEffect(() => {
-    if (reportType !== ReportType.CaseFileManagement) {
+    if (report_type !== ReportType.CaseFileManagement) {
       hasManuallyChangedOfficers.current = false;
     }
-  }, [reportType]);
+    setValue("start_date", null);
+    setValue("end_date", null);
+    setValue("project", null);
+    setValue("officers", []);
+    setValue("first_nation", null);
+    setDateRangeType("none");
+  }, [report_type, setValue]);
 
   useEffect(() => {
     if (
-      reportType === ReportType.CaseFileManagement &&
+      report_type === ReportType.CaseFileManagement &&
       staffUsers.length > 0 &&
-      officers.length === 0 &&
+      officers?.length === 0 &&
       !hasManuallyChangedOfficers.current
     ) {
       setValue("officers", staffUsers, {
@@ -91,17 +89,25 @@ export function ReportsTab() {
         shouldDirty: true,
       });
     }
-  }, [reportType, staffUsers, officers, setValue]);
+  }, [report_type, staffUsers, officers, setValue]);
 
   useEffect(() => {
-    if (reportType === ReportType.CaseFileManagement && officers.length === 0) {
+    if (
+      report_type === ReportType.CaseFileManagement &&
+      officers?.length === 0
+    ) {
       hasManuallyChangedOfficers.current = true;
     }
-  }, [reportType, officers]);
+  }, [report_type, officers]);
 
-  const onSubmit = (data: ReportFormValues) => {
-    alert(`Generating report for ${data.reportType}`);
-  };
+  const { mutate: downloadSystemReport, isPending } = useSystemReportsExport(
+    (data) => {
+      downloadFile(
+        data,
+        `${report_type}-${dateUtils.formatDate(new Date().toISOString(), "YYYY-MM-DD-HH-mm-ss")}.xlsx`,
+      );
+    },
+  );
 
   return (
     <Box maxWidth={700} mx="auto" pb={8}>
@@ -125,21 +131,23 @@ export function ReportsTab() {
       <Box
         sx={{
           p: 4,
-          borderRadius: '4px',
-          border: '1px solid #D8D8D8',
-          background: '#FFF',
+          borderRadius: "4px",
+          border: "1px solid #D8D8D8",
+          background: "#FFF",
         }}
       >
         <FormProvider {...methods}>
           <Box
             component="form"
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit((data) => {
+              downloadSystemReport(data);
+            })}
             display="flex"
             flexDirection="column"
             gap={1}
           >
             <ControlledTextField
-              name="reportType"
+              name="report_type"
               label={<span style={{ fontWeight: 700 }}>Report Type</span>}
               select
               fullWidth
@@ -151,7 +159,7 @@ export function ReportsTab() {
                 </MenuItem>
               ))}
             </ControlledTextField>
-            {reportType === ReportType.ProjectCompliance && (
+            {report_type === ReportType.ProjectCompliance && (
               <>
                 <Typography variant="body2" color={BCDesignTokens.themeGray80}>
                   View all inspection, enforcement and compliant data for a
@@ -172,34 +180,35 @@ export function ReportsTab() {
                   />
                 </Box>
                 <Box>
-                  <Controller
-                    name="dateRangeType"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup {...field}>
-                        <FormControlLabel
-                          value="none"
-                          control={<Radio />}
-                          label="No Date Range"
-                        />
-                        <FormControlLabel
-                          value="range"
-                          control={<Radio />}
-                          label="Select Date Range"
-                        />
-                      </RadioGroup>
-                    )}
-                  />
+                  <RadioGroup
+                    value={dateRangeType}
+                    onChange={(e) => {
+                      setDateRangeType(e.target.value as "none" | "range");
+                      setValue("start_date", null);
+                      setValue("end_date", null);
+                    }}
+                  >
+                    <FormControlLabel
+                      value="none"
+                      control={<Radio />}
+                      label="No Date Range"
+                    />
+                    <FormControlLabel
+                      value="range"
+                      control={<Radio />}
+                      label="Select Date Range"
+                    />
+                  </RadioGroup>
                 </Box>
                 {dateRangeType === "range" && (
                   <Box display="flex" gap={2}>
                     <ControlledDateField
-                      name="startDate"
+                      name="start_date"
                       label="Start Date"
                       width="100%"
                     />
                     <ControlledDateField
-                      name="endDate"
+                      name="end_date"
                       label="End Date"
                       width="100%"
                     />
@@ -207,41 +216,42 @@ export function ReportsTab() {
                 )}
               </>
             )}
-            {reportType === ReportType.CebSummary && (
+            {report_type === ReportType.CebSummary && (
               <>
                 <Typography variant="body2" color={BCDesignTokens.themeGray80}>
                   View CEB activities, including inspection, enforcement and
                   complaint summary data across projects.
                 </Typography>
                 <Box>
-                  <Controller
-                    name="dateRangeType"
-                    control={control}
-                    render={({ field }) => (
-                      <RadioGroup {...field}>
-                        <FormControlLabel
-                          value="none"
-                          control={<Radio />}
-                          label="No Date Range"
-                        />
-                        <FormControlLabel
-                          value="range"
-                          control={<Radio />}
-                          label="Select Date Range"
-                        />
-                      </RadioGroup>
-                    )}
-                  />
+                  <RadioGroup
+                    value={dateRangeType}
+                    onChange={(e) => {
+                      setDateRangeType(e.target.value as "none" | "range");
+                      setValue("start_date", null);
+                      setValue("end_date", null);
+                    }}
+                  >
+                    <FormControlLabel
+                      value="none"
+                      control={<Radio />}
+                      label="No Date Range"
+                    />
+                    <FormControlLabel
+                      value="range"
+                      control={<Radio />}
+                      label="Select Date Range"
+                    />
+                  </RadioGroup>
                 </Box>
                 {dateRangeType === "range" && (
                   <Box display="flex" gap={2}>
                     <ControlledDateField
-                      name="startDate"
+                      name="start_date"
                       label="Start Date"
                       width="100%"
                     />
                     <ControlledDateField
-                      name="endDate"
+                      name="end_date"
                       label="End Date"
                       width="100%"
                     />
@@ -249,7 +259,7 @@ export function ReportsTab() {
                 )}
               </>
             )}
-            {reportType === ReportType.CaseFileManagement && (
+            {report_type === ReportType.CaseFileManagement && (
               <>
                 <Typography variant="body2" color={BCDesignTokens.themeGray80}>
                   View CEB case file management data and statistics.
@@ -271,7 +281,7 @@ export function ReportsTab() {
                 </Box>
               </>
             )}
-            {reportType === ReportType.FirstNation && (
+            {report_type === ReportType.FirstNation && (
               <>
                 <Typography variant="body2" color={BCDesignTokens.themeGray80}>
                   View attended inspections and received complaints for a
@@ -280,7 +290,7 @@ export function ReportsTab() {
                 </Typography>
                 <Box mt={2}>
                   <ControlledAutoComplete
-                    name="firstNation"
+                    name="first_nation"
                     label="First Nation/Alliance"
                     options={firstNations}
                     getOptionLabel={(option) => option.name}
@@ -296,8 +306,16 @@ export function ReportsTab() {
             )}
             <Divider sx={{ my: 1 }} />
             <Box display="flex" justifyContent="flex-start">
-              <Button type="submit" variant="contained" color="primary">
-                <Typography variant="body2" color={BCDesignTokens.themeGrayWhite}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isPending}
+              >
+                <Typography
+                  variant="body2"
+                  color={BCDesignTokens.themeGrayWhite}
+                >
                   Generate & Download Report
                 </Typography>
               </Button>

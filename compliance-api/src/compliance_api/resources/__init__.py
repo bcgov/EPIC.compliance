@@ -55,6 +55,7 @@ from .staff_user import API as USER_API
 from .topic import API as TOPIC_API
 from .violation_ticket import API as VIOLATION_TICKET_API
 from .warning_letter import API as WARNING_LETTER_API
+from .report import API as REPORT_API
 
 
 __all__ = ("API_BLUEPRINT", "OPS_BLUEPRINT")
@@ -124,3 +125,4 @@ API.add_namespace(REVIEW_BOARD_API, path="review-board")
 API.add_namespace(INSPECTION_REQUIREMENTS_API, path="inspection-requirements")
 API.add_namespace(SENTENCE_TYPE_OPTION_API, path="sentence-type-options")
 API.add_namespace(FILE_JOB_API, path="document-jobs")
+API.add_namespace(REPORT_API, path="reports")
