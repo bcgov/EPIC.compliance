@@ -750,13 +750,13 @@ def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
     # Query for all inspections and open complaints
     case_level_query = _build_case_level_query(case_file_id)
 
-    all_inspection_ids = []
+    all_inspection_ids = set()
     processed_complaints = set()
 
     # Process results
     for row in case_level_query:
-        if row.inspection_id:
-            all_inspection_ids.append(row.inspection_id)
+        if row.inspection_id and row.inspection_id not in all_inspection_ids:
+            all_inspection_ids.add(row.inspection_id)
             # Add all inspection items, regardless of IR status
             open_items["inspections"].append(_build_inspection_item(row))
 

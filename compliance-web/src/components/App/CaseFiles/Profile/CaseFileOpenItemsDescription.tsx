@@ -1,4 +1,5 @@
 import { CaseFileOpenItems } from "@/models/CaseFileOpenItems";
+import { InspectionStatusEnum } from "@/utils/constants";
 import { Box, Link, Typography } from "@mui/material";
 import React from "react";
 
@@ -45,6 +46,8 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
     );
   };
 
+  const openInspections = caseFileOpenItems.inspections.filter(i => i.status.name === InspectionStatusEnum.OPEN);
+
   return (
     <Box sx={{ overflow: "auto", maxHeight: "570px" }}>
       <Typography variant="body1" mb={2}>
@@ -52,11 +55,11 @@ const CaseFileOpenItemsDescription: React.FC<CaseFileOpenItemsDescriptionProps> 
         proceeding:
       </Typography>
 
-      {caseFileOpenItems.inspections.length > 0 && (
+      {openInspections.length > 0 && (
         <Box>
           <strong>Inspections:</strong>
           <ul style={{ marginTop: 8 }}>
-            {caseFileOpenItems.inspections.map((inspection, index) => (
+            {openInspections.map((inspection, index) => (
               <li key={index}>
                 <Link
                   underline="hover"
