@@ -84,7 +84,7 @@ const DocumentTitleInfo = () => {
           <Typography variant="caption">
             Record the Document Title in the format of [Plan
             Name], [Version], [Date], ex., Water Management Plan,
-            Rev3, Dec. 21, 2023.
+            Rev 3, Dec. 21, 2023.
           </Typography>
         </Collapse>
       </Box>
