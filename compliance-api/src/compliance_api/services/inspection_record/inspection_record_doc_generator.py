@@ -135,6 +135,7 @@ def _add_list(container, list_tag, font_size):
 
     for li in list_tag.find_all("li", recursive=False):
         para = container.add_paragraph(style=style)
+        para.paragraph_format.left_indent = Inches(0.5)
         text = li.get_text(strip=True)
         # Replace 2+ spaces with single space
         text = re.sub(r' {2,}', ' ', text)
@@ -414,6 +415,10 @@ def _add_requirement_details_table(doc, req):
         cell = row.cells[0].merge(row.cells[1])
         para = cell.paragraphs[0]
 
+        # Set Requirement header spacing
+        para.paragraph_format.space_before = Inches(0.04)
+        para.paragraph_format.space_after = Inches(0.08)
+
         for idx, source in enumerate(source_details):
             # Add requirement header for first source
             if idx == 0:
@@ -479,8 +484,7 @@ def _add_requirement_details_table(doc, req):
                 documents = doc_group.get('documents', [])
                 if documents and documents[0].get('appendix_no'):
                     run = para.add_run(f" (Appendix {documents[0].get('appendix_no')})")
-
-                para.add_run('\n')
+                    para.add_run('\n')
 
                 for document in documents:
                     # Add section info
@@ -533,6 +537,9 @@ def _add_requirement_details_table(doc, req):
     row = req_table.add_row()
     cell = row.cells[0].merge(row.cells[1])
     para = cell.paragraphs[0]
+    # Set Header spacing
+    para.paragraph_format.space_before = Inches(0.04)
+    para.paragraph_format.space_after = Inches(0.08)
     run = para.add_run("Inspection Details:")
     run.bold = True
     _add_html_to_container(
@@ -579,8 +586,9 @@ def generate_inspection_report_docx(preview_data):
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.5)
 
-    # Set font
+    # Set font and spacing
     style = doc.styles['Normal']
+    style.paragraph_format.space_after = Inches(0.04)
     font = style.font
     font.name = 'Calibri'
     font.size = Pt(11)
@@ -593,14 +601,25 @@ def generate_inspection_report_docx(preview_data):
 
     # Add header with logo and title
     header = doc.sections[0].header
-    header_table = header.add_table(1, 2, width=Inches(7.25))
+    header_table = header.add_table(rows=1, cols=2, width=Inches(7.25))
+    header_table.autofit = False
+    # Column widths
+    header_table.columns[0].width = Inches(4.25)
+    header_table.columns[1].width = Inches(3.0)
+    for row in header_table.rows:
+        row.cells[0].width = Inches(4.25)
+        row.cells[1].width = Inches(3.0)
+    if len(header.paragraphs) > 0:
+        # Remove default paragraph
+        p = header.paragraphs[0]
+        p._element.getparent().remove(p._element)
     logo_cell = header_table.rows[0].cells[0]
     _remove_cell_margins(logo_cell)
     logo_para = logo_cell.paragraphs[0]
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
     logo_para.paragraph_format.space_after = Pt(0)
-    logo_para.paragraph_format.left_indent = Inches(-0.25)
+    logo_para.paragraph_format.left_indent = Inches(-0.15)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
@@ -753,7 +772,6 @@ def generate_inspection_report_docx(preview_data):
         merged_cell.text = f"{approval_info.get('approved_by', '')}\n{approval_info.get('approved_by_position', '')}"
 
     # Inspection Details Section
-    doc.add_page_break()
     heading = doc.add_heading('INSPECTION DETAILS', level=1)
     heading.runs[0].font.color.rgb = RGBColor(51, 102, 153)
     heading.runs[0].font.size = Pt(11)

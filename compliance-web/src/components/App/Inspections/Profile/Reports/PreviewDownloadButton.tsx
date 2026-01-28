@@ -173,9 +173,7 @@ const PreviewDownloadButton = () => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `inspection_report_${
-            inspectionData?.ir_number || inspectionReportsData?.id || "report"
-          }.docx`;
+          a.download = `${inspectionData?.ir_number || inspectionReportsData?.id || "report"}.docx`;
           document.body.appendChild(a);
           a.click();
           a.remove();

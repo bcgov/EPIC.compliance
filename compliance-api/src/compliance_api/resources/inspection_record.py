@@ -340,7 +340,7 @@ class InspectionRecordPreview(Resource):
             return send_file(
                 response,
                 as_attachment=True,
-                download_name=f'inspection_report_{inspection.ir_number or inspection_record_id}.docx',
+                download_name=f'{inspection.ir_number or inspection_record_id}.docx',
                 mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             )
 
