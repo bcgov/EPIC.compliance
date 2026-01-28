@@ -27,8 +27,6 @@ class TrackService:
             raise BusinessError(
                 f"Error finding project with ID {project_id} from EPIC.track server"
             )
-        current_app.logger.info(f"Fetched project data from EPIC.track for project ID {project_id}")
-        current_app.logger.info(f"Project data: {project_response.json()}")
         return project_response.json()
 
     @staticmethod
