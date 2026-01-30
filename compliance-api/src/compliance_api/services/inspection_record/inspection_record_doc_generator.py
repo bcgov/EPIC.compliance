@@ -135,7 +135,6 @@ def _add_list(container, list_tag, font_size):
 
     for li in list_tag.find_all("li", recursive=False):
         para = container.add_paragraph(style=style)
-        para.paragraph_format.left_indent = Inches(0.5)
         text = li.get_text(strip=True)
         # Replace 2+ spaces with single space
         text = re.sub(r' {2,}', ' ', text)
@@ -292,6 +291,10 @@ def add_html_table_to_container(container, table_element):
                     _add_formatted_text_to_table_para(para, element)
 
                 elif element.name in ('ul', 'ol'):
+                    # If list is first element, remove the empty default paragraph
+                    if first_element and docx_cell.paragraphs and not docx_cell.paragraphs[0].text.strip():
+                        p = docx_cell.paragraphs[0]._element
+                        p.getparent().remove(p)
                     # Add list to cell
                     _add_list_to_table_cell(docx_cell, element)
                     first_element = False
@@ -419,6 +422,7 @@ def _add_requirement_details_table(doc, req):
         para.paragraph_format.space_before = Inches(0.04)
         para.paragraph_format.space_after = Inches(0.08)
 
+        last_description_is_table = False
         for idx, source in enumerate(source_details):
             # Add requirement header for first source
             if idx == 0:
@@ -497,7 +501,6 @@ def _add_requirement_details_table(doc, req):
                             section_text += document.get('section_title')
                         run = section_para.add_run(section_text)
                         run.bold = True
-                        section_para.add_run('\n')
 
                     # Add description
                     if document.get('description'):
@@ -530,8 +533,15 @@ def _add_requirement_details_table(doc, req):
             # Add spacing between multiple sources
             if idx < len(source_details) - 1:
                 para = cell.add_paragraph()
-                para.add_run('\n')
                 para = cell.add_paragraph()  # New paragraph for next source
+
+            # Check if last document description ends with a table
+            ends_with_table = source.get("requirement_source_description", '').strip().endswith('</table>')
+            if idx == len(source_details) - 1 and ends_with_table:
+                last_description_is_table = True
+
+    if last_description_is_table:
+        cell.add_paragraph()
 
     # Inspection Details/Findings
     row = req_table.add_row()
@@ -592,6 +602,28 @@ def generate_inspection_report_docx(preview_data):
     font = style.font
     font.name = 'Calibri'
     font.size = Pt(11)
+
+    # List styles spacing
+    list_bullet_style = doc.styles['List Bullet']
+    list_bullet_style.paragraph_format.space_after = Inches(0.04)
+    list_bullet_style.paragraph_format.left_indent = Inches(0.5)
+
+    # Disable contextual spacing at style level
+    para_properties = list_bullet_style._element.pPr
+    if para_properties is not None:
+        contextual_spacing = para_properties.find(qn('w:contextualSpacing'))
+        if contextual_spacing is not None:
+            para_properties.remove(contextual_spacing)
+
+    list_number_style = doc.styles['List Number']
+    list_number_style.paragraph_format.space_after = Inches(0.04)
+    list_number_style.paragraph_format.left_indent = Inches(0.5)
+
+    para_properties = list_number_style._element.pPr
+    if para_properties is not None:
+        contextual_spacing = para_properties.find(qn('w:contextualSpacing'))
+        if contextual_spacing is not None:
+            para_properties.remove(contextual_spacing)
 
     rpr = style._element.get_or_add_rPr()
 
