@@ -7,8 +7,7 @@ import { useReportStore } from "./reportStore";
 import { InspectionRecord } from "@/models/InspectionRecord";
 
 type IssueIRModalProps = {
-  onSubmit: (message: string) => void;
-};
+  onSubmit: (message: string) => void | Promise<void>;};
 
 const IssueIRModal: FC<IssueIRModalProps> = ({ onSubmit }) => {
   const { inspectionData, inspectionReportsData, setInspectionReportsData } =
@@ -22,7 +21,7 @@ const IssueIRModal: FC<IssueIRModalProps> = ({ onSubmit }) => {
   const { mutate: updateInspectionRecord, isPending } =
     useUpdateInspectionRecord(onSuccess);
 
-  const onSubmitHandler = () => {
+  const onSubmitHandler = async () => {
     updateInspectionRecord({
       inspectionId: inspectionData?.id ?? 0,
       inspectionRecordId: inspectionReportsData?.id ?? 0,
