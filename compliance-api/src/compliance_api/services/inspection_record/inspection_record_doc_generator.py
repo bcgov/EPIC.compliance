@@ -413,6 +413,7 @@ def _add_requirement_details_table(doc, req):
 
     # Requirement header and details
     source_details = req.get('requirement_source_details', [])
+    last_description_is_table = False
     if source_details:
         row = req_table.add_row()
         cell = row.cells[0].merge(row.cells[1])
@@ -422,7 +423,7 @@ def _add_requirement_details_table(doc, req):
         para.paragraph_format.space_before = Inches(0.04)
         para.paragraph_format.space_after = Inches(0.08)
 
-        last_description_is_table = False
+        ends_with_table = False
         for idx, source in enumerate(source_details):
             # Add requirement header for first source
             if idx == 0:
@@ -452,9 +453,11 @@ def _add_requirement_details_table(doc, req):
                     source["requirement_source_description"],
                     clear_first=False,
                 )
+                ends_with_table = source.get("requirement_source_description", '').strip().endswith('</table>')
 
             # Add req source images
             for img in source.get('requirement_source_images', []):
+                ends_with_table = False
                 image_url = img.get('image_url')
                 if image_url:
                     try:
@@ -487,10 +490,12 @@ def _add_requirement_details_table(doc, req):
                 # Check if first document has appendix
                 documents = doc_group.get('documents', [])
                 if documents and documents[0].get('appendix_no'):
+                    ends_with_table = False
                     run = para.add_run(f" (Appendix {documents[0].get('appendix_no')})")
                     para.add_run('\n')
 
                 for document in documents:
+                    ends_with_table = False
                     # Add section info
                     if document.get('section_number') or document.get('section_title'):
                         section_para = cell.add_paragraph()
@@ -504,6 +509,7 @@ def _add_requirement_details_table(doc, req):
 
                     # Add description
                     if document.get('description'):
+                        ends_with_table = document.get("description", '').strip().endswith('</table>')
                         _add_html_to_container(
                             cell,
                             document.get('description'),
@@ -511,6 +517,7 @@ def _add_requirement_details_table(doc, req):
                         )
                     # Add document images
                     for img in document.get('document_images', []):
+                        ends_with_table = False
                         image_url = img.get('image_url')
                         if image_url:
                             try:
@@ -535,8 +542,7 @@ def _add_requirement_details_table(doc, req):
                 para = cell.add_paragraph()
                 para = cell.add_paragraph()  # New paragraph for next source
 
-            # Check if last document description ends with a table
-            ends_with_table = source.get("requirement_source_description", '').strip().endswith('</table>')
+            # Check if last description ends with a table
             if idx == len(source_details) - 1 and ends_with_table:
                 last_description_is_table = True
 
@@ -651,7 +657,7 @@ def generate_inspection_report_docx(preview_data):
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
     logo_para.paragraph_format.space_after = Pt(0)
-    logo_para.paragraph_format.left_indent = Inches(-0.15)
+    logo_para.paragraph_format.left_indent = Inches(-0.10)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
