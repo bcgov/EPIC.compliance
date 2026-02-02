@@ -35,7 +35,7 @@ class DocumentJobService:
         jobs = DocumentJob.query.filter_by(
             user_id=user_id,
             inspection_record_id=inspection_record_id,
-        ).order_by(DocumentJob.completed_at.desc()).all()
+        ).filter(DocumentJob.completed_at.isnot(None)).order_by(DocumentJob.completed_at.desc()).all()
         document_job = jobs[0] if jobs else None
         return document_job.completed_at.isoformat() if document_job else None
 
