@@ -212,6 +212,30 @@ def _add_formatted_text_to_para(para, element, font_size):
             run.font.size = font_size
 
 
+def _set_empty_paragraph_spacing(doc):
+    """Set line spacing to 0.5 for all empty paragraph blocks."""
+    # Iterate through all paragraphs in the doc body
+    for para in doc.paragraphs:
+        if not para.text.strip():
+            para.paragraph_format.line_spacing = 0.5
+
+    # Check paragraphs inside table
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    if not para.text.strip() and not _has_images(para):
+                        para.paragraph_format.line_spacing = 0.5
+
+
+def _has_images(para):
+    """Check if a paragraph contains any images."""
+    for run in para.runs:
+        if run._element.xpath('.//pic:pic'):
+            return True
+    return False
+
+
 def _add_page_number(run):
     fld_char_begin = OxmlElement('w:fldChar')
     fld_char_begin.set(qn('w:fldCharType'), 'begin')
@@ -428,6 +452,7 @@ def _add_requirement_details_table(doc, req):
             # Add requirement header for first source
             if idx == 0:
                 run = para.add_run(f"Requirement {req.get('sort_order', '')}: ")
+                para.paragraph_format.space_after = Inches(0.08)
                 run.bold = True
 
             # Add requirement title
@@ -439,11 +464,12 @@ def _add_requirement_details_table(doc, req):
             if source.get('appendix_no'):
                 run = para.add_run(f" (Appendix {source.get('appendix_no')})")
 
-            para.add_run('\n')
+            para = cell.add_paragraph()
 
             # Add title if present (comes right after requirement title)
             if source.get('title'):
                 run = para.add_run(source.get('title'))
+                para.paragraph_format.space_after = Inches(0.02)
                 run.bold = True
 
             # Add description
@@ -458,6 +484,7 @@ def _add_requirement_details_table(doc, req):
             # Add req source images
             for img in source.get('requirement_source_images', []):
                 ends_with_table = False
+                para = cell.add_paragraph()
                 image_url = img.get('image_url')
                 if image_url:
                     try:
@@ -483,8 +510,9 @@ def _add_requirement_details_table(doc, req):
             # Add document details (come after source description and images)
             for doc_group in source.get('requirement_documents', []):
                 para = cell.add_paragraph()  # New paragraph for document group
-                para.add_run('\n')
+                para = cell.add_paragraph()
                 run = para.add_run(doc_group.get('document_title', ''))
+                para.paragraph_format.space_after = Inches(0.02)
                 run.bold = True
 
                 # Check if first document has appendix
@@ -492,7 +520,7 @@ def _add_requirement_details_table(doc, req):
                 if documents and documents[0].get('appendix_no'):
                     ends_with_table = False
                     run = para.add_run(f" (Appendix {documents[0].get('appendix_no')})")
-                    para.add_run('\n')
+                    para = cell.add_paragraph()
 
                 for document in documents:
                     ends_with_table = False
@@ -518,6 +546,7 @@ def _add_requirement_details_table(doc, req):
                     # Add document images
                     for img in document.get('document_images', []):
                         ends_with_table = False
+                        para = cell.add_paragraph()
                         image_url = img.get('image_url')
                         if image_url:
                             try:
@@ -536,6 +565,7 @@ def _add_requirement_details_table(doc, req):
                             except RequestException:
                                 error_para = cell.add_paragraph()
                                 error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
+                    para = cell.add_paragraph()
 
             # Add spacing between multiple sources
             if idx < len(source_details) - 1:
@@ -656,7 +686,7 @@ def generate_inspection_report_docx(preview_data):
     logo_para = logo_cell.paragraphs[0]
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
-    logo_para.paragraph_format.space_after = Pt(0)
+    logo_para.paragraph_format.space_after = Inches(0.04)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
@@ -905,7 +935,7 @@ def generate_inspection_report_docx(preview_data):
     para = cell.paragraphs[0]
     run = para.add_run("Date Preliminary")
     run.bold = True
-    para.add_run('\n')
+    para = cell.add_paragraph()
 
     if version_date_info and version_date_info.get('preliminary_dates'):
         for date in version_date_info.get('preliminary_dates'):
@@ -919,7 +949,7 @@ def generate_inspection_report_docx(preview_data):
     para = cell.paragraphs[0]
     run = para.add_run("Date Issued")
     run.bold = True
-    para.add_run('\n')
+    para = cell.add_paragraph()
 
     if version_date_info and version_date_info.get('final_date'):
         para.add_run(version_date_info.get('final_date'))
@@ -968,5 +998,7 @@ def generate_inspection_report_docx(preview_data):
     run = para.add_run("Website: ")
     run.bold = True
     _add_hyperlink(para, dept.get('website', ''), f"https://{dept.get('website', '')}")
+
+    _set_empty_paragraph_spacing(doc)
 
     return doc
