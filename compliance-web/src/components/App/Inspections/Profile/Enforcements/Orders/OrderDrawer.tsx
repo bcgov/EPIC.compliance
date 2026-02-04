@@ -68,7 +68,7 @@ const enforcementSchema = yup.object().shape({
 
 type EnforcementFormType = yup.InferType<typeof enforcementSchema>;
 
-const initFormData = {  
+const initFormData = {
   whereAs: { html: "", text: "" },
   nowTherefore: { html: "", text: "" },
   issuingOfficer: {} as StaffUser,
@@ -254,7 +254,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             Reset Template
           </Button>
           <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-            
+
             <OrderApprovalButtons
               inspectionOrder={enforcementOrder}
               inspection={inspection}
@@ -262,7 +262,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               caseFileId={inspection.case_file_id ?? 0}
               openEnforcementOrderDrawer={openEnforcementOrderDrawer}
             />
-            
+
             <EnforcementDownloadPDFButton
               enforcementId={enforcementOrder.id || 0}
               fileNumber={enforcementOrder.order_number || ""}

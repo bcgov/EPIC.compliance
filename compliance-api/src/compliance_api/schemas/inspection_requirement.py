@@ -132,7 +132,7 @@ class InspectionReqDetailDocImageUpdateSchema(InspectionReqDetailDocImageCreateS
 
 
 class InspectionReqDetailDocCreateSchema(BaseSchema):
-    """InpsectionReqDetailDocCreateSchema."""
+    """InspectionReqDetailDocCreateSchema."""
 
     document_type_id = fields.Int(
         metadata={"description": "The unique identifier of the document type"},

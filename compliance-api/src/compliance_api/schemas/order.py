@@ -202,3 +202,46 @@ class OrderReplaceSchema(BaseSchema):
             "If not provided, a new number will be generated."
         },
     )
+
+
+class OrderLinkCreateSchema(BaseSchema):
+    """Schema for linking orders to inspection requirements."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Exclude unknown fields in the deserialized output."""
+
+        unknown = EXCLUDE
+
+    order_id = fields.Integer(
+        required=True, metadata={"description": "The order id"}
+    )
+    inspection_id = fields.Integer(
+        required=True, metadata={"description": "The inspection id"}
+    )
+    inspection_requirement_ids = fields.List(
+        fields.Integer(),
+        required=True,
+        metadata={
+            "description": "List of inspection requirement IDs to link with the order."
+        },
+    )
+
+
+class OrderLinksResponseSchema(BaseSchema):
+    """Schema for linking orders to inspection requirements."""
+
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Exclude unknown fields in the deserialized output."""
+
+        unknown = EXCLUDE
+
+    type = fields.String(
+        dump_default="OrderLink",
+        metadata={"description": "The type of this object"}
+    )
+    order_id = fields.Integer(
+        required=True, metadata={"description": "The order id"}
+    )
+    inspection_requirement_id = fields.Integer(
+        required=True, metadata={"description": "The inspection requirement id"}
+    )

@@ -171,7 +171,7 @@ class Complaint(BaseModelVersioned):
     )
 
     @classmethod
-    def get_count_by_project_nd_case_file_id(cls, project_id: int, case_file_id: int):
+    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
         """Return the number of complaint based on the project and case file id."""
         result = (
             cls.query.with_entities(

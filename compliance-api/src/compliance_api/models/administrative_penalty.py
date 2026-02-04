@@ -308,7 +308,7 @@ class AdministrativePenalty(BaseModelVersioned):
         ).first()
 
     @classmethod
-    def get_count_by_project_nd_case_file_id(cls, project_id: int, case_file_id: int):
+    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
         """Get count of administrative penalties by project and case file id."""
         result = (
             cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)

@@ -328,7 +328,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
         enforcement_action_data: requirement.enforcement_action_data || [],
       }));
   }, [requirementEnforcements]);
-  
+
   const allRequirementsForRestorativeJustice = useMemo(() => {
     if (!requirementEnforcements) return [];
 
@@ -476,6 +476,10 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
   ];
 
   const openEnforcementOrderDrawer = (order: InspectionOrder) => {
+      // prevents the drawer from opening for linked orders
+      if (order.type === 'OrderLink') {
+        return;
+      }
     setDrawerOpen({
       content: (
         <OrderDrawer

@@ -1,5 +1,16 @@
 {
     "python.analysis.extraPaths": [
         "./compliance-api/src"
-    ]
+    ],
+    "workbench.colorCustomizations": {
+          "tab.activeBackground": "#4d5d3d",
+  "tab.activeForeground": "#ffffff",
+  "tab.inactiveBackground": "#1e1e1e",
+  "tab.inactiveForeground": "#aaaaaa",
+  "tab.activeBorder": "#4fc3f7",
+    "list.activeSelectionBackground": "#2d2d2d",
+  "list.activeSelectionForeground": "#ffffff",
+  "list.inactiveSelectionBackground": "#2a2a2a",
+  "list.inactiveSelectionForeground": "#cccccc"
+    }
 }
