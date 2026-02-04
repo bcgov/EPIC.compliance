@@ -4,8 +4,7 @@ INSPECTION_SCOPE = """<p class="editor-paragraph" dir="ltr">
     <span>The Officer inspected [Brief description of Project Components / Area inspected]</span>
 </p>
 <p class="editor-paragraph" dir="ltr">
-    <span>The inspection included a debrief</span>
-    <span> of observations with Project staff on {{ debrief_date }}.</span>
+    <span>The inspection included a debrief of observations with Project staff on {{ debrief_date }}.</span>
 </p>
 <p class="editor-paragraph">
     <br>
@@ -85,15 +84,15 @@ ENFORCEMENT_SUMMARY = {
     further information.</p>""",
     "ORDER": """<p class="editor-paragraph" dir="ltr">In Addition, {{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Order
-    {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i>. See {{ sort_order_line }}
-    for further information.</p>""",
+    {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i> ({{ act_year }}).
+    See {{ sort_order_line }} for further information.</p>""",
     "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In Addition, the findings
     for {{ sort_order_line }} may be referred to a decision maker for consideration of
     an Administrative Penalty.</p>""",
     "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of
     {{ eac }} was refered to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
-    information</p>""",
+    information.</p>""",
     "DEFAULT": """<p class="editor-paragraph" dir="ltr">The EAO CEB may inspect to determine if
     {{ project_name }} has been brought into compliance with these requirements. Continued non-compliance
-    with these requirements may result in additional enforcement under the <i>{{ act }}</i> </p>""",
+    with these requirements may result in additional enforcement under the <i>{{ act }}</i> ({{ act_year }}).</p>""",
 }

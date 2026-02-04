@@ -478,7 +478,8 @@ class InspectionRecordDataBuilder:
                     ENFORCEMENT_SUMMARY.get("DEFAULT"),
                     {
                         "project_name": self.data["project_details"].get("name"),
-                        "act": "Environmental Assessment Act (2018)",
+                        "act": "Environmental Assessment Act",
+                        "act_year": "2018",
                     },
                 )
             )
@@ -707,6 +708,7 @@ class InspectionRecordDataBuilder:
                     item.order_number
                 )
                 data_to_be_rendered["section_no"] = item.section.name
+                data_to_be_rendered["act_year"] = item.section.act
             elif action == EnforcementActionOptionEnum.WARNING_LETTER:
                 data_to_be_rendered["warning_letter_no"] = (
                     ServiceUtils.strip_project_code(item.warning_letter_number)
@@ -738,7 +740,8 @@ class InspectionRecordDataBuilder:
             "req_source_name": req_source_name,
             "eac": eac,
             "req_sort_order": requirement.sort_order,
-            "act": "Environmental Assessment Act (2018)",
+            "act": "Environmental Assessment Act",
+            "act_year": "2018",
         }
         return data_to_be_rendered
 
