@@ -12,9 +12,9 @@ from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
 
 from ..schemas import (
-    CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderReplaceSchema,
-    OrderSchema, OrderStatusSchema, OrderUpdateSchema, RenderRequestSchema, ResetOrderFieldSchema,
-    UpdateOrderApprovalStatusSchema)
+    CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderLinkCreateSchema,
+    OrderLinksResponseSchema, OrderReplaceSchema, OrderSchema, OrderStatusSchema, OrderUpdateSchema,
+    RenderRequestSchema, ResetOrderFieldSchema, UpdateOrderApprovalStatusSchema)
 from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
@@ -56,6 +56,14 @@ order_render_request_model = ApiHelper.convert_ma_schema_to_restx_model(
 
 order_replace_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, OrderReplaceSchema(), "OrderReplace"
+)
+
+order_links_create_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, OrderLinkCreateSchema(), "OrderLinkCreate"
+)
+
+order_links_response_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, OrderLinksResponseSchema(), "OrderLinksResponse"
 )
 
 
@@ -355,3 +363,36 @@ class OrderApprovalStatus(Resource):
             order_id, approval_id, approval_update_data
         )
         return OrderApprovalSchema().dump(updated_approval), HTTPStatus.OK
+
+
+@cors_preflight("POST, OPTIONS")
+@API.route("/links", methods=["POST", "OPTIONS"])
+class OrderLinks(Resource):
+    """Link inspection orders."""
+
+    @staticmethod
+    @auth.require
+    @API.expect(order_links_create_model)
+    @API.response(400, "Bad Request")
+    @API.response(404, "Not Found")
+    @API.response(
+        code=201,
+        model=order_list_model,
+        description="Success",
+    )
+    @ApiHelper.swagger_decorators(
+        API,
+        endpoint_description="Link inspection orders",
+    )
+    def post():
+        """Link this Order to inspection requirements."""
+        link = OrderLinkCreateSchema().load(API.payload)
+        order_id = link.get("order_id")
+        created_link = OrderService.link(
+            order_id,
+            link
+        )
+        return (
+            OrderLinksResponseSchema().dump(created_link),
+            HTTPStatus.CREATED,
+        )

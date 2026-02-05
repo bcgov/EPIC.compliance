@@ -5,6 +5,7 @@ import enum
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import relationship
 
+from compliance_api.models.inspection import InspectionRequirement
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 
@@ -76,6 +77,29 @@ class OrderInspectionRequirementMap(BaseModelVersioned):
         return cls.query.filter_by(
             inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
         ).first()
+
+    @classmethod
+    def get_by_inspection_and_order_id(
+        cls, inspection_id: int, order_id: int
+    ):
+        """Get inspection requirement maps by inspection id and order id."""
+        return (
+            cls.query.join(
+                InspectionRequirement,
+                InspectionRequirement.id == cls.inspection_requirement_id
+            )
+            .join(
+                InspectionModel,
+                InspectionModel.id == InspectionRequirement.inspection_id
+            )
+            .filter(
+                InspectionModel.id == inspection_id,
+                cls.order_id == order_id,
+                cls.is_deleted.is_(False),
+                cls.is_active.is_(True),
+            )
+            .all()
+        )
 
     @classmethod
     @with_session
@@ -226,7 +250,7 @@ class Order(BaseModelVersioned):
         return order
 
     @classmethod
-    def get_count_by_project_nd_case_file_id(cls, project_id: int, case_file_id: int):
+    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
         """Get count of orders by project and case file id."""
         result = (
             cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
@@ -282,10 +306,28 @@ class Order(BaseModelVersioned):
 
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
-        """Find all orders by inspection id."""
-        return cls.query.filter_by(
-            inspection_id=inspection_id, is_deleted=False, is_active=True
-        ).all()
+        """Find all orders by inspection id that have entries in the requirement map for the given inspection."""
+        return (
+            cls.query.join(
+                OrderInspectionRequirementMap,
+                OrderInspectionRequirementMap.order_id
+                == cls.id,
+            )
+            .join(
+                InspectionRequirement,
+                InspectionRequirement.id
+                == OrderInspectionRequirementMap.inspection_requirement_id,
+            )
+            .filter(
+                InspectionRequirement.inspection_id == inspection_id,
+                OrderInspectionRequirementMap.is_active.is_(True),
+                OrderInspectionRequirementMap.is_deleted.is_(False),
+                cls.is_deleted.is_(False),
+            )
+            .distinct()
+            .order_by(cls.created_date.desc())
+            .all()
+        )
 
     @classmethod
     def has_replacement_order(cls, original_order_id: int):

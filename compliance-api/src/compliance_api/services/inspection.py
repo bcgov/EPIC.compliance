@@ -115,7 +115,6 @@ class InspectionService:
         for inspection in inspections:
             data = inspection_data.get(inspection.id, {"requirement_details": []})
             setattr(inspection, "requirement_details", data["requirement_details"])
-
         return inspections
 
     @classmethod

@@ -33,9 +33,7 @@ class OrderService:
         """Get all orders for an inspection."""
         if inspection_id is None:
             return OrderModel.get_all()
-        return OrderModel.get_by_params(
-            {"inspection_id": inspection_id}, default_filters=False
-        )
+        return OrderModel.get_by_inspection_id(inspection_id)
 
     @classmethod
     def get_projectwise_orders(cls, case_file_id: int) -> List[OrderModel]:
@@ -100,6 +98,11 @@ class OrderService:
     def get_order_by_order_number(cls, order_number: str) -> OrderModel:
         """Retrieve an order by order number."""
         return OrderModel.get_by_order_number(order_number)
+
+    @classmethod
+    def get_by_inspection_id(cls, inspection_id: int) -> List[OrderModel]:
+        """Retrieve orders by inspection ID."""
+        return OrderInspectionRequirementMapModel.get_by_inspection_id(inspection_id)
 
     @classmethod
     def update_order(cls, order_id: int, update_data: dict) -> OrderModel:
@@ -240,6 +243,57 @@ class OrderService:
                 order_id,
                 update_data,
                 session,
+            )
+        return order
+
+    @classmethod
+    def link(cls, order_id: int, link: dict) -> OrderModel:
+        """Link an existing order to inspection requirements.
+
+        Args:
+            order_id: The order ID
+            link: Dict containing inspection_requirement_ids to be linked
+
+        Returns:
+            OrderModel: The order model after linking the requirements
+        """
+        # get the order
+        order = OrderModel.find_by_id(order_id)
+        if not order:
+            raise ResourceNotFoundError(f"Order with ID {order_id} not found")
+
+        # Also get the inspection to which we are linking, check user has access, check status
+        inspection_id = link.get("inspection_id")
+        inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        ServiceUtils.inspection_status_check(inspection)
+
+        # Check that both the order and inspection belong to the same project
+        order_project_id = order.inspection.case_file.project_id
+        inspection_project_id = inspection.case_file.project_id
+
+        if order_project_id != inspection_project_id:
+            raise UnprocessableEntityError(
+                "Order and Inspection must belong to the same project to be linked"
+            )
+
+        # validate the inspection requirements
+        requirement_ids = link.get("inspection_requirement_ids", [])
+        ServiceUtils.check_requirement_for_enforcement_action(
+            requirement_ids, EnforcementActionOptionEnum.ORDER.value
+        )
+        existing_requirements = (
+            OrderInspectionRequirementMapModel.get_by_inspection_and_order_id(
+                inspection_id, order_id
+            )
+        )
+        if existing_requirements:
+            raise UnprocessableEntityError(
+                "Order is already linked to the given inspection requirements"
+            )
+        with session_scope() as session:
+            cls.insert_or_update_inspection_requirements(
+                order_id, requirement_ids, session
             )
         return order
 

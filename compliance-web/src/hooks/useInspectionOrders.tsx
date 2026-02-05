@@ -42,6 +42,27 @@ const createInspectionOrder = ({
   });
 };
 
+const linkOrder = ({
+  orderId,
+  link,
+  }: {
+  orderId: number;
+  link: {
+    inspection_id: number;
+    inspection_requirement_ids: number[];
+  };
+}) => {
+  return request({
+    url: `/orders/links`,
+    method: "post",
+    data: {
+      order_id: orderId,
+      inspection_id: link.inspection_id,
+      inspection_requirement_ids: link.inspection_requirement_ids,
+    },
+  });
+};
+
 const updateInspectionOrder = ({
   inspectionOrderId,
   inspectionOrder,
@@ -233,6 +254,27 @@ export const useInspectionOrdersProjectwiseData = (caseFileId: number) => {
   });
 };
 
+export const useOrdersByCaseFileData = (
+  caseFileId: number,
+  { isStaleInfinate = true }: { isStaleInfinate?: boolean } = {}
+) => {
+    return useQuery({
+    queryKey: ["inspection-orders-projectwise", caseFileId],
+    queryFn: () => fetchInspectionOrdersProjectwise(caseFileId),
+    select: (data) => {
+      return data.filter(
+        (order) => (
+          order.order_status?.id === OrderStatusEnum.OPEN ||
+          order.order_status?.id === OrderStatusEnum.CLOSED ||
+          order.order_status?.id === OrderStatusEnum.RESCINDED
+        )
+      );
+    },
+    enabled: !!caseFileId,
+    staleTime: isStaleInfinate ? Infinity : 0,
+  });
+};
+
 export const useInspectionOrderByNumber = (onSuccess: OnSuccessType) => {
   return useMutation({
     mutationFn: fetchInspectionOrderByNumber,
@@ -243,6 +285,12 @@ export const useInspectionOrderByNumber = (onSuccess: OnSuccessType) => {
 export const useCreateInspectionOrder = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: createInspectionOrder, onSuccess });
 };
+
+export const useLinkInspectionOrder = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: linkOrder,
+    onSuccess });
+}
 
 export const useUpdateInspectionOrder = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: updateInspectionOrder, onSuccess });
