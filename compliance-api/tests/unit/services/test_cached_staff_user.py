@@ -39,7 +39,8 @@ class TestCachedStaffUserService:
         assert exists is True
 
         # Verify cache was populated
-        cache_key = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
+        version = CachedStaffUserService._get_cache_version()
+        cache_key = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}:v{version}"
         cached_value = cache.get(cache_key)
         assert cached_value is True
 
@@ -86,19 +87,31 @@ class TestCachedStaffUserService:
         exists1 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
         assert exists1 is True
 
-        # Verify cache exists
-        cache_key = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
-        assert cache.get(cache_key) is True
+        # Get the version and verify cache exists
+        version_before = CachedStaffUserService._get_cache_version()
+        cache_key_before = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}:v{version_before}"
+        assert cache.get(cache_key_before) is True
 
-        # Invalidate specific user cache
+        # Bumps the version
         CachedStaffUserService.invalidate_staff_cache(auth_guid)
 
-        # Verify cache was cleared
-        assert cache.get(cache_key) is None
+        # Verify version was bumped
+        version_after = CachedStaffUserService._get_cache_version()
+        assert version_after == version_before + 1
 
-        # Should still work (will fetch from database)
+        # Verify old cache key still exists (not deleted, just obsolete)
+        assert cache.get(cache_key_before) is True
+
+        # Verify new cache key doesn't exist yet
+        cache_key_after = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}:v{version_after}"
+        assert cache.get(cache_key_after) is None
+
+        # Should still fetch from database with new version
         exists2 = CachedStaffUserService.exists_staff_by_auth_guid(auth_guid)
         assert exists2 is True
+
+        # Verify new cache was populated
+        assert cache.get(cache_key_after) is True
 
     def test_invalidate_staff_cache_all_users(self):
         """Test invalidating all staff cache."""

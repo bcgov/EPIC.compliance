@@ -16,7 +16,20 @@ class CachedStaffUserService:
     STAFF_CACHE_KEY_PREFIX = "staff_user:"
     ALL_STAFF_CACHE_KEY = "all_staff_users"
     ALL_STAFF_WITH_AUTH_PREFIX = "all_staff_with_auth:"
-    CACHE_VERSION_KEY = "all_staff_with_auth_version"
+    CACHE_VERSION_KEY = "staff_cache_version"
+
+    @classmethod
+    def _get_cache_version(cls):
+        """
+        Get current cache version from shared cache.
+
+        This ensures all pods see the same version number.
+        """
+        version = cache.get(cls.CACHE_VERSION_KEY)
+        if version is None:
+            version = 0
+            cache.set(cls.CACHE_VERSION_KEY, version)
+        return version
 
     @classmethod
     def exists_staff_by_auth_guid(cls, auth_guid: str) -> bool:
@@ -35,7 +48,9 @@ class CachedStaffUserService:
         if not auth_guid:
             return False
 
-        cache_key = f"{cls.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
+        # Include version in cache key
+        version = cls._get_cache_version()
+        cache_key = f"{cls.STAFF_CACHE_KEY_PREFIX}{auth_guid}:v{version}"
 
         cached_staff_exists = cache.get(cache_key)
         if cached_staff_exists is not None:
@@ -63,10 +78,8 @@ class CachedStaffUserService:
         # pylint: disable=import-outside-toplevel
         from compliance_api.services.staff_user import _set_permission_level_in_compliance_user_obj
 
-        # Get current version
-        version = cache.get(CachedStaffUserService.CACHE_VERSION_KEY)
-        if version is None:
-            version = 0
+        # Get current version from shared cache
+        version = CachedStaffUserService._get_cache_version()
 
         # Create cache key that includes token hash AND version
         token_hash = CachedStaffUserService._get_token_hash()
@@ -111,20 +124,18 @@ class CachedStaffUserService:
         Args:
             auth_guid: Specific auth_guid to invalidate, or None to clear all staff cache
         """
+        # Bump version to invalidate all caches across all pods
+        CachedStaffUserService._invalidate_all_staff_cache()
+
         if auth_guid:
-            cache_key = f"{CachedStaffUserService.STAFF_CACHE_KEY_PREFIX}{auth_guid}"
-            cache.delete(cache_key)
             current_app.logger.info(f"Invalidated cache for staff user: {auth_guid}")
 
-        # Always invalidate the aggregate cache when any staff user changes
-        CachedStaffUserService._invalidate_all_staff_with_auth_cache()
-
     @staticmethod
-    def _invalidate_all_staff_with_auth_cache():
+    def _invalidate_all_staff_cache():
         """
-        Invalidate all staff+auth cache by bumping version number.
+        Invalidate all staff cache by bumping version number.
 
-        This invalidates cache for all tokens/users since the version
+        This invalidates cache for across pods since the version
         is part of every cache key.
         """
         try:
@@ -135,10 +146,10 @@ class CachedStaffUserService:
             new_version = current_version + 1
             cache.set(CachedStaffUserService.CACHE_VERSION_KEY, new_version)
             current_app.logger.info(
-                f"Bumped staff+auth cache version from {current_version} to {new_version}"
+                f"Bumped staff cache version from {current_version} to {new_version}"
             )
         except (AttributeError, RuntimeError) as e:
-            current_app.logger.error(f"Error invalidating staff+auth cache: {e}")
+            current_app.logger.error(f"Error invalidating staff cache: {e}")
 
     @classmethod
     def _clear_all_staff_cache(cls):

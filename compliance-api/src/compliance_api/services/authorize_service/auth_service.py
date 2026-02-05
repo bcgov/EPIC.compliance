@@ -14,6 +14,21 @@ from .constant import API_REQUEST_TIMEOUT
 class AuthService:
     """Handle service request for epic.authorize with integrated cache management."""
 
+    AUTH_CACHE_VERSION_KEY = "auth_cache_version"
+
+    @classmethod
+    def _get_auth_cache_version(cls):
+        """
+        Get current auth cache version from shared cache.
+
+        This ensures all pods see the same version number.
+        """
+        version = cache.get(cls.AUTH_CACHE_VERSION_KEY)
+        if version is None:
+            version = 0
+            cache.set(cls.AUTH_CACHE_VERSION_KEY, version)
+        return version
+
     @staticmethod
     def get_epic_user_by_guid(auth_user_guid: str):
         """
@@ -24,9 +39,10 @@ class AuthService:
         """
         from compliance_api.services.cached_staff_user import CachedStaffUserService
 
-        # Include token hash in cache key for security
+        # Include version AND token hash in cache key
+        version = AuthService._get_auth_cache_version()
         token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_user:{auth_user_guid}:{token_hash}"
+        cache_key = f"auth_user:{auth_user_guid}:{token_hash}:v{version}"
 
         cached_result = cache.get(cache_key)
         if cached_result is not None:
@@ -56,9 +72,10 @@ class AuthService:
         from compliance_api.utils.constant import AUTH_APP
         from compliance_api.exceptions import BusinessError
 
-        # Include token hash in cache key for security
+        # Include version AND token hash in cache key
+        version = AuthService._get_auth_cache_version()
         token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_users_app:{AUTH_APP}:{token_hash}"
+        cache_key = f"auth_users_app:{AUTH_APP}:{token_hash}:v{version}"
 
         cached_result = cache.get(cache_key)
         if cached_result is not None:
@@ -91,11 +108,8 @@ class AuthService:
                 f"Update group in the auth server failed for user : {auth_user_guid}"
             )
 
-        # Invalidate auth caches for this specific user
-        AuthService._invalidate_auth_user_cache(auth_user_guid)
-
-        # Invalidate the "all users by app" cache since this user's groups changed
-        AuthService._invalidate_auth_users_by_app_cache()
+        # Invalidate all auth caches by bumping version
+        AuthService._invalidate_all_auth_cache()
 
         # Invalidate ALL staff caches since permissions changed
         CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
@@ -116,50 +130,30 @@ class AuthService:
         if delete_response.status_code != 204:
             raise BusinessError("Delete group mapping failed")
 
-        # Invalidate auth caches for this specific user
-        AuthService._invalidate_auth_user_cache(auth_user_guid)
+        # Invalidate all auth caches by bumping version
+        AuthService._invalidate_all_auth_cache()
 
-        # Invalidate the "all users by app" cache since this user's groups changed
-        AuthService._invalidate_auth_users_by_app_cache()
-
-        # Invalidate ALL staff caches since permissions changed
+        # Invalidate all staff caches since permissions changed
         CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
 
         return delete_response
 
     @staticmethod
-    def _invalidate_auth_user_cache(auth_user_guid: str):
-        """
-        Invalidate the individual auth user cache.
+    def _invalidate_all_auth_cache():
+        """Invalidate all auth cache by bumping version number."""
+        try:
+            current_version = cache.get(AuthService.AUTH_CACHE_VERSION_KEY)
+            if current_version is None:
+                current_version = 0
 
-        Since cache keys include token hashes, we can't delete all variations.
-        Instead, we use a pattern-based approach or accept that cache will expire naturally.
-        """
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
+            new_version = current_version + 1
+            cache.set(AuthService.AUTH_CACHE_VERSION_KEY, new_version)
 
-        # Get current token hash
-        token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_user:{auth_user_guid}:{token_hash}"
-
-        cache.delete(cache_key)
-        current_app.logger.info(f"Invalidated auth user cache for {auth_user_guid}")
-
-    @staticmethod
-    def _invalidate_auth_users_by_app_cache():
-        """
-        Invalidate the "all users by app" cache.
-
-        Since cache keys include token hashes, we can't delete all variations.
-        Instead, we delete for the current token.
-        """
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
-
-        # Get current token hash
-        token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_users_app:{AUTH_APP}:{token_hash}"
-
-        cache.delete(cache_key)
-        current_app.logger.info("Invalidated auth users by app cache")
+            current_app.logger.debug(
+                f"Bumped auth cache version from {current_version} to {new_version}"
+            )
+        except (AttributeError, RuntimeError) as e:
+            current_app.logger.error(f"Error invalidating auth cache: {e}")
 
 
 def _request_auth_service(

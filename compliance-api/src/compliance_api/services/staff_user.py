@@ -146,6 +146,10 @@ class StaffUserService:
             if new_auth_guid and new_auth_guid != existing_user.auth_user_guid:
                 CachedStaffUserService.invalidate_staff_cache(new_auth_guid)
 
+            # Return the latest user object
+            final_auth_guid = new_auth_guid if new_auth_guid else existing_user.auth_user_guid
+            return StaffUserService.get_user_by_auth_guid(final_auth_guid)
+
         return updated_user
 
     @staticmethod
