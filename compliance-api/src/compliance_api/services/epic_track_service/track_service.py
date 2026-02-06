@@ -53,6 +53,14 @@ class TrackService:
             )
         return first_nation_response.json()
 
+    @staticmethod
+    def get_first_nations():
+        """Return firstnations."""
+        first_nation_response = _request_track_service("indigenous-nations")
+        if first_nation_response.status_code != 200:
+            raise BusinessError("Error finding first nations")
+        return first_nation_response.json()
+
 
 @retry(
     retry=retry_if_exception_type(requests.exceptions.RequestException),

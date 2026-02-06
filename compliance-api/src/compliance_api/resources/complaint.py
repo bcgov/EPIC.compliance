@@ -170,7 +170,7 @@ class Complaints(Resource):
     @API.response(code=201, model=complaint_list_model, description="ComplaintCreated")
     @API.response(400, "Bad Request")
     def post():
-        """Create an complaint."""
+        """Create a complaint."""
         current_app.logger.info(f"Creating Complaint with payload: {API.payload}")
         complaint_data = ComplaintCreateSchema().load(API.payload)
         created_complaint = ComplaintService.create(complaint_data)
