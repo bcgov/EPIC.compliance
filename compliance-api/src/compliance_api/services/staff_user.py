@@ -43,14 +43,14 @@ class StaffUserService:
         """
         Get all users with caching.
 
-        This returns cached serialized data from CachedStaffUserService.
+        This returns serialized data from CachedStaffUserService.
         """
         return CachedStaffUserService.get_all_staff_users_with_auth()
 
     @staticmethod
     def create_user(user_data):
         """
-        Create a user and invalidate caches.
+        Create a user.
 
         Args:
             user_data: Dictionary containing user data including:
@@ -95,16 +95,12 @@ class StaffUserService:
                 # The user exists in compliance DB, just without the permission in auth
                 logging.error("Failed to update user group in auth service: %s", e)
 
-        # Invalidate all caches since a new user was added
-        if created_user and created_user.auth_user_guid:
-            CachedStaffUserService.invalidate_staff_cache(created_user.auth_user_guid)
-
         return created_user
 
     @staticmethod
     def update_user(user_id, user_data):
         """
-        Update a user and invalidate caches.
+        Update a user.
 
         Args:
             user_id: The staff user ID to update
@@ -140,12 +136,6 @@ class StaffUserService:
                 except (AttributeError, RuntimeError) as e:
                     logging.error("Failed to update user group in auth service: %s", e)
 
-            # Invalidate caches for both old and new auth_guid (if changed)
-            CachedStaffUserService.invalidate_staff_cache(existing_user.auth_user_guid)
-
-            if new_auth_guid and new_auth_guid != existing_user.auth_user_guid:
-                CachedStaffUserService.invalidate_staff_cache(new_auth_guid)
-
             # Return the latest user object
             final_auth_guid = new_auth_guid if new_auth_guid else existing_user.auth_user_guid
             return StaffUserService.get_user_by_auth_guid(final_auth_guid)
@@ -155,7 +145,7 @@ class StaffUserService:
     @staticmethod
     def delete_user(user_id):
         """
-        Delete a user (soft delete) and invalidate caches.
+        Delete a user (soft delete).
 
         Args:
             user_id: The staff user ID to delete
@@ -168,14 +158,8 @@ class StaffUserService:
         if not user:
             return None
 
-        auth_guid = user.auth_user_guid
-
         # Soft delete the user
         deleted_user = StaffUserModel.delete_staff_user(user_id)
-
-        if deleted_user and auth_guid:
-            # Invalidate caches so deleted user doesn't appear in lists
-            CachedStaffUserService.invalidate_staff_cache(auth_guid)
 
         return deleted_user
 

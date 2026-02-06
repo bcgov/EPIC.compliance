@@ -4,7 +4,6 @@ import requests
 from flask import current_app, g
 
 from compliance_api.exceptions import BusinessError
-from compliance_api.utils.cache import cache
 from compliance_api.utils.constant import AUTH_APP
 from compliance_api.utils.enum import HttpMethod
 
@@ -12,94 +11,29 @@ from .constant import API_REQUEST_TIMEOUT
 
 
 class AuthService:
-    """Handle service request for epic.authorize with integrated cache management."""
-
-    AUTH_CACHE_VERSION_KEY = "auth_cache_version"
-
-    @classmethod
-    def _get_auth_cache_version(cls):
-        """
-        Get current auth cache version from shared cache.
-
-        This ensures all pods see the same version number.
-        """
-        version = cache.get(cls.AUTH_CACHE_VERSION_KEY)
-        if version is None:
-            version = 0
-            cache.set(cls.AUTH_CACHE_VERSION_KEY, version)
-        return version
+    """Handle service request for epic.authorize."""
 
     @staticmethod
     def get_epic_user_by_guid(auth_user_guid: str):
-        """
-        Return the user representation from epic.authorize (cached).
-
-        This is called frequently for individual user lookups,
-        so we cache it with the user's token hash for security.
-        """
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
-
-        # Include version AND token hash in cache key
-        version = AuthService._get_auth_cache_version()
-        token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_user:{auth_user_guid}:{token_hash}:v{version}"
-
-        cached_result = cache.get(cache_key)
-        if cached_result is not None:
-            current_app.logger.debug(f"Cache hit for auth user {auth_user_guid}")
-            return cached_result
-
-        current_app.logger.debug(f"Cache miss for auth user {auth_user_guid}")
-
+        """Return the user representation from epic.authorize."""
         auth_user_response = _request_auth_service(f"users/{auth_user_guid}")
         if auth_user_response.status_code != 200:
             raise BusinessError(
                 f"Error finding user with ID {auth_user_guid} from auth server"
             )
-
-        result = auth_user_response.json()
-        cache.set(cache_key, result, timeout=180)  # 3 minutes
-        return result
+        return auth_user_response.json()
 
     @staticmethod
     def get_epic_users_by_app():
-        """
-        Return all users belonging to COMPLIANCE app with caching.
-
-        This caches per-user to prevent data leakage.
-        """
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
-        from compliance_api.utils.constant import AUTH_APP
-        from compliance_api.exceptions import BusinessError
-
-        # Include version AND token hash in cache key
-        version = AuthService._get_auth_cache_version()
-        token_hash = CachedStaffUserService._get_token_hash()
-        cache_key = f"auth_users_app:{AUTH_APP}:{token_hash}:v{version}"
-
-        cached_result = cache.get(cache_key)
-        if cached_result is not None:
-            current_app.logger.debug("Cache hit for auth users by app")
-            return cached_result
-
-        current_app.logger.debug("Cache miss for auth users by app")
-
-        # Fetch from auth service
+        """Return all users belonging to COMPLIANCE app."""
         auth_users_response = _request_auth_service(f"users?app_name={AUTH_APP}")
         if auth_users_response.status_code != 200:
             raise BusinessError(f"Error fetching users for the app {AUTH_APP}")
-
-        result = auth_users_response.json()
-        cache.set(cache_key, result, timeout=180)  # 3 minutes
-        return result
+        return auth_users_response.json()
 
     @staticmethod
     def update_user_group(auth_user_guid: str, payload: dict):
-        """Update user group and invalidate all related caches."""
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
-        from compliance_api.utils.enum import HttpMethod
-        from compliance_api.exceptions import BusinessError
-
+        """Update the group of the user in the identity server."""
         update_group_response = _request_auth_service(
             f"users/{auth_user_guid}/groups", HttpMethod.PUT, payload
         )
@@ -108,21 +42,11 @@ class AuthService:
                 f"Update group in the auth server failed for user : {auth_user_guid}"
             )
 
-        # Invalidate all auth caches by bumping version
-        AuthService._invalidate_all_auth_cache()
-
-        # Invalidate ALL staff caches since permissions changed
-        CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
-
         return update_group_response
 
     @staticmethod
     def delete_user_group(auth_user_guid: str, group: str, del_sub_group_mappings=True):
-        """Delete user group and invalidate all related caches."""
-        from compliance_api.services.cached_staff_user import CachedStaffUserService
-        from compliance_api.utils.enum import HttpMethod
-        from compliance_api.exceptions import BusinessError
-
+        """Delete user group."""
         delete_response = _request_auth_service(
             f"users/{auth_user_guid}/groups/{group}?del_sub_group_mappings={del_sub_group_mappings}",
             HttpMethod.DELETE,
@@ -130,30 +54,7 @@ class AuthService:
         if delete_response.status_code != 204:
             raise BusinessError("Delete group mapping failed")
 
-        # Invalidate all auth caches by bumping version
-        AuthService._invalidate_all_auth_cache()
-
-        # Invalidate all staff caches since permissions changed
-        CachedStaffUserService.invalidate_staff_cache(auth_user_guid)
-
         return delete_response
-
-    @staticmethod
-    def _invalidate_all_auth_cache():
-        """Invalidate all auth cache by bumping version number."""
-        try:
-            current_version = cache.get(AuthService.AUTH_CACHE_VERSION_KEY)
-            if current_version is None:
-                current_version = 0
-
-            new_version = current_version + 1
-            cache.set(AuthService.AUTH_CACHE_VERSION_KEY, new_version)
-
-            current_app.logger.debug(
-                f"Bumped auth cache version from {current_version} to {new_version}"
-            )
-        except (AttributeError, RuntimeError) as e:
-            current_app.logger.error(f"Error invalidating auth cache: {e}")
 
 
 def _request_auth_service(

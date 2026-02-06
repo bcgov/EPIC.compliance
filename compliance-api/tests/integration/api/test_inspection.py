@@ -310,7 +310,7 @@ def test_inspection_update(
     created_result = InspectionService.create(inspection_data)
 
     # Create a new user for update
-    user_data = StaffScenario.default_data.value
+    user_data = copy.deepcopy(StaffScenario.default_data.value)
     auth_user_guid = fake.word()
     user_data["auth_user_guid"] = auth_user_guid
     new_user = StaffScenario.create(user_data)
