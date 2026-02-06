@@ -9,7 +9,6 @@ import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
 import { DeleteOutlineRounded, EditOutlined } from "@mui/icons-material";
 import { Box, Chip, IconButton } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import { MRT_ColumnDef } from "material-react-table";
@@ -35,7 +34,6 @@ function AuthorizedStaffComponent() {
 const STAFF_MODAL_WIDTH = "520px";
 
 export function Staff() {
-  const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
   const { data: staffUsersList, isLoading } = useStaffUsersData({
     isActive: false,
@@ -77,7 +75,6 @@ export function Staff() {
   }, [staffUsersList]);
 
   const handleOnSubmit = (submitMsg: string) => {
-    queryClient.invalidateQueries({ queryKey: ["staff-users"] });
     setClose();
     notify.success(submitMsg);
   };
@@ -99,8 +96,6 @@ export function Staff() {
   /** Staff Deletion START */
 
   const onDeleteSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["staff-users"] });
-    queryClient.invalidateQueries({ queryKey: ["staff-user-validation"] });
     setClose();
     notify.success("Staff deleted successfully!");
   };

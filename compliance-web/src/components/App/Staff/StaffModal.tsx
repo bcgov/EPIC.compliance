@@ -14,7 +14,6 @@ import { Position } from "@/models/Position";
 import { StaffAPIData, StaffFormData, StaffUser } from "@/models/Staff";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { DialogContent } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -49,7 +48,6 @@ const initFormData: StaffFormData = {
 };
 
 const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
-  const queryClient = useQueryClient();
 
   const { data: usersList } = useAuthUsersData();
   const { data: positionsList } = usePositionsData();
@@ -117,9 +115,6 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
     } else {
       addStaff(staffData);
     }
-    queryClient.invalidateQueries({
-      queryKey: ["staff-users"],
-    });
   };
 
   return (

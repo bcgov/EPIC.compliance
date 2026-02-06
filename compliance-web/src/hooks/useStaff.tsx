@@ -3,7 +3,7 @@ import { Permission } from "@/models/Permission";
 import { Position } from "@/models/Position";
 import { StaffAPIData, StaffUser } from "@/models/Staff";
 import { OnSuccessType, request, requestAuthAPI } from "@/utils/axiosUtils";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
 import { STAFF_USER_POSITION } from "@/utils/constants";
 
@@ -80,14 +80,65 @@ export const usePermissionsData = () => {
   });
 };
 
-export const useAddStaff = (onSuccess: OnSuccessType) => {
-  return useMutation({ mutationFn: addStaff, onSuccess });
+export const useAddStaff = (onSuccess?: OnSuccessType) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: addStaff,
+    onSuccess: async (data) => {
+      // Invalidate all staff-users queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["staff-users"],
+        refetchType: 'active'
+      });
+
+      // Call the provided callback if it exists
+      if (onSuccess) {
+        onSuccess(data);
+      }
+    },
+  });
 };
 
-export const useUpdateStaff = (onSuccess: OnSuccessType) => {
-  return useMutation({ mutationFn: updateStaff, onSuccess });
+export const useUpdateStaff = (onSuccess?: OnSuccessType) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: updateStaff,
+    onSuccess: async (data) => {
+      // Invalidate all staff-users queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["staff-users"],
+        refetchType: 'active'
+      });
+            
+      // Call the provided callback if it exists
+      if (onSuccess) {
+        onSuccess(data);
+      }
+    },
+  });
 };
 
-export const useDeleteStaff = (onSuccess: OnSuccessType) => {
-  return useMutation({ mutationFn: deleteStaff, onSuccess });
+export const useDeleteStaff = (onSuccess?: OnSuccessType) => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: deleteStaff,
+    onSuccess: async (data, ) => {
+      // Invalidate all staff-users queries
+      await queryClient.invalidateQueries({ 
+        queryKey: ["staff-users"],
+        refetchType: 'active'
+      });
+      
+      // Invalidate validation
+      queryClient.invalidateQueries({ queryKey: ["staff-user-validation"] });
+      
+      // Call the provided callback if it exists
+      if (onSuccess) {
+        onSuccess(data,);
+      }
+    },
+  });
 };
