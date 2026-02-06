@@ -19,6 +19,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
+    "@epic/centre-analytics": "github:bcgov/EPIC.analytics#v1.1.0",
     "@hookform/resolvers": "^3.9.0",
     "@lexical/react": "^0.23.1",
     "@mui/icons-material": "^5.15.21",
@@ -83,7 +84,7 @@
     "typescript": "^5.2.2",
     "vite": "^7.3.0",
     "vite-plugin-env-compatible": "^2.0.1",
-    "vite-plugin-istanbul": "^6.0.2",
+    "vite-plugin-istanbul": "^7.2.1",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^3.2.4"
   }
