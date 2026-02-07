@@ -621,6 +621,17 @@ def _get_requirement_restorative_justice_sub_query():
     )
 
 
+def _get_inspection_date_issued_sub_query():
+    return (
+        db.session.query(
+            InspectionRecordModel.inspection_id,
+            func.max(InspectionRecordModel.date_issued).label("date_issued")
+        )
+        .group_by(InspectionRecordModel.inspection_id)
+        .subquery()
+    )
+
+
 def _create_model_aliases():
     """Create and return all model aliases needed for the query."""
     return {
@@ -631,7 +642,6 @@ def _create_model_aliases():
         "req": aliased(InspectionRequirementModel),
         "insp": aliased(InspectionModel),
         "enf_map": aliased(InspectionReqEnforcementMapModel),
-        "insp_rec": aliased(InspectionRecordModel),
         "req_source": aliased(InspectionReqSourceDetailModel),
         "enf_action": aliased(EnforcementActionOptionModel),
         "staff": aliased(StaffUserModel),
@@ -662,6 +672,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
     subqueries = {
         "first_requirement_source": _get_first_requirement_source_sub_query(),
         "all_requirement_sources": _get_all_requirement_sources_sub_query(),
+        "inspection_date_issued": _get_inspection_date_issued_sub_query(),
         "requirement_order": _get_requirement_order_sub_query(),
         "requirement_warning_letter": _get_requirement_warning_letter_sub_query(),
         "requirement_violation_ticket": _get_requirement_violation_ticket_sub_query(),
@@ -678,7 +689,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
         db.session.query(
             models["req"],
             models["insp"].ir_number.label("ir_number"),
-            models["insp_rec"].date_issued.label("date_issued"),
+            subqueries["inspection_date_issued"].c.date_issued.label("date_issued"),
             models["enf_map"].enforcement_action_id.label("enforcement_action_id"),
             models["enf_action"].name.label("enforcement_action_name"),
             models["staff"].id.label("staff_id"),
@@ -719,20 +730,20 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             subqueries["all_requirement_sources"].c.all_sources.label("requirement_sources"),
         )
         .join(
-            models["topic"],
-            models["topic"].id == models["req"].topic_id,
-        )
-        .join(
-            models["cmp_finding"],
-            models["cmp_finding"].id == models["req"].compliance_finding_id,
-        )
-        .join(
             models["insp"],
             and_(
                 models["req"].inspection_id == models["insp"].id,
                 models["insp"].is_deleted.is_(False),
                 models["insp"].is_active.is_(True),
             ),
+        )
+        .join(
+            models["topic"],
+            models["topic"].id == models["req"].topic_id,
+        )
+        .join(
+            models["cmp_finding"],
+            models["cmp_finding"].id == models["req"].compliance_finding_id,
         )
         .join(
             models["enf_map"],
@@ -751,8 +762,8 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["insp"].primary_officer_id == models["staff"].id,
         )
         .outerjoin(
-            models["insp_rec"],
-            models["insp"].id == models["insp_rec"].inspection_id,
+            subqueries["inspection_date_issued"],
+            models["insp"].id == subqueries["inspection_date_issued"].c.inspection_id,
         )
         .outerjoin(
             subqueries["first_requirement_source"],
@@ -879,7 +890,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
     )
 
     # Apply filters based on query parameters
-    base_query = _apply_filters(base_query, args, **models)
+    base_query = _apply_filters(base_query, args, subqueries=subqueries, **models)
 
     # Apply pagination if requested
     if enable_pagination:
@@ -924,7 +935,7 @@ def _apply_requirement_filters(query, args, **kwargs):
     return query
 
 
-def _apply_inspection_filters(query, args, **kwargs):
+def _apply_inspection_filters(query, args, subqueries=None, **kwargs):
     """Apply inspection-related filters."""
     # IR number filter
     if args.get("ir_no") and args.get("ir_no").strip():
@@ -950,9 +961,9 @@ def _apply_inspection_filters(query, args, **kwargs):
         )
 
     # Date issued filter
-    if args.get("date_issued"):
+    if args.get("date_issued") and subqueries:
         query = query.filter(
-            func.date(kwargs.get("insp_rec").date_issued) == args["date_issued"]
+            func.date(subqueries["inspection_date_issued"].c.date_issued) == args["date_issued"]
         )
     return query
 
@@ -1036,7 +1047,7 @@ def _apply_approval_and_source_filters(query, args, **kwargs):
     return query
 
 
-def _apply_filters(query, args, **kwargs):  # pylint: disable=too-many-arguments
+def _apply_filters(query, args, subqueries=None, **kwargs):
     """Apply filters to the query based on arguments.
 
     Args:
@@ -1051,7 +1062,7 @@ def _apply_filters(query, args, **kwargs):  # pylint: disable=too-many-arguments
     query = _apply_requirement_filters(query, args, **kwargs)
 
     # Apply inspection-related filters
-    query = _apply_inspection_filters(query, args, **kwargs)
+    query = _apply_inspection_filters(query, args, subqueries=subqueries, **kwargs)
 
     # Apply approval and source-related filters
     query = _apply_approval_and_source_filters(query, args, **kwargs)
@@ -1082,7 +1093,6 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         "req": kwargs.get("req"),
         "enf_map": kwargs.get("enf_map"),
         "insp": kwargs.get("insp"),
-        "insp_rec": kwargs.get("insp_rec"),
     }
 
     # Group reference data models
@@ -1123,7 +1133,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
     distinct_query = query.with_entities(
         core_models["req"],
         core_models["insp"].ir_number.label("ir_number"),
-        core_models["insp_rec"].date_issued.label("date_issued"),
+        subqueries["inspection_date_issued"].c.date_issued.label("date_issued"),
         core_models["enf_map"].enforcement_action_id.label("enforcement_action_id"),
         reference_models["enf_action"].name.label("enforcement_action_name"),
         reference_models["staff"].id.label("staff_id"),
