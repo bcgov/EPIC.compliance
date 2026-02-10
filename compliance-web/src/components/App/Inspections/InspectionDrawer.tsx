@@ -162,7 +162,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
 
   const methods = useForm<InspectionSchemaType>({
     resolver: yupResolver(InspectionFormSchema),
-    mode: "onBlur",
+    mode: "onChange",
     defaultValues,
   });
 

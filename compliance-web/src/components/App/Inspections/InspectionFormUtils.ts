@@ -47,7 +47,7 @@ export const InspectionFormSchema = yup.object().shape({
       function (value) {
         const { startDate } = this.parent;
         if (!value || !startDate) return true;
-        return value.isAfter(startDate);
+        return value.isAfter(startDate) || value.isSame(startDate);
       }
     ),
   debriefDate: yup

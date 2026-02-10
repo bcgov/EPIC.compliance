@@ -130,14 +130,65 @@ def _add_paragraph(container, p_tag, font_size):
         run.font.size = font_size
 
 
+def _get_restarted_list_number_num_id(document):
+    styles = document.styles
+    num_id_list_number = -1
+
+    # Find numId used by 'List Number' style
+    for style in styles:
+        if style.name == "List Number":
+            num_id_list_number = style._element.pPr.numPr.numId.val
+            break
+
+    if num_id_list_number == -1:
+        return None
+
+    numbering = document.part.numbering_part.numbering_definitions._numbering
+    ct_num = numbering.num_having_numId(num_id_list_number)
+    abstract_num_id = ct_num.abstractNumId.val
+
+    # Create new numbering instance
+    new_ct_num = numbering.add_num(abstract_num_id)
+    new_num_id = new_ct_num.numId
+
+    # Force restart at 1
+    start_override = new_ct_num.add_lvlOverride(0)._add_startOverride()
+    start_override.val = 1
+
+    return new_num_id
+
+
 def _add_list(container, list_tag, font_size):
     style = "List Number" if list_tag.name == "ol" else "List Bullet"
 
+    document = container.part.document
+    restarted_num_id = None
+
+    if list_tag.name == "ol":
+        restarted_num_id = _get_restarted_list_number_num_id(document)
+
+    first = True
+
     for li in list_tag.find_all("li", recursive=False):
         para = container.add_paragraph(style=style)
-        text = li.get_text(strip=True)
-        # Replace 2+ spaces with single space
-        text = re.sub(r' {2,}', ' ', text)
+        para.paragraph_format.left_indent = Inches(0.5)
+        para.paragraph_format.hanging_indent = Inches(0.25)
+
+        if list_tag.name == "ol" and first and restarted_num_id is not None:
+            para_props = para._element.pPr
+            num_props = para_props._add_numPr()
+
+            ilvl = OxmlElement("w:ilvl")
+            ilvl.set(qn("w:val"), "0")
+
+            num_id = OxmlElement("w:numId")
+            num_id.set(qn("w:val"), str(restarted_num_id))
+
+            num_props.append(ilvl)
+            num_props.append(num_id)
+            first = False
+
+        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
         run = para.add_run(text)
         if font_size:
             run.font.size = font_size
@@ -366,14 +417,40 @@ def _add_formatted_text_to_table_para(para, p_element):
             para.add_run('\n')
 
 
-def _add_list_to_table_cell(cell, list_element):
+def _add_list_to_table_cell(cell, list_element, restart_numbering=True):
     """Add a list (ordered or unordered) to a table cell."""
     style = "List Number" if list_element.name == "ol" else "List Bullet"
 
+    document = cell.part.document
+    restarted_num_id = None
+
+    if list_element.name == "ol" and restart_numbering:
+        restarted_num_id = _get_restarted_list_number_num_id(document)
+
+    first = True
+
     for li in list_element.find_all('li', recursive=False):
         para = cell.add_paragraph(style=style)
-        text = li.get_text(strip=True)
-        text = re.sub(r' {2,}', ' ', text)
+
+        if (
+            list_element.name == "ol"
+            and restart_numbering
+            and first
+            and restarted_num_id is not None
+        ):
+            para_props = para._element.pPr
+            num_props = para_props._add_numPr()
+
+            ilvl = OxmlElement("w:ilvl")
+            ilvl.set(qn("w:val"), "0")
+
+            num_id = OxmlElement("w:numId")
+            num_id.set(qn("w:val"), str(restarted_num_id))
+
+            num_props.append(ilvl)
+            num_props.append(num_id)
+
+        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
         run = para.add_run(text)
         run.font.size = Pt(11)
 
@@ -686,7 +763,7 @@ def generate_inspection_report_docx(preview_data):
     logo_para = logo_cell.paragraphs[0]
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
-    logo_para.paragraph_format.space_after = Inches(0.04)
+    logo_para.paragraph_format.space_after = Inches(0.10)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
@@ -940,6 +1017,7 @@ def generate_inspection_report_docx(preview_data):
     if version_date_info and version_date_info.get('preliminary_dates'):
         for date in version_date_info.get('preliminary_dates'):
             para.add_run(f"{date}\n")
+        para.runs[-1].text = para.runs[-1].text.rstrip()
     else:
         para.add_run('n/a')
 

@@ -12,6 +12,7 @@ import DrawerProvider from "@/components/Shared/Drawer/DrawerProvider";
 import PopoverProvider from "@/components/Shared/Popover/PopoverProvider";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import AnalyticsTracker from "./components/Shared/AnalyticsTracker";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ function App() {
         <ThemeProvider theme={theme}>
           <AuthProvider {...OidcConfig}>
             <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <AnalyticsTracker />
               <DrawerProvider />
               <ModalProvider />
               <SnackBarProvider />

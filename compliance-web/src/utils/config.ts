@@ -14,6 +14,7 @@ declare global {
       VITE_CLIENT_ID: string;
       VITE_DEFAULT_PAGE_SIZE: number;
       VITE_INPROGRESS_FEATURES: string[];
+      VITE_CENTRE_API_URL: string;
     };
   }
 }
@@ -37,12 +38,14 @@ const OIDC_AUTHORITY = window._env_?.VITE_OIDC_AUTHORITY || import.meta.env.VITE
 const CLIENT_ID = window._env_?.VITE_CLIENT_ID || import.meta.env.VITE_CLIENT_ID;
 const DEFAULT_PAGE_SIZE = window._env_?.VITE_DEFAULT_PAGE_SIZE || import.meta.env.VITE_DEFAULT_PAGE_SIZE || 15;
 const INPROGRESS_FEATURES = window._env_?.VITE_INPROGRESS_FEATURES || import.meta.env.VITE_INPROGRESS_FEATURES;
+const CENTRE_API_URL = window._env_?.VITE_CENTRE_API_URL || import.meta.env.VITE_CENTRE_API_URL || "";
 
 export const AppConfig = {
   apiUrl: `${API_URL}/api`,
   authAPIUrl: `${AUTH_API_URL}/api`,
   trackAPIUrl: `${TRACK_API_URL}/api/v1`,
   documentAPIUrl: `${DOCUMENT_API_URL}/api`,
+  centreAPIUrl: CENTRE_API_URL,
   environment: APP_ENVIRONMENT,
   version: APP_VERSION,
   appTitle: APP_TITLE,
