@@ -101,6 +101,11 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
       const formData = methods.getValues();
       const requirementIds = (data.requirements as InspectionRequirement[]).map((requirement) => requirement.id);
 
+      // Not historical - default to 'create_new'
+      if (!inspectionData.is_history) {
+        formData.orderCreationMethod = "create_new";
+      }
+
       if (!formData.orderCreationMethod) {
         methods.setError("orderCreationMethod", {
           type: "required",
@@ -166,7 +171,7 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
         title="Create Order"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingOrder || isPendingLink}
-        additionalFormFields={
+        additionalFormFields={ inspectionData.is_history &&
            <FormProvider {...methods}>
             <OrderCreationOptions
               inspectionData={inspectionData}

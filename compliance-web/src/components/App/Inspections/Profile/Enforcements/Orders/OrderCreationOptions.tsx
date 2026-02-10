@@ -29,26 +29,16 @@ const OrderCreationOptions: FC<OrderCreationOptionsProps> = ({
   isHistorical,
 }) => {
   const { setValue, clearErrors, formState: { errors } } = useFormContext();
-  const [creationMethod, setCreationMethod] = useState<OrderCreationMethod>("create_new");
+  const [creationMethod, setCreationMethod] = useState<OrderCreationMethod | ""> ("");
   const { data: openOrders } = useOrdersByCaseFileData(inspectionData.case_file_id, {
     isStaleInfinate: false,
   });
-
-
-
-  useEffect(() => {
-    const defaultMethod = isHistorical ? "manual_entry" : "create_new";
-    setCreationMethod(defaultMethod);
-    setValue("orderCreationMethod", defaultMethod);
-  }, [isHistorical, setValue]);
 
   const handleCreationMethodChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const method = event.target.value as OrderCreationMethod;
     setCreationMethod(method);
     setValue("orderCreationMethod", method);
     clearErrors("orderCreationMethod");
-    clearErrors("manualOrderNumber");
-    clearErrors("existingOrderId");
 
     if (method !== "manual_entry") {
       setValue("manualOrderNumber", "");
@@ -110,7 +100,7 @@ const OrderCreationOptions: FC<OrderCreationOptionsProps> = ({
           )}
           {/* Manual Order Number Entry */}
           {creationMethod === "manual_entry" && (
-            <Box sx={{ mt: 1.5, ml: 2 }}>
+            <Box sx={{ mt: 0, ml: 2 }}>
               <ControlledTextField
                 name="manualOrderNumber"
                 fullWidth
