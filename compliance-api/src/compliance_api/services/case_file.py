@@ -420,6 +420,10 @@ def _set_project_parameters(case_file):
             setattr(case_file, "regulated_party", project.get("proponent").get("name"))
         if not project_id:
             project = UnapprovedProjectModel.get_by_case_file_id(case_file.id)
+            if not project:
+                raise ResourceNotFoundError(
+                    f"No project information found for case file {case_file.id}"
+                )
             setattr(case_file, "authorization", project.authorization)
             setattr(case_file, "type", project.type)
             setattr(case_file, "sub_type", project.sub_type)

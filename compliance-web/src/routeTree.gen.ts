@@ -122,10 +122,10 @@ export interface FileRoutesByFullPath {
   '/ce-database/case-files/$caseFileNumber': typeof AuthenticatedCeDatabaseCaseFilesCaseFileNumberRoute
   '/ce-database/complaints/$complaintNumber': typeof AuthenticatedCeDatabaseComplaintsComplaintNumberRoute
   '/ce-database/inspections/$inspectionNumber': typeof AuthenticatedCeDatabaseInspectionsInspectionNumberRoute
-  '/ce-database/case-files': typeof AuthenticatedCeDatabaseCaseFilesIndexRoute
-  '/ce-database/complaints': typeof AuthenticatedCeDatabaseComplaintsIndexRoute
-  '/ce-database/inspections': typeof AuthenticatedCeDatabaseInspectionsIndexRoute
-  '/ce-database/requirements': typeof AuthenticatedCeDatabaseRequirementsIndexRoute
+  '/ce-database/case-files/': typeof AuthenticatedCeDatabaseCaseFilesIndexRoute
+  '/ce-database/complaints/': typeof AuthenticatedCeDatabaseComplaintsIndexRoute
+  '/ce-database/inspections/': typeof AuthenticatedCeDatabaseInspectionsIndexRoute
+  '/ce-database/requirements/': typeof AuthenticatedCeDatabaseRequirementsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -174,10 +174,10 @@ export interface FileRouteTypes {
     | '/ce-database/case-files/$caseFileNumber'
     | '/ce-database/complaints/$complaintNumber'
     | '/ce-database/inspections/$inspectionNumber'
-    | '/ce-database/case-files'
-    | '/ce-database/complaints'
-    | '/ce-database/inspections'
-    | '/ce-database/requirements'
+    | '/ce-database/case-files/'
+    | '/ce-database/complaints/'
+    | '/ce-database/inspections/'
+    | '/ce-database/requirements/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -231,7 +231,7 @@ declare module '@tanstack/react-router' {
     '/_authenticated': {
       id: '/_authenticated'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -280,28 +280,28 @@ declare module '@tanstack/react-router' {
     '/_authenticated/ce-database/requirements/': {
       id: '/_authenticated/ce-database/requirements/'
       path: '/ce-database/requirements'
-      fullPath: '/ce-database/requirements'
+      fullPath: '/ce-database/requirements/'
       preLoaderRoute: typeof AuthenticatedCeDatabaseRequirementsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ce-database/inspections/': {
       id: '/_authenticated/ce-database/inspections/'
       path: '/ce-database/inspections'
-      fullPath: '/ce-database/inspections'
+      fullPath: '/ce-database/inspections/'
       preLoaderRoute: typeof AuthenticatedCeDatabaseInspectionsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ce-database/complaints/': {
       id: '/_authenticated/ce-database/complaints/'
       path: '/ce-database/complaints'
-      fullPath: '/ce-database/complaints'
+      fullPath: '/ce-database/complaints/'
       preLoaderRoute: typeof AuthenticatedCeDatabaseComplaintsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/ce-database/case-files/': {
       id: '/_authenticated/ce-database/case-files/'
       path: '/ce-database/case-files'
-      fullPath: '/ce-database/case-files'
+      fullPath: '/ce-database/case-files/'
       preLoaderRoute: typeof AuthenticatedCeDatabaseCaseFilesIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }

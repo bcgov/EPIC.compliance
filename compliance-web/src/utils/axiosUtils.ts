@@ -3,13 +3,14 @@ import { notify } from "@/store/snackbarStore";
 import { AppConfig, OidcConfig } from "@/utils/config";
 import axios, { AxiosError, AxiosInstance } from "axios";
 import { User } from "oidc-client-ts";
-import { CORS_ERROR_MSG } from "./constants";
 
 export type OnErrorType = (error: AxiosError) => void;
 export type OnSuccessType = (data: any) => void;
 
 type ErrorResponseData = {
-  message: string;
+  message?: string;
+  error?: string;
+  details?: string;
 };
 
 export function getUser() {
@@ -25,19 +26,30 @@ export function getUser() {
 
 const onSuccess = (response: any) => response?.data ?? response.data;
 
-export const onError = (error: AxiosError) => {
-  // optionaly catch errors and add additional logging here
+export const onError = (error: AxiosError<ErrorResponseData>) => {  
+  // No response - network/connection error
   if (!error.response) {
-    // CORS error or network error
-    notify.error(CORS_ERROR_MSG);
-    throw new Error(CORS_ERROR_MSG);
-  } else {
-    notify.error(
-      (error.response?.data as ErrorResponseData)?.message ??
-        error.message ??
-        "API Error!"
-    );
+    const errorMessage = error.code === 'ERR_NETWORK' 
+      ? 'Network error. Please refresh the page to try again.'
+      : error.code === 'ECONNABORTED'
+      ? 'Request timeout. Please try again.'
+      : 'Unable to reach the server. Please try again later.';
+    
+    notify.error(errorMessage);
+    throw error;
   }
+
+  // Extract error message from response
+  const { status, data } = error.response;
+  
+  // Try to get the specific error message
+  const errorMessage = 
+    data?.message || 
+    data?.error || 
+    data?.details ||
+    `Request failed with status ${status}`;
+
+  notify.error(errorMessage, 3000);
   throw error;
 };
 
