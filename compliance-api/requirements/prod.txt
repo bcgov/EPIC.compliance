@@ -24,7 +24,6 @@ secure>=1.0.0
 python-dotenv
 requests
 flask_cors
-pyhumps
 importlib-resources
 pycryptodome==3.20.0
 tenacity==9.0.0

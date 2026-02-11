@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
+from compliance_api.exceptions import UnprocessableEntityError
 from compliance_api.models import WarningLetter as WarningLetterModel
 from compliance_api.models import WarningLetterApproval as WarningLetterApprovalModel
 from compliance_api.models import WarningLetterApprovalStatusEnum
@@ -126,12 +126,3 @@ class WarningLetterApprovalService:
             )
 
         return updated_approval
-
-
-def _warning_letter_exist_check(warning_letter_id):
-    warning_letter = WarningLetterModel.find_by_id(warning_letter_id)
-    if not warning_letter:
-        raise ResourceNotFoundError(
-            f"Warning letter with ID {warning_letter_id} not found"
-        )
-    return warning_letter

@@ -6,7 +6,7 @@ from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import and_, func, not_, or_
+from sqlalchemy.sql import and_, not_, or_
 
 from compliance_api.models.base_model import BaseModelVersioned, db
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -306,30 +306,6 @@ class AdministrativePenalty(BaseModelVersioned):
             administrative_penalty_number=administrative_penalty_number,
             is_deleted=False,
         ).first()
-
-    @classmethod
-    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
-        """Get count of administrative penalties by project and case file id."""
-        result = (
-            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
-            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
-            .with_entities(
-                InspectionModel.case_file_id,
-                CaseFileModel.project_id,
-                func.count(cls.id).label(  # pylint: disable=not-callable
-                    "administrative_penalty_count"
-                ),
-            )
-            .filter(
-                CaseFileModel.project_id == project_id,
-                InspectionModel.case_file_id == case_file_id,
-                cls.is_active.is_(True),
-                cls.is_deleted.is_(False),
-            )
-            .group_by(InspectionModel.case_file_id, CaseFileModel.project_id)
-            .first()
-        )
-        return result.administrative_penalty_count if result else 0
 
     @classmethod
     def get_latest_administrative_penalty_number_count(
