@@ -3,6 +3,8 @@ import { useAuth } from "react-oidc-context";
 import router from "./router";
 import { useEffect } from "react";
 import { useStaffUserValidation } from "@/hooks/useAuthorization";
+import { trackAnalytics } from "@epic/centre-analytics";
+import { AppConfig } from "@/utils/config";
 
 // Register the router instance for type safety
 declare module "@tanstack/react-router" {
@@ -49,6 +51,12 @@ export default function RouterProviderWithAuthContext() {
       </div>
     );
   }
+
+  trackAnalytics({
+    appName: "epic_compliance",
+    centreApiUrl: AppConfig.centreAPIUrl,
+    enabled: authentication.isAuthenticated && !!authentication.user,
+  });
 
   return <RouterProvider router={router} context={{ authentication }} />;
 }
