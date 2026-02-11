@@ -15,6 +15,9 @@ import { notify } from "@/store/snackbarStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import React, { useCallback } from "react";
+import { useAuth } from "react-oidc-context";
+import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
+import { CaseFileStatusEnum } from "@/utils/constants";
 
 interface CaseFileActionsProps {
   status: string;
@@ -28,6 +31,8 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
+  const { user } = useAuth();
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
 
   const caseFileData = queryClient.getQueryData<CaseFile>([
     "case-file",
@@ -37,6 +42,18 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
   const { data: caseFileOpenItems } = useCaseFileOpenItems(
     caseFileData?.id ?? 0
   );
+
+  const isPrimaryOfficer =
+    caseFileData?.primary_officer?.auth_user_guid ===
+    user?.profile?.preferred_username;
+
+  const otherAssignedOfficers =
+    caseFileData?.officers?.map((o) => o?.auth_user_guid) ?? [];
+
+  const canLinkOrUnlinkCaseFile =
+    isSuperUser ||
+    isPrimaryOfficer ||
+    otherAssignedOfficers.includes(user?.profile?.preferred_username ?? "");
 
   const closeAndRefresh = useCallback(() => {
     queryClient.invalidateQueries({
@@ -147,7 +164,8 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
           ),
         });
       },
-      hidden: status?.toLowerCase() === "closed",
+      hidden:
+        status === CaseFileStatusEnum.CLOSED || !canLinkOrUnlinkCaseFile,
     },
     {
       text: "Unlink from Case File",
@@ -169,12 +187,13 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
           ),
         });
       },
-      hidden: status?.toLowerCase() === "closed",
+      hidden:
+        status === CaseFileStatusEnum.CLOSED || !canLinkOrUnlinkCaseFile,
     },
     {
       text: "Close Case File",
       onClick: closeCaseFile,
-      hidden: status?.toLowerCase() === "closed",
+      hidden: status === CaseFileStatusEnum.CLOSED,
     },
     {
       text: "Reopen Case File",
@@ -196,7 +215,7 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
           ),
         });
       },
-      hidden: status?.toLowerCase() === "open",
+      hidden: status === CaseFileStatusEnum.OPEN,
     },
     {
       text: "Delete Case File",

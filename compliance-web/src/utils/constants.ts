@@ -201,6 +201,11 @@ export enum ComplaintStatusEnum {
   CLOSED = "Closed",
 }
 
+export enum CaseFileStatusEnum {
+  OPEN = "Open",
+  CLOSED = "Closed",
+} 
+
 export const APReferralStatus = {
   DRAFTING: { id: "DRAFTING", name: "Drafting" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
