@@ -1,6 +1,5 @@
 import {
   ArrowDropDownRounded,
-  AutoAwesomeRounded,
   DownloadRounded,
   PictureAsPdfRounded,
 } from "@mui/icons-material";
@@ -11,8 +10,6 @@ import {
   Grow,
   Paper,
   Popper,
-  Typography,
-  Link,
   Box,
   CircularProgress,
 } from "@mui/material";
@@ -32,12 +29,9 @@ import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
   useDeleteDocumentJobs,
-  useLastGeneratedTimeForUser,
   useMostRecentDocumentJobForUser,
 } from "@/hooks/useDocumentJobs";
-import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
-import dateUtils from "@/utils/dateUtils";
-import { useFetchPresignedGetURL } from "@/hooks/useImageUpload";
+import { DocumentJob } from "@/models/documentJob";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PreviewDownloadButton = () => {
@@ -47,10 +41,11 @@ const PreviewDownloadButton = () => {
     inspectionReportsData?.id ?? 0
   );
 
-  const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
-    inspectionReportsData?.id ?? 0
-  );
-  const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
+  // Comp-788
+  // const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
+  //   inspectionReportsData?.id ?? 0
+  // );
+  // const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
 
   const [previewClicked, setPreviewClicked] = useState(false);
   const [generatingDocx, setGeneratingDocx] = useState(false);
@@ -98,13 +93,14 @@ const PreviewDownloadButton = () => {
     onError
   );
 
-  const isGenerating = useMemo(() => {
-    return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
-  }, [documentJob]);
+  // Comp-788
+  // const isGenerating = useMemo(() => {
+  //   return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
+  // }, [documentJob]);
 
-  const isCompleted = useMemo(() => {
-    return documentJob?.status === DocumentJobStatus.COMPLETED;
-  }, [documentJob]);
+  // const isCompleted = useMemo(() => {
+  //   return documentJob?.status === DocumentJobStatus.COMPLETED;
+  // }, [documentJob]);
 
   const handlePreviewClick = async () => {
     setPreviewClicked(true);
@@ -205,44 +201,45 @@ const PreviewDownloadButton = () => {
     setOpen(false);
   };
 
-  const onPresignedUrlSuccess = async (data: { presigned_url: string }) => {
-    try {
-      const response = await fetch(data.presigned_url);
-      const blob = await response.blob();
-      const filename =
-        documentJob?.download_name || inspectionData?.ir_number || "report.pdf";
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-      if (documentJob?.id) {
-        mutateDeleteDocumentJob(documentJob.id, {
-          onSuccess: () => {
-            queryClient.invalidateQueries({
-              queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
-            });
-          },
-        });
-      }
-    } catch (error) {
-      notify.error("Failed to download PDF");
-    }
-    setOpen(false);
-  };
+  // Comp-788
+  // const onPresignedUrlSuccess = async (data: { presigned_url: string }) => {
+  //   try {
+  //     const response = await fetch(data.presigned_url);
+  //     const blob = await response.blob();
+  //     const filename =
+  //       documentJob?.download_name || inspectionData?.ir_number || "report.pdf";
+  //     const url = window.URL.createObjectURL(blob);
+  //     const a = document.createElement("a");
+  //     a.href = url;
+  //     a.download = filename;
+  //     document.body.appendChild(a);
+  //     a.click();
+  //     a.remove();
+  //     window.URL.revokeObjectURL(url);
+  //     if (documentJob?.id) {
+  //       mutateDeleteDocumentJob(documentJob.id, {
+  //         onSuccess: () => {
+  //           queryClient.invalidateQueries({
+  //             queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+  //           });
+  //         },
+  //       });
+  //     }
+  //   } catch (error) {
+  //     notify.error("Failed to download PDF");
+  //   }
+  //   setOpen(false);
+  // };
 
-  const { mutate: mutateFetchPresignedGetURL } = useFetchPresignedGetURL(
-    onPresignedUrlSuccess
-  );
+  // const { mutate: mutateFetchPresignedGetURL } = useFetchPresignedGetURL(
+  //   onPresignedUrlSuccess
+  // );
 
-  const handleDownloadReportFromURL = () => {
-    if (documentJob?.relative_url) {
-      mutateFetchPresignedGetURL(documentJob.relative_url);
-    }
-  };
+  // const handleDownloadReportFromURL = () => {
+  //   if (documentJob?.relative_url) {
+  //     mutateFetchPresignedGetURL(documentJob.relative_url);
+  //   }
+  // };
 
   return (
     <>
@@ -315,7 +312,8 @@ const PreviewDownloadButton = () => {
                     gap: 1,
                   }}
                 >
-                  <Button
+                  {/* Comp-788
+                   <Button
                     variant="text"
                     onClick={(e) =>
                       handleDownloadClick(e as unknown as MouseEvent, "pdf")
@@ -335,7 +333,7 @@ const PreviewDownloadButton = () => {
                         sx={{ ml: 1 }}
                       />
                     )}
-                  </Button>
+                  </Button> */}
                   <Button
                     variant="text"
                     onClick={(e) =>
@@ -357,6 +355,7 @@ const PreviewDownloadButton = () => {
                       />
                     )}
                   </Button>
+                  {/* Comp-788
                   <Box
                     sx={{
                       display: "flex",
@@ -419,8 +418,8 @@ const PreviewDownloadButton = () => {
                     >
                       <DownloadRounded sx={{ fontSize: 16 }} />
                       Download
-                    </Link>
-                  </Box>
+                   </Link>
+                  </Box>*/}
                 </Box>
               </ClickAwayListener>
             </Paper>
