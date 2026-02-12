@@ -763,7 +763,7 @@ def generate_inspection_report_docx(preview_data):
     logo_para = logo_cell.paragraphs[0]
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
-    logo_para.paragraph_format.space_after = Inches(0.10)
+    logo_para.paragraph_format.space_after = Inches(0.12)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
