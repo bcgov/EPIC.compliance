@@ -18,13 +18,36 @@ export default function RouterProviderWithAuthContext() {
   const { isAccessDenied, preferredUsername } = useStaffUserValidation();
 
   useEffect(() => {
-    // the `return` is important - addAccessTokenExpiring() returns a cleanup function
-    return authentication.events.addAccessTokenExpiring(() => {
+    const removeExpiring = authentication.events.addAccessTokenExpiring(() => {
       // eslint-disable-next-line no-console
       console.log("AccessTokenExpiring: Refreshing token");
-      authentication.signinSilent();
+      try{
+        authentication.signinSilent();
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error("Silent renew failed", error);
+        authentication.signoutRedirect();
+      }
     });
-  }, [authentication, authentication.events, authentication.signinSilent]);
+
+    const removeSilentRenewError = authentication.events.addSilentRenewError((error) => {
+      // eslint-disable-next-line no-console
+      console.log("Silent renew failed, logging out", error);
+      authentication.signoutRedirect();
+    });
+
+    const removeExpired = authentication.events.addAccessTokenExpired(() => {
+      // eslint-disable-next-line no-console
+      console.log("Token expired, logging out");
+      authentication.signoutRedirect();
+    });
+
+    return () => {
+      removeExpiring();
+      removeSilentRenewError();
+      removeExpired();
+    };
+  }, [authentication, authentication.events, authentication.signinSilent, authentication.signoutRedirect]);
 
   // Show access denied if user is authenticated but not a valid staff user
   if (authentication.isAuthenticated && isAccessDenied) {
