@@ -15,7 +15,7 @@ import { useProjectsData } from "@/hooks/useProjects";
 import { useInitiationsData } from "@/hooks/useInspections";
 import { Inspection, InspectionGridQueryParams } from "@/models/Inspection";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
-import { IRProgressEnumText, InspectionStatusEnum } from "@/utils/constants";
+import { IRProgressEnumText, InspectionStatusEnum, STAFF_USER_POSITION } from "@/utils/constants";
 import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
@@ -45,17 +45,28 @@ const getCurrentStaff = (currentUser: User | undefined | null, staffList: StaffU
 };
 
 // Helper to create default filters for a staff member
-const createDefaultFilters = (staffId: string) => ({
-  externalFilters: {
-    primary_officer_ids: [staffId],
-  },
-  columnFilters: [
-    {
-      id: "primary_officer",
-      value: [staffId],
-    },
-  ],
-});
+const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
+  externalFilters: Record<string, string[] | string>;
+  columnFilters: MRT_ColumnFiltersState;
+} => {
+  if (defaultMyChecked) {
+    return {
+      externalFilters: {
+        primary_officer_ids: [staffId],
+      },
+      columnFilters: [
+        {
+          id: "primary_officer_ids",
+          value: [staffId],
+        },
+      ],
+    }
+  }
+  return {
+    externalFilters: {},
+    columnFilters: [],
+  };
+}
 
 export function Inspections() {
   const { data: projects } = useProjectsData();
@@ -166,10 +177,17 @@ export function Inspections() {
       }
     } else {
       // Apply defaults for first-time users
-      const defaults = createDefaultFilters(currentStaff.id.toString());
+      const officerPositions = [
+        STAFF_USER_POSITION.OFFICER,
+        STAFF_USER_POSITION.SENIOR_OFFICER,
+      ];
+
+      const defaultChecked = Boolean(currentStaff.position_id && 
+        officerPositions.includes(currentStaff.position_id));
+      const defaults = createDefaultFilters(currentStaff.id.toString(), defaultChecked);
       setExternalFilters(defaults.externalFilters);
       setColumnFilters(defaults.columnFilters);
-      setMyInspectionsChecked(true);
+      setMyInspectionsChecked(defaultChecked);
     }
 
     setIsRestored(true);
