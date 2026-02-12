@@ -300,7 +300,7 @@ const PreviewDownloadButton = () => {
                 placement === "bottom" ? "center top" : "center bottom",
             }}
           >
-            <Paper elevation={3} sx={{ pt: 1, pb: 2 }}>
+            <Paper elevation={3} sx={{ pt: 1, pb: 1 }}>
               <ClickAwayListener
                 onClickAway={(e) => handleClose(e as MouseEvent)}
               >
