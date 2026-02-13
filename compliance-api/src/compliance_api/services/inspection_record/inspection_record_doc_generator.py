@@ -327,6 +327,26 @@ def add_html_table_to_container(container, table_element):
     # Create docx table
     docx_table = container.add_table(rows=len(rows), cols=max_cols)
     docx_table.style = 'Table Grid'
+    docx_table.autofit = False
+
+    # Set table width
+    if hasattr(container, 'width'):
+        parent_width_emu = container.width if isinstance(container.width, int) else container.width.emu
+        table_width_emu = parent_width_emu - Inches(0.16).emu
+    else:
+        table_width_emu = Inches(7.09).emu
+
+    # Apply width at XML level
+    tbl = docx_table._element
+    tblPr = tbl.tblPr
+    if tblPr is None:
+        tblPr = OxmlElement('w:tblPr')
+        tbl.insert(0, tblPr)
+
+    tblW = OxmlElement('w:tblW')
+    tblW.set(qn('w:w'), str(int(table_width_emu / 635)))
+    tblW.set(qn('w:type'), 'dxa')
+    tblPr.append(tblW)
 
     # Populate table
     for row_idx, tr in enumerate(rows):
