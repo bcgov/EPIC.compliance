@@ -27,21 +27,17 @@ import { useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { InspectionStatusEnum } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
-import {
-  useDeleteDocumentJobs,
-  useMostRecentDocumentJobForUser,
-} from "@/hooks/useDocumentJobs";
 import { DocumentJob } from "@/models/documentJob";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PreviewDownloadButton = () => {
   const { setOpen: setModalOpen } = useModal();
   const { inspectionData, inspectionReportsData } = useReportStore();
-  const { data: documentJob } = useMostRecentDocumentJobForUser(
-    inspectionReportsData?.id ?? 0
-  );
-
   // Comp-788
+  // const { data: documentJob } = useMostRecentDocumentJobForUser(
+  //   inspectionReportsData?.id ?? 0
+  // );
+
   // const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
   //   inspectionReportsData?.id ?? 0
   // );
@@ -112,7 +108,7 @@ const PreviewDownloadButton = () => {
   };
 
   const queryClient = useQueryClient();
-  const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
+  // const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
 
   const handleDownloadClick = async (
     event: MouseEvent,
@@ -124,17 +120,18 @@ const PreviewDownloadButton = () => {
       return;
     }
 
+    // Comp-788
     // PDF generation - async job
-    if (documentJob?.id) {
-      // Generating a new report invalidates the previous one
-      mutateDeleteDocumentJob(documentJob.id, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
-          });
-        },
-      });
-    }
+    // if (documentJob?.id) {
+    //   // Generating a new report invalidates the previous one
+    //   mutateDeleteDocumentJob(documentJob.id, {
+    //     onSuccess: () => {
+    //       queryClient.invalidateQueries({
+    //         queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+    //       });
+    //     },
+    //   });
+    // }
     setPreviewClicked(true);
     handleClose(event);
     mutateIrPreviewData(
