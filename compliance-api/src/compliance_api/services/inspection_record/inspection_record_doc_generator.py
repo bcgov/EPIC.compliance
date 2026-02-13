@@ -338,15 +338,15 @@ def add_html_table_to_container(container, table_element):
 
     # Apply width at XML level
     tbl = docx_table._element
-    tblPr = tbl.tblPr
-    if tblPr is None:
-        tblPr = OxmlElement('w:tblPr')
-        tbl.insert(0, tblPr)
+    table_props = tbl.tblPr
+    if table_props is None:
+        table_props = OxmlElement('w:tblPr')
+        tbl.insert(0, table_props)
 
-    tblW = OxmlElement('w:tblW')
-    tblW.set(qn('w:w'), str(int(table_width_emu / 635)))
-    tblW.set(qn('w:type'), 'dxa')
-    tblPr.append(tblW)
+    table_width = OxmlElement('w:tblW')
+    table_width.set(qn('w:w'), str(int(table_width_emu / 635)))
+    table_width.set(qn('w:type'), 'dxa')
+    table_props.append(table_width)
 
     # Populate table
     for row_idx, tr in enumerate(rows):
