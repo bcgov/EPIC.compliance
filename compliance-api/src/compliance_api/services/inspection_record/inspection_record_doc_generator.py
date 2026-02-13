@@ -510,6 +510,9 @@ def _add_figure(figure, cell):
 
 def _add_requirement_details_table(doc, req):
     req_table = doc.add_table(rows=0, cols=2)
+    req_table.autofit = False
+    req_table.columns[0].width = Inches(1.813)
+    req_table.columns[1].width = Inches(5.439)
     req_table.style = 'Table Grid'
 
     # Requirement header and details
@@ -685,9 +688,6 @@ def _add_requirement_details_table(doc, req):
     row.cells[0].paragraphs[0].runs[0].font.bold = True
     _set_cell_background(row.cells[0], 'D9D9D9')
     row.cells[1].text = req.get('compliance_finding', '')
-
-    # Set column width for first column
-    row.cells[0].width = Inches(2)
 
     # Enforcement Action
     row = req_table.add_row()
