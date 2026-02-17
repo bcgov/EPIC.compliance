@@ -16,7 +16,7 @@
 from datetime import datetime
 from io import BytesIO
 
-from flask import request, send_file
+from flask import current_app, request, send_file
 from flask_restx import Namespace, Resource
 
 from compliance_api.services.report.report import ReportService
@@ -55,7 +55,12 @@ class Reports(Resource):
 
         report_data = schema.load(request.json or {})
         report_type = report_data.get("report_type")
-        data = ReportService.generate_report(report_data, report_type)
+
+        try:
+            data = ReportService.generate_report(report_data, report_type)
+        except ValueError as value_error:
+            current_app.logger.error(f"Error generating report: {value_error}")
+            return {"message": str(value_error)}, 400
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         file_name = f"{report_type}_{timestamp}.xlsx"
 
