@@ -168,7 +168,7 @@ describe("InspectionFormRight Component", () => {
     cy.get('.MuiAutocomplete-root[name="inAttendance"]').within(() => {
       cy.get(".MuiAutocomplete-tag")
         .should("contain.text", "Agency")
-        .find('svg[data-testid="CloseIcon"]')
+        .find('svg[data-testid="CancelIcon"]')
         .click();
     });
 

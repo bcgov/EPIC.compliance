@@ -16,8 +16,9 @@ import { useMemo } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { VARIANT_COLORS } from "@/utils/constants";
 
-interface FormAutocompleteProps<T>
-  extends Partial<AutocompleteProps<T, true | false, false, false>> {
+interface FormAutocompleteProps<T> extends Partial<
+  AutocompleteProps<T, true | false, false, false>
+> {
   name: string;
   label: string;
   options: T[];
@@ -29,8 +30,9 @@ interface FormAutocompleteProps<T>
   isSortOptions?: boolean;
   isRequired?: boolean;
   renderOptionBadge?: (
-    option: T
+    option: T,
   ) => { label: string; color: VARIANT_COLORS } | null;
+  showAllSelectedText?: boolean;
 }
 
 const ControlledAutoComplete = <T,>({
@@ -45,6 +47,7 @@ const ControlledAutoComplete = <T,>({
   isSortOptions = false,
   isRequired = false,
   renderOptionBadge,
+  showAllSelectedText = false,
   ...props
 }: FormAutocompleteProps<T>) => {
   const {
@@ -55,7 +58,7 @@ const ControlledAutoComplete = <T,>({
   const sortedOptions = useMemo(() => {
     if (isSortOptions) {
       return options.sort((a, b) =>
-        getOptionLabel(a).localeCompare(getOptionLabel(b))
+        getOptionLabel(a).localeCompare(getOptionLabel(b)),
       );
     }
     return options;
@@ -85,6 +88,31 @@ const ControlledAutoComplete = <T,>({
           disableCloseOnSelect={multiple}
           limitTags={multiple ? 1 : undefined}
           popupIcon={<ExpandMore />}
+          renderTags={(value, getTagProps) => {
+            if (
+              showAllSelectedText &&
+              multiple &&
+              Array.isArray(value) &&
+              value.length === sortedOptions.length &&
+              sortedOptions.length > 0
+            ) {
+              return [<span>All Selected</span>];
+            }
+            return value.map((option, index) => {
+              const { onDelete, ...chipProps } = getTagProps({ index });
+
+              return (
+                <Chip
+                  label={getOptionLabel(option)}
+                  {...chipProps}
+                  onDelete={(e) => {
+                    onDelete(e);
+                    onDeleteOption?.(option);
+                  }}
+                />
+              );
+            });
+          }}
           renderOption={(props, option, { selected }) => {
             const { key, ...otherProps } = props;
             const badge = renderOptionBadge ? renderOptionBadge(option) : null;
@@ -146,7 +174,7 @@ const ControlledAutoComplete = <T,>({
                       const optionToDelete = field.value.find(
                         (item: T) =>
                           getOptionLabel(item) ===
-                          chipProps.currentTarget.parentElement?.textContent
+                          chipProps.currentTarget.parentElement?.textContent,
                       );
                       if (optionToDelete) {
                         onDeleteOption(optionToDelete);
@@ -157,8 +185,8 @@ const ControlledAutoComplete = <T,>({
                         chipProps.currentTarget.parentElement?.textContent;
                       field.onChange(
                         field.value.filter(
-                          (item: T) => getOptionLabel(item) !== chipToDelete
-                        )
+                          (item: T) => getOptionLabel(item) !== chipToDelete,
+                        ),
                       );
                     }
                   },

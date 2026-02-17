@@ -132,6 +132,14 @@ class TrackService:
                 f"Unable to parse First Nation information for ID {first_nation_id}"
             )
 
+    @staticmethod
+    def get_first_nations():
+        """Return firstnations."""
+        first_nation_response = _request_track_service("indigenous-nations")
+        if first_nation_response.status_code != 200:
+            raise BusinessError("Error finding first nations")
+        return first_nation_response.json()
+
 
 @retry(
     retry=retry_if_exception_type(requests.exceptions.RequestException),

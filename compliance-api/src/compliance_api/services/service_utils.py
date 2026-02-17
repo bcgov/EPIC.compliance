@@ -675,3 +675,67 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             project = TrackService.get_project_by_id(project_id)
             return project.get("abbreviation")
         return UNAPPROVED_PROJECT_CODE
+
+    @staticmethod
+    def get_enforcement_status_by_type(result):  # pylint: disable=too-many-return-statements
+        """Get the correct enforcement status based on the enforcement action type."""
+        enforcement_action_id = result.enforcement_action_id
+
+        # Map enforcement action ID to the corresponding status field
+        if enforcement_action_id == EnforcementActionOptionEnum.ORDER.value:
+            return result.order_status
+        if enforcement_action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+            return result.warning_letter_status
+        if enforcement_action_id == EnforcementActionOptionEnum.VIOLATION_TICKET.value:
+            return result.violation_ticket_status
+        if (
+            enforcement_action_id
+            == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
+        ):
+            return result.admin_penalty_status
+        if (
+            enforcement_action_id == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value
+        ):
+            return result.charge_rec_status
+        if enforcement_action_id == EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value:
+            return result.restorative_justice_status
+        return None
+
+    @staticmethod
+    def convert_enum_to_object(enum_value):
+        """Convert enum value to proper object format for API response."""
+        if not enum_value:
+            return None
+
+        # If it's already an enum object, convert it to the expected format
+        if hasattr(enum_value, "name") and hasattr(enum_value, "value"):
+            return {
+                "id": enum_value.name,
+                "name": enum_value.value,
+            }
+
+        # If it's just a string, return it as is (shouldn't happen with our current logic)
+        return {
+            "id": str(enum_value),
+            "name": str(enum_value),
+        }
+
+    @staticmethod
+    def get_enforcement_number_by_type(result):
+        """Get the correct enforcement number based on the enforcement action type."""
+        enforcement_action_id = result.enforcement_action_id
+
+        # Map enforcement action ID to the corresponding number field attribute
+        enforcement_number_map = {
+            EnforcementActionOptionEnum.ORDER.value: "order_number",
+            EnforcementActionOptionEnum.WARNING_LETTER.value: "warning_letter_number",
+            EnforcementActionOptionEnum.VIOLATION_TICKET.value: "violation_ticket_number",
+            EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: "admin_penalty_number",
+            EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value: "charge_rec_number",
+            EnforcementActionOptionEnum.RESTORATIVE_JUSTICE.value: "restorative_justice_number",
+        }
+
+        field_name = enforcement_number_map.get(enforcement_action_id)
+        if field_name:
+            return getattr(result, field_name, "") or ""
+        return ""
