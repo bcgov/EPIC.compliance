@@ -14,7 +14,7 @@
 """Complaint Model."""
 import enum
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String, func
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -169,29 +169,6 @@ class Complaint(BaseModelVersioned):
             postgresql_where=(is_deleted is False),  # Condition for uniqueness
         ),
     )
-
-    @classmethod
-    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
-        """Return the number of complaint based on the project and case file id."""
-        result = (
-            cls.query.with_entities(
-                Complaint.case_file_id,
-                CaseFileModel.project_id,
-                func.count(Complaint.id).label(  # pylint: disable=not-callable
-                    "complaint_count"
-                ),
-            )
-            .join(CaseFileModel, CaseFileModel.id == Complaint.case_file_id)
-            .filter(
-                CaseFileModel.project_id == project_id,
-                Complaint.case_file_id == case_file_id,
-                Complaint.is_active.is_(True),
-                Complaint.is_deleted.is_(False),
-            )
-            .group_by(Complaint.case_file_id, CaseFileModel.project_id)
-            .first()
-        )
-        return result.complaint_count if result else 0
 
     @classmethod
     def get_latest_complaint_number_count(

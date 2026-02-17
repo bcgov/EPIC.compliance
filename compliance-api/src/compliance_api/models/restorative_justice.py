@@ -285,26 +285,6 @@ class RestorativeJustice(BaseModelVersioned):
         )
 
     @classmethod
-    @with_session
-    def get_count_by_project_and_case_file_id(
-        cls, project_id: int, case_file_id: int, session=None
-    ):
-        """Get count of restorative justices by project and case file id."""
-        return (
-            session.query(cls)
-            .join(InspectionModel, cls.inspection_id == InspectionModel.id)
-            .filter(
-                and_(
-                    InspectionModel.project_id == project_id,
-                    InspectionModel.case_file_id == case_file_id,
-                    cls.is_active.is_(True),
-                    cls.is_deleted.is_(False),
-                )
-            )
-            .count()
-        )
-
-    @classmethod
     def get_latest_restorative_justice_number_count(
         cls, case_file_id: int, project_id: int, pattern
     ):

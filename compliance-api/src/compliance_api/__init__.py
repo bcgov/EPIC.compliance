@@ -10,9 +10,10 @@ import os
 from http import HTTPStatus
 
 import secure
-from flask import Flask, current_app, g, request
+from flask import Flask, current_app, g, jsonify, request
 from flask_cors import CORS
 from jose import jwt as jose_jwt
+from werkzeug.exceptions import HTTPException
 
 from compliance_api.auth import jwt
 from compliance_api.config import get_named_config
@@ -121,13 +122,29 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
         """Execute teardown actions."""
         db.session.remove()
 
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(error):
+        """Handle all HTTP exceptions with proper JSON responses."""
+        response = {
+            "message": error.description or str(error),
+            "status": error.code
+        }
+        return jsonify(response), error.code
+
     @app.errorhandler(Exception)
     def handle_error(err):
+        """Handle all other non-HTTP exceptions."""
         if run_mode != "production":
-            # To get stacktrace in local development for internal server errors
+            # In development, re-raise to see full stacktrace
             raise err
-        current_app.logger.error(str(err))
-        return "Internal server error", HTTPStatus.INTERNAL_SERVER_ERROR
+
+        current_app.logger.error(f"Unhandled exception: {str(err)}", exc_info=True)
+
+        response = {
+            "message": "An internal server error occurred",
+            "status": 500
+        }
+        return jsonify(response), HTTPStatus.INTERNAL_SERVER_ERROR
 
     # Return App for run in run.py file
     return app

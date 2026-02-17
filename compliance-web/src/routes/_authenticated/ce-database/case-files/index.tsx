@@ -9,7 +9,7 @@ import { CaseFile, CaseFileGridQueryParams } from "@/models/CaseFile";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
-import { DRAWER_WIDTHS } from "@/utils/constants";
+import { DRAWER_WIDTHS, STAFF_USER_POSITION } from "@/utils/constants";
 import { AppConfig } from "@/utils/config";
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
@@ -158,17 +158,24 @@ export function CaseFiles() {
 
     // Apply default filters for first-time users
     if (!restoredFilters) {
+      const officerPositions = [
+        STAFF_USER_POSITION.OFFICER,
+        STAFF_USER_POSITION.SENIOR_OFFICER,
+      ];
+      const defaultChecked = Boolean(currentStaff.position_id && 
+        officerPositions.includes(currentStaff.position_id));
+
       const defaultExternalFilters = {
-        primary_officer_ids: [currentStaff.id.toString()],
+        primary_officer_ids: [defaultChecked ? currentStaff.id.toString() : ""],
       };
       const defaultColumnFilters = [
-        { id: "primary_officer", value: [currentStaff.id.toString()] },
+        { id: "primary_officer", value: [defaultChecked ? currentStaff.id.toString() : ""] },
         { id: "status", value: ["Open"] },
       ];
 
       setExternalFilters(defaultExternalFilters);
       setColumnFilters(defaultColumnFilters);
-      setMyFilesChecked(true);
+      setMyFilesChecked(defaultChecked);
     }
 
     // Restore sorting

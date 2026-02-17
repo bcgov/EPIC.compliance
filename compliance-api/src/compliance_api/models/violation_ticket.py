@@ -252,20 +252,6 @@ class ViolationTicket(BaseModelVersioned):
         return violation_ticket
 
     @classmethod
-    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
-        """Get count of violation tickets by project and case file id."""
-        query = (
-            cls.query.join(InspectionModel, cls.inspection_id == InspectionModel.id)
-            .join(CaseFileModel, InspectionModel.case_file_id == CaseFileModel.id)
-            .filter(
-                CaseFileModel.project_id == project_id,
-                CaseFileModel.id == case_file_id,
-                cls.is_deleted.is_(False),
-            )
-        )
-        return query.count()
-
-    @classmethod
     def get_by_vt_number(cls, vt_number: str):
         """Find a violation ticket by vt number."""
         return cls.get_by_params({"vt_number": vt_number}, default_filters=True)

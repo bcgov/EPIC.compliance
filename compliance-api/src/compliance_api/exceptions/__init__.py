@@ -19,7 +19,7 @@ BusinessException - error, status_code - Business rules error
 error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
-from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, UnprocessableEntity
+from werkzeug.exceptions import BadRequest, Conflict, Forbidden, NotFound, ServiceUnavailable, UnprocessableEntity
 from werkzeug.wrappers.response import Response
 
 
@@ -81,3 +81,13 @@ class UnprocessableEntityError(UnprocessableEntity):
         super().__init__(*args, **kwargs)
         self.description = message
         self.response = Response(message, status=UnprocessableEntity.code)
+
+
+class ServiceUnavailableError(ServiceUnavailable):
+    """Exception raised when an external service is unavailable."""
+
+    def __init__(self, message, *args, **kwargs):
+        """Return a valid ServiceUnavailableError."""
+        super().__init__(*args, **kwargs)
+        self.description = message
+        self.response = Response(message, status=ServiceUnavailable.code)

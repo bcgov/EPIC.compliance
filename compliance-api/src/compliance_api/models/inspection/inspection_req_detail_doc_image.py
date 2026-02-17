@@ -136,25 +136,3 @@ class InspectionRequirementDetailDocImage(BaseModelVersioned):
         image.update(DELETE_DIC_PARAMS, commit=False)
         session.flush()
         return image
-
-    @classmethod
-    @with_session
-    def delete_images_by_req_detail_doc_id(cls, req_detail_doc_id, session=None):
-        """Delete images by requirement detail document id."""
-        images = cls.query.filter_by(
-            req_detail_doc_id=req_detail_doc_id, is_deleted=False
-        ).all()
-        for image in images:
-            image.update(DELETE_DIC_PARAMS, commit=False)
-        session.flush()
-
-    @classmethod
-    @with_session
-    def delete_images_by_req_detail_doc_ids(cls, req_detail_doc_ids, session=None):
-        """Delete images by requirement detail document ids."""
-        images = cls.query.filter(
-            cls.req_detail_doc_id.in_(req_detail_doc_ids), cls.is_deleted.is_(False)
-        ).all()
-        for image in images:
-            image.update(DELETE_DIC_PARAMS, commit=False)
-        session.flush()

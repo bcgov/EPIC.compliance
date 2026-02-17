@@ -6,7 +6,6 @@ from sqlalchemy import Boolean, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Index, Integer, String, and_, or_
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 
 from compliance_api.models.base_model import BaseModelVersioned, db
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -347,36 +346,6 @@ class ChargeRecommendation(BaseModelVersioned):
             )
             .first()
         )
-
-    @classmethod
-    @with_session
-    def get_count_by_project_and_case_file_id(
-        cls, project_id: int, case_file_id: int, session=None
-    ):
-        """Get count of charge recommendations by project and case file id."""
-        result = (
-            session.query(cls)
-            .join(InspectionModel, InspectionModel.id == cls.inspection_id)
-            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
-            .with_entities(
-                InspectionModel.case_file_id,
-                CaseFileModel.project_id,
-                func.count(cls.id).label(  # pylint: disable=not-callable
-                    "charge_recommendation_count"
-                ),
-            )
-            .filter(
-                and_(
-                    CaseFileModel.project_id == project_id,
-                    InspectionModel.case_file_id == case_file_id,
-                    cls.is_active.is_(True),
-                    cls.is_deleted.is_(False),
-                )
-            )
-            .group_by(InspectionModel.case_file_id, CaseFileModel.project_id)
-            .first()
-        )
-        return result.charge_recommendation_count if result else 0
 
     @classmethod
     def get_latest_charge_recommendation_number_count(

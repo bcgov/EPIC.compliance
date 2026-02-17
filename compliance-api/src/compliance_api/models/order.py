@@ -2,7 +2,7 @@
 
 import enum
 
-from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String, func
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 
 from compliance_api.models.inspection import InspectionRequirement
@@ -248,28 +248,6 @@ class Order(BaseModelVersioned):
         order.update(order_data, commit=False)
         session.flush()
         return order
-
-    @classmethod
-    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
-        """Get count of orders by project and case file id."""
-        result = (
-            cls.query.join(InspectionModel, InspectionModel.id == cls.inspection_id)
-            .join(CaseFileModel, CaseFileModel.id == InspectionModel.case_file_id)
-            .with_entities(
-                InspectionModel.case_file_id,
-                CaseFileModel.project_id,
-                func.count(cls.id).label("order_count"),  # pylint: disable=not-callable
-            )
-            .filter(
-                CaseFileModel.project_id == project_id,
-                InspectionModel.case_file_id == case_file_id,
-                cls.is_active.is_(True),
-                cls.is_deleted.is_(False),
-            )
-            .group_by(InspectionModel.case_file_id, CaseFileModel.project_id)
-            .first()
-        )
-        return result.order_count if result else 0
 
     @classmethod
     def get_latest_order_number_count(cls, case_file_id: int, project_id: int, pattern):

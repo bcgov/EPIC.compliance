@@ -3,9 +3,9 @@
 from datetime import date
 import requests
 from flask import current_app, g
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from tenacity import RetryError, retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
-from compliance_api.exceptions import BusinessError
+from compliance_api.exceptions import BadRequestError, ResourceNotFoundError, ServiceUnavailableError
 from compliance_api.utils.enum import HttpMethod
 
 from .constant import API_REQUEST_TIMEOUT
@@ -17,39 +17,120 @@ class TrackService:
     @staticmethod
     def get_project_by_id(project_id: int, as_of_date: date = None):
         """Return project details from track."""
-        if as_of_date:
-            project_response = _request_track_service(
-                f"projects/{project_id}?as_of_date={as_of_date.isoformat()}"
+        try:
+            if as_of_date:
+                project_response = _request_track_service(
+                    f"projects/{project_id}?as_of_date={as_of_date.isoformat()}"
+                )
+            else:
+                project_response = _request_track_service(f"projects/{project_id}")
+
+            if project_response.status_code == 404:
+                raise ResourceNotFoundError(
+                    f"Project with ID {project_id} not found in EPIC.track"
+                )
+
+            if project_response.status_code != 200:
+                current_app.logger.error(
+                    f"EPIC.track returned status {project_response.status_code} for project {project_id}"
+                )
+                raise BadRequestError(
+                    "Unable to retrieve project information at this time"
+                )
+
+            return project_response.json()
+
+        except (RetryError, requests.exceptions.RequestException) as e:
+            current_app.logger.error(
+                f"EPIC.track service unavailable for project {project_id}: {str(e)}",
+                exc_info=True
             )
-        else:
-            project_response = _request_track_service(f"projects/{project_id}")
-        if project_response.status_code != 200:
-            raise BusinessError(
-                f"Error finding project with ID {project_id} from EPIC.track server"
+            raise ServiceUnavailableError(
+                "The project information service is temporarily unavailable. Please try again later."
             )
-        return project_response.json()
+        except (ResourceNotFoundError, BadRequestError):
+            # Re-raise custom exceptions
+            raise
+        except (KeyError, ValueError, TypeError) as e:
+            current_app.logger.error(
+                f"Error parsing project data for project {project_id}: {str(e)}",
+                exc_info=True
+            )
+            raise BadRequestError(
+                f"Unable to parse project information for project {project_id}"
+            )
 
     @staticmethod
     def get_project_statuses():
         """Return the project statuses from track."""
-        project_status_response = _request_track_service(
-            "project-states?components=compliance"
-        )
-        if project_status_response.status_code != 200:
-            raise BusinessError("Error finding project statuses")
-        return project_status_response.json()
+        try:
+            project_status_response = _request_track_service(
+                "project-states?components=compliance"
+            )
+
+            if project_status_response.status_code != 200:
+                current_app.logger.error(
+                    f"EPIC.track returned status {project_status_response.status_code} for project statuses"
+                )
+                raise BadRequestError("Unable to retrieve project statuses")
+
+            return project_status_response.json()
+
+        except (RetryError, requests.exceptions.RequestException) as e:
+            current_app.logger.error(
+                f"EPIC.track service unavailable for project statuses: {str(e)}",
+                exc_info=True
+            )
+            raise BadRequestError(
+                "The project status service is temporarily unavailable. Please try again later."
+            )
+        except BadRequestError:
+            raise
+        except (KeyError, ValueError, TypeError) as e:
+            current_app.logger.error(f"Error parsing project statuses: {str(e)}", exc_info=True)
+            raise BadRequestError("Unable to parse project status information")
 
     @staticmethod
     def get_first_nation_by_id(first_nation_id: int):
         """Return firstnation by id."""
-        first_nation_response = _request_track_service(
-            f"indigenous-nations/{first_nation_id}"
-        )
-        if first_nation_response.status_code != 200:
-            raise BusinessError(
-                f"Error finding the first nation with ID {first_nation_id} from EPIC.track server"
+        try:
+            first_nation_response = _request_track_service(
+                f"indigenous-nations/{first_nation_id}"
             )
-        return first_nation_response.json()
+
+            if first_nation_response.status_code == 404:
+                raise ResourceNotFoundError(
+                    f"First Nation with ID {first_nation_id} not found in EPIC.track"
+                )
+
+            if first_nation_response.status_code != 200:
+                current_app.logger.error(
+                    f"EPIC.track returned status {first_nation_response.status_code} for first nation {first_nation_id}"
+                )
+                raise BadRequestError(
+                    "Unable to retrieve First Nation information at this time"
+                )
+
+            return first_nation_response.json()
+
+        except (RetryError, requests.exceptions.RequestException) as e:
+            current_app.logger.error(
+                f"EPIC.track service unavailable for first nation {first_nation_id}: {str(e)}",
+                exc_info=True
+            )
+            raise BadRequestError(
+                "The First Nation information service is temporarily unavailable. Please try again later."
+            )
+        except (ResourceNotFoundError, BadRequestError):
+            raise
+        except (KeyError, ValueError, TypeError) as e:
+            current_app.logger.error(
+                f"Error parsing first nation data for ID {first_nation_id}: {str(e)}",
+                exc_info=True
+            )
+            raise BadRequestError(
+                f"Unable to parse First Nation information for ID {first_nation_id}"
+            )
 
     @staticmethod
     def get_first_nations():

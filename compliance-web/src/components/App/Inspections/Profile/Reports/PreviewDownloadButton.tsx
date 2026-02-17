@@ -79,9 +79,11 @@ const PreviewDownloadButton = () => {
   };
 
   const onError = (error: AxiosError) => {
-    notify.error(error.message ?? "Error processing report");
+    notify.error(
+      (error.response?.data as { message?: string })?.message ?? 
+      "Error processing report"
+    );
     setPreviewClicked(false);
-    // setGeneratingDocx(false);
   };
 
   const { mutate: mutateIrPreviewData } = useInspectionRecordRender(

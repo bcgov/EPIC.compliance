@@ -19,7 +19,6 @@ from compliance_api.utils.constant import DELETE_DIC_PARAMS
 from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 
 from ..base_model import BaseModelVersioned, db
-from ..case_file import CaseFile as CaseFileModel
 from ..inspection_record import InspectionRecord
 from ..inspection_record_approval import InspectionRecordApproval
 from ..staff_user import StaffUser
@@ -149,29 +148,6 @@ class Inspection(BaseModelVersioned):
             postgresql_where=(is_deleted is False),  # Condition for uniqueness
         ),
     )
-
-    @classmethod
-    def get_count_by_project_and_case_file_id(cls, project_id: int, case_file_id: int):
-        """Return the number of inspection based on the project and case file id."""
-        result = (
-            cls.query.join(CaseFileModel, Inspection.case_file_id == CaseFileModel.id)
-            .with_entities(
-                Inspection.case_file_id,
-                CaseFileModel.project_id,
-                func.count(Inspection.id).label(  # pylint: disable=not-callable
-                    "inspection_count"
-                ),
-            )
-            .filter(
-                CaseFileModel.project_id == project_id,
-                Inspection.case_file_id == case_file_id,
-                Inspection.is_active.is_(True),
-                Inspection.is_deleted.is_(False),
-            )
-            .group_by(Inspection.case_file_id, CaseFileModel.project_id)
-            .first()
-        )
-        return result.inspection_count if result else 0
 
     @classmethod
     def get_latest_ir_number_count(cls, case_file_id: int, project_id: int, pattern):

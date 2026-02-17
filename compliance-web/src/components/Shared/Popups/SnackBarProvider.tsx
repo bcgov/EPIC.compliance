@@ -3,12 +3,12 @@ import { Snackbar, Alert } from "@mui/material";
 import { useSnackbar } from "@/store/snackbarStore";
 
 const SnackBarProvider: React.FC = () => {
-  const { isOpen, setClose, severity, message } = useSnackbar();
+  const { duration, isOpen, setClose, severity, message } = useSnackbar();
 
   return (
     <Snackbar
       open={isOpen}
-      autoHideDuration={3000}
+      autoHideDuration={duration}
       onClose={setClose}
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
     >
