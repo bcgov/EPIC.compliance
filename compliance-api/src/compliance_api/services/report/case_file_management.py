@@ -51,25 +51,25 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
         current_app.logger.info(
             f"Case File Management Report Generator initialized with officers: {self.officer_ids}"
         )
+        self.project_map = {}
 
     def generate(self):
         """CEB Summary Report Generation Logic."""
-        projects = TrackService.get_projects()
         first_nations = TrackService.get_first_nations()
 
         # Inspections Tab
         data = self._build_case_file_tab_query().all()
-        data = self._format_case_file_tab_data(data, projects)
+        data = self._format_case_file_tab_data(data)
         case_file_data_frame = pd.json_normalize(data)
         case_file_headers, case_file_columns = self._get_case_file_tab_columns_and_headers()
 
         data = self._build_inspections_tab_query().all()
-        data = self._format_inspections_tab_data(data, projects)
+        data = self._format_inspections_tab_data(data)
         inspections_data_frame = pd.json_normalize(data)
         inspections_headers, inspections_columns = self._get_inspections_tab_columns_and_headers()
 
         data = self._build_complaints_tab_query().all()
-        data = self._format_complaints_tab_data(data, projects, first_nations)
+        data = self._format_complaints_tab_data(data, first_nations)
         complaints_data_frame = pd.json_normalize(data)
         complaints_headers, complaints_columns = self._get_complaints_tab_columns_and_headers()
 
@@ -98,6 +98,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 CaseFileInitiationOption.name.label("case_file_initiation_option"),
                 CaseFile.date_created.label("date_created"),
                 CaseFile.case_file_status.label("status"),
+                CaseFile.date_created.label("case_file_date_created")
             )
             .outerjoin(StaffUser, CaseFile.primary_officer_id == StaffUser.id)
             .outerjoin(Project, CaseFile.project_id == Project.id)
@@ -151,6 +152,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 StaffUser,
                 Inspection.inspection_status.label("inspection_status"),
                 CaseFile.case_file_number.label("case_file_number"),
+                CaseFile.date_created.label("case_file_date_created"),
             )
             .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
             .join(Topic, InspectionRequirement.topic_id == Topic.id)
@@ -254,6 +256,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 Complaint.status.label("complaint_status"),
                 ComplaintResolution.name.label("complaint_resolution"),
                 CaseFile.case_file_number.label("case_file_number"),
+                CaseFile.date_created.label("case_file_date_created"),
             )
             .join(CaseFile, Complaint.case_file_id == CaseFile.id)
             .outerjoin(Topic, Complaint.topic_id == Topic.id)
@@ -359,8 +362,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
         output.seek(0)
         return output.getvalue()
 
-    @staticmethod
-    def _format_case_file_tab_data(data, projects):
+    def _format_case_file_tab_data(self, data):
         result = []
 
         if not data:
@@ -378,7 +380,11 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 project_name = row.unapproved_project_name
                 project_type = row.unapproved_project_type
             else:
-                project = next((p for p in projects if p.get('id') == row.project_id), None)
+                if row.project_id in self.project_map:
+                    project = self.project_map[row.project_id]
+                else:
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
 
@@ -419,8 +425,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
 
         return headers, columns
 
-    @staticmethod
-    def _format_inspections_tab_data(data, projects):
+    def _format_inspections_tab_data(self, data):
         """Format data for excel export."""
         result = []
 
@@ -442,7 +447,11 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 project_name = row.unapproved_project_name
                 project_type = row.unapproved_project_type
             else:
-                project = next((p for p in projects if p.get('id') == row.project_id), None)
+                if row.project_id in self.project_map:
+                    project = self.project_map[row.project_id]
+                else:
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
 
@@ -520,8 +529,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
 
         return headers, columns
 
-    @staticmethod
-    def _format_complaints_tab_data(data, projects, first_nations):
+    def _format_complaints_tab_data(self, data, first_nations):
         """Format complaints data for excel export."""
         result = []
 
@@ -540,7 +548,11 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 project_name = row.unapproved_project_name
                 project_type = row.unapproved_project_type
             else:
-                project = next((p for p in projects if p.get('id') == row.project_id), None)
+                if row.project_id in self.project_map:
+                    project = self.project_map[row.project_id]
+                else:
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
 

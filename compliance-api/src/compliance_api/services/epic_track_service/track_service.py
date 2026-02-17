@@ -14,9 +14,14 @@ class TrackService:
     """EPIC.Track service class."""
 
     @staticmethod
-    def get_project_by_id(project_id: int):
+    def get_project_by_id(project_id: int, as_of_date=None):
         """Return project details from track."""
-        project_response = _request_track_service(f"projects/{project_id}")
+        url = f"projects/{project_id}"
+
+        if as_of_date:
+            url += f"?as_of_date={as_of_date}"
+
+        project_response = _request_track_service(url)
         if project_response.status_code != 200:
             raise BusinessError(
                 f"Error finding project with ID {project_id} from EPIC.track server"
