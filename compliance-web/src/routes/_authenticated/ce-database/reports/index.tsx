@@ -46,6 +46,7 @@ export function ReportsTab() {
   const [dateRangeType, setDateRangeType] = useState<"none" | "range">("none");
 
   const methods = useForm<ReportFormValues>({
+    mode: "onChange",
     defaultValues: {
       report_type: ReportType.ProjectCompliance,
       project: null,
@@ -62,6 +63,8 @@ export function ReportsTab() {
 
   const report_type = watch("report_type");
   const officers = watch("officers");
+  const project = watch("project");
+  const first_nation = watch("first_nation");
 
   const hasManuallyChangedOfficers = useRef(false);
 
@@ -108,6 +111,21 @@ export function ReportsTab() {
       );
     },
   );
+
+  const isFormComplete = () => {
+    switch (report_type) {
+      case ReportType.ProjectCompliance:
+        return project !== null;
+      case ReportType.CaseFileManagement:
+        return officers && officers.length > 0;
+      case ReportType.FirstNation:
+        return first_nation !== null;
+      case ReportType.CebSummary:
+        return true;
+      default:
+        return false;
+    }
+  };
 
   return (
     <Box maxWidth={700} mx="auto" pb={8}>
@@ -309,13 +327,16 @@ export function ReportsTab() {
             <Box display="flex" justifyContent="flex-start">
               <Button
                 type="submit"
-                variant="contained"
+                variant={isPending || !isFormComplete() ? "outlined" : "contained"}
                 color="primary"
-                disabled={isPending}
+                disabled={isPending || !isFormComplete()}
               >
                 <Typography
                   variant="body2"
-                  color={BCDesignTokens.themeGrayWhite}
+                  color={isPending || !isFormComplete() 
+                    ? BCDesignTokens.themeGray70 
+                    : BCDesignTokens.themeGrayWhite
+                  }
                 >
                   Generate & Download Report
                 </Typography>
