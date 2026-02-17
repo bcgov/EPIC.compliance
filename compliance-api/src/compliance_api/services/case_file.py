@@ -24,6 +24,7 @@ from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
@@ -801,6 +802,7 @@ def _build_case_level_query(case_file_id: int):
                 InspectionModel.case_file_id == case_file_id,
                 InspectionModel.is_active.is_(True),
                 InspectionModel.is_deleted.is_(False),
+                InspectionModel.inspection_status == InspectionStatusEnum.OPEN,
             )
         )
         .all()
