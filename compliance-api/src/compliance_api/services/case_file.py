@@ -24,6 +24,7 @@ from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
@@ -761,8 +762,11 @@ def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
     for row in case_level_query:
         if row.inspection_id and row.inspection_id not in all_inspection_ids:
             all_inspection_ids.add(row.inspection_id)
-            # Add all inspection items, regardless of IR status
-            open_items["inspections"].append(_build_inspection_item(row))
+            # Only add inspections that are open to the open items list,
+            # closed inspections are not considered open items but we
+            # want to track their IDs for enforcement action checks
+            if row.inspection_status == InspectionStatusEnum.OPEN:
+                open_items["inspections"].append(_build_inspection_item(row))
 
         if row.complaint_id and row.complaint_id not in processed_complaints:
             processed_complaints.add(row.complaint_id)
