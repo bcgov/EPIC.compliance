@@ -1,19 +1,16 @@
-import { Box, Collapse, Typography } from "@mui/material";
-import { FC, useCallback, useEffect, useMemo, useState } from "react";
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { FC, useCallback, useEffect, useMemo  } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { ExpandMoreRounded } from "@mui/icons-material";
 import { useQueryClient } from "@tanstack/react-query";
 import EnforcementModal from "@/components/App/Inspections/Profile/Enforcements/EnforcementModal";
 import {
   orderSchema,
+  BaseEnforcementFormType,
   getDefaultFormValues,
   ENFORCEMENT_MESSAGES,
 } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
-import ControlledCheckbox from "@/components/Shared/Controlled/ControlledCheckbox";
-import ControlledTextField from "@/components/Shared/Controlled/ControlledTextField";
-import { useCreateInspectionOrder } from "@/hooks/useInspectionOrders";
+import { useCreateInspectionOrder, useLinkInspectionOrder } from "@/hooks/useInspectionOrders";
 import {
   InspectionOrder,
   InspectionOrderAPIData,
@@ -21,63 +18,20 @@ import {
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { notify } from "@/store/snackbarStore";
+import { useModal } from "@/store/modalStore";
 import { EnforcementActionEnum } from "@/utils/constants";
+import OrderCreationOptions from "./OrderCreationOptions";
 
-type OrderFormType = yup.InferType<typeof orderSchema>;
+const createOrderPenaltySchema = orderSchema.shape({
+  orderCreationMethod: yup.string().required("Please select a creation method"),
+  existingOrderId: yup.number().when("orderCreationMethod", {
+    is: "link_existing",
+    then: (schema) => schema.required("Please select an existing Order"),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+});
 
-const ManualOrderNumberInfo = () => {
-  const [isInfoExpanded, setIsInfoExpanded] = useState(false);
-
-  return (
-    <Box
-      sx={{ display: "flex", gap: 1, ml: 3, cursor: "pointer" }}
-      onClick={() => setIsInfoExpanded(!isInfoExpanded)}
-    >
-      <ExpandMoreRounded
-        sx={{
-          marginTop: "-0.125rem",
-          fontSize: "1.25rem",
-          transform: isInfoExpanded ? "rotate(180deg)" : "rotate(270deg)",
-        }}
-      />
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Typography variant="caption">Why enter a manual Order #?</Typography>
-        <Collapse in={isInfoExpanded}>
-          <Typography variant="caption">
-            If you are entering an order that was previously created outside
-            this system, check this box and enter the existing Order #. If this
-            is a new order, leave the box unchecked, and the system will
-            generate a number for you.
-          </Typography>
-        </Collapse>
-      </Box>
-    </Box>
-  );
-};
-
-const OrderFormFields = () => {
-  const { watch } = useFormContext<OrderFormType>();
-  const isHistoricalRecord = watch("isHistoricalRecord");
-  return (
-    <>
-      <ControlledCheckbox
-        name="isHistoricalRecord"
-        label="Check this box to enter an existing Order # for historical records."
-        fontSize="small"
-      />
-      <ManualOrderNumberInfo />
-      {isHistoricalRecord && (
-        <ControlledTextField
-          name="manualOrderNumber"
-          label="Manual Order #"
-          placeholder="Enter existing order number"
-          sx={{ mt: 2 }}
-          fullWidth
-        />
-      )}
-    </>
-  );
-};
+type OrderFormType = yup.InferType<typeof createOrderPenaltySchema>;
 
 type OrderCreateModalProps = {
   inspectionData: Inspection;
@@ -92,18 +46,24 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   inspectionData,
   requirementsList,
   requirement,
-  enforcementAction,
   nonProceededRequirements,
+  enforcementAction,
   onSubmit,
 }) => {
   const queryClient = useQueryClient();
+  const {  setClose: setModalClose } = useModal();
 
   const defaultValues = useMemo(() => {
-    return getDefaultFormValues(requirement, false, undefined);
+    return {
+      ...getDefaultFormValues(requirement, false, undefined),
+      manualOrderNumber: "",
+      existingOrderId: undefined,
+    };
   }, [requirement]);
+
   const methods = useForm<OrderFormType>({
-    resolver: yupResolver(orderSchema),
-    mode: "onBlur",
+    resolver: yupResolver(createOrderPenaltySchema),
+    mode: "onChange",
     defaultValues,
   });
 
@@ -123,29 +83,82 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
   const notifyAndSubmit = (data: InspectionOrder) => {
     notify.success(ENFORCEMENT_MESSAGES.ORDER_CREATED(data.order_number || ""));
     onSubmit(data);
+    setModalClose();
   };
 
-  const { mutate: createInspectionOrder, isPending: isPendingOrder } =
-    useCreateInspectionOrder(onSuccess);
+  const {
+    mutate: createInspectionOrder,
+    isPending: isPendingOrder
+  } = useCreateInspectionOrder(onSuccess);
+
+  const {
+    mutate: linkInspectionOrder,
+    isPending: isPendingLink
+  } = useLinkInspectionOrder(onSuccess);
 
   const handleBaseSubmit = useCallback(
-    (data: OrderFormType) => {
+    async ( data: BaseEnforcementFormType) => {
+      const formData = methods.getValues();
+      const requirementIds = (data.requirements as InspectionRequirement[]).map((requirement) => requirement.id);
+
+      // Not historical - default to 'create_new'
+      if (!inspectionData.is_history) {
+        formData.orderCreationMethod = "create_new";
+      }
+
+      if (!formData.orderCreationMethod) {
+        methods.setError("orderCreationMethod", {
+          type: "required",
+          message: "Please select a creation method.",
+        });
+        return;
+      }
+      if(formData.orderCreationMethod === 'manual_entry' && !formData.manualOrderNumber) {
+        methods.setError("manualOrderNumber", {
+          type: "required",
+          message: "Please enter the historical Order number.",
+        });
+        notify.error("Please enter the historical Order number.");
+        return;
+      }
+      if(formData.orderCreationMethod === 'link_existing' && !formData.existingOrderId) {
+        methods.setError("existingOrderId", {
+          type: "required",
+          message: "Please select an existing Order to link.",
+        });
+        notify.error("Please select an existing Order to link.");
+        return;
+      }
+
+      if(formData.orderCreationMethod === 'link_existing'){
+        const linkData = {
+          inspection_id: inspectionData.id,
+          inspection_requirement_ids: requirementIds,
+      };
+      linkInspectionOrder({
+        orderId: formData.existingOrderId!,
+        link: linkData
+      });
+      return;
+    }
+
       const orderData: InspectionOrderAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids: (
           data.requirements as InspectionRequirement[]
         ).map((requirement) => requirement.id),
-      };
+      };//
 
-      if (data.isHistoricalRecord) {
-        orderData.order_number = data.manualOrderNumber ?? "";
+      if(formData.orderCreationMethod === 'manual_entry' && formData.manualOrderNumber) {
+        orderData.order_number = formData.manualOrderNumber;
       }
 
+      // For 'create' option, do not set order_number - let system generate it
       createInspectionOrder({
         inspectionOrder: orderData,
       });
     },
-    [createInspectionOrder, inspectionData]
+    [createInspectionOrder, inspectionData, linkInspectionOrder, methods]
   );
 
   return (
@@ -157,9 +170,14 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
         enforcementAction={enforcementAction}
         title="Create Order"
         onSubmit={handleBaseSubmit}
-        isLoading={isPendingOrder}
-        additionalFormFields={
-          defaultValues.isHistoricalRecord ? <OrderFormFields /> : undefined
+        isLoading={isPendingOrder || isPendingLink}
+        additionalFormFields={ inspectionData.is_history &&
+           <FormProvider {...methods}>
+            <OrderCreationOptions
+              inspectionData={inspectionData}
+              isHistorical={inspectionData.is_history}
+            />
+          </FormProvider>
         }
       />
     </FormProvider>
@@ -167,3 +185,4 @@ const OrderCreateModal: FC<OrderCreateModalProps> = ({
 };
 
 export default OrderCreateModal;
+

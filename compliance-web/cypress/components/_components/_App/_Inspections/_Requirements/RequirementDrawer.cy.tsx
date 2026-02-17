@@ -3,17 +3,18 @@ import { baseRequirement, mockInspection } from "./mockData";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
+import { Inspection } from "@/models/Inspection";
+import { InspectionStatusEnum } from "@/utils/constants";
 
 describe("RequirementDrawer Component", () => {
   const queryClient = new QueryClient();
 
-  const mountComponent = (requirement?: InspectionRequirement) => {
+  const mountComponent = (requirement?: InspectionRequirement, inspection?: Inspection) => {
     const mockOnSubmit = cy.stub().as("onSubmitHandler");
-
     return cy.mount(
       <QueryClientProvider client={queryClient}>
         <RequirementDrawer
-          inspectionData={mockInspection}
+          inspectionData={inspection ?? mockInspection}
           requirement={requirement}
           index={0}
           onSubmit={mockOnSubmit}
@@ -34,34 +35,40 @@ describe("RequirementDrawer Component", () => {
     });
     // Set Zustand store state for useReportStore
     useReportStore.setState({
-      inspectionReportsData: { is_open_for_editing: true },
+      inspectionReportsData: { date_issued: new Date().toISOString() },
     });
   });
-  it("does not show action buttons when is_open_for_editing is false", () => {
+  it("does not show action buttons when inspection is closed", () => {
     useReportStore.setState({
-      inspectionReportsData: { is_open_for_editing: false },
+      inspectionReportsData: { date_issued: new Date().toISOString() },
     });
-    mountComponent(baseRequirement);
+    mockInspection.inspection_status = InspectionStatusEnum.CLOSED;
+    mountComponent(baseRequirement, mockInspection);
     cy.contains("Delete").should("not.exist");
     cy.contains("Edit Requirement #1").should("not.exist");
-    // If there are other action buttons, add similar checks here
   });
 
   it("renders create requirement drawer correctly", () => {
-    mountComponent(baseRequirement);
+    mockInspection.inspection_status = InspectionStatusEnum.OPEN;
+    mountComponent(baseRequirement, mockInspection);
 
     cy.contains("Edit Requirement #1").should("be.visible");
     cy.get("form").should("exist");
   });
 
   it("renders edit requirement drawer correctly", () => {
-    mountComponent(baseRequirement);
+    mockInspection.inspection_status = InspectionStatusEnum.OPEN;
+    mountComponent(baseRequirement, mockInspection);
 
     cy.contains("Edit Requirement #1").should("be.visible");
   });
 
   it("handles requirement deletion", () => {
-    mountComponent(baseRequirement);
+    mockInspection.inspection_status = InspectionStatusEnum.OPEN;
+    useReportStore.setState({
+      inspectionReportsData: { date_issued: null },
+    });
+    mountComponent(baseRequirement, mockInspection);
 
     // Click delete button
     cy.contains("Delete").click();

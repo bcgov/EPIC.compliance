@@ -49,8 +49,8 @@ from .inspection_requirement import (
 from .inspection_requirement_grid import InspectionRequirementFilterSchema, InspectionRequirementGridItemSchema
 from .ir_download_request import CreateIRDownloadRequestSchema, IRDownloadRequestQuerySchema, IRDownloadRequestSchema
 from .order import (
-    OrderCreateSchema, OrderIssueSchema, OrderReplaceSchema, OrderSchema, OrderStatusSchema, OrderUpdateSchema,
-    ResetOrderFieldSchema)
+    OrderCreateSchema, OrderIssueSchema, OrderLinkCreateSchema, OrderLinksResponseSchema, OrderReplaceSchema,
+    OrderSchema, OrderStatusSchema, OrderUpdateSchema, ResetOrderFieldSchema)
 from .order_approval import CreateOrderApprovalSchema, OrderApprovalSchema, UpdateOrderApprovalStatusSchema
 from .paginate import PaginationParameterSchema
 from .project import ProjectSchema

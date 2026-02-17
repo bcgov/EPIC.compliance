@@ -100,13 +100,6 @@ class WarningLetterService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value
         )
-        #  If the issuing officer id is different from the existing one, regenerate the content
-        if issuing_officer_id != warning_letter.issuing_officer_id:
-            update_data["content"] = _create_content(
-                warning_letter.inspection,
-                requirement_ids,
-                issuing_officer_id,
-            )
         with session_scope() as session:
             updated_warning_letter = WarningLetterModel.update_warning_letter(
                 warning_letter_id, update_data, session

@@ -5,6 +5,7 @@ import {
   useAuthUsersData,
   usePermissionsData,
   usePositionsData,
+  useStaffUsersData,
   useUpdateStaff,
 } from "@/hooks/useStaff";
 import { AuthUser } from "@/models/AuthUser";
@@ -13,7 +14,6 @@ import { Position } from "@/models/Position";
 import { StaffAPIData, StaffFormData, StaffUser } from "@/models/Staff";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { DialogContent } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
@@ -48,14 +48,14 @@ const initFormData: StaffFormData = {
 };
 
 const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
-  const queryClient = useQueryClient();
 
   const { data: usersList } = useAuthUsersData();
   const { data: positionsList } = usePositionsData();
   const { data: permissionsList } = usePermissionsData();
-  const staffUsersList: StaffUser[] | undefined = queryClient.getQueryData([
-    "staff-users",
-  ]);
+  const { data: staffUsersList } = useStaffUsersData({
+    isActive: false,
+    otherPositions: false,
+  });
 
   const defaultValues = useMemo<StaffFormData>(() => {
     if (staff) {
@@ -106,8 +106,8 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
       auth_user_guid: (data.name as AuthUser)?.username ?? "",
       permission: (data.permission as Permission)?.id ?? "",
       position_id: (data.position as Position)?.id ?? "",
-      deputy_director_id: (data.deputyDirector as StaffUser)?.id,
-      supervisor_id: (data.supervisor as StaffUser)?.id,
+      deputy_director_id: (data.deputyDirector as StaffUser)?.id ?? null,
+      supervisor_id: (data.supervisor as StaffUser)?.id ?? null,
       is_active: data.isActive
     };
     if (staff) {
@@ -115,9 +115,6 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
     } else {
       addStaff(staffData);
     }
-    queryClient.invalidateQueries({
-      queryKey: ["staff-users"],
-    });
   };
 
   return (

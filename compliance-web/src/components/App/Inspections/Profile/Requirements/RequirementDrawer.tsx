@@ -91,7 +91,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
   const isRequirementEditable = useMemo(
     () =>
       inspectionData?.inspection_status === InspectionStatusEnum.OPEN &&
-      inspectionReportsData?.is_open_for_editing,
+      !inspectionReportsData?.date_issued,
     [inspectionData, inspectionReportsData]
   );
 
@@ -123,9 +123,8 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
 
   const isInspectionClosed = useMemo(
     () =>
-      inspectionData?.inspection_status === InspectionStatusEnum.CLOSED ||
-      !inspectionReportsData?.is_open_for_editing,
-    [inspectionData, inspectionReportsData]
+      inspectionData?.inspection_status === InspectionStatusEnum.CLOSED,
+    [inspectionData]
   );
   const onCreateSuccess = useCallback(() => {
     onSubmit("Requirement created successfully!", true);
@@ -401,7 +400,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           />
         </Box>
         <DrawerActionBarBottom
-          isShowActionBar={!isInspectionClosed}
+          isShowActionBar={!isInspectionClosed && !inspectionReportsData?.date_issued}
           onDeleteAction={onDeleteRequirement}
           onDeleteTitle="Delete Requirement"
           onDeleteDescription="You are about to delete this Requirement. Are you sure?"

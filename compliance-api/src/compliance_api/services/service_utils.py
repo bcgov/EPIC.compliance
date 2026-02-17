@@ -93,7 +93,10 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
                 proponent = project.regulated_party
                 name = project.name
         else:
-            project = TrackService.get_project_by_id(project_id)
+            case_file = CaseFileModel.find_by_id(case_file_id)
+            date_time = case_file.date_created
+            date = date_time.date() if date_time else None
+            project = TrackService.get_project_by_id(project_id, as_of_date=date)
             if project:
                 eac_certicate = project.get("ea_certificate") or "N/A"
                 proponent = project.get("proponent").get("name")

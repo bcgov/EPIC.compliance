@@ -36,6 +36,9 @@ export const orderSchema = baseEnforcementSchema.shape({
       then: (schema) => schema.required("Manual Order # is required"),
       otherwise: (schema) => schema.notRequired(),
     }),
+  linkedOrderNumber: yup
+    .string()
+    .nullable(),
 });
 
 export type OrderFormType = yup.InferType<typeof orderSchema>;
@@ -44,6 +47,7 @@ export const initOrderFormData: OrderFormType = {
   requirements: [],
   isHistoricalRecord: false,
   manualOrderNumber: undefined,
+  linkedOrderNumber: undefined,
 };
 
 // Enforcement type detection functions
@@ -89,7 +93,7 @@ export const prepNonProceededRequirements = (
         (enforcement) => enforcement.id === enforcementActionType
       )
   );
-  
+
   return nonProceededRequirements.map(requirement => ({
     ...requirement,
     enforcement_action_data: requirement.enforcement_action_data?.filter(

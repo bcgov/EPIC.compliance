@@ -119,23 +119,31 @@ export default function ReportTabs() {
   }, [requirementsList, proponentLabel]);
 
   useEffect(() => {
-    // Calculate and set the top position of tabs as a CSS variable
+    const tabsContainer = tabsContainerRef.current;
+    if (!tabsContainer) return;
+
     const calculateTabsPosition = () => {
-      const tabsContainer = tabsContainerRef.current;
-      if (tabsContainer) {
-        const rect = tabsContainer.getBoundingClientRect();
-        document.documentElement.style.setProperty(
-          "--ir-tabs-container-top-position",
-          `${rect.top + 22}px` // 22px is the bottom misc padding
-        );
-      }
+      const rect = tabsContainer.getBoundingClientRect();
+      document.documentElement.style.setProperty(
+        "--ir-tabs-container-top-position",
+        `${rect.top + 22}px`
+      );
     };
 
     // Calculate on initial render and window resize
     calculateTabsPosition();
+
+    // Detect layout changes
+    const resizeObserver = new ResizeObserver(() => {
+      calculateTabsPosition();
+    });
+
+    resizeObserver.observe(tabsContainer.parentElement || tabsContainer);
+
     window.addEventListener("resize", calculateTabsPosition);
 
     return () => {
+      resizeObserver.disconnect();
       window.removeEventListener("resize", calculateTabsPosition);
     };
   }, [inspectionRequirementsData, value, tabItems]);

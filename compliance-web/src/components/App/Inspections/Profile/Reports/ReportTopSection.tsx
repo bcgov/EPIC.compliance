@@ -197,12 +197,21 @@ export default function ReportTopSection() {
     setOpen({
       content: (
         <IssueIRModal
-          onSubmit={(message) => {
-            notify.success(message);
+          onSubmit={async (message) => {
+            // Wait for both queries
+            await Promise.all([
+              refetchInspectionReportsData(),
+              queryClient.invalidateQueries({
+                queryKey: ["inspection", inspectionData?.ir_number],
+              }),
+            ]);
+
             setClose();
-            refetchInspectionReportsData();
-            queryClient.invalidateQueries({
-              queryKey: ["inspection", inspectionData?.ir_number],
+            notify.success(message);
+            // Force layout recalculation
+            requestAnimationFrame(() => {
+              window.dispatchEvent(new Event('resize'));
+              window.scrollTo(0, 0);
             });
           }}
         />
@@ -339,7 +348,7 @@ export default function ReportTopSection() {
           </Box>
           {!isReportsReadOnly &&
             !isHistorical &&
-            inspectionReportsData?.is_open_for_editing && (
+            !inspectionReportsData?.date_issued && (
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <Typography variant="body2">Wrong Version?</Typography>
                 <Link

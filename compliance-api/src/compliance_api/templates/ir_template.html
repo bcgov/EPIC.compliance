@@ -129,10 +129,12 @@
             font-weight: bold;
             padding-bottom: 4px;
         }
+
         .com-ir-section-description {
             font-weight: normal;
             padding-bottom: 4px;
         }
+
         .com-ir-section-header-appendix {
             font-weight: normal;
             padding-bottom: 4px;
@@ -143,6 +145,14 @@
             width: 350px;
             max-width: 100%;
             height: auto;
+        }
+
+        .com-ir-req-source-img {
+            width: 600px;
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 10px 0;
         }
 
         .com-ir-photo-section {
@@ -601,7 +611,7 @@
                         {% for image in source.requirement_source_images %}
                         <div class="com-ir-photo-section">
                             <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
-                                style="max-width: 600px; display: block; margin: 10px 0;">
+                                class="com-ir-req-source-img">
                             <div class="com-ir-photo-caption">
                                 {{ image.original_file_name.rsplit('.', 1)[0] if '.' in image.original_file_name else image.original_file_name }}
                             </div>
@@ -622,7 +632,7 @@
                         {% for image in doc.document_images %}
                         <div class="com-ir-photo-section">
                             <img src="{{ image.image_url }}" alt="{{ image.original_file_name }}"
-                                style="max-width: 600px; display: block; margin: 10px 0;">
+                                class="com-ir-req-source-img">
                             <div class="com-ir-photo-caption">
                                 {{ image.original_file_name.rsplit('.', 1)[0] if '.' in image.original_file_name else image.original_file_name }}
                             </div>

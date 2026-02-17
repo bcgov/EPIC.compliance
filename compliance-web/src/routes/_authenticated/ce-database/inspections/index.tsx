@@ -61,7 +61,7 @@ export function Inspections() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
   const { isLoading: authLoading, user: currentUser } = useAuth();
-  const { data: staffList, isLoading: staffLoading } = useStaffUsersData();
+  const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
 
   const irProgressOptions = useMemo(
     () =>

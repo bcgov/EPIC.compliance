@@ -2,6 +2,9 @@ import { mount } from "cypress/react";
 import CaseFileActions from "@/components/App/CaseFiles/Profile/CaseFileActions";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ModalProvider from "@/components/Shared/Modals/ModalProvider";
+import { CaseFileStatusEnum } from "@/utils/constants";
+import { OidcConfig } from "@/utils/config";
+import { AuthProvider } from "react-oidc-context";
 
 describe("CaseFileActions", () => {
   let queryClient: QueryClient;
@@ -13,19 +16,21 @@ describe("CaseFileActions", () => {
   const mountComponent = (status: string) => {
     mount(
       <QueryClientProvider client={queryClient}>
-        <ModalProvider />
-        <CaseFileActions status={status} fileNumber="CF-123" />
+        <AuthProvider {...OidcConfig}>
+          <ModalProvider />
+          <CaseFileActions status={status} fileNumber="CF-123" />
+        </AuthProvider>
       </QueryClientProvider>
     );
   };
 
   it("renders menu action dropdown", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").should("exist");
   });
 
   it("shows all actions for open case file", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").click();
 
     cy.contains("Link to Case File").should("exist");
@@ -36,7 +41,7 @@ describe("CaseFileActions", () => {
   });
 
   it("shows appropriate actions for closed case file", () => {
-    mountComponent("closed");
+    mountComponent(CaseFileStatusEnum.CLOSED);
     cy.contains("button", "Actions").click();
 
     cy.contains("Link to Case File").should("not.exist");
@@ -47,7 +52,7 @@ describe("CaseFileActions", () => {
   });
 
   it("handles Link to Case File click", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").click();
     cy.contains("Link to Case File").click();
 
@@ -59,7 +64,7 @@ describe("CaseFileActions", () => {
   });
 
   it("handles Unlink from Case File click", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").click();
     cy.contains("Unlink from Case File").click();
 
@@ -71,7 +76,7 @@ describe("CaseFileActions", () => {
   });
 
   it("handles Close Case File click", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").click();
     cy.contains("Close Case File").click();
 
@@ -85,7 +90,7 @@ describe("CaseFileActions", () => {
   });
 
   it("handles Delete Case File click", () => {
-    mountComponent("open");
+    mountComponent(CaseFileStatusEnum.OPEN);
     cy.contains("button", "Actions").click();
     cy.contains("Delete Case File").click();
 
@@ -99,7 +104,7 @@ describe("CaseFileActions", () => {
   });
 
   it("handles Reopen Case File click", () => {
-    mountComponent("closed");
+    mountComponent(CaseFileStatusEnum.CLOSED);
     cy.contains("button", "Actions").click();
     cy.contains("Reopen Case File").click();
 

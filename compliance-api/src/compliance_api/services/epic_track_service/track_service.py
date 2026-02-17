@@ -1,5 +1,6 @@
 """Class to manage epictrack services."""
 
+from datetime import date
 import requests
 from flask import current_app, g
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
@@ -14,26 +15,18 @@ class TrackService:
     """EPIC.Track service class."""
 
     @staticmethod
-    def get_project_by_id(project_id: int, as_of_date=None):
+    def get_project_by_id(project_id: int, as_of_date: date = None):
         """Return project details from track."""
-        url = f"projects/{project_id}"
-
         if as_of_date:
-            url += f"?as_of_date={as_of_date}"
-
-        project_response = _request_track_service(url)
+            project_response = _request_track_service(
+                f"projects/{project_id}?as_of_date={as_of_date.isoformat()}"
+            )
+        else:
+            project_response = _request_track_service(f"projects/{project_id}")
         if project_response.status_code != 200:
             raise BusinessError(
                 f"Error finding project with ID {project_id} from EPIC.track server"
             )
-        return project_response.json()
-
-    @staticmethod
-    def get_projects():
-        """Return projects from track."""
-        project_response = _request_track_service("projects")
-        if project_response.status_code != 200:
-            raise BusinessError("Error finding projects")
         return project_response.json()
 
     @staticmethod

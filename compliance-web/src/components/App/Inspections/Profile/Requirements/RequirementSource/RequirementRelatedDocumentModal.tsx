@@ -79,12 +79,12 @@ const DocumentTitleInfo = () => {
         }}
       />
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Typography variant="caption">How to record Document Plan Title</Typography>
+        <Typography variant="caption">How to record Document Title</Typography>
         <Collapse in={isInfoExpanded}>
           <Typography variant="caption">
-            Record the Document Plan Title in the format of [Plan
+            Record the Document Title in the format of [Plan
             Name], [Version], [Date], ex., Water Management Plan,
-            Rev3, Dec.21, 2023.
+            Rev 3, Dec. 21, 2023.
           </Typography>
         </Collapse>
       </Box>

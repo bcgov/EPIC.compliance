@@ -28,11 +28,28 @@ export const InspectionFormSchema = yup.object().shape({
   startDate: yup
     .mixed<Dayjs>()
     .required("Start date is required")
-    .typeError("Invalid date"),
+    .typeError("Invalid date")
+    .test(
+      "min-year",
+      "Start date must be after year 1975",
+      function (value) {
+        if (!value) return true;
+        return value.year() >= 1975;
+      }
+    ),
   endDate: yup
     .mixed<Dayjs>()
     .nullable()
-    .typeError("Invalid date"),
+    .typeError("Invalid date")
+    .test(
+      "end-after-start",
+      "End date must be after start date",
+      function (value) {
+        const { startDate } = this.parent;
+        if (!value || !startDate) return true;
+        return value.isAfter(startDate) || value.isSame(startDate);
+      }
+    ),
   debriefDate: yup
     .mixed<Dayjs>()
     .nullable()

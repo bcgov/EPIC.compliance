@@ -24,7 +24,6 @@ from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
 from compliance_api.models.db import db, session_scope
 from compliance_api.models.inspection import Inspection as InspectionModel
-from compliance_api.models.inspection import InspectionStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.project import Project as ProjectModel
 from compliance_api.models.restorative_justice import RestorativeJustice as RestorativeJusticeModel
@@ -320,7 +319,7 @@ class CaseFileService:
         case_file = CaseFileModel.find_by_id(case_file_id)
         if not case_file:
             raise ResourceNotFoundError(f"CaseFile with {case_file_id} not found")
-        _access_check_for_update(case_file_id)
+        _access_check_for_update(case_file)
         case_file = CaseFileModel.find_by_id(case_file_id)
         link_case_file_id = link.get("link_case_file_id")
         link_to_case_file = CaseFileModel.find_by_id(link_case_file_id)
@@ -352,7 +351,7 @@ class CaseFileService:
         if not case_file:
             raise ResourceNotFoundError(f"CaseFile with {case_file_id} not found")
         _case_file_close_check(case_file)
-        _access_check_for_update(case_file_id)
+        _access_check_for_update(case_file)
         unlink_case_file_id = unlink.get("case_file_to_unlink")
         case_file = CaseFileModel.find_by_id(case_file_id)
         unlink_case_file = CaseFileModel.find_by_id(unlink_case_file_id)
@@ -410,8 +409,11 @@ def _set_project_parameters(case_file):
     """Set project parameters."""
     if case_file:
         project_id = case_file.project_id
+        date_time = case_file.date_created
+        date = date_time.date() if date_time else None
         if project_id:
-            project = TrackService.get_project_by_id(project_id)
+            project = TrackService.get_project_by_id(project_id, as_of_date=date)
+            setattr(case_file.project, "name", project.get("name", None))
             setattr(case_file, "authorization", project.get("ea_certificate", None))
             setattr(case_file, "type", project.get("type").get("name"))
             setattr(case_file, "sub_type", project.get("sub_type").get("name"))
@@ -748,20 +750,15 @@ def _process_case_level_items(case_file_id: int, open_items: dict) -> list:
     # Query for all inspections and open complaints
     case_level_query = _build_case_level_query(case_file_id)
 
-    all_inspection_ids = []
+    all_inspection_ids = set()
     processed_complaints = set()
 
     # Process results
     for row in case_level_query:
-        if row.inspection_id:
-            all_inspection_ids.append(row.inspection_id)
-            # Only add to open_items if inspection is not closed, canceled, or closed as note
-            if row.inspection_status not in [
-                InspectionStatusEnum.CLOSED,
-                InspectionStatusEnum.CANCELED,
-                InspectionStatusEnum.CLOSE_AS_NOTE,
-            ]:
-                open_items["inspections"].append(_build_inspection_item(row))
+        if row.inspection_id and row.inspection_id not in all_inspection_ids:
+            all_inspection_ids.add(row.inspection_id)
+            # Add all inspection items, regardless of IR status
+            open_items["inspections"].append(_build_inspection_item(row))
 
         if row.complaint_id and row.complaint_id not in processed_complaints:
             processed_complaints.add(row.complaint_id)

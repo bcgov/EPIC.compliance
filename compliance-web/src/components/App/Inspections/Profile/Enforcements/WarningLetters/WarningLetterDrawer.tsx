@@ -104,7 +104,8 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
       return formatFormData(warningLetter);
     }
     return initFormData;
-  }, [warningLetter, formatFormData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const methods = useForm<EnforcementFormType>({
     resolver: yupResolver(warningLetterFormSchema),

@@ -21,6 +21,7 @@ export interface InspectionOrder {
   order_status?: OrderStatus;
   order_approvals?: OrderApproval[];
   is_active?: boolean;
+  type?: string;
 }
 
 export interface OrderStatus {

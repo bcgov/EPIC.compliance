@@ -76,7 +76,7 @@ function InspectionProfilePage() {
     return (
       isUserEditAllowed &&
       inspectionData?.inspection_status === InspectionStatusEnum.OPEN &&
-      inspectionReportsData?.is_open_for_editing
+      !inspectionReportsData?.date_issued
     );
   }, [inspectionData, isUserEditAllowed, inspectionReportsData]);
 

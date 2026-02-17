@@ -286,7 +286,7 @@ class RestorativeJustice(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def get_count_by_project_nd_case_file_id(
+    def get_count_by_project_and_case_file_id(
         cls, project_id: int, case_file_id: int, session=None
     ):
         """Get count of restorative justices by project and case file id."""

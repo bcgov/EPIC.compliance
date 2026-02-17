@@ -49,7 +49,7 @@ function Requirements() {
   const { data: complianceFindings } = useComplianceFindingsData();
   const { data: enforcementActions } = useEnforcementActionsData();
   const { data: requirementSources } = useRequirementSourcesData();
-  const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
+  const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
   const { user: currentUser, isLoading: authLoading } = useAuth();
 
   // State for "My Requirements" switch - default to true for first-time users

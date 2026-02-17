@@ -52,7 +52,6 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
             }
         else:
             data["ir_progress"] = ""
-        data["is_open_for_editing"] = getattr(original, "is_open_for_editing", False)
         return data
 
 

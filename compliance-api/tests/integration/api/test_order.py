@@ -13,7 +13,9 @@ from tests.utilities.factory_scenario.order_scenario import OrderScenario
 API_BASE_URL = "/api/orders/"
 
 
-def test_get_orders(client, auth_header_super_user, created_inspection, created_order):
+def test_get_orders(
+    client, auth_header_super_user, created_inspection, created_order, created_order_requirement_map
+):
     """Test getting all orders for an inspection."""
     print(created_order.id)
     url = f"{API_BASE_URL}?inspection_id={created_inspection.id}"

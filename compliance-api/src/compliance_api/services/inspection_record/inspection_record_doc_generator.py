@@ -130,14 +130,65 @@ def _add_paragraph(container, p_tag, font_size):
         run.font.size = font_size
 
 
+def _get_restarted_list_number_num_id(document):
+    styles = document.styles
+    num_id_list_number = -1
+
+    # Find numId used by 'List Number' style
+    for style in styles:
+        if style.name == "List Number":
+            num_id_list_number = style._element.pPr.numPr.numId.val
+            break
+
+    if num_id_list_number == -1:
+        return None
+
+    numbering = document.part.numbering_part.numbering_definitions._numbering
+    ct_num = numbering.num_having_numId(num_id_list_number)
+    abstract_num_id = ct_num.abstractNumId.val
+
+    # Create new numbering instance
+    new_ct_num = numbering.add_num(abstract_num_id)
+    new_num_id = new_ct_num.numId
+
+    # Force restart at 1
+    start_override = new_ct_num.add_lvlOverride(0)._add_startOverride()
+    start_override.val = 1
+
+    return new_num_id
+
+
 def _add_list(container, list_tag, font_size):
     style = "List Number" if list_tag.name == "ol" else "List Bullet"
 
+    document = container.part.document
+    restarted_num_id = None
+
+    if list_tag.name == "ol":
+        restarted_num_id = _get_restarted_list_number_num_id(document)
+
+    first = True
+
     for li in list_tag.find_all("li", recursive=False):
         para = container.add_paragraph(style=style)
-        text = li.get_text(strip=True)
-        # Replace 2+ spaces with single space
-        text = re.sub(r' {2,}', ' ', text)
+        para.paragraph_format.left_indent = Inches(0.5)
+        para.paragraph_format.hanging_indent = Inches(0.25)
+
+        if list_tag.name == "ol" and first and restarted_num_id is not None:
+            para_props = para._element.pPr
+            num_props = para_props._add_numPr()
+
+            ilvl = OxmlElement("w:ilvl")
+            ilvl.set(qn("w:val"), "0")
+
+            num_id = OxmlElement("w:numId")
+            num_id.set(qn("w:val"), str(restarted_num_id))
+
+            num_props.append(ilvl)
+            num_props.append(num_id)
+            first = False
+
+        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
         run = para.add_run(text)
         if font_size:
             run.font.size = font_size
@@ -212,6 +263,30 @@ def _add_formatted_text_to_para(para, element, font_size):
             run.font.size = font_size
 
 
+def _set_empty_paragraph_spacing(doc):
+    """Set line spacing to 0.5 for all empty paragraph blocks."""
+    # Iterate through all paragraphs in the doc body
+    for para in doc.paragraphs:
+        if not para.text.strip():
+            para.paragraph_format.line_spacing = 0.5
+
+    # Check paragraphs inside table
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for para in cell.paragraphs:
+                    if not para.text.strip() and not _has_images(para):
+                        para.paragraph_format.line_spacing = 0.5
+
+
+def _has_images(para):
+    """Check if a paragraph contains any images."""
+    for run in para.runs:
+        if run._element.xpath('.//pic:pic'):
+            return True
+    return False
+
+
 def _add_page_number(run):
     fld_char_begin = OxmlElement('w:fldChar')
     fld_char_begin.set(qn('w:fldCharType'), 'begin')
@@ -252,6 +327,26 @@ def add_html_table_to_container(container, table_element):
     # Create docx table
     docx_table = container.add_table(rows=len(rows), cols=max_cols)
     docx_table.style = 'Table Grid'
+    docx_table.autofit = False
+
+    # Set table width
+    if hasattr(container, 'width'):
+        parent_width_emu = container.width if isinstance(container.width, int) else container.width.emu
+        table_width_emu = parent_width_emu - Inches(0.16).emu
+    else:
+        table_width_emu = Inches(7.09).emu
+
+    # Apply width at XML level
+    tbl = docx_table._element
+    table_props = tbl.tblPr
+    if table_props is None:
+        table_props = OxmlElement('w:tblPr')
+        tbl.insert(0, table_props)
+
+    table_width = OxmlElement('w:tblW')
+    table_width.set(qn('w:w'), str(int(table_width_emu / 635)))
+    table_width.set(qn('w:type'), 'dxa')
+    table_props.append(table_width)
 
     # Populate table
     for row_idx, tr in enumerate(rows):
@@ -291,6 +386,10 @@ def add_html_table_to_container(container, table_element):
                     _add_formatted_text_to_table_para(para, element)
 
                 elif element.name in ('ul', 'ol'):
+                    # If list is first element, remove the empty default paragraph
+                    if first_element and docx_cell.paragraphs and not docx_cell.paragraphs[0].text.strip():
+                        p = docx_cell.paragraphs[0]._element
+                        p.getparent().remove(p)
                     # Add list to cell
                     _add_list_to_table_cell(docx_cell, element)
                     first_element = False
@@ -338,14 +437,40 @@ def _add_formatted_text_to_table_para(para, p_element):
             para.add_run('\n')
 
 
-def _add_list_to_table_cell(cell, list_element):
+def _add_list_to_table_cell(cell, list_element, restart_numbering=True):
     """Add a list (ordered or unordered) to a table cell."""
     style = "List Number" if list_element.name == "ol" else "List Bullet"
 
+    document = cell.part.document
+    restarted_num_id = None
+
+    if list_element.name == "ol" and restart_numbering:
+        restarted_num_id = _get_restarted_list_number_num_id(document)
+
+    first = True
+
     for li in list_element.find_all('li', recursive=False):
         para = cell.add_paragraph(style=style)
-        text = li.get_text(strip=True)
-        text = re.sub(r' {2,}', ' ', text)
+
+        if (
+            list_element.name == "ol"
+            and restart_numbering
+            and first
+            and restarted_num_id is not None
+        ):
+            para_props = para._element.pPr
+            num_props = para_props._add_numPr()
+
+            ilvl = OxmlElement("w:ilvl")
+            ilvl.set(qn("w:val"), "0")
+
+            num_id = OxmlElement("w:numId")
+            num_id.set(qn("w:val"), str(restarted_num_id))
+
+            num_props.append(ilvl)
+            num_props.append(num_id)
+
+        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
         run = para.add_run(text)
         run.font.size = Pt(11)
 
@@ -405,19 +530,29 @@ def _add_figure(figure, cell):
 
 def _add_requirement_details_table(doc, req):
     req_table = doc.add_table(rows=0, cols=2)
+    req_table.autofit = False
+    req_table.columns[0].width = Inches(1.813)
+    req_table.columns[1].width = Inches(5.439)
     req_table.style = 'Table Grid'
 
     # Requirement header and details
     source_details = req.get('requirement_source_details', [])
+    last_description_is_table = False
     if source_details:
         row = req_table.add_row()
         cell = row.cells[0].merge(row.cells[1])
         para = cell.paragraphs[0]
 
+        # Set Requirement header spacing
+        para.paragraph_format.space_before = Inches(0.04)
+        para.paragraph_format.space_after = Inches(0.08)
+
+        ends_with_table = False
         for idx, source in enumerate(source_details):
             # Add requirement header for first source
             if idx == 0:
                 run = para.add_run(f"Requirement {req.get('sort_order', '')}: ")
+                para.paragraph_format.space_after = Inches(0.08)
                 run.bold = True
 
             # Add requirement title
@@ -429,11 +564,12 @@ def _add_requirement_details_table(doc, req):
             if source.get('appendix_no'):
                 run = para.add_run(f" (Appendix {source.get('appendix_no')})")
 
-            para.add_run('\n')
+            para = cell.add_paragraph()
 
             # Add title if present (comes right after requirement title)
             if source.get('title'):
                 run = para.add_run(source.get('title'))
+                para.paragraph_format.space_after = Inches(0.02)
                 run.bold = True
 
             # Add description
@@ -443,9 +579,12 @@ def _add_requirement_details_table(doc, req):
                     source["requirement_source_description"],
                     clear_first=False,
                 )
+                ends_with_table = source.get("requirement_source_description", '').strip().endswith('</table>')
 
             # Add req source images
             for img in source.get('requirement_source_images', []):
+                ends_with_table = False
+                para = cell.add_paragraph()
                 image_url = img.get('image_url')
                 if image_url:
                     try:
@@ -471,30 +610,34 @@ def _add_requirement_details_table(doc, req):
             # Add document details (come after source description and images)
             for doc_group in source.get('requirement_documents', []):
                 para = cell.add_paragraph()  # New paragraph for document group
-                para.add_run('\n')
+                para = cell.add_paragraph()
                 run = para.add_run(doc_group.get('document_title', ''))
+                para.paragraph_format.space_after = Inches(0.02)
                 run.bold = True
 
                 # Check if first document has appendix
                 documents = doc_group.get('documents', [])
                 if documents and documents[0].get('appendix_no'):
+                    ends_with_table = False
                     run = para.add_run(f" (Appendix {documents[0].get('appendix_no')})")
-
-                para.add_run('\n')
+                    para = cell.add_paragraph()
 
                 for document in documents:
+                    ends_with_table = False
                     # Add section info
                     if document.get('section_number') or document.get('section_title'):
+                        section_para = cell.add_paragraph()
                         section_text = ''
                         if document.get('section_number'):
                             section_text = f"Section {document.get('section_number')} "
                         if document.get('section_title'):
                             section_text += document.get('section_title')
-                        run = para.add_run(section_text)
+                        run = section_para.add_run(section_text)
                         run.bold = True
 
                     # Add description
                     if document.get('description'):
+                        ends_with_table = document.get("description", '').strip().endswith('</table>')
                         _add_html_to_container(
                             cell,
                             document.get('description'),
@@ -502,6 +645,8 @@ def _add_requirement_details_table(doc, req):
                         )
                     # Add document images
                     for img in document.get('document_images', []):
+                        ends_with_table = False
+                        para = cell.add_paragraph()
                         image_url = img.get('image_url')
                         if image_url:
                             try:
@@ -520,17 +665,27 @@ def _add_requirement_details_table(doc, req):
                             except RequestException:
                                 error_para = cell.add_paragraph()
                                 error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
+                    para = cell.add_paragraph()
 
             # Add spacing between multiple sources
             if idx < len(source_details) - 1:
                 para = cell.add_paragraph()
-                para.add_run('\n')
                 para = cell.add_paragraph()  # New paragraph for next source
+
+            # Check if last description ends with a table
+            if idx == len(source_details) - 1 and ends_with_table:
+                last_description_is_table = True
+
+    if last_description_is_table:
+        cell.add_paragraph()
 
     # Inspection Details/Findings
     row = req_table.add_row()
     cell = row.cells[0].merge(row.cells[1])
     para = cell.paragraphs[0]
+    # Set Header spacing
+    para.paragraph_format.space_before = Inches(0.04)
+    para.paragraph_format.space_after = Inches(0.08)
     run = para.add_run("Inspection Details:")
     run.bold = True
     _add_html_to_container(
@@ -554,9 +709,6 @@ def _add_requirement_details_table(doc, req):
     _set_cell_background(row.cells[0], 'D9D9D9')
     row.cells[1].text = req.get('compliance_finding', '')
 
-    # Set column width for first column
-    row.cells[0].width = Inches(2)
-
     # Enforcement Action
     row = req_table.add_row()
     row.cells[0].text = "Enforcement Action"
@@ -577,11 +729,34 @@ def generate_inspection_report_docx(preview_data):
         section.left_margin = Inches(0.75)
         section.right_margin = Inches(0.5)
 
-    # Set font
+    # Set font and spacing
     style = doc.styles['Normal']
+    style.paragraph_format.space_after = Inches(0.04)
     font = style.font
     font.name = 'Calibri'
     font.size = Pt(11)
+
+    # List styles spacing
+    list_bullet_style = doc.styles['List Bullet']
+    list_bullet_style.paragraph_format.space_after = Inches(0.04)
+    list_bullet_style.paragraph_format.left_indent = Inches(0.5)
+
+    # Disable contextual spacing at style level
+    para_properties = list_bullet_style._element.pPr
+    if para_properties is not None:
+        contextual_spacing = para_properties.find(qn('w:contextualSpacing'))
+        if contextual_spacing is not None:
+            para_properties.remove(contextual_spacing)
+
+    list_number_style = doc.styles['List Number']
+    list_number_style.paragraph_format.space_after = Inches(0.04)
+    list_number_style.paragraph_format.left_indent = Inches(0.5)
+
+    para_properties = list_number_style._element.pPr
+    if para_properties is not None:
+        contextual_spacing = para_properties.find(qn('w:contextualSpacing'))
+        if contextual_spacing is not None:
+            para_properties.remove(contextual_spacing)
 
     rpr = style._element.get_or_add_rPr()
 
@@ -591,14 +766,24 @@ def generate_inspection_report_docx(preview_data):
 
     # Add header with logo and title
     header = doc.sections[0].header
-    header_table = header.add_table(1, 2, width=Inches(7.25))
+    header_table = header.add_table(rows=1, cols=2, width=Inches(7.25))
+    header_table.autofit = False
+    # Column widths
+    header_table.columns[0].width = Inches(4.25)
+    header_table.columns[1].width = Inches(3.0)
+    for row in header_table.rows:
+        row.cells[0].width = Inches(4.25)
+        row.cells[1].width = Inches(3.0)
+    if len(header.paragraphs) > 0:
+        # Remove default paragraph
+        p = header.paragraphs[0]
+        p._element.getparent().remove(p._element)
     logo_cell = header_table.rows[0].cells[0]
     _remove_cell_margins(logo_cell)
     logo_para = logo_cell.paragraphs[0]
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
-    logo_para.paragraph_format.space_after = Pt(0)
-    logo_para.paragraph_format.left_indent = Inches(-0.25)
+    logo_para.paragraph_format.space_after = Inches(0.18)
 
     logo_run = logo_para.add_run()
     logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
@@ -751,7 +936,6 @@ def generate_inspection_report_docx(preview_data):
         merged_cell.text = f"{approval_info.get('approved_by', '')}\n{approval_info.get('approved_by_position', '')}"
 
     # Inspection Details Section
-    doc.add_page_break()
     heading = doc.add_heading('INSPECTION DETAILS', level=1)
     heading.runs[0].font.color.rgb = RGBColor(51, 102, 153)
     heading.runs[0].font.size = Pt(11)
@@ -848,11 +1032,12 @@ def generate_inspection_report_docx(preview_data):
     para = cell.paragraphs[0]
     run = para.add_run("Date Preliminary")
     run.bold = True
-    para.add_run('\n')
+    para = cell.add_paragraph()
 
     if version_date_info and version_date_info.get('preliminary_dates'):
         for date in version_date_info.get('preliminary_dates'):
             para.add_run(f"{date}\n")
+        para.runs[-1].text = para.runs[-1].text.rstrip()
     else:
         para.add_run('n/a')
 
@@ -862,7 +1047,7 @@ def generate_inspection_report_docx(preview_data):
     para = cell.paragraphs[0]
     run = para.add_run("Date Issued")
     run.bold = True
-    para.add_run('\n')
+    para = cell.add_paragraph()
 
     if version_date_info and version_date_info.get('final_date'):
         para.add_run(version_date_info.get('final_date'))
@@ -911,5 +1096,7 @@ def generate_inspection_report_docx(preview_data):
     run = para.add_run("Website: ")
     run.bold = True
     _add_hyperlink(para, dept.get('website', ''), f"https://{dept.get('website', '')}")
+
+    _set_empty_paragraph_spacing(doc)
 
     return doc
