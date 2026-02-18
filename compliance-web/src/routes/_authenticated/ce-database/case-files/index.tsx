@@ -68,15 +68,15 @@ export function CaseFiles() {
     Record<string, string[] | string>
   >({});
 
-  // State for "My Files" switch - default to true for first-time users
-  const [myFilesChecked, setMyFilesChecked] = useState(true);
+  // State for "My Files" switch
+  const [myFilesChecked, setMyFilesChecked] = useState(false);
   const [isRestored, setIsRestored] = useState(false);
 
   // Ref to track if filters have been initialized
   const filtersInitialized = useRef(false);
 
   // Get cached filters store methods
-  const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
+  const { getFilters, getExternalFilters, getSorting, hasHydrated } = cachedFiltersStore();
   const cachedColumnFilters = getFilters(caseFilesColumnFiltersCacheKey);
   const cachedExternalFilters = getExternalFilters(
     caseFilesColumnFiltersCacheKey
@@ -92,11 +92,9 @@ export function CaseFiles() {
 
   // Restore cached filters on component mount
   useEffect(() => {
-    // Prevent re-initialization if already done
-    if (filtersInitialized.current) return;
-
-    // Wait for currentStaff to be available before initializing
-    if (!currentStaff) return;
+    if (!hasHydrated) return; // Wait for store to hydrate
+    if (filtersInitialized.current) return; // Prevent re-initialization if already don
+    if (!currentStaff) return; // Wait for currentStaff to be available before initializing
 
     let restoredFilters = false;
 
@@ -106,8 +104,12 @@ export function CaseFiles() {
       restoredFilters = true;
     }
 
+    const hasCachedExternalFilters =
+      cachedExternalFilters &&
+      Object.keys(cachedExternalFilters).length > 0;
+
     // Restore external filters
-    if (cachedExternalFilters) {
+    if (hasCachedExternalFilters) {
       const restoredExternalFilters = cachedExternalFilters as Record<
         string,
         string[] | string
@@ -165,12 +167,15 @@ export function CaseFiles() {
       const defaultChecked = Boolean(currentStaff.position_id && 
         officerPositions.includes(currentStaff.position_id));
 
-      const defaultExternalFilters = {
-        primary_officer_ids: [defaultChecked ? currentStaff.id.toString() : ""],
-      };
+      const defaultExternalFilters: Record<string, string[] | string> = defaultChecked
+        ? { primary_officer_ids: [currentStaff.id.toString()] }
+        : {};
+
       const defaultColumnFilters = [
-        { id: "primary_officer", value: [defaultChecked ? currentStaff.id.toString() : ""] },
         { id: "status", value: ["Open"] },
+        ...(defaultChecked
+          ? [{ id: "primary_officer", value: [currentStaff.id.toString()] }]
+          : []),
       ];
 
       setExternalFilters(defaultExternalFilters);
@@ -182,17 +187,14 @@ export function CaseFiles() {
     if (cachedSorting && cachedSorting.length > 0 && cachedSorting[0]?.id) {
       setSorting(cachedSorting);
     }
-
-    // Mark initialization complete
-    setTimeout(() => {
-      filtersInitialized.current = true;
-      setIsRestored(true);
-    }, 0);
+    filtersInitialized.current = true;
+    setIsRestored(true);
   }, [
     cachedColumnFilters,
     cachedExternalFilters,
     cachedSorting,
     currentStaff,
+    hasHydrated,
   ]);
 
   // Sync "My Files" toggle with primary_officer filter

@@ -11,6 +11,8 @@ interface CachedFilterState {
 
 interface CachedFiltersState {
   filters: { [key: string]: CachedFilterState };
+  hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
   setFilters: (storageKey: string, filters: MasterTableColumnFilter[], externalFilters?: Record<string, unknown>, sorting?: MRT_SortingState) => void;
   getFilters: (storageKey: string) => MasterTableColumnFilter[];
   getExternalFilters: (storageKey: string) => Record<string, unknown> | undefined;
@@ -24,6 +26,9 @@ export const cachedFiltersStore = create<CachedFiltersState>()(
   persist(
     (set, get) => ({
       filters: {},
+      hasHydrated: false,
+      setHasHydrated: (value: boolean) =>
+        set({ hasHydrated: value }),
       setFilters: (storageKey: string, filters: MasterTableColumnFilter[], externalFilters?: Record<string, unknown>, sorting?: MRT_SortingState) => {
         set((state) => ({
           filters: {
@@ -84,6 +89,9 @@ export const cachedFiltersStore = create<CachedFiltersState>()(
             // Silently handle error
           }
         },
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
       },
     }
   )

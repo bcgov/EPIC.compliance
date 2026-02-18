@@ -99,22 +99,18 @@ export function Complaints() {
     Record<string, string[] | string>
   >({});
 
-  const [myFilesChecked, setMyFilesChecked] = useState(true);
+  const [myFilesChecked, setMyFilesChecked] = useState(false);
   
   // Ref to track if filters have been initialized
   const filtersInitialized = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
 
   // Get cached filters store methods
-  const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
+  const { getFilters, getExternalFilters, getSorting, hasHydrated } = cachedFiltersStore();
 
-  const cachedData = useMemo(() => {
-    return {
-      columnFilters: getFilters(complaintsColumnFiltersCacheKey),
-      externalFilters: getExternalFilters(complaintsColumnFiltersCacheKey),
-      sorting: getSorting(complaintsColumnFiltersCacheKey),
-    };
-  }, [getFilters, getExternalFilters, getSorting]);
+  const cachedColumnFilters = getFilters(complaintsColumnFiltersCacheKey);
+  const cachedExternalFilters = getExternalFilters(complaintsColumnFiltersCacheKey);
+  const cachedSorting = getSorting(complaintsColumnFiltersCacheKey);
 
   const currentStaff = useMemo(() => {
     return getCurrentStaff(currentUser, staffList);
@@ -122,23 +118,29 @@ export function Complaints() {
 
   useEffect(() => {
     // Don't initialize if already done, or if it isn't loaded yet
-    if (filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+    if (!hasHydrated || filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
       return;
     }
 
     filtersInitialized.current = true;
 
-    const hasCache = cachedData.columnFilters.length > 0 || 
-                     (cachedData.externalFilters && Object.keys(cachedData.externalFilters).length > 0);
+    const hasCache =
+      (Array.isArray(cachedColumnFilters) &&
+        cachedColumnFilters.length > 0) ||
+      (cachedExternalFilters &&
+        Object.keys(cachedExternalFilters).length > 0) ||
+      (cachedSorting &&
+        Array.isArray(cachedSorting) &&
+        cachedSorting.length > 0);
 
     if (hasCache) {
       // Restore from cache
-      if (cachedData.columnFilters.length > 0) {
-        setColumnFilters(cachedData.columnFilters);
+      if (cachedColumnFilters.length > 0) {
+        setColumnFilters(cachedColumnFilters);
       }
       
-      if (cachedData.externalFilters) {
-        const restored = cachedData.externalFilters as Record<string, string[] | string>;
+      if (cachedExternalFilters) {
+        const restored = cachedExternalFilters as Record<string, string[] | string>;
         setExternalFilters(restored);
 
         if (restored.globalFilter) {
@@ -149,15 +151,17 @@ export function Complaints() {
           setMyFilesChecked(Boolean(restored.myFilesChecked));
         } else {
           // Get from primary officer filter
-          const primaryOfficer = restored.primary_officer_ids || [];
-          const derivedState = Array.isArray(primaryOfficer) && primaryOfficer.length > 0;
+          const primaryOfficer = restored.primary_officer_ids;
+          const derivedState =
+            Array.isArray(primaryOfficer) &&
+            primaryOfficer.some((id) => Boolean(id));
           setMyFilesChecked(derivedState);
         }
       }
 
-      if (cachedData.sorting && Array.isArray(cachedData.sorting) && cachedData.sorting.length > 0) {
-        if (cachedData.sorting[0]?.id) {
-          setSorting(cachedData.sorting);
+      if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0) {
+        if (cachedSorting[0]?.id) {
+          setSorting(cachedSorting);
         }
       }
     } else {
@@ -176,7 +180,7 @@ export function Complaints() {
     }
 
     setIsRestored(true);
-  }, [authLoading, staffLoading, currentStaff, cachedData]);
+  }, [authLoading, staffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
 
   // Debounced cache persistence - only after initialization
   const cacheTimeoutRef = useRef<NodeJS.Timeout>();

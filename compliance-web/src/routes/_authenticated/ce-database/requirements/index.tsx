@@ -76,15 +76,11 @@ function Requirements() {
   const [isRestored, setIsRestored] = useState(false);
 
   // Get cached filters store methods
-  const { getFilters, getExternalFilters, getSorting } = cachedFiltersStore();
+  const { getFilters, getExternalFilters, getSorting, hasHydrated } = cachedFiltersStore();
 
-  const cachedData = useMemo(() => {
-    return {
-      columnFilters: getFilters(requirementsColumnFiltersCacheKey),
-      externalFilters: getExternalFilters(requirementsColumnFiltersCacheKey),
-      sorting: getSorting(requirementsColumnFiltersCacheKey),
-    };
-  }, [getFilters, getExternalFilters, getSorting]);
+  const cachedColumnFilters = getFilters(requirementsColumnFiltersCacheKey);
+  const cachedExternalFilters = getExternalFilters(requirementsColumnFiltersCacheKey);
+  const cachedSorting = getSorting(requirementsColumnFiltersCacheKey);
 
   const currentStaff = useMemo(() => {
     if (!currentUser?.profile?.preferred_username || !staffUsers) return null;
@@ -96,24 +92,30 @@ function Requirements() {
   // Initialize filters only once when all data is ready
   useEffect(() => {
     // Don't initialize if already done, or if required data isn't loaded yet
-    if (filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+    if (!hasHydrated || filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
       return;
     }
 
     filtersInitialized.current = true;
 
     // Check if we have cached filters
-    const hasCachedFilters = cachedData.columnFilters.length > 0 || 
-                             (cachedData.externalFilters && Object.keys(cachedData.externalFilters).length > 0);
+     const hasCachedFilters =
+      (Array.isArray(cachedColumnFilters) &&
+        cachedColumnFilters.length > 0) ||
+      (cachedExternalFilters &&
+        Object.keys(cachedExternalFilters).length > 0) ||
+      (cachedSorting &&
+        Array.isArray(cachedSorting) &&
+        cachedSorting.length > 0);
 
     if (hasCachedFilters) {
       // Restore from cache
-      if (cachedData.columnFilters.length > 0) {
-        setColumnFilters(cachedData.columnFilters);
+      if (cachedColumnFilters.length > 0) {
+        setColumnFilters(cachedColumnFilters);
       }
       
-      if (cachedData.externalFilters) {
-        const restoredExternalFilters = cachedData.externalFilters as Record<
+      if (cachedExternalFilters) {
+        const restoredExternalFilters = cachedExternalFilters as Record<
           string,
           string[] | string
         >;
@@ -126,8 +128,11 @@ function Requirements() {
           setMyRequirementsChecked(Boolean(restoredExternalFilters.myRequirementsChecked));
         } else {
           // Derive from primary_officer filter
-          const primaryOfficerFilter = restoredExternalFilters.primary_officer_id || [];
-          setMyRequirementsChecked(!!(primaryOfficerFilter?.length > 0));
+          const primaryOfficer = restoredExternalFilters.primary_officer_ids;
+          const derivedState =
+            Array.isArray(primaryOfficer) &&
+            primaryOfficer.some((id) => Boolean(id));
+          setMyRequirementsChecked(derivedState);
         }
 
         // Restore global filter
@@ -137,13 +142,13 @@ function Requirements() {
       }
 
       // Restore sorting
-      if (cachedData.sorting && Array.isArray(cachedData.sorting) && cachedData.sorting.length > 0 && cachedData.sorting[0]?.id) {
-        setSorting(cachedData.sorting);
+      if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0 && cachedSorting[0]?.id) {
+        setSorting(cachedSorting);
       }
     } else {
       // No cached filters - apply default "My Requirements" filter
       const defaultExternalFilters = {
-        primary_officer_id: [currentStaff.id.toString()],
+        primary_officer_ids: [currentStaff.id.toString()],
       };
       const defaultColumnFilters = [
         {
@@ -162,7 +167,10 @@ function Requirements() {
     authLoading,
     staffLoading,
     currentStaff,
-    cachedData,
+    cachedColumnFilters,
+    cachedExternalFilters,
+    cachedSorting,
+    hasHydrated,
   ]);
 
   // Cache filters when they change
