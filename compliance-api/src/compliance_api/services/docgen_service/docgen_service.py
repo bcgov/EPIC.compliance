@@ -49,7 +49,7 @@ class DocGenService:
                 )
                 raise BadRequestError("Unable to generate document at this time")
 
-            return response.text
+            return response
 
         except (RetryError, requests.exceptions.RequestException) as e:
             current_app.logger.error(
