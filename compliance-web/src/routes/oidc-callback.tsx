@@ -35,7 +35,8 @@ function OidcCallback() {
   }
 
   if (!isLoading && isAuthenticated && isValidStaffUser) {
-    return <Navigate to="/ce-database/case-files"></Navigate>;
+    const redirectUrl = window.localStorage.getItem("redirectUrl") || "/ce-database/case-files";
+    return <Navigate to={redirectUrl} replace />;
   }
 
   return <h1>Authentication in progress...</h1>;

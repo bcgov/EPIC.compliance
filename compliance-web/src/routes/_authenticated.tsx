@@ -11,6 +11,7 @@ function Auth() {
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
+      window.localStorage.setItem("redirectUrl", window.location.pathname + window.location.search);
       signinRedirect({ extraQueryParams: { kc_idp_hint: "idir" } });
     }
   }, [isAuthenticated, isLoading, signinRedirect]);
