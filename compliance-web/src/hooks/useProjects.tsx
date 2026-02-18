@@ -1,5 +1,5 @@
 import { Project } from "@/models/Project";
-import { request, requestTrackAPI } from "@/utils/axiosUtils";
+import { request } from "@/utils/axiosUtils";
 import { UNAPPROVED_PROJECT_ID } from "@/utils/constants";
 import { useQuery } from "@tanstack/react-query";
 
@@ -7,9 +7,9 @@ const fetchProjects = (): Promise<Project[]> => {
   return request({ url: "/projects" });
 };
 
-/** FETCH project details from TRACK API */
+/** FETCH project details */
 const fetchProjectById = (id: number): Promise<Project> => {
-  return requestTrackAPI({ url: `/projects/${id}` });
+  return request({ url: `/projects/${id}` });
 };
 
 export const useProjectsData = (args?: { includeUnapproved?: boolean }) => {
