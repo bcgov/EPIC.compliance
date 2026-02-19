@@ -6,9 +6,6 @@ on:
   push:
     branches:
       - develop
-    paths:
-        - "compliance-web/.storybook/stories/**"
-    # Only run on the main repository, not forks
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
