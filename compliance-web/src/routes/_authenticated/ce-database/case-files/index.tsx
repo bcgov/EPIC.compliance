@@ -19,6 +19,8 @@ import {
   MRT_TableState,
   MRT_SortingState,
   MRT_TableInstance,
+  MRT_ColumnFiltersState,
+  MRT_Updater,
 } from "material-react-table";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
@@ -39,11 +41,6 @@ export const Route = createFileRoute("/_authenticated/ce-database/case-files/")(
 );
 
 const caseFilesColumnFiltersCacheKey = "case-files-column-filters";
-
-// Helper to compare filter objects deeply
-const areFiltersEqual = (a: unknown, b: unknown): boolean => {
-  return JSON.stringify(a) === JSON.stringify(b);
-};
 
 export function CaseFiles() {
   const { data: projects } = useProjectsData();
@@ -195,33 +192,6 @@ export function CaseFiles() {
     currentStaff,
   ]);
 
-  // Sync "My Files" toggle with primary_officer filter
-  useEffect(() => {
-    if (!filtersInitialized.current || !currentStaff) return;
-
-    const primaryOfficerFilter = columnFilters.find(
-      (f) => f.id === "primary_officer"
-    );
-    const userIdInFilter = Array.isArray(primaryOfficerFilter?.value) && primaryOfficerFilter.value.includes(
-      currentStaff.id.toString()
-    );
-
-    // If toggle is checked but user's ID is not in the filter, re-apply it
-    if (myFilesChecked && !userIdInFilter) {
-      setColumnFilters((prev) => {
-        const filtered = prev.filter((f) => f.id !== "primary_officer");
-        return [
-          ...filtered,
-          { id: "primary_officer", value: [currentStaff.id.toString()] },
-        ];
-      });
-      setExternalFilters((prev) => ({
-        ...prev,
-        primary_officer_ids: [currentStaff.id.toString()],
-      }));
-    }
-  }, [columnFilters, myFilesChecked, currentStaff]);
-
   // Cache after filters stabilize
   const cacheTimeoutRef = useRef<NodeJS.Timeout>();
   
@@ -299,7 +269,6 @@ export function CaseFiles() {
   const {
     handlePaginationChange,
     handleSortingChange,
-    handleColumnFiltersChange,
     handleGlobalFilterChange,
   } = useTableHandlers({
     sorting,
@@ -311,6 +280,35 @@ export function CaseFiles() {
     setPagination,
   });
 
+
+  // Column filter handler that enforces "My Files" toggle
+  const handleColumnFiltersChange = useCallback(
+    (updater: MRT_Updater<MRT_ColumnFiltersState>) => {
+      setColumnFilters((prevFilters) => {
+        const newFilters = typeof updater === 'function' ? updater(prevFilters) : updater;
+        
+        // If "My Files" is checked, ensure primary_officer_ids filter is present
+        if (myFilesChecked && currentStaff) {
+          const hasPrimaryOfficerFilter = newFilters.some(
+            (filter) => filter.id === "primary_officer"
+          );
+          
+          // If user removed the primary_officer_ids filter, re-add it
+          if (!hasPrimaryOfficerFilter) {
+            const primaryOfficerFilter = {
+              id: "primary_officer",
+              value: [currentStaff.id.toString()],
+            };
+            return [...newFilters, primaryOfficerFilter];
+          }
+        }
+        
+        return newFilters;
+      });
+    },
+    [myFilesChecked, currentStaff]
+  );
+
   // "My Files" switch handler
   const handleMyFilesSwitchChange = useCallback(
     (filters: {
@@ -318,36 +316,28 @@ export function CaseFiles() {
       externalFilters: Record<string, string[] | string>;
       columnFilters?: MRT_TableState<CaseFile>["columnFilters"];
     }) => {
-      // Batch state updates to prevent multiple re-renders
-      const updates: (() => void)[] = [];
-
-      if (filters.checked !== myFilesChecked) {
-        updates.push(() => setMyFilesChecked(filters.checked));
-      }
-
-      if (!areFiltersEqual(filters.externalFilters, externalFilters)) {
-        updates.push(() => setExternalFilters(filters.externalFilters));
-        updates.push(() => setPagination((prev) => ({ ...prev, pageIndex: 0 })));
-      }
+      // State updates
+      setMyFilesChecked(filters.checked);
+      setExternalFilters(filters.externalFilters);
+      setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
       // Update column filters if provided
       if (filters.columnFilters !== undefined) {
-        updates.push(() => {
-          if (filters.checked) {
-            handleColumnFiltersChange((prevFilters) => {
-              const filtered = prevFilters.filter((f) => f.id !== "primary_officer");
-              return [...filtered, ...filters.columnFilters!];
-            });
-          } else {
-            handleColumnFiltersChange((prevFilters) =>
-              prevFilters.filter((f) => f.id !== "primary_officer")
+        if (filters.checked) {
+          setColumnFilters((prevFilters) => {
+            const filtered = prevFilters.filter(
+              (filter) => filter.id !== "primary_officer"
             );
-          }
-        });
+            return [...filtered, ...filters.columnFilters!];
+          });
+        } else {
+          setColumnFilters((prevFilters) =>
+            prevFilters.filter((filter) => filter.id !== "primary_officer")
+          );
+        }
       }
-      updates.forEach((update) => update());
     },
-    [externalFilters, myFilesChecked, handleColumnFiltersChange]
+    []
   );
 
   const columns = useCaseFileGridColumns({
