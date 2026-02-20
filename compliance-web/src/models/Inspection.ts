@@ -49,6 +49,7 @@ export interface Inspection {
   enforcement?: string;
   ir_progress?: IRProgress;
   is_history?: boolean;
+  area_inspected?: string;
 }
 
 export interface InspectionGridQueryParams extends BaseTableQueryParams {
@@ -131,6 +132,7 @@ export interface InspectionFormData {
   projectDescription?: string;
   locationDescription?: string;
   utm?: string;
+  areaInspected?: string;
 }
 
 export interface InspectionAPIData {
@@ -158,6 +160,7 @@ export interface InspectionAPIData {
   unapproved_project_type?: string;
   unapproved_project_sub_type?: string;
   is_history?: boolean;
+  area_inspected?: string;
 }
 
 export interface InspectionStatusAPIData {

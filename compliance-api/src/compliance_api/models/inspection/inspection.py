@@ -99,6 +99,7 @@ class Inspection(BaseModelVersioned):
         Integer,
         nullable=True,
     )
+    area_inspected = Column(String, nullable=True, comment="A brief description of Project Components / Area Inspected")
 
     initiation = relationship(
         "InspectionInitiationOption", foreign_keys=[initiation_id], lazy="joined"

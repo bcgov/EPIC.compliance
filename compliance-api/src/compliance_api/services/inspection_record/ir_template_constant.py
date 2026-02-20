@@ -1,7 +1,7 @@
 """IR template related constants."""
 
 INSPECTION_SCOPE = """<p class="editor-paragraph" dir="ltr">
-    <span>The Officer inspected [Brief description of Project Components / Area inspected]</span>
+    <span>The Officer inspected {{ area_inspected }}.</span>
 </p>
 <p class="editor-paragraph" dir="ltr">
     <span>The inspection included a debrief of observations with Project staff on {{ debrief_date }}.</span>

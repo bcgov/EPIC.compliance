@@ -935,6 +935,7 @@ def _create_inspection_update_obj(inspection_data: dict):
         "initiation_id": inspection_data.get("initiation_id"),
         "debrief_date": inspection_data.get("debrief_date", None),
         "project_status_id": inspection_data.get("project_status_id", None),
+        "area_inspected": inspection_data.get("area_inspected", None),
     }
 
 

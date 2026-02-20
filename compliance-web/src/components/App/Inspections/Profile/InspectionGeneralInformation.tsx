@@ -40,6 +40,7 @@ const InspectionGeneralInformation: React.FC<
       value: inspectionData.location_description,
     },
     { name: "UTM", value: inspectionData.utm },
+    { name: "Project Components / Area Inspected", value: inspectionData.area_inspected },
     { name: "Primary", value: inspectionData.primary_officer?.name },
     { name: "Initiation", value: inspectionData.initiation?.name },
     {

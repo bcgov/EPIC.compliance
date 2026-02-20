@@ -276,11 +276,13 @@ class InspectionRecordDataBuilder:
             self.data["inspection_scope"] = self.existing_ir.inspection_scope
             return self
         debreif_date = self.inspection.debrief_date
+        area_inspected = self.inspection.area_inspected
         inspection_scope_data = {
             "debrief_date": (
                 convert_to_full_month_format(debreif_date) if debreif_date else None
             ),  # handling of the null case
             "requirements": [],
+            "area_inspected": area_inspected if area_inspected else None,
         }
         requirements = InspectionRequirementModel.get_by_inspection_id(
             self.inspection.id

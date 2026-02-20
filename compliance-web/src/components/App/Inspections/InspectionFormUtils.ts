@@ -108,6 +108,7 @@ export const InspectionFormSchema = yup.object().shape({
           .required("Agencies are required"),
       otherwise: (schema) => schema.notRequired(),
     }),
+    areaInspected: yup.string().nullable(),
 });
 
 export type InspectionSchemaType = yup.InferType<typeof InspectionFormSchema>;
@@ -139,6 +140,7 @@ export const formatInspectionAPIData = (
     utm: formData.utm ?? "",
     project_status_id: (formData.projectStatus as ProjectStatus)?.id,
     attendance_option_ids: inAttendanceOptions,
+    area_inspected: formData.areaInspected ?? "",
   };
 
   if (formData.officers?.length) {

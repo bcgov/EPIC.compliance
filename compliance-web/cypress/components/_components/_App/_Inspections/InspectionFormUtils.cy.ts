@@ -77,6 +77,7 @@ describe("InspectionFormUtils", () => {
         other: "Other Info",
         firstNations: [{ id: 1, name: "First Nation 1" }],
         agencies: [{ id: 1, name: "Agency 1" }],
+        areaInspected: "Area A",
       };
 
       const expectedFormattedData = {
@@ -94,6 +95,7 @@ describe("InspectionFormUtils", () => {
         attendance_option_ids: [1, AttendanceEnum.OFFICERS],
         attending_officer_ids: [2],
         is_history: false,
+        area_inspected: "Area A",
       };
 
       const formattedData = formatInspectionAPIData(formData, 123);

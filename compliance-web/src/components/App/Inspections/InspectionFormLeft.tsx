@@ -61,7 +61,7 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
         <ControlledTextField
           name="locationDescription"
           label="Location Description"
-          placeholder="Specify inspected location"
+          placeholder="Specify the project location"
           multiline
           fullWidth
           minRows={2}
@@ -71,6 +71,14 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
           label="UTM"
           placeholder="eg. 9U 454135 6399452"
           fullWidth
+        />
+        <ControlledTextField
+          name="areaInspected"
+          label="Project Components / Area Inspected"
+          placeholder="Provide a brief description of Project Components / Area Inspected"
+          multiline
+          fullWidth
+          minRows={2}
         />
         <Stack direction={"row"} gap={2}>
           <ControlledAutoComplete

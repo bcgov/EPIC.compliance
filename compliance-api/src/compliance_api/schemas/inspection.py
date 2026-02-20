@@ -159,6 +159,10 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         ),
         required=False,
     )
+    area_inspected = fields.Str(
+        metadata={"description": "A brief description of Project Components / Area Inspected"},
+        allow_none=True,
+    )
 
     @pre_load
     def end_date_populate(

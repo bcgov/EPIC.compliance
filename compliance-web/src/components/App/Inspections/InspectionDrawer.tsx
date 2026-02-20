@@ -62,7 +62,8 @@ const initFormData: InspectionFormData = {
   projectDescription: "",
   locationDescription: "",
   utm: "",
-  debriefDate: undefined,
+    debriefDate: undefined,
+    areaInspected: "",
 };
 
 const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
@@ -147,6 +148,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
         projectDescription: inspection.project_description ?? "",
         locationDescription: inspection.location_description ?? "",
         utm: inspection.utm ?? "",
+         areaInspected: inspection.area_inspected ?? "",
       };
     }
     const selectedOfficer = staffUserList.find(
@@ -157,6 +159,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
       caseFileId: caseFile.id?.toString(),
       primaryOfficer: selectedOfficer,
       projectDescription: caseFile.project_description ?? "",
+        areaInspected: "",
     };
   }, [inspection, caseFile, staffUserList, currentUser?.preferred_username]);
 
