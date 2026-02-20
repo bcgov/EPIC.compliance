@@ -15,14 +15,6 @@ const fetchRestorativeJustice = (
   });
 };
 
-const fetchRestorativeJusticeByNumber = (
-  restorativeJusticeNumber: string
-): Promise<RestorativeJustice[]> => {
-  return request({
-    url: `/restorative-justices/by-number/${restorativeJusticeNumber}`,
-  });
-};
-
 const createRestorativeJustice = ({
   restorativeJustice,
 }: {

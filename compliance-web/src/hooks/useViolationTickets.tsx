@@ -14,14 +14,6 @@ const fetchViolationTickets = (
   });
 };
 
-const fetchViolationTicketByNumber = (
-  violationTicketNumber: string
-): Promise<ViolationTicket[]> => {
-  return request({
-    url: `/violation-tickets/vt-number/${violationTicketNumber}`,
-  });
-};
-
 const createViolationTicket = ({
   violationTicket,
 }: {

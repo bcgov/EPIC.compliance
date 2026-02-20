@@ -36,16 +36,6 @@ const fetchInspectionRequirements = (
   return request({ url: `/inspections/${inspectionId}/requirements` });
 };
 
-const fetchInspectionRequirementImages2 = (
-  inspectionId: number,
-  requirementId: number,
-  imageType: "photos" | "figures"
-): Promise<RequirementImage[]> => {
-  return request({
-    url: `/inspections/${inspectionId}/requirements/${requirementId}/${imageType}`,
-  });
-};
-
 const fetchInspectionRequirementImages = (
   inspectionId: number
 ): Promise<RequirementImage[]> => {

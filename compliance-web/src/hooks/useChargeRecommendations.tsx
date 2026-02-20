@@ -15,14 +15,6 @@ const fetchChargeRecommendations = (
   });
 };
 
-const fetchChargeRecommendationByNumber = (
-  chargeRecommendationNumber: string
-): Promise<ChargeRecommendation[]> => {
-  return request({
-    url: `/charge-recommendations/charge-recommendation-numbers/${chargeRecommendationNumber}`,
-  });
-};
-
 const createChargeRecommendation = ({
   chargeRecommendation,
 }: {

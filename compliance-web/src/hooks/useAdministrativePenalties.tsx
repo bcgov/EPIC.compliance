@@ -32,14 +32,6 @@ const fetchAdministrativePenaltiesByCaseFile = (
   });
 };
 
-const fetchAdministrativePenaltyByNumber = (
-  administrativePenaltyNumber: string
-): Promise<AdministrativePenalty[]> => {
-  return request({
-    url: `/administrative-penalties/administrative-penalty-numbers/${administrativePenaltyNumber}`,
-  });
-};
-
 const fetchAdministrativePenaltyLinks = (
   administrativePenaltyId: number
 ): Promise<AdministrativePenaltyLink[]> => {
