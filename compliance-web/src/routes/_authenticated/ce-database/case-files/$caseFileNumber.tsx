@@ -17,7 +17,7 @@ import {
 } from "@/utils/constants";
 import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useMemo } from "react";
 
 export const Route = createFileRoute(
@@ -29,7 +29,7 @@ export const Route = createFileRoute(
 
 function CaseFileProfilePage() {
   const queryClient = useQueryClient();
-  const { caseFileNumber } = useParams({ strict: false });
+  const { caseFileNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
 
   const {

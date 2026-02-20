@@ -184,7 +184,7 @@ const AdministrativePenaltyCreationOptions: FC<AdministrativePenaltyCreationOpti
             options={openAPs ?? []}
             getOptionLabel={(option) => {
               if (typeof option === 'number') {
-                const foundOption = openAPs.find(ap => ap.id === option);
+                const foundOption = openAPs?.find(ap => ap.id === option);
                 return foundOption?.administrative_penalty_number || '';
               }
               return option.administrative_penalty_number;

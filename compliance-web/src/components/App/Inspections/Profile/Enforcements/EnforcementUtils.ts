@@ -43,36 +43,6 @@ export const orderSchema = baseEnforcementSchema.shape({
 
 export type OrderFormType = yup.InferType<typeof orderSchema>;
 
-export const initOrderFormData: OrderFormType = {
-  requirements: [],
-  isHistoricalRecord: false,
-  manualOrderNumber: undefined,
-  linkedOrderNumber: undefined,
-};
-
-// Enforcement type detection functions
-export const isEnforcementOrder = (requirement: InspectionRequirement): boolean => {
-  return requirement.enforcement_action_data.some(
-    (enforcement) => enforcement.id === EnforcementActionEnum.ORDER
-  );
-};
-
-export const isEnforcementWarningLetter = (requirement: InspectionRequirement): boolean => {
-  return requirement.enforcement_action_data.some(
-    (enforcement) => enforcement.id === EnforcementActionEnum.WARNING_LETTER
-  );
-};
-
-export const getEnforcementTypeFromRequirement = (requirement: InspectionRequirement): EnforcementActionEnum | null => {
-  if (isEnforcementOrder(requirement)) {
-    return EnforcementActionEnum.ORDER;
-  }
-  if (isEnforcementWarningLetter(requirement)) {
-    return EnforcementActionEnum.WARNING_LETTER;
-  }
-  return null;
-};
-
 // Requirement data processing functions
 export const prepNonProceededRequirements = (
   {

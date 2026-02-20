@@ -205,6 +205,7 @@ export const formatInAttendance = (
         } else if (typeof attendance.data === "string") {
           return attendance.data;
         }
+        return attendance.attendance_option.name;
       } else {
         if (
           attendance.attendance_option.id ===

@@ -60,29 +60,11 @@ const deleteViolationTicket = ({
 };
 
 // Hooks
-export const useFetchViolationTickets = (inspectionId: number) => {
-  return useQuery({
-    queryKey: ["inspection-violation-tickets", inspectionId],
-    queryFn: () => fetchViolationTickets(inspectionId),
-    enabled: !!inspectionId,
-  });
-};
-
 export const useViolationTicketsData = (inspectionId: number) => {
   return useQuery({
     queryKey: ["inspection-violation-tickets", inspectionId],
     queryFn: () => fetchViolationTickets(inspectionId),
     enabled: !!inspectionId,
-  });
-};
-
-export const useFetchViolationTicketByNumber = (
-  violationTicketNumber: string
-) => {
-  return useQuery({
-    queryKey: ["violation-ticket-by-number", violationTicketNumber],
-    queryFn: () => fetchViolationTicketByNumber(violationTicketNumber),
-    enabled: !!violationTicketNumber,
   });
 };
 
@@ -94,6 +76,6 @@ export const useUpdateViolationTicket = (onSuccess: (data: ViolationTicket) => v
   return useMutation({ mutationFn: updateViolationTicket, onSuccess });
 };
 
-export const useDeleteViolationTicket = (onSuccess: (data: ViolationTicket) => void) => {
-  return useMutation({ mutationFn: deleteViolationTicket, onSuccess });
+export const useDeleteViolationTicket = (onSuccess: () => void) => {
+  return useMutation<void, Error, { violationTicketId: number }>({ mutationFn: deleteViolationTicket, onSuccess });
 };

@@ -174,10 +174,10 @@ const OrderCreationOptions: FC<OrderCreationOptionsProps> = ({
             options={openOrders ?? []}
             getOptionLabel={(option) => {
               if (typeof option === 'number') {
-                const foundOption = openOrders.find(o => o.id === option);
+                const foundOption = openOrders?.find(o => o.id === option);
                 return foundOption?.order_number || '';
               }
-              return option.order_number;
+              return option.order_number || '';
             }}
             isOptionEqualToValue={(option, value) => {
               if (typeof value === 'number') {

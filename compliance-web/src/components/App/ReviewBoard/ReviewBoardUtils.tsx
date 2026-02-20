@@ -21,7 +21,7 @@ export enum ReviewBoardCardTypeEnum {
   PENDING_ISSUANCE = 6,
 }
 
-export const formatInspectionRecordsToReviewBoardItems = (
+const formatInspectionRecordsToReviewBoardItems = (
   inspectionRecords: IRReviewBoardItem[]
 ): ReviewBoardItem[] => {
   return inspectionRecords.map((record, index) => ({
@@ -49,7 +49,7 @@ export const formatInspectionRecordsToReviewBoardItems = (
   }));
 };
 
-export const formatOrderRecordsToReviewBoardItems = (
+const formatOrderRecordsToReviewBoardItems = (
   orderRecords: OrderReviewBoardItem[]
 ): ReviewBoardItem[] => {
   return orderRecords.map((record, index) => ({
@@ -73,7 +73,7 @@ export const formatOrderRecordsToReviewBoardItems = (
   }));
 };
 
-export const formatWarningLettersToReviewBoardItems = (
+const formatWarningLettersToReviewBoardItems = (
   warningLetters: WarningLetterReviewBoardItem[]
 ): ReviewBoardItem[] => {
   return warningLetters.map((record, index) => ({
@@ -97,7 +97,7 @@ export const formatWarningLettersToReviewBoardItems = (
   }));
 };
 
-export const formatAdministrativePenaltiesToReviewBoardItems = (
+const formatAdministrativePenaltiesToReviewBoardItems = (
   administrativePenalties: APReviewBoardItem[]
 ): ReviewBoardItem[] => {
   return administrativePenalties.map((record, index) => ({
@@ -117,7 +117,7 @@ export const formatAdministrativePenaltiesToReviewBoardItems = (
   }));
 };
 
-export const createInitialSections = (): ReviewBoardSection[] => {
+const createInitialSections = (): ReviewBoardSection[] => {
   return [
     {
       id: ReviewBoardCardTypeEnum.DRAFTING,
@@ -152,7 +152,7 @@ export const createInitialSections = (): ReviewBoardSection[] => {
   ];
 };
 
-export const determineItemSection = (
+const determineItemSection = (
   item: ReviewBoardItem
 ): ReviewBoardCardTypeEnum => {
   let sectionIndex = ReviewBoardCardTypeEnum.DRAFTING;

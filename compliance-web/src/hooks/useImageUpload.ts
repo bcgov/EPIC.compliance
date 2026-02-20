@@ -47,10 +47,3 @@ export const useImageUpload = (onSuccess: OnSuccessType) => {
   });
 };
 
-export const useFetchPresignedGetURL = (onSuccess: OnSuccessType) => {
-  return useMutation({
-    mutationFn: (relativeUrl: string) =>
-      getPresignedUrl({ relative_url: relativeUrl, action: "GET" }),
-    onSuccess,
-  });
-};

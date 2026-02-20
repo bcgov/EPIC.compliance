@@ -4,7 +4,7 @@ import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
 import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo } from "react";
 import ContinuationReport from "@/components/App/ContinuationReports/ContinuationReport";
 import FileProfileHeader from "@/components/App/FileProfileHeader";
@@ -38,7 +38,7 @@ export const Route = createFileRoute(
 
 function InspectionProfilePage() {
   const queryClient = useQueryClient();
-  const { inspectionNumber } = useParams({ strict: false });
+  const { inspectionNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
   const { currentTab, resetTab } = useTab();
 

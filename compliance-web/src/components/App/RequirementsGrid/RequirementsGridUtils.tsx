@@ -261,7 +261,7 @@ export const useRequirementsGridColumns = (
   ], [complianceFindings, enforcementActions, requirementSources, topics]);
 };
 
-export const enforcementStatusOptions = [
+const enforcementStatusOptions = [
   // Order Statuses
   {
     value: OrderProgressEnum.DRAFTING,

@@ -1,7 +1,7 @@
 import ReviewBoardFilters from "@/components/App/ReviewBoard/ReviewBoardFilters";
 import ReviewBoardSection from "@/components/App/ReviewBoard/ReviewBoardSection";
 import {
-  useFetchAdminstrativePenalties,
+  useFetchAdministrativePenalties,
   useFetchInspectionRecords,
   useFetchOrderRecords,
   useFetchWarningLetters,
@@ -26,7 +26,7 @@ function ReviewBoard() {
   const { data: inspectionRecords } = useFetchInspectionRecords();
   const { data: orderRecords } = useFetchOrderRecords();
   const { data: warningLetters } = useFetchWarningLetters();
-  const { data: administrativePenalties } = useFetchAdminstrativePenalties();
+  const { data: administrativePenalties } = useFetchAdministrativePenalties();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData();
   const { user: currentUser, isLoading: authLoading } = useAuth();
 

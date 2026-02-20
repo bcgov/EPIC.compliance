@@ -47,7 +47,6 @@ type ViolationTicketCreateModalProps = {
   requirement?: InspectionRequirement;
   nonProceededRequirements?: InspectionRequirement[];
   enforcementAction: EnforcementActionEnum;
-  isPrimaryOfficerOrSuperUser: boolean;
   onSubmit: (data: ViolationTicket) => void;
 };
 
@@ -56,7 +55,6 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
   requirementsList,
   requirement,
   nonProceededRequirements,
-  isPrimaryOfficerOrSuperUser,
   enforcementAction,
   onSubmit,
 }) => {
@@ -129,7 +127,6 @@ const ViolationTicketCreateModal: FC<ViolationTicketCreateModalProps> = ({
         requirement={requirement}
         nonProceededRequirements={nonProceededRequirements}
         enforcementAction={enforcementAction}
-        isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
         title="Create Violation Ticket"
         onSubmit={handleBaseSubmit}
         isLoading={isPendingViolationTicket}

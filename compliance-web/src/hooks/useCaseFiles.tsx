@@ -140,22 +140,6 @@ export const useCaseFileByNumber = (caseFileNumber: string) => {
   });
 };
 
-export const useOfficersByCaseFileId = (caseFileId: number) => {
-  return useQuery({
-    queryKey: ["officers", caseFileId],
-    queryFn: () => fetchOfficers(caseFileId),
-    enabled: !!caseFileId,
-  });
-};
-
-export const useCaseFilesByProjectId = (projectId: number) => {
-  return useQuery({
-    queryKey: ["case-files-by-projectId", projectId],
-    queryFn: () => fetchCaseFiles({ project_ids: projectId.toString() }),
-    enabled: !!projectId,
-  });
-};
-
 export const useCaseFileOpenItems = (caseFileId: number) => {
   return useQuery({
     queryKey: ["case-file-open-items", caseFileId],

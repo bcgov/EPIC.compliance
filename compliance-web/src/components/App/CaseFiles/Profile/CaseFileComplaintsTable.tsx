@@ -5,7 +5,6 @@ import { INITIATION } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { ChevronRight, ExpandLessRounded } from "@mui/icons-material";
 import {
-  Link,
   Chip,
   Accordion,
   AccordionSummary,
@@ -92,16 +91,14 @@ const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                 >
                   <Box display={"flex"} alignItems={"center"} gap={0.5}>
                     {isExpanded ? <ExpandLessRounded /> : <ChevronRight />}
-                    <Link
-                      component={RouterLink}
+                    <RouterLink
                       to="/ce-database/complaints/$complaintNumber"
                       params={{
                         complaintNumber: complaint.complaint_number,
                       }}
-                      underline="hover"
                     >
                       {complaint.complaint_number}
-                    </Link>
+                    </RouterLink>
                     <Chip
                       label={complaint.status}
                       data-testid="status-chip"

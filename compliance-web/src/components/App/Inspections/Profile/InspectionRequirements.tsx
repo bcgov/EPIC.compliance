@@ -341,7 +341,6 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
             onReorder={handleSortOrderChange}
             values={inspectionRequirements}
             className="reorder-list"
-            disabled={isDrawerOpen || !isRequirementsAllowed}
           >
             {inspectionRequirements?.map((requirement, index) => (
               <RequirementCard

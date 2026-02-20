@@ -4,7 +4,6 @@ import ReportPanel from "./ReportPanel";
 import { BCDesignTokens } from "epic.theme";
 import Overview from "./ReportTabContents/IROverview/Overview";
 import { useReportStore } from "./reportStore";
-import { useParams } from "@tanstack/react-router";
 import InspectionSummary from "./ReportTabContents/InspectionSummary";
 import ActionsRequired from "./ReportTabContents/ActionsRequired";
 import InspectionDates from "./ReportTabContents/InspectionDates";
@@ -25,9 +24,10 @@ import IRRegulatoryConsideration from "./ReportTabContents/IRRegulatoryConsidera
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import ReportTopSection from "./ReportTopSection";
 import { useRequirementStore } from "@/components/App/Inspections/Profile/Requirements/requirementStore";
+import { Route } from "@/routes/_authenticated/ce-database/inspections/$inspectionNumber";
 
 export default function ReportTabs() {
-  const { inspectionNumber } = useParams({ strict: false });
+  const { inspectionNumber } = Route.useParams();
   const [value, setValue] = useState(0);
   const { setInspectionData, setCaseFileData, proponentLabel } =
     useReportStore();

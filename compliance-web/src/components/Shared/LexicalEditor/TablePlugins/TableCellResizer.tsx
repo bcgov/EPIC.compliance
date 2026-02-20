@@ -232,6 +232,7 @@ function TableCellResizer({editor}: {editor: LexicalEditor}): JSX.Element {
         }
       }
     }
+    return undefined;
   };
 
   const updateColumnWidth = useCallback(

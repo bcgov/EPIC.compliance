@@ -414,7 +414,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
             inspectionData={inspectionData}
             requirementsList={allRequirementsForViolationTicket}
             nonProceededRequirements={nonProceededVTRequirements}
-            isPrimaryOfficerOrSuperUser={isPrimaryOfficerOrSuperUser}
             enforcementAction={modelType}
             requirement={requirement}
             onSubmit={() => {

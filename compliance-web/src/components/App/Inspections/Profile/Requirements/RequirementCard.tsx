@@ -188,13 +188,14 @@ const RequirementCard: React.FC<RequirementCardProps> = memo(
 
     return isRegulatoryConsideration ? (
       renderCardContent()
+    ) : disabled || dragDisabled ? (
+      <Box key={requirement.id}>{renderCardContent()}</Box>
     ) : (
       <Reorder.Item
         key={requirement.id}
         value={requirement}
-        onDragStart={() => !disabled && !dragDisabled && setIsDragging(true)}
+        onDragStart={() => setIsDragging(true)}
         onDragEnd={handleDragEnd}
-        disabled={disabled || dragDisabled}
       >
         {renderCardContent()}
       </Reorder.Item>

@@ -80,7 +80,7 @@ Change to the front-end directory:
 * `cd compliance-web`
 
 ### 2. Requirements
-- [Node.js](https://nodejs.org/en/) 18
+- [Node.js](https://nodejs.org/en/) 24
 
 ### 3. Install Dependencies
 Install necessary npm packages:

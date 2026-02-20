@@ -94,7 +94,7 @@ const WarningLetterCreateModal: FC<WarningLetterCreateModalProps> = ({
       <EnforcementModal
         requirementsList={requirementsList}
         requirement={requirement}
-        enforcementAction={enforcementAction}
+        enforcementAction={enforcementAction ?? EnforcementActionEnum.WARNING_LETTER}
         nonProceededRequirements={nonProceededRequirements}
         title="Create Warning Letter"
         onSubmit={handleBaseSubmit}

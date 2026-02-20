@@ -103,7 +103,6 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
           inspection={inspection as Inspection}
           enforcementOrder={order}
           staffUsersList={staffUsersList || []}
-          isReadonlyMode={true}
         />
       ),
       width: DRAWER_WIDTHS.ENFORCEMENT_DRAWER,
@@ -211,16 +210,14 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                 >
                   <Box display={"flex"} alignItems={"center"} gap={0.5}>
                     {isExpanded ? <ExpandLessRounded /> : <ChevronRight />}
-                    <Link
-                      component={RouterLink}
+                    <RouterLink
                       to="/ce-database/inspections/$inspectionNumber"
                       params={{
                         inspectionNumber: inspection.ir_number,
                       }}
-                      underline="hover"
                     >
                       {inspection.ir_number}
-                    </Link>
+                    </RouterLink>
                     <Chip
                       label={inspection.inspection_status}
                       data-testid="status-chip"

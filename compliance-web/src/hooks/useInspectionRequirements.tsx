@@ -188,32 +188,6 @@ export const useInspectionRequirementsData = (inspectionId: number) => {
   });
 };
 
-export const useInspectionRequirementImagesData = (
-  inspectionId: number,
-  requirementId: number,
-  imageType: "photos" | "figures"
-) => {
-  return useQuery({
-    queryKey: [
-      "inspection-requirement-images",
-      inspectionId,
-      requirementId,
-      imageType,
-    ],
-    queryFn: () =>
-      fetchInspectionRequirementImages2(inspectionId, requirementId, imageType),
-    select: (data: RequirementImage[]) => {
-      return data.map((image) => ({
-        ...image,
-        dbId: image.id,
-      }));
-    },
-    enabled: !!inspectionId && !!requirementId,
-    refetchOnWindowFocus: false,
-    staleTime: Infinity,
-  });
-};
-
 export const useInspectionRequirementImages = (inspectionId: number) => {
   return useQuery({
     queryKey: ["inspection-requirement-images", inspectionId],

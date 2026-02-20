@@ -83,15 +83,6 @@ export const useChargeRecommendationsData = (
   });
 };
 
-export const useFetchChargeRecommendationByNumber = (
-  onSuccess: OnSuccessType
-) => {
-  return useMutation({
-    mutationFn: fetchChargeRecommendationByNumber,
-    onSuccess,
-  });
-};
-
 export const useCreateChargeRecommendation = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: createChargeRecommendation, onSuccess });
 };

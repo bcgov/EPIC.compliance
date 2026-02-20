@@ -63,29 +63,11 @@ const deleteRestorativeJustice = ({
 };
 
 // Hooks
-export const useFetchRestorativeJustice = (inspectionId: number) => {
-  return useQuery({
-    queryKey: ["inspection-restorative-justice", inspectionId],
-    queryFn: () => fetchRestorativeJustice(inspectionId),
-    enabled: !!inspectionId,
-  });
-};
-
 export const useRestorativeJusticeByInspection = (inspectionId: number) => {
   return useQuery({
     queryKey: ["inspection-restorative-justice", inspectionId],
     queryFn: () => fetchRestorativeJustice(inspectionId),
     enabled: !!inspectionId,
-  });
-};
-
-export const useFetchRestorativeJusticeByNumber = (
-  restorativeJusticeNumber: string
-) => {
-  return useQuery({
-    queryKey: ["restorative-justice-by-number", restorativeJusticeNumber],
-    queryFn: () => fetchRestorativeJusticeByNumber(restorativeJusticeNumber),
-    enabled: !!restorativeJusticeNumber,
   });
 };
 

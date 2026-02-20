@@ -18,7 +18,7 @@ import {
 } from "@/utils/constants";
 import { Box } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import React, { useMemo } from "react";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
@@ -29,9 +29,9 @@ export const Route = createFileRoute(
   notFoundComponent: () => <p>Complaint not found!</p>,
 });
 
-function ComplaintProfilePage() {
+function ComplaintProfilePage(): React.ReactNode {
   const queryClient = useQueryClient();
-  const { complaintNumber } = useParams({ strict: false });
+  const { complaintNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
 
   const {

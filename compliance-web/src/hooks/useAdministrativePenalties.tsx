@@ -145,15 +145,6 @@ export const useAdministrativePenaltiesByCaseFileData = (
   });
 };
 
-export const useFetchAdministrativePenaltyByNumber = (
-  onSuccess: OnSuccessType
-) => {
-  return useMutation({
-    mutationFn: fetchAdministrativePenaltyByNumber,
-    onSuccess,
-  });
-};
-
 export const useCreateAdministrativePenalty = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: createAdministrativePenalty, onSuccess });
 };

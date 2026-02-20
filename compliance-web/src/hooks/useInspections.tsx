@@ -199,14 +199,6 @@ export const useInspectionById = (inspectionId: number) => {
   });
 };
 
-export const useInspectionsByCaseFileId = (caseFileId: number) => {
-  return useQuery({
-    queryKey: ["inspections-by-caseFileId", caseFileId],
-    queryFn: () => fetchInspections({ case_file_id: caseFileId.toString() }),
-    enabled: !!caseFileId,
-  });
-};
-
 export const useInspectionsMoreDetailsByCaseFileId = (caseFileId: number) => {
   return useQuery({
     queryKey: ["inspections-details-by-caseFileId", caseFileId],
@@ -230,8 +222,6 @@ export const useUpdateInspectionStatus = (onSuccess: OnSuccessType) => {
 export const useDeleteInspection = (onSuccess: OnSuccessType) => {
   return useMutation({ mutationFn: deleteInspection, onSuccess });
 };
-
-
 
 export const useCheckPendingItems = () => {
   return useMutation({

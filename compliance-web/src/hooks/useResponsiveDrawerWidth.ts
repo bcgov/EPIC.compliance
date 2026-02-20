@@ -17,7 +17,7 @@ const clampPx = (basePx: string, capPx: string): string => {
   return `${Math.min(base, cap)}px`;
 };
 
-export function useResponsiveDrawerWidth(
+function useResponsiveDrawerWidth(
   defaultWidth: string,
   caps?: ResponsiveCaps
 ): string {
