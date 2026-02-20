@@ -58,9 +58,6 @@ style="white-space: pre-wrap;">OR</em></i><br><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">cease, either altogether or to the extent specified by the Chief Executive
  Assessment Officer.</em></i></p>"""
 NOW_THEREFORE = """
-<p class="editor-paragraph" dir="ltr" style="text-align: left;"><b><strong class="editor-text-bold"
-            style="white-space: pre-wrap;">NOW THEREFORE:</strong></b></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;">
 Pursuant to Section {{order_details.section}} of the Act, I order that the {{project_details.proponent_label}}
  must by [YYYY-DD-MM]</span></p>
