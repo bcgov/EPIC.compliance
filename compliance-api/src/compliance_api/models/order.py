@@ -3,7 +3,7 @@
 import enum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String
-from sqlalchemy.orm import relationship, joinedload
+from sqlalchemy.orm import joinedload, relationship
 
 from compliance_api.models.inspection import InspectionRequirement
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
