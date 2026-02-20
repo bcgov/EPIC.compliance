@@ -3,7 +3,7 @@
 import enum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, joinedload
 
 from compliance_api.models.inspection import InspectionRequirement
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
@@ -284,17 +284,23 @@ class Order(BaseModelVersioned):
 
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
-        """Find all orders by inspection id that have entries in the requirement map for the given inspection."""
-        return (
-            cls.query.join(
-                OrderInspectionRequirementMap,
-                OrderInspectionRequirementMap.order_id
-                == cls.id,
-            )
+        """Find all orders by inspection id that have entries in the requirement map for the given inspection.
+
+        Uses a two-query approach to ensure all requirement maps are loaded for each order,
+        not just the ones for the queried inspection (important for linked orders).
+        """
+        # First, get order IDs that have at least one requirement for this inspection
+        # Using a completely separate query to avoid contaminating the relationship context
+        order_ids = (
+            db.session.query(OrderInspectionRequirementMap.order_id)
             .join(
                 InspectionRequirement,
                 InspectionRequirement.id
                 == OrderInspectionRequirementMap.inspection_requirement_id,
+            )
+            .join(
+                cls,
+                cls.id == OrderInspectionRequirementMap.order_id,
             )
             .filter(
                 InspectionRequirement.inspection_id == inspection_id,
@@ -303,6 +309,25 @@ class Order(BaseModelVersioned):
                 cls.is_deleted.is_(False),
             )
             .distinct()
+            .all()
+        )
+
+        # Extract just the IDs from the result tuples
+        order_id_list = [order_id[0] for order_id in order_ids]
+
+        if not order_id_list:
+            return []
+
+        # Expire all objects in the session to ensure fresh load
+        # This prevents SQLAlchemy from using cached relationship data
+        db.session.expire_all()
+
+        # Load the full orders with ALL their requirement maps using a fresh query
+        # Use joinedload to eagerly load all requirement maps without any filters
+        return (
+            db.session.query(cls)
+            .filter(cls.id.in_(order_id_list))
+            .options(joinedload(cls.order_requirement_maps))
             .order_by(cls.created_date.desc())
             .all()
         )

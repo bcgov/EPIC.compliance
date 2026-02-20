@@ -1,3 +1,4 @@
+import { InspectionRequirementSource } from "./InspectionRequirementSource";
 import { StaffUser } from "./Staff";
 import { WarningLetterApproval } from "./WarningLetterApproval";
 
@@ -33,6 +34,7 @@ interface WarningLetterRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    requirement_source_details: InspectionRequirementSource[];
   };
 }
 

@@ -1,5 +1,6 @@
 import { Inspection } from './Inspection';
 import { InspectionRequirement } from './InspectionRequirement';
+import { InspectionRequirementSource } from './InspectionRequirementSource';
 import { Option } from './common';
 
 export interface AdministrativePenalty {
@@ -24,6 +25,7 @@ interface AdministrativePenaltyRequirementMap {
     id: number;
     summary: string;
     inspection_id: number;
+    requirement_source_details: InspectionRequirementSource[];
   };
 }
 

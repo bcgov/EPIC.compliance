@@ -152,70 +152,83 @@ export const formatRequirementSources = (
   violationTicket?: ViolationTicket,
   restorativeJustice?: RestorativeJustice
 ): string[] => {
-  const orderRequirementIds = order?.order_requirement_maps?.map(
-    (map) => map.inspection_requirement_id
-  );
-  const warningLetterRequirementIds =
-    warningLetter?.warning_letter_requirement_maps?.map(
-      (map) => map.inspection_requirement_id
-    );
-
-  const administrativePenaltyRequirementIds = administrativePenalty?.administrative_penalty_requirement_maps?.map(
-    (map) => map.inspection_requirement_id
-  );
-
-  const chargeRecommendationRequirementIds = chargeRecommendation?.charge_recommendation_requirement_maps?.map(
-    (map) => map.inspection_requirement_id
-  );
-
-  const violationTicketRequirementIds = violationTicket?.violation_ticket_requirement_maps?.map(
-    (map) => map.inspection_requirement_id
-  );
-
-  const restorativeJusticeRequirementIds = restorativeJustice?.restorative_justice_requirement_maps?.map(
-    (map) => map.inspection_requirement_id
-  );
-
-  const requirementIds = [
-    ...(orderRequirementIds || []),
-    ...(warningLetterRequirementIds || []),
-    ...(administrativePenaltyRequirementIds || []),
-    ...(chargeRecommendationRequirementIds || []),
-    ...(violationTicketRequirementIds || []),
-    ...(restorativeJusticeRequirementIds || []),
+  // Collect all requirement maps from all enforcement types
+  const allRequirementMaps = [
+    ...(order?.order_requirement_maps || []).map(map => map.inspection_requirement),
+    ...(warningLetter?.warning_letter_requirement_maps || []).map(map => map.inspection_requirement),
+    ...(administrativePenalty?.administrative_penalty_requirement_maps || []).map(map => map.inspection_requirement),
+    ...(chargeRecommendation?.charge_recommendation_requirement_maps || []).map(map => map.inspection_requirement),
+    ...(violationTicket?.violation_ticket_requirement_maps || []).map(map => map.inspection_requirement),
+    ...(restorativeJustice?.restorative_justice_requirement_maps || []).map(map => map.inspection_requirement),
   ];
 
-  const requirements = requirementEnforcements.filter((requirement) =>
-    requirementIds?.includes(requirement.id)
+  // Check if any requirement has source details from API
+  const hasSourceDetailsFromAPI = allRequirementMaps.some(
+    req => req.requirement_source_details && req.requirement_source_details.length > 0
   );
 
   const result: string[] = [];
 
-  requirements.forEach((requirement) => {
-    const sourceMap = new Map<number, { name: string; numbers: string[] }>();
+  if (hasSourceDetailsFromAPI) {
+    allRequirementMaps.forEach((requirement) => {
+      const sourceMap = new Map<number, { name: string; numbers: string[] }>();
 
-    requirement.requirement_source_details.forEach((source) => {
-      const sourceId = source.requirement_source_id;
-      const sourceName = source.requirement_source?.name || "";
-      const number = source.condition_number ?? source.section_number ?? "";
+      requirement.requirement_source_details?.forEach((source) => {
+        const sourceId = source.requirement_source_id;
+        const sourceName = source.requirement_source?.name || "";
+        const number = source.condition_number ?? source.section_number ?? "";
 
-      if (!sourceMap.has(sourceId)) {
-        sourceMap.set(sourceId, { name: sourceName, numbers: [] });
-      }
+        if (!sourceMap.has(sourceId)) {
+          sourceMap.set(sourceId, { name: sourceName, numbers: [] });
+        }
 
-      if (number) {
-        sourceMap.get(sourceId)?.numbers.push(`#${number.trim()}`);
-      }
+        if (number) {
+          sourceMap.get(sourceId)?.numbers.push(`#${number.trim()}`);
+        }
+      });
+
+      sourceMap.forEach((value) => {
+        if (value.numbers.length > 0) {
+          result.push(`${value.name}, ${value.numbers.join(", ")}`);
+        } else {
+          result.push(value.name);
+        }
+      });
     });
+  } else {
+    // Fallback to the old way if no source details are available from API for data safety
+    const requirementIds = allRequirementMaps.map(req => req.id);
+    const requirements = requirementEnforcements.filter((requirement) =>
+      requirementIds?.includes(requirement.id)
+    );
 
-    sourceMap.forEach((value) => {
-      if (value.numbers.length > 0) {
-        result.push(`${value.name}, ${value.numbers.join(", ")}`);
-      } else {
-        result.push(value.name);
-      }
+    requirements.forEach((requirement) => {
+      const sourceMap = new Map<number, { name: string; numbers: string[] }>();
+
+      requirement.requirement_source_details?.forEach((source) => {
+        const sourceId = source.requirement_source_id;
+        const sourceName = source.requirement_source?.name || "";
+        const number = source.condition_number ?? source.section_number ?? "";
+
+        if (!sourceMap.has(sourceId)) {
+          sourceMap.set(sourceId, { name: sourceName, numbers: [] });
+        }
+
+        if (number) {
+          sourceMap.get(sourceId)?.numbers.push(`#${number.trim()}`);
+        }
+      });
+
+      sourceMap.forEach((value) => {
+        if (value.numbers.length > 0) {
+          result.push(`${value.name}, ${value.numbers.join(", ")}`);
+        } else {
+          result.push(value.name);
+        }
+      });
     });
-  });
+  }
+
   return result;
 };
 

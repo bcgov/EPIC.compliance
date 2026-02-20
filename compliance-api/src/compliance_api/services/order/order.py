@@ -76,6 +76,7 @@ class OrderService:
             created_order = OrderModel.create(order_obj, session)
             cls.insert_or_update_inspection_requirements(
                 created_order.id,
+                inspection_id,
                 order_data.get("inspection_requirement_ids", []),
                 session,
             )
@@ -122,6 +123,7 @@ class OrderService:
             updated_order = OrderModel.update_order(order_id, update_data, session)
             cls.insert_or_update_inspection_requirements(
                 updated_order.id,
+                inspection.id,
                 update_data.get("inspection_requirement_ids", []),
                 session,
             )
@@ -153,12 +155,17 @@ class OrderService:
 
     @classmethod
     def insert_or_update_inspection_requirements(
-        cls, order_id: int, inspection_requirement_ids: list[int], session=None
+        cls, order_id: int, inspection_id: int, inspection_requirement_ids: list[int], session=None
     ):
-        """Insert/Update inspection requirements associated with a given order."""
+        """Insert/Update inspection requirements associated with a given order for a specific inspection.
+
+        This method only modifies requirement maps that belong to the specified inspection_id,
+        leaving requirement maps from other inspections (in case of linked orders) untouched.
+        """
         if inspection_requirement_ids is not None:
-            existing_requirements = OrderInspectionRequirementMapModel.get_by_order_id(
-                order_id
+            # Only get existing requirements for this specific inspection
+            existing_requirements = OrderInspectionRequirementMapModel.get_by_inspection_and_order_id(
+                inspection_id, order_id
             )
             existing_requirement_ids = {
                 req.inspection_requirement_id for req in existing_requirements
@@ -292,7 +299,8 @@ class OrderService:
                 "Order is already linked to the given inspection requirements"
             )
         with session_scope() as session:
-            cls.insert_or_update_inspection_requirements(
+            # Use bulk_insert to ADD requirements without deleting existing ones
+            OrderInspectionRequirementMapModel.bulk_insert(
                 order_id, requirement_ids, session
             )
         return order

@@ -63,7 +63,7 @@ class WarningLetterInspectionRequirementMapSchema(
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),
-        only=("id", "summary"),
+        only=("id", "summary", "requirement_source_details"),
     )
 
 

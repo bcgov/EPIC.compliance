@@ -1,3 +1,5 @@
+import { InspectionRequirementSource } from "./InspectionRequirementSource";
+
 export interface ViolationTicket {
   violation_ticket_requirement_maps: ViolationTicketRequirementMap[];
   id: number;
@@ -19,6 +21,7 @@ interface ViolationTicketRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    requirement_source_details: InspectionRequirementSource[];
   };
 }
 

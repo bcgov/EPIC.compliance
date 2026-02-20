@@ -1,6 +1,8 @@
 
 import { OrderApproval } from "./OrderApproval";
 import { StaffUser } from "./Staff";
+import { InspectionRequirementSource } from "./InspectionRequirementSource";
+
 export interface InspectionOrder {
   issuing_officer?: StaffUser;
   section?: {
@@ -40,6 +42,7 @@ interface OrderRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    requirement_source_details: InspectionRequirementSource[];
   };
 }
 

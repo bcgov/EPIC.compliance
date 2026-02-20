@@ -1,3 +1,4 @@
+import { InspectionRequirementSource } from "./InspectionRequirementSource";
 import { Option } from "./common";
 
 export interface ChargeRecommendation {
@@ -25,6 +26,7 @@ interface ChargeRecommendationRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    requirement_source_details: InspectionRequirementSource[];
   };
 }
 

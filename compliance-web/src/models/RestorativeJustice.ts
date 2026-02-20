@@ -1,3 +1,5 @@
+import { InspectionRequirementSource } from "./InspectionRequirementSource";
+
 export interface RestorativeJusticeRequirementMap {
   id: number;
   restorative_justice_id: number;
@@ -5,6 +7,7 @@ export interface RestorativeJusticeRequirementMap {
   inspection_requirement: {
     id: number;
     summary: string;
+    requirement_source_details: InspectionRequirementSource[]
   };
 }
 

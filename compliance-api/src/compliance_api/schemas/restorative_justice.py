@@ -60,7 +60,7 @@ class RestorativeJusticeInspectionRequirementMapSchema(
 
     inspection_requirement = fields.Nested(
         InspectionRequirementSchema(),
-        only=("id", "summary"),
+        only=("id", "summary", "requirement_source_details"),
     )
 
     inspection_requirement_id = fields.Integer()

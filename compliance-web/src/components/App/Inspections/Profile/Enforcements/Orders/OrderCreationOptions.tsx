@@ -137,8 +137,7 @@ const OrderCreationOptions: FC<OrderCreationOptionsProps> = ({
             }}
           />
 
-          {/* Hiding linking for now */}
-          {false && <FormControlLabel
+          <FormControlLabel
             value="link_existing"
             control={<Radio />}
             label={
@@ -162,7 +161,7 @@ const OrderCreationOptions: FC<OrderCreationOptionsProps> = ({
               mb: 2,
               alignItems: 'flex-start'
             }}
-          />}
+          />
         </RadioGroup>
 
         {/* Existing Order Selection */}
