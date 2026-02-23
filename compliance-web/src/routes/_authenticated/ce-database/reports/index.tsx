@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+// import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import {
@@ -38,9 +38,9 @@ const REPORT_TYPES = [
   { label: "First Nation Report", value: ReportType.FirstNation },
 ];
 
-export const Route = createFileRoute("/_authenticated/ce-database/reports/")({
-  component: ReportsTab,
-});
+// export const Route = createFileRoute("/_authenticated/ce-database/reports/")({
+//   component: ReportsTab,
+// });
 
 export function ReportsTab() {
   const [dateRangeType, setDateRangeType] = useState<"none" | "range">("none");
