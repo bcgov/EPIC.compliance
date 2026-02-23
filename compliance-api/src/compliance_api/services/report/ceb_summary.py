@@ -195,6 +195,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 InspectionRecord.date_issued.label("ir_date_issued"),
                 StaffUser,
                 Inspection.inspection_status.label("inspection_status"),
+                CaseFile.case_file_number.label("case_file_number"),
                 CaseFile.date_created.label("case_file_date_created"),
             )
             .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
@@ -373,6 +374,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 "primary_officer": f"{primary_officer.first_name} {primary_officer.last_name}"
                 if primary_officer else None,
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
+                "case_file_number": row.case_file_number,
             }
             result.append(item)
         return result
@@ -459,6 +461,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "IR Issuance Date",
             "Primary Officer",
             "Inspection Status",
+            "Case File Number",
         ]
 
         columns = [
@@ -477,6 +480,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "ir_issuance_date",
             "primary_officer",
             "inspection_status",
+            "case_file_number",
         ]
 
         return headers, columns

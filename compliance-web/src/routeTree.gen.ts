@@ -18,7 +18,6 @@ import { Route as AuthenticatedAdminStaffRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminProponentsRouteImport } from './routes/_authenticated/admin/proponents'
 import { Route as AuthenticatedAdminAgenciesRouteImport } from './routes/_authenticated/admin/agencies'
 import { Route as AuthenticatedCeDatabaseRequirementsIndexRouteImport } from './routes/_authenticated/ce-database/requirements/index'
-import { Route as AuthenticatedCeDatabaseReportsIndexRouteImport } from './routes/_authenticated/ce-database/reports/index'
 import { Route as AuthenticatedCeDatabaseInspectionsIndexRouteImport } from './routes/_authenticated/ce-database/inspections/index'
 import { Route as AuthenticatedCeDatabaseComplaintsIndexRouteImport } from './routes/_authenticated/ce-database/complaints/index'
 import { Route as AuthenticatedCeDatabaseCaseFilesIndexRouteImport } from './routes/_authenticated/ce-database/case-files/index'
@@ -73,12 +72,6 @@ const AuthenticatedCeDatabaseRequirementsIndexRoute =
   AuthenticatedCeDatabaseRequirementsIndexRouteImport.update({
     id: '/ce-database/requirements/',
     path: '/ce-database/requirements/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedCeDatabaseReportsIndexRoute =
-  AuthenticatedCeDatabaseReportsIndexRouteImport.update({
-    id: '/ce-database/reports/',
-    path: '/ce-database/reports/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedCeDatabaseInspectionsIndexRoute =
@@ -148,7 +141,6 @@ export interface FileRoutesByTo {
   '/ce-database/case-files': typeof AuthenticatedCeDatabaseCaseFilesIndexRoute
   '/ce-database/complaints': typeof AuthenticatedCeDatabaseComplaintsIndexRoute
   '/ce-database/inspections': typeof AuthenticatedCeDatabaseInspectionsIndexRoute
-  '/ce-database/reports': typeof AuthenticatedCeDatabaseReportsIndexRoute
   '/ce-database/requirements': typeof AuthenticatedCeDatabaseRequirementsIndexRoute
 }
 export interface FileRoutesById {
@@ -167,7 +159,6 @@ export interface FileRoutesById {
   '/_authenticated/ce-database/case-files/': typeof AuthenticatedCeDatabaseCaseFilesIndexRoute
   '/_authenticated/ce-database/complaints/': typeof AuthenticatedCeDatabaseComplaintsIndexRoute
   '/_authenticated/ce-database/inspections/': typeof AuthenticatedCeDatabaseInspectionsIndexRoute
-  '/_authenticated/ce-database/reports/': typeof AuthenticatedCeDatabaseReportsIndexRoute
   '/_authenticated/ce-database/requirements/': typeof AuthenticatedCeDatabaseRequirementsIndexRoute
 }
 export interface FileRouteTypes {
@@ -202,7 +193,6 @@ export interface FileRouteTypes {
     | '/ce-database/case-files'
     | '/ce-database/complaints'
     | '/ce-database/inspections'
-    | '/ce-database/reports'
     | '/ce-database/requirements'
   id:
     | '__root__'
@@ -220,7 +210,6 @@ export interface FileRouteTypes {
     | '/_authenticated/ce-database/case-files/'
     | '/_authenticated/ce-database/complaints/'
     | '/_authenticated/ce-database/inspections/'
-    | '/_authenticated/ce-database/reports/'
     | '/_authenticated/ce-database/requirements/'
   fileRoutesById: FileRoutesById
 }
@@ -295,13 +284,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCeDatabaseRequirementsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/ce-database/reports/': {
-      id: '/_authenticated/ce-database/reports/'
-      path: '/ce-database/reports'
-      fullPath: '/ce-database/reports'
-      preLoaderRoute: typeof AuthenticatedCeDatabaseReportsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/ce-database/inspections/': {
       id: '/_authenticated/ce-database/inspections/'
       path: '/ce-database/inspections'
@@ -359,7 +341,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCeDatabaseCaseFilesIndexRoute: typeof AuthenticatedCeDatabaseCaseFilesIndexRoute
   AuthenticatedCeDatabaseComplaintsIndexRoute: typeof AuthenticatedCeDatabaseComplaintsIndexRoute
   AuthenticatedCeDatabaseInspectionsIndexRoute: typeof AuthenticatedCeDatabaseInspectionsIndexRoute
-  AuthenticatedCeDatabaseReportsIndexRoute: typeof AuthenticatedCeDatabaseReportsIndexRoute
   AuthenticatedCeDatabaseRequirementsIndexRoute: typeof AuthenticatedCeDatabaseRequirementsIndexRoute
 }
 
@@ -381,8 +362,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedCeDatabaseComplaintsIndexRoute,
   AuthenticatedCeDatabaseInspectionsIndexRoute:
     AuthenticatedCeDatabaseInspectionsIndexRoute,
-  AuthenticatedCeDatabaseReportsIndexRoute:
-    AuthenticatedCeDatabaseReportsIndexRoute,
   AuthenticatedCeDatabaseRequirementsIndexRoute:
     AuthenticatedCeDatabaseRequirementsIndexRoute,
 }
