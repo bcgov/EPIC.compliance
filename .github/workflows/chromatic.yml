@@ -28,7 +28,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: "compliance-web/package-lock.json"
       - name: Install dependencies
-        run: npm ci
+        run: npm install
         working-directory: compliance-web
       - name: Build Storybook
         run: npm run build-storybook
