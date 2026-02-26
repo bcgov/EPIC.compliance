@@ -35,11 +35,11 @@ const continuationReportFormSchema = yup.object().shape({
     .required("Date Created is required"),
   entry: yup
     .object({
-      html: yup.string().required("Entry is required"),
-      text: yup.string().required("Entry is required"),
+      html: yup.string().required("Action is required"),
+      text: yup.string().required("Action is required"),
     })
     .nullable()
-    .required("Entry is required"),
+    .required("Action is required"),
 });
 
 type ContinuationReportSchemaType = yup.InferType<
@@ -154,7 +154,7 @@ const ContinuationReportEntryModal: React.FC<ContinuationReportEntryModal> = ({
               </Button>
             </Stack>
             <ControlledLexicalEditor
-              label="Entry"
+              label="Action"
               name="entry"
               isRequired={true}
             />

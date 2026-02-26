@@ -139,7 +139,6 @@ export default function ContinuationReport({
             <>
               <Box
                 sx={{
-                  // height: `calc(100vh - ${appHeaderHeight + 302 + 48 + inspectionOffset}px)`, // 302px is the height above the timeline, 48px is height of pagination
                   overflow: "auto",
                   display: "flex",
                   flex: 1,
