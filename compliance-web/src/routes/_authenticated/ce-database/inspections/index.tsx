@@ -55,6 +55,7 @@ const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
         primary_officer_ids: [staffId],
       },
       columnFilters: [
+        { id: "status", value: ["OPEN"] },
         {
           id: "primary_officer",
           value: [staffId],
@@ -64,7 +65,7 @@ const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
   }
   return {
     externalFilters: {},
-    columnFilters: [],
+    columnFilters: [{ id: "status", value: ["OPEN"] }],
   };
 }
 
