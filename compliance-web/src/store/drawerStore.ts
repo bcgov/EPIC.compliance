@@ -7,6 +7,7 @@ interface DrawerStore {
   drawerWidth: string;
   setOpen: (args: { content: React.ReactNode; width?: string }) => Promise<void>;
   setClose: () => void;
+  setDrawerWidth?: (width: string) => void;
 }
 
 // Create the Zustand store
@@ -31,4 +32,5 @@ export const useDrawer = create<DrawerStore>((set) => ({
       drawerContent: null,
     });
   },
+  setDrawerWidth: (width) => set({ drawerWidth: width })
 }));

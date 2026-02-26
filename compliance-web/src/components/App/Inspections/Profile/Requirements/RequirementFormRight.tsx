@@ -17,7 +17,7 @@ import {
 } from "@/models/InspectionRequirementSource";
 import { useModal } from "@/store/modalStore";
 import { AddRounded } from "@mui/icons-material";
-import { Box, Button } from "@mui/material";
+import { Box, Button, useMediaQuery } from "@mui/material";
 import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
@@ -47,6 +47,9 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 }) => {
   const { setOpen, setClose } = useModal();
 
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  
+  
   // Helper function to synchronize requirementSourceTitle across all items
 const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requirementSourceId?: string) => {
     // Filter out the items that have the same requirementSourceId
@@ -407,14 +410,10 @@ const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requi
     <Box
       sx={{
         padding: "1.5rem 1rem",
-        width: "510px",
-        overflow: "auto",
+        width: isMdToLg ? "auto" : "510px",
+        overflow: isMdToLg ? "unset" : "auto",
         boxSizing: "border-box",
-        [MQ.mdToLg]: {
-          width: "auto",
-          overflow: "unset",
-          ml: 2
-        }
+        marginLeft: isMdToLg ? 0 : 2,
       }}
     >
       {!isRegulatoryConsideration && isRequirementEditable && (

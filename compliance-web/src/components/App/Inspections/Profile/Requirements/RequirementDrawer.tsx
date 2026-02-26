@@ -16,6 +16,7 @@ import { RequirementSourceFormData } from "@/models/InspectionRequirementSource"
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Box } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import RequirementFormLeft from "./RequirementFormLeft";
@@ -87,6 +88,8 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
 
   const { data: inspectionRequirementTypesList } =
     useInspectionRequirementTypesData();
+
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
 
   const isRequirementEditable = useMemo(
     () =>
@@ -371,11 +374,8 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: "row",
-            [MQ.mdToLg]: {
-              flexDirection: "column-reverse",
-              overflow: "auto",
-            }
+            flexDirection: isMdToLg ? "column-reverse" : "row",
+            overflow: isMdToLg ? "auto" : undefined,
           }}
         >
           <RequirementFormLeft

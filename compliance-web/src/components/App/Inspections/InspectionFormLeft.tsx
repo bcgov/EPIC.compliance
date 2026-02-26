@@ -7,7 +7,7 @@ import { IRType } from "@/models/IRType";
 import { ProjectStatus } from "@/models/ProjectStatus";
 import { StaffUser } from "@/models/Staff";
 import { MQ } from "@/styles/responsive";
-import { Box, Stack } from "@mui/material";
+import { Box, Stack, useMediaQuery } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC } from "react";
 import { useFormContext } from "react-hook-form";
@@ -25,6 +25,7 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
   irTypeList,
   projectStatusList,
 }) => {
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
   const { watch } = useFormContext();
   const startDate = watch("startDate");
   const endDate = watch("endDate");
@@ -35,14 +36,10 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
         sx={{
           background: BCDesignTokens.surfaceColorBackgroundLightGray,
           padding: "1rem 1rem 1rem 2rem",
-          width: "718px",
-          overflow: "auto",
+          width: isMdToLg ? "auto" : "718px",
+          overflow: isMdToLg ? "unset" : "auto",
+          paddingRight: isMdToLg ? 4 : "1rem",
           boxSizing: "border-box",
-          [MQ.mdToLg]: {
-            width: "auto",
-            overflow: "unset",
-            pr: 4,
-          }
         }}
       >
         <ControlledSwitch

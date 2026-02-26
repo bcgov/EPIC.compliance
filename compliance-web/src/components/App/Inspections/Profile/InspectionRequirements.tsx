@@ -37,7 +37,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
   inspectionData,
 }) => {
   const queryClient = useQueryClient();
-  const { setOpen, isOpen: isDrawerOpen, setClose } = useDrawer();
+  const { setOpen, isOpen: isDrawerOpen, setClose, setDrawerWidth } = useDrawer();
   const {
     requirementPhotos,
     requirementFigures,
@@ -285,6 +285,12 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
       setActiveRequirementId(null);
     }
   }, [isDrawerOpen]);
+
+  useEffect(() => {
+    if (isDrawerOpen && setDrawerWidth) {
+      setDrawerWidth(drawerWidth);
+    }
+  }, [drawerWidth, isDrawerOpen, setDrawerWidth]);
 
   useEffect(() => {
     if (

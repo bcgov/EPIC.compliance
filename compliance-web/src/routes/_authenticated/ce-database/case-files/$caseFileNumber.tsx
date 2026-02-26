@@ -15,7 +15,7 @@ import {
   FILE_PROFILE_CONTEXT,
   INITIATION,
 } from "@/utils/constants";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useMemo } from "react";
@@ -31,6 +31,8 @@ function CaseFileProfilePage() {
   const queryClient = useQueryClient();
   const { caseFileNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  
 
   const {
     status,
@@ -103,10 +105,7 @@ function CaseFileProfilePage() {
         isInititationOther={caseFileData.initiation.id === INITIATION.OTHER_ID}
       />
       <Box p="1rem 1rem 1.25rem 3.75rem" display="flex" gap={3} sx={{
-        flexDirection: "row",
-        [MQ.mdToLg]: {
-          flexDirection: "column",
-        },
+        flexDirection: isMdToLg ? "column": "row",
       }}>
         <CaseFileGeneralInformation
           caseFileData={caseFileData}

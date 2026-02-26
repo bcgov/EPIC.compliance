@@ -1,4 +1,4 @@
-import { Box, DialogContent } from "@mui/material";
+import { Box, DialogContent, useMediaQuery } from "@mui/material";
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as yup from "yup";
@@ -105,6 +105,8 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
   const { data: requirementSourceDataList } = useRequirementSourcesData();
   const { data: orderList } = useInspectionOrdersProjectwiseData(caseFile.id);
   const { data: caseFileData } = useCaseFileByNumber(caseFile.case_file_number);
+
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
 
   const defaultValues = useMemo<RequirementSourceFormData>(() => {
     return (
@@ -300,12 +302,9 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 flex: 1,
                 minHeight: 0,
                 display: "flex",
-                flexDirection: "row",
-                [MQ.mdToLg]: {
-                  flexDirection: "column",
-                  overflow: "auto",
-                  gap: 0,
-                }
+                flexDirection: isMdToLg ? "column" : "row",
+                overflow: isMdToLg ? "auto" : "unset",
+                gap: isMdToLg ? 0 : "unset",
               }}
             >
               <Box flex={1}>
@@ -425,16 +424,12 @@ const RequirementSourceModal: React.FC<RequirementSourceModalProps> = ({
                 )}
               </Box>
               <Box
-                width={"680px"}
+                width={isMdToLg ? "auto" : "680px"}
                 display="flex"
                 flexDirection="column"
                 height="100%"
                 sx={{
-                  minHeight: 0,
-                  [MQ.mdToLg]: {
-                    width: "auto",
-                    minHeight: "unset",
-                  }
+                  minHeight: isMdToLg ? "unset" : 0,
                 }}
               >
                 <Box

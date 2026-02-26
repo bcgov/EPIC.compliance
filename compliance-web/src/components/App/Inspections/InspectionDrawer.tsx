@@ -18,7 +18,7 @@ import { Inspection, InspectionFormData } from "@/models/Inspection";
 import { StaffUser } from "@/models/Staff";
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
@@ -73,6 +73,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
 }) => {
   const { appHeaderHeight } = useMenuStore();
   const queryClient = useQueryClient();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
 
   const { data: initiationList } = useInitiationsData();
   const { data: irTypeList } = useIRTypesData();
@@ -235,11 +236,8 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: "row",
-            [MQ.mdToLg]: {
-              flexDirection: "column",
-              overflow: "auto",
-            }
+            flexDirection: isMdToLg ? "column" : "row",
+            overflow: isMdToLg ? "auto" : undefined,
           }}
         >
           <InspectionFormLeft

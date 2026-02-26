@@ -2,7 +2,7 @@ import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { useInspectionByNumber } from "@/hooks/useInspections";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo } from "react";
@@ -41,6 +41,8 @@ function InspectionProfilePage() {
   const { inspectionNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
   const { currentTab, resetTab } = useTab();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  
 
   useEffect(() => {
     if (inspectionNumber) {
@@ -137,10 +139,7 @@ function InspectionProfilePage() {
         display="flex"
         gap={3}
         sx={{
-          flexDirection: "row",
-          [MQ.mdToLg]: {
-            flexDirection: "column",
-          },
+          flexDirection: isMdToLg ? "column" : "row",
         }}
       >
         <>

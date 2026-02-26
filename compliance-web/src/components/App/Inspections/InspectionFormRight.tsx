@@ -10,7 +10,7 @@ import { FirstNation } from "@/models/FirstNation";
 import { StaffUser } from "@/models/Staff";
 import { useDrawer } from "@/store/drawerStore";
 import { useModal } from "@/store/modalStore";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC, useEffect } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -41,6 +41,7 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
   const { isOpen } = useDrawer();
   const { setOpen, setClose } = useModal();
   const { control, resetField, getValues, setValue } = useFormContext();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
 
   const attendanceOptions = attendanceList.filter(
     (attendance) =>
@@ -139,14 +140,10 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
     <>
       <Box
         sx={{
-          width: "399px",
+          width: isMdToLg ? "auto" : "399px",
           boxSizing: "border-box",
-          overflow: "auto",
-          [MQ.mdToLg]: {
-            width: "auto",
-            overflow: "unset",
-            ml: 2
-          }
+          overflow: isMdToLg ? "unset" : "auto",
+          marginLeft: isMdToLg ? 2 : "unset",
         }}
       >
         <Stack>

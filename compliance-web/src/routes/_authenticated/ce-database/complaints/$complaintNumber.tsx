@@ -16,7 +16,7 @@ import {
   DRAWER_WIDTHS,
   FILE_PROFILE_CONTEXT,
 } from "@/utils/constants";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import React, { useMemo } from "react";
@@ -33,6 +33,8 @@ function ComplaintProfilePage(): React.ReactNode {
   const queryClient = useQueryClient();
   const { complaintNumber } = Route.useParams();
   const { setOpen, setClose } = useDrawer();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  
 
   const {
     status,
@@ -107,10 +109,7 @@ function ComplaintProfilePage(): React.ReactNode {
             caseFileNumber={caseFileData?.case_file_number}
           />
           <Box p={"1rem 1rem 1.25rem 3.75rem"} display={"flex"} gap={3} sx={{
-            flexDirection: "row",
-            [MQ.mdToLg]: {
-              flexDirection: "column",
-            },
+            flexDirection: isMdToLg ? "column" : "row",
           }}>
             <ComplaintGeneralInformation
               complaintData={complaintData}

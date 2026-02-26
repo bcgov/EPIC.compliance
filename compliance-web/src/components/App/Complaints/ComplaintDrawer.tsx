@@ -1,5 +1,5 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box } from "@mui/material";
+import { Box, useMediaQuery } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import ComplaintFormLeft from "./ComplaintFormLeft";
 import DrawerTitleBar from "@/components/Shared/Drawer/DrawerTitleBar";
@@ -66,6 +66,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   caseFile,
 }) => {
   const { appHeaderHeight } = useMenuStore();
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
 
   const { data: complaintSourceList } = useComplaintSourcesData();
   const { data: requirementSourceList } = useRequirementSourcesData();
@@ -186,11 +187,8 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: "row",
-            [MQ.mdToLg]: {
-              flexDirection: "column",
-              overflow: "auto",
-            }
+            flexDirection: isMdToLg ? "column" : "row",
+            overflow: isMdToLg ? "auto" : "unset"
           }}
         >
           <ComplaintFormLeft
@@ -202,14 +200,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           />
           <Box
             sx={{
-              width: "399px",
+              width: isMdToLg ? "auto" : "399px",
               boxSizing: "border-box",
-              overflow: "auto",
-              [MQ.mdToLg]: {
-                width: "auto",
-                overflow: "unset",
-                ml: 2
-              }
+              overflow: isMdToLg? "unset" : "auto",
+              margin: isMdToLg ? 2 : "unset"
             }}
           >
             <ComplaintSourceForm

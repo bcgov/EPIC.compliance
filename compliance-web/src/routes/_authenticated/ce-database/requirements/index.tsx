@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
-import { Box, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography, useMediaQuery } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import type {
   MRT_ColumnFiltersState,
@@ -51,7 +51,8 @@ function Requirements() {
   const { data: requirementSources } = useRequirementSourcesData();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
   const { user: currentUser, isLoading: authLoading } = useAuth();
-
+  const isMdToLg = useMediaQuery(MQ.mdToLg);
+    
   // State for "My Requirements" switch - default to true for first-time users
   const [myRequirementsChecked, setMyRequirementsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
@@ -412,14 +413,11 @@ function Requirements() {
           <Box
             sx={{
               display: "flex",
-              alignItems: "center",
+              alignItems: isMdToLg ? "flex-start" : "center",
+              flexDirection: isMdToLg ? "column" : "row",
+              gap: isMdToLg ? 2 : 0,
               justifyContent: "space-between",
               width: "100%",
-              [MQ.mdToLg]: {
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: 2
-              },
             }}
           >
             {/* Left side - Export button */}

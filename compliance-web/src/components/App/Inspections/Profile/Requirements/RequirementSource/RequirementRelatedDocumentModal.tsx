@@ -1,4 +1,4 @@
-import { Box, Collapse, DialogContent, Typography } from "@mui/material";
+import { Box, Collapse, DialogContent, Typography, useMediaQuery } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import { FormProvider, useForm } from "react-hook-form";
@@ -110,6 +110,8 @@ const RequirementRelatedDocumentModal: React.FC<
     const [uploadedImages, setUploadedImages] = useState<RequirementImage[]>(
       relatedDocumentImages ?? []
     );
+
+    const isMdToLg = useMediaQuery(MQ.mdToLg);
 
     const isScheduleB =
       requirementSourceData.requirementSource?.id ===
@@ -239,12 +241,9 @@ const RequirementRelatedDocumentModal: React.FC<
                 flex: 1,
                 minHeight: 0,
                 display: "flex",
-                flexDirection: "row",
-                [MQ.mdToLg]: {
-                  flexDirection: "column",
-                  overflow: "auto",
-                  gap: 0,
-                }
+                flexDirection: isMdToLg? "column" : "row",
+                overflow: isMdToLg ? "auto" : "unset",
+                gap: isMdToLg ? 0 : "unset",
               }}>
               <Box flex={1}>
                 <Box
@@ -330,16 +329,12 @@ const RequirementRelatedDocumentModal: React.FC<
                 />
               </Box>
               <Box
-                width={"680px"}
+                width={isMdToLg ? "auto" : "680px"}
                 display="flex"
                 flexDirection="column"
                 height="100%"
                 sx={{
-                  minHeight: 0,
-                  [MQ.mdToLg]: {
-                    width: "auto",
-                    minHeight: "unset",
-                  }
+                  minHeight: isMdToLg ? "unset" : 0,
                 }}
               >
                 <Box
