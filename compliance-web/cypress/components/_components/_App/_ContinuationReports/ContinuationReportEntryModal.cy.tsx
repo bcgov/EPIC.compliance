@@ -63,7 +63,7 @@ describe("ContinuationReportEntryModal.cy.tsx", () => {
   it("shows validation errors for required fields", () => {
     cy.contains("button", "Add Entry").click();
     cy.contains("Date Created is required").should("exist");
-    cy.contains("Entry is required").should("exist");
+    cy.contains("Action is required").should("exist");
   });
 
   it("allows selecting date and time", () => {
