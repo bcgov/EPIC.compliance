@@ -32,7 +32,7 @@ import ComplaintsGridExport from "@/components/App/Complaints/ComplaintsGrid/Com
 import ShowOnlyMyComplaintsSwitch from "@/components/App/Complaints/ComplaintsGrid/ShowOnlyMyComplaintsSwitch";
 import { AppConfig } from "@/utils/config";
 import { StaffUser } from "@/models/Staff";
-import { STAFF_USER_POSITION } from "@/utils/constants";
+import { ComplaintStatusEnum, STAFF_USER_POSITION } from "@/utils/constants";
 
 export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
   { component: Complaints }
@@ -59,7 +59,7 @@ const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
         primary_officer_ids: [staffId],
       },
       columnFilters: [
-        { id: "status", value: ["Open"] },
+        { id: "status", value: [ComplaintStatusEnum.OPEN] },
         {
           id: "primary_officer_ids",
           value: [staffId],
@@ -69,7 +69,7 @@ const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
   }
   return {
     externalFilters: {},
-    columnFilters: [{ id: "status", value: ["Open"] }],
+    columnFilters: [{ id: "status", value: [ComplaintStatusEnum.OPEN] }],
   };
 }
 

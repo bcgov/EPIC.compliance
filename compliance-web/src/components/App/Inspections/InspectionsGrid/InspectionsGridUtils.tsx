@@ -9,7 +9,7 @@ import { Inspection } from "@/models/Inspection";
 import { Initiation } from "@/models/Initiation";
 import { IRProgress } from "@/models/IRProgress";
 import { Project } from "@/models/Project";
-import { IRStatus } from "@/models/IRStatus";
+import { InspectionStatusEnum } from "@/utils/constants";
 
 // Types for the data dependencies
 export interface InspectionsGridDataDependencies {
@@ -17,7 +17,7 @@ export interface InspectionsGridDataDependencies {
   initiationList?: Initiation[];
   irProgressList?: IRProgress[];
   staffUserList?: StaffUser[];
-  inspectionStatusList?: IRStatus[];
+  inspectionStatusListOptions?: { text: string; value: string }[];
 }
 
 // Convert column filters to API query parameters
@@ -107,8 +107,9 @@ export const useInspectionsGridColumns = (
     initiationList,
     irProgressList,
     staffUserList,
-    inspectionStatusList,
+    inspectionStatusListOptions,
   } = dataDependencies;
+
 
   return useMemo<MRT_ColumnDef<Inspection>[]>(
     () => [
@@ -186,7 +187,7 @@ export const useInspectionsGridColumns = (
           <Chip
             label={row.original.inspection_status}
             color={
-              row.original.inspection_status?.toLowerCase() === "open"
+              row.original.inspection_status === InspectionStatusEnum.OPEN
                 ? "success"
                 : "error"
             }
@@ -198,11 +199,7 @@ export const useInspectionsGridColumns = (
         );
       },
       filterVariant: "multi-select",
-      filterSelectOptions:
-        inspectionStatusList?.map((inspectionStatus) => ({
-          text: inspectionStatus.name,
-          value: inspectionStatus.id.toString(),
-        })) ?? [],
+      filterSelectOptions: inspectionStatusListOptions,
       size: 80,
     },
     {
@@ -220,6 +217,6 @@ export const useInspectionsGridColumns = (
       ),
     },
   ],
-  [projectList, initiationList, irProgressList, staffUserList, inspectionStatusList]
+  [projectList, initiationList, irProgressList, staffUserList, inspectionStatusListOptions]
 );  
 };
