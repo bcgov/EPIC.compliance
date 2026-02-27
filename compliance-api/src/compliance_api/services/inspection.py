@@ -958,6 +958,7 @@ def _create_inspection_object(inspection_data: dict, case_file):
         "debrief_date": inspection_data.get("debrief_date", None),
         "project_status_id": inspection_data.get("project_status_id", None),
         "inspection_status": InspectionStatusEnum.OPEN,
+        "area_inspected": inspection_data.get("area_inspected", None),
     }
 
 

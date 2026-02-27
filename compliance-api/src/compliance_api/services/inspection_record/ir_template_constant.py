@@ -96,3 +96,5 @@ ENFORCEMENT_SUMMARY = {
     {{ project_name }} has been brought into compliance with these requirements. Continued non-compliance
     with these requirements may result in additional enforcement under the <i>{{ act }}</i> ({{ act_year }}).</p>""",
 }
+
+AREA_INSPECTED = "[Brief description of Project Components  / Area inspected]"

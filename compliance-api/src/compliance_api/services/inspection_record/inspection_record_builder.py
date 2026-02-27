@@ -14,10 +14,10 @@ from compliance_api.models.inspection import InspectionAttendanceOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models.inspection import InspectionRequirementTypeEnum
 from compliance_api.models.inspection import IRStatusOption as IRStatusOptionModel
+from compliance_api.models.inspection.inspection_req_source_detail import InspectionReqSourceDetail
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
 from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval as InspectionRecordApprovalModel
-from compliance_api.models.inspection.inspection_req_source_detail import InspectionReqSourceDetail
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum
@@ -25,7 +25,8 @@ from compliance_api.models.warning_letter import WarningLetter as WarningLetterM
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
 from compliance_api.services.inspection_record.ir_template_constant import (
-    ACTION_REQUIRED_BY_RP, ENFORCEMENT_SUMMARY, FINDING_STATEMENT, INSPECTION_SCOPE, PRELIMINARY_REVIEW_DETAILS)
+    ACTION_REQUIRED_BY_RP, AREA_INSPECTED, ENFORCEMENT_SUMMARY, FINDING_STATEMENT, INSPECTION_SCOPE,
+    PRELIMINARY_REVIEW_DETAILS)
 from compliance_api.utils.datetime import convert_to_full_month_format
 from compliance_api.utils.template_renderer import render_template_with_data
 
@@ -282,7 +283,7 @@ class InspectionRecordDataBuilder:
                 convert_to_full_month_format(debreif_date) if debreif_date else None
             ),  # handling of the null case
             "requirements": [],
-            "area_inspected": area_inspected if area_inspected else None,
+            "area_inspected": area_inspected if area_inspected else AREA_INSPECTED,
         }
         requirements = InspectionRequirementModel.get_by_inspection_id(
             self.inspection.id
