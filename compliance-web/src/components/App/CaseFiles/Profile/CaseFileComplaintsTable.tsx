@@ -1,4 +1,5 @@
 import GridLabelValuePair from "@/components/Shared/GridLabelValuePair";
+import PageLink from "@/components/Shared/PageLink";
 import { useComplaintsByCaseFileId } from "@/hooks/useComplaints";
 import { CaseFile } from "@/models/CaseFile";
 import { INITIATION } from "@/utils/constants";
@@ -13,7 +14,6 @@ import {
   AccordionDetails,
   Grid,
 } from "@mui/material";
-import { Link as RouterLink } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import { useMemo, useState } from "react";
 
@@ -91,14 +91,12 @@ const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                 >
                   <Box display={"flex"} alignItems={"center"} gap={0.5}>
                     {isExpanded ? <ExpandLessRounded /> : <ChevronRight />}
-                    <RouterLink
+                    <PageLink
                       to="/ce-database/complaints/$complaintNumber"
                       params={{
                         complaintNumber: complaint.complaint_number,
                       }}
-                    >
-                      {complaint.complaint_number}
-                    </RouterLink>
+                    />
                     <Chip
                       label={complaint.status}
                       data-testid="status-chip"

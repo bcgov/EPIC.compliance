@@ -29,7 +29,6 @@ import {
   Tooltip,
   CircularProgress,
 } from "@mui/material";
-import { Link as RouterLink } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import { Fragment, useState } from "react";
 import OrderDrawer from "@/components/App/Inspections/Profile/Enforcements/Orders/OrderDrawer";
@@ -39,6 +38,7 @@ import { useFetchWarningLetterByNumber } from "@/hooks/useInspectionWarningLette
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
 import WarningLetterDrawer from "@/components/App/Inspections/Profile/Enforcements/WarningLetters/WarningLetterDrawer";
 import EnforcementStatusFlag from "@/components/App/Inspections/Profile/Enforcements/EnforcementStatusFlag";
+import PageLink from "@/components/Shared/PageLink";
 
 const styleOverFlowClipped = {
   whiteSpace: "nowrap",
@@ -210,14 +210,12 @@ const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
                 >
                   <Box display={"flex"} alignItems={"center"} gap={0.5}>
                     {isExpanded ? <ExpandLessRounded /> : <ChevronRight />}
-                    <RouterLink
+                    <PageLink
                       to="/ce-database/inspections/$inspectionNumber"
                       params={{
                         inspectionNumber: inspection.ir_number,
                       }}
-                    >
-                      {inspection.ir_number}
-                    </RouterLink>
+                    />
                     <Chip
                       label={inspection.inspection_status}
                       data-testid="status-chip"
