@@ -42,7 +42,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm install
       - name: Lint
         id: lint
         run: |
@@ -66,7 +66,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm install
 
       - name: Test with Cypress
         id: test
@@ -91,7 +91,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm install
       - name: build to check strictness
         id: build
         run: |

@@ -84,7 +84,7 @@ Change to the front-end directory:
 
 ### 3. Install Dependencies
 Install necessary npm packages:
-* `npm install --legacy-peer-deps`
+* `npm install`
 
 ### 4. Run Development Server
 Launch the development server:
@@ -178,7 +178,7 @@ example work yml for jest:
 
       - name: Install dependencies
         run: |
-          npm install --legacy-peer-deps
+          npm install
         env:
           FONTAWESOME_PACKAGE_TOKEN: ${{ secrets.FONTAWESOME_PACKAGE_TOKEN }}
 
@@ -220,7 +220,7 @@ you have to add a some dev dependencies and set them up in the app and then you 
 
           - name: Install dependencies
             run: |
-              npm install --legacy-peer-deps
+              npm install
 
           - name: Test with Cypress
             id: test
