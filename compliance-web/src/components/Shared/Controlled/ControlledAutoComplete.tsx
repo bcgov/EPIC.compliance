@@ -11,8 +11,10 @@ import {
   AutocompleteProps,
   Chip,
   Box,
+  Popper,
+  PopperProps,
 } from "@mui/material";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Controller, useFormContext } from "react-hook-form";
 import { VARIANT_COLORS } from "@/utils/constants";
 
@@ -32,7 +34,9 @@ interface FormAutocompleteProps<T> extends Partial<
   renderOptionBadge?: (
     option: T,
   ) => { label: string; color: VARIANT_COLORS } | null;
+  showSelectAllOption?: boolean;
   showAllSelectedText?: boolean;
+  defaultAllSelected?: boolean;
 }
 
 const ControlledAutoComplete = <T,>({
@@ -47,12 +51,15 @@ const ControlledAutoComplete = <T,>({
   isSortOptions = false,
   isRequired = false,
   renderOptionBadge,
+  showSelectAllOption = false,
   showAllSelectedText = false,
+  defaultAllSelected = false,
   ...props
 }: FormAutocompleteProps<T>) => {
   const {
     control,
     formState: { errors, defaultValues },
+    setValue,
   } = useFormContext();
 
   const sortedOptions = useMemo(() => {
@@ -64,6 +71,38 @@ const ControlledAutoComplete = <T,>({
     return options;
   }, [isSortOptions, options, getOptionLabel]);
 
+  const CustomPopper = (props: PopperProps) => (
+    <Popper
+      {...props}
+      placement="bottom-start"
+      modifiers={[{ name: "flip", enabled: false }]}
+    />
+  );
+
+  const selectAllOption = useMemo(
+    () => ({
+      name: "Select All",
+    }),
+    [],
+  );
+
+  useEffect(() => {
+    if (defaultAllSelected && multiple) {
+      const options = showSelectAllOption
+        ? [selectAllOption as T, ...sortedOptions]
+        : sortedOptions;
+      setValue(name, options);
+    }
+  }, [
+    defaultAllSelected,
+    multiple,
+    name,
+    setValue,
+    showSelectAllOption,
+    selectAllOption,
+    sortedOptions,
+  ]);
+
   return (
     <Controller
       name={name}
@@ -74,11 +113,37 @@ const ControlledAutoComplete = <T,>({
           {...field}
           {...props}
           id={name}
-          options={sortedOptions}
+          PopperComponent={CustomPopper}
+          options={
+            showSelectAllOption
+              ? [selectAllOption as T, ...sortedOptions]
+              : sortedOptions
+          }
           getOptionLabel={getOptionLabel}
           isOptionEqualToValue={isOptionEqualToValue}
           value={field.value ?? (multiple ? [] : null)}
-          onChange={(_event, newVal) => {
+          onChange={(_event, newVal, _, selectedOption) => {
+            if (showSelectAllOption && selectedOption && multiple && Array.isArray(newVal)) {
+              const isSelectAll =
+                getOptionLabel(selectedOption?.option) ===
+                selectAllOption?.name;
+              const allOptionsSelected =
+                newVal?.filter(
+                  (o) => getOptionLabel(o) !== selectAllOption.name,
+                ).length == sortedOptions?.length;
+
+              if (isSelectAll && allOptionsSelected) {
+                newVal = [];
+              } else if (isSelectAll && !allOptionsSelected) {
+                newVal = [selectAllOption as T, ...sortedOptions];
+              } else if (!isSelectAll && !allOptionsSelected) {
+                newVal = newVal.filter(
+                  (o) => getOptionLabel(o) !== selectAllOption.name,
+                );
+              } else if (!isSelectAll && allOptionsSelected) {
+                newVal = [selectAllOption as T, ...newVal];
+              }
+            }
             field.onChange(newVal);
             if (props.onChange) {
               props.onChange(_event, newVal, "selectOption");
@@ -93,17 +158,22 @@ const ControlledAutoComplete = <T,>({
               showAllSelectedText &&
               multiple &&
               Array.isArray(value) &&
-              value.length === sortedOptions.length &&
               sortedOptions.length > 0
             ) {
-              return [<span>All Selected</span>];
+              const actualSelectedOptions = value.filter(
+                (item) => getOptionLabel(item) !== selectAllOption.name,
+              );
+              if (actualSelectedOptions.length >= sortedOptions.length) {
+                return [<span key="all-selected">All</span>];
+              }
             }
             return value.map((option, index) => {
-              const { onDelete, ...chipProps } = getTagProps({ index });
+              const { onDelete, key, ...chipProps } = getTagProps({ index });
 
               return (
                 <Chip
                   label={getOptionLabel(option)}
+                  key={key}
                   {...chipProps}
                   onDelete={(e) => {
                     onDelete(e);

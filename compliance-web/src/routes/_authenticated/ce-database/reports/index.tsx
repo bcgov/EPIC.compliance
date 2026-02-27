@@ -83,20 +83,6 @@ export function ReportsTab() {
   useEffect(() => {
     if (
       report_type === ReportType.CaseFileManagement &&
-      staffUsers.length > 0 &&
-      officers?.length === 0 &&
-      !hasManuallyChangedOfficers.current
-    ) {
-      setValue("officers", staffUsers, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-    }
-  }, [report_type, staffUsers, officers, setValue]);
-
-  useEffect(() => {
-    if (
-      report_type === ReportType.CaseFileManagement &&
       officers?.length === 0
     ) {
       hasManuallyChangedOfficers.current = true;
@@ -296,6 +282,8 @@ export function ReportsTab() {
                     multiple={true}
                     isRequired={true}
                     showAllSelectedText={true}
+                    showSelectAllOption
+                    defaultAllSelected
                   />
                 </Box>
               </>

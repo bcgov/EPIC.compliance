@@ -3,7 +3,8 @@ import { OnSuccessType, request } from "@/utils/axiosUtils";
 import { useMutation } from "@tanstack/react-query";
 
 const systemReportExport = (data: ReportFormValues = {}) => {
-  const officer_ids = data.officers?.flatMap((o) => (o.id)) || [];
+  const officer_ids =
+    data.officers?.flatMap((o) => o.id).filter((o) => o) || [];
   const project_id = data.project?.id || null;
   const first_nation_id = data.first_nation?.id || null;
   delete data.officers;
