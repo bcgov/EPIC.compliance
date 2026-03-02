@@ -95,13 +95,17 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
             # Use the first empty paragraph if available
             if not first_para_used and hasattr(container, 'paragraphs') and container.paragraphs:
                 para = container.paragraphs[0]
-                text = element.get_text(strip=True)
-                # Replace 2+ spaces with single space
-                text = re.sub(r' {2,}', ' ', text)
-                if text:
-                    run = para.add_run(text)
-                    if font_size:
-                        run.font.size = font_size
+                # Handle text with inline formatting (italic, bold)
+                if element.find(['i', 'em', 'strong', 'b']):
+                    _add_formatted_text_to_para(para, element, font_size)
+                else:
+                    text = element.get_text(strip=True)
+                    # Replace 2+ spaces with single space
+                    text = re.sub(r' {2,}', ' ', text)
+                    if text:
+                        run = para.add_run(text)
+                        if font_size:
+                            run.font.size = font_size
                 first_para_used = True
             else:
                 _add_paragraph(container, element, font_size)
@@ -116,18 +120,21 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
 
 
 def _add_paragraph(container, p_tag, font_size):
-    text = p_tag.get_text(strip=True)
-    # Replace 2+ spaces with single space
-    text = re.sub(r' {2,}', ' ', text)
-
     # Blank paragraph (<p><br/></p>)
     para = container.add_paragraph()
-    if not text:
-        return
 
-    run = para.add_run(text)
-    if font_size:
-        run.font.size = font_size
+    # Handle text with inline formatting (italic, bold)
+    if p_tag.find(['i', 'em', 'strong', 'b']):
+        _add_formatted_text_to_para(para, p_tag, font_size)
+    else:
+        text = p_tag.get_text(strip=True)
+        # Replace 2+ spaces with single space
+        text = re.sub(r' {2,}', ' ', text)
+        if not text:
+            return
+        run = para.add_run(text)
+        if font_size:
+            run.font.size = font_size
 
 
 def _get_restarted_list_number_num_id(document):
@@ -242,7 +249,7 @@ def _add_formatted_text_to_para(para, element, font_size):
         if isinstance(child, str):
             # Replace 2+ spaces with single space
             text = re.sub(r' {2,}', ' ', child)
-            if text.strip():
+            if text:
                 run = para.add_run(text)
                 run.font.size = font_size
         elif child.name in ['strong', 'b']:
@@ -415,7 +422,7 @@ def _add_formatted_text_to_table_para(para, p_element):
     for child in p_element.children:
         if isinstance(child, str):
             text = re.sub(r' {2,}', ' ', child)
-            if text.strip():
+            if text:
                 run = para.add_run(text)
                 run.font.size = Pt(11)
         elif child.name in ['strong', 'b']:
@@ -430,7 +437,7 @@ def _add_formatted_text_to_table_para(para, p_element):
             run.font.size = Pt(11)
         elif child.name == 'span':
             text = re.sub(r' {2,}', ' ', child.get_text())
-            if text.strip():
+            if text:
                 run = para.add_run(text)
                 run.font.size = Pt(11)
         elif child.name == 'br':
