@@ -26,26 +26,26 @@ export function getUser() {
 
 const onSuccess = (response: any) => response?.data ?? response.data;
 
-export const onError = (error: AxiosError<ErrorResponseData>) => {  
+export const onError = (error: AxiosError<ErrorResponseData>) => {
   // No response - network/connection error
   if (!error.response) {
-    const errorMessage = error.code === 'ERR_NETWORK' 
+    const errorMessage = error.code === 'ERR_NETWORK'
       ? 'Network error. Please refresh the page to try again.'
       : error.code === 'ECONNABORTED'
       ? 'Request timeout. Please try again.'
       : 'Unable to reach the server. Please try again later.';
-    
+
     notify.error(errorMessage);
     throw error;
   }
 
   // Extract error message from response
   const { status, data } = error.response;
-  
+
   // Try to get the specific error message
-  const errorMessage = 
-    data?.message || 
-    data?.error || 
+  const errorMessage =
+    data?.message ||
+    data?.error ||
     data?.details ||
     `Request failed with status ${status}`;
 
@@ -77,7 +77,13 @@ export const requestAuthAPI = ({ ...options }) => {
 export const requestTrackAPI = ({ ...options }) => {
   const client = axios.create({ baseURL: AppConfig.trackAPIUrl });
   setAuthToken(client);
-  return client(options).then(onSuccess).catch(onError);
+  return client(options).then(onSuccess).catch((error: AxiosError<ErrorResponseData>) => {
+    if (error.code === 'ERR_NETWORK') {
+      notify.error('Track API is currently unavailable. Please try again later.');
+      throw error;
+    }
+    return onError(error);
+  });
 };
 
 export const requestDocumentAPI = ({ ...options }) => {
