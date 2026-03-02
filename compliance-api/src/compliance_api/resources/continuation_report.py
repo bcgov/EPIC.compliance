@@ -2,13 +2,14 @@
 
 from http import HTTPStatus
 
-from flask import request
-from flask_restx import Namespace, Resource
+from flask import current_app, request, send_file
+from flask_restx import Namespace, Resource, ValidationError
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import (
     ContinuationReportCreateSchema, ContinuationReportSchema, ContinuationReportUpdateSchema, CRGetQueryParamSchema)
+from compliance_api.schemas.continuation_report import CRExport
 from compliance_api.services import ContinuationReportService
 from compliance_api.utils.util import cors_preflight
 
@@ -133,3 +134,35 @@ class ContinuationReport(Resource):
                 f"Continuation report entry with {entry_id} not found"
             )
         return ContinuationReportSchema().dump(deleted_cr), HTTPStatus.OK
+
+
+@cors_preflight("OPTIONS, POST")
+@API.route("/render", methods=["POST", "OPTIONS"])
+class ContinuationReportExport(Resource):
+    """Resource for exporting continuation report."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Export continuation report as PDF"
+    )
+    @API.response(code=200, description="Success")
+    @API.response(400, "Bad Request")
+    def post():
+        """Export continuation report as PDF."""
+        current_app.logger.info(f"Received request to export continuation report with payload: {API.payload}")
+        try:
+            request_params = CRExport().load(API.payload)
+            case_file_number = request_params.get("case_file_number")
+            inspection_number = request_params.get("inspection_number")
+            pdf_data = ContinuationReportService.render(case_file_number, inspection_number)
+            return send_file(
+                pdf_data,
+                as_attachment=True,
+                download_name=f'{inspection_number or case_file_number}.pdf',
+                mimetype='application/pdf'
+            )
+        except ValidationError as validation_error:
+            return {"message": str(validation_error)}, HTTPStatus.BAD_REQUEST
+        except ValueError as value_error:
+            return {"message": str(value_error)}, HTTPStatus.BAD_REQUEST

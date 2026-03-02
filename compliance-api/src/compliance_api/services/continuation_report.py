@@ -1,5 +1,7 @@
 """ContinuationReport Service."""
 
+from io import BytesIO
+
 from flask import g
 
 from compliance_api.auth import auth
@@ -8,6 +10,9 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.continuation_report import ContinuationReport as ContinuationReportModel
 from compliance_api.models.continuation_report import ContinuationReportKey as ContinuationReportKeyModel
 from compliance_api.models.db import session_scope
+from compliance_api.models.inspection import Inspection as InspectionModel
+from compliance_api.services.case_file import CaseFileService
+from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.utils.enum import PermissionEnum
 
 
@@ -94,9 +99,28 @@ class ContinuationReportService:
     @classmethod
     def get_by_case_file_id(cls, case_file_id, page_no, page_size, search_text):
         """Get all crs by case file id."""
-        return ContinuationReportModel.get_by_case_file(
+        return ContinuationReportModel.get_by_case_file_paginated(
             case_file_id, page_no, page_size, search_text
         )
+
+    @classmethod
+    def render(cls, case_file_number, inspection_number):
+        """Export continuation report as PDF."""
+        if case_file_number is None and inspection_number is None:
+            raise ValueError("Either case_file_number or inspection_number must be provided.")
+
+        if case_file_number:
+            case_file = CaseFileService.get_by_file_number(case_file_number)
+        elif inspection_number:
+            inspection = InspectionModel.get_by_ir_number(inspection_number)
+            case_file = CaseFileService.get_by_file_number(inspection.case_file.case_file_number)
+
+        if not case_file:
+            raise ResourceNotFoundError("Case file not found.")
+
+        data = _get_report_data(case_file)
+        response = DocGenService.render_template("CONTINUATION_REPORT_TEMPLATE", data, "pdf")
+        return BytesIO(response.content)
 
 
 def _access_check(report_entry: dict):
@@ -164,3 +188,38 @@ def _create_report_entry(report_entry_data: dict, sys_generated: bool = False):
         "context_type": report_entry_data.get("context_type"),
         "context_id": report_entry_data.get("context_id"),
     }
+
+
+def _get_report_data(case_file):
+    """Get the data for continuation report."""
+    continuation_report = ContinuationReportModel.get_all_by_case_file(case_file.id)
+    data = {
+        "project_name": case_file.project.name if case_file.project else "",
+        "case_file_number": case_file.case_file_number,
+        "primary_officer": (
+            f"{case_file.primary_officer.first_name} {case_file.primary_officer.last_name}"
+            if case_file.primary_officer
+            else ""
+        ),
+        "authorization": case_file.authorization,
+        "other_officers": [
+            f"{cfo.officer.first_name} {cfo.officer.last_name}" for cfo in case_file.case_file_officers
+        ],
+        "continuation_report_entries": [
+            {
+                "date": entry.date_created.strftime("%Y-%m-%d"),
+                "time": entry.date_created.strftime("%H:%M"),
+                "action": _build_action_text(entry),
+            }
+            for entry in continuation_report
+        ]
+    }
+    return data
+
+
+def _build_action_text(entry):
+    """Build action text with creator info if not system-generated."""
+    action = entry.text
+    if not entry.system_generated and entry.created_by_user:
+        action += f" <i>Created by {entry.created_by_user.first_name} {entry.created_by_user.last_name}</i>"
+    return action

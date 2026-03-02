@@ -43,3 +43,8 @@ export interface ContinuationReportAPIData {
   context_type?: string;
   context_id?: number;
 }
+
+export interface ContinuationReportExportAPIData {
+  case_file_number: string;
+  inspection_number: string;
+}

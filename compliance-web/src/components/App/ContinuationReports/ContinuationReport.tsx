@@ -1,4 +1,10 @@
-import { Box, Button, SelectChangeEvent, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Grid,
+  SelectChangeEvent,
+  Typography,
+} from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { AddRounded } from "@mui/icons-material";
 import ContinuationReportTimeline from "./ContinuationReportTimeline";
@@ -15,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import ContinuationReportPagination from "./ContinuationReportPagination";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 import SearchTextField from "@/components/Shared/SearchTextField";
+import ContinuationReportExport from "./ContinuationReportExport";
 
 export type ContinuationReportContextType = {
   caseFileId: number;
@@ -124,13 +131,21 @@ export default function ContinuationReport({
               </Button>
             )}
           </Box>
-          <SearchTextField
-            id="searchTextField"
-            value={searchText}
-            onChange={(value) => {
-              setSearchText(value);
-            }}
-          />
+          <Grid container gap={1} justifyContent={"space-between"}>
+            <Grid item xs={8}>
+              <SearchTextField
+                id="searchTextField"
+                value={searchText}
+                onChange={(value) => {
+                  setSearchText(value);
+                }}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={3}>
+              <ContinuationReportExport />
+            </Grid>
+          </Grid>
           {!caseFileId || status === "pending" ? (
             <LoadingPage isLoading={isLoading} />
           ) : isError ? (
@@ -139,7 +154,6 @@ export default function ContinuationReport({
             <>
               <Box
                 sx={{
-                  // height: `calc(100vh - ${appHeaderHeight + 302 + 48 + inspectionOffset}px)`, // 302px is the height above the timeline, 48px is height of pagination
                   overflow: "auto",
                   display: "flex",
                   flex: 1,

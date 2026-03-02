@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Continuation Report</title>
+    <style>
+        /* Base styles */
+        @font-face {
+            font-family: 'Calibri';
+            src: url('https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/fonts/calibri-regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Calibri';
+            src: url('https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/fonts/calibri-italic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'Calibri';
+            src: url('https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/fonts/calibri-bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Calibri';
+            src: url('https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/fonts/calibri-bold-italic.ttf') format('truetype');
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        /* Reset and base styles */
+        body {
+            font-family: 'Calibri', 'BC Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            line-height: 12.75pt;
+            color: #000000;
+        }
+
+        /* Layout components */
+        .content {
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Header styles */
+        .cr-header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+            width: 100%;
+        }
+
+        .cr-header-logo {
+            height: 60px;
+            width: auto;
+        }
+
+        .cr-header-title {
+            text-align: right;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #336699;
+            line-height: 1.2;
+        }
+
+        /* Table styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed; /* prevent content from expanding table width */
+            box-sizing: border-box;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 3px 6px;
+            text-align: left;
+            vertical-align: middle;
+            box-sizing: border-box;
+            overflow-wrap: anywhere; /* allow breaking long tokens */
+            word-break: break-word;
+        }
+
+        /* Section styles */
+        .cr-details-header {
+            color: #336699;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+
+        /* Lexical Rich Text styling */
+        .editor-content .editor-text-bold {
+            font-weight: bold;
+        }
+
+        .editor-content .editor-text-italic {
+            font-style: italic;
+        }
+
+        .editor-content .editor-text-underline {
+            text-decoration: underline;
+        }
+
+        .editor-content .editor-text-strikethrough {
+            text-decoration: line-through;
+        }
+
+        .editor-content .editor-link {
+            color: rgb(33, 111, 219);
+            text-decoration: none;
+        }
+
+        .editor-content .editor-link:hover {
+            text-decoration: underline;
+        }
+
+        .editor-content .editor-paragraph {
+            margin: 0;
+        }
+
+        .editor-content .editor-list-ol,
+        .editor-content .editor-list-ul {
+            padding: 0;
+            margin: 0 0 0 8px;
+        }
+
+        .editor-content .editor-listitem {
+            margin: 0.25rem 1.5rem;
+        }
+
+        .editor-list-ol,
+        .editor-list-ul {
+            padding: 0;
+            margin: 0;
+            margin-left: 8px;
+        }
+
+        .editor-listitem {
+            margin: 0.25rem 1.5rem;
+        }
+
+        .editor-nested-listitem {
+            list-style-type: none;
+        }
+
+        .no-numbering {
+            list-style-type: none !important;
+        }
+
+        .editor-list-ol1 {
+            padding: 0;
+            margin: 0;
+            list-style-position: outside;
+            counter-reset: list-counter-1;
+        }
+        .editor-list-ol2 {
+            padding: 0;
+            margin: 0;
+            list-style-type: upper-alpha;
+            list-style-position: outside;
+            counter-reset: list-counter-2;
+        }
+        .editor-list-ol3 {
+            padding: 0;
+            margin: 0;
+            list-style-type: lower-alpha;
+            list-style-position: outside;
+            counter-reset: list-counter-3;
+        }
+        .editor-list-ol4 {
+            padding: 0;
+            margin: 0;
+            list-style-type: upper-roman;
+            list-style-position: outside;
+            counter-reset: list-counter-4;
+        }
+        .editor-list-ol5 {
+            padding: 0;
+            margin: 0;
+            list-style-type: lower-roman;
+            list-style-position: outside;
+            counter-reset: list-counter-5;
+        }
+
+        /* CSS Counter-based numbering for better PDF compatibility */
+        .editor-list-ol1 > li:not(.no-numbering) {
+            counter-increment: list-counter-1;
+        }
+        .editor-list-ol1 > li:not(.no-numbering)::before {
+            content: counter(list-counter-1) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol2 > li:not(.no-numbering) {
+            counter-increment: list-counter-2;
+        }
+        .editor-list-ol2 > li:not(.no-numbering)::before {
+            content: counter(list-counter-2, upper-alpha) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol3 > li:not(.no-numbering) {
+            counter-increment: list-counter-3;
+        }
+        .editor-list-ol3 > li:not(.no-numbering)::before {
+            content: counter(list-counter-3, lower-alpha) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol4 > li:not(.no-numbering) {
+            counter-increment: list-counter-4;
+        }
+        .editor-list-ol4 > li:not(.no-numbering)::before {
+            content: counter(list-counter-4, upper-roman) ". ";
+            font-weight: inherit;
+        }
+
+        .editor-list-ol5 > li:not(.no-numbering) {
+            counter-increment: list-counter-5;
+        }
+        .editor-list-ol5 > li:not(.no-numbering)::before {
+            content: counter(list-counter-5, lower-roman) ". ";
+            font-weight: inherit;
+        }
+
+        /* Hide default list markers when using CSS counters */
+        .editor-list-ol1 > li:not(.no-numbering),
+        .editor-list-ol2 > li:not(.no-numbering),
+        .editor-list-ol3 > li:not(.no-numbering),
+        .editor-list-ol4 > li:not(.no-numbering),
+        .editor-list-ol5 > li:not(.no-numbering) {
+            list-style-type: none;
+        }
+
+        /* Clean up spacing */
+        td p {
+            margin: 0;
+            white-space: normal !important;
+        }
+
+        /* Editor table styles - specific to tables within requirement findings */
+        .editor-table {
+            max-width: 600px;
+            width: auto; /* let inline width from converter control exact size */
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 16px;
+        }
+
+        .editor-tableCell,
+        .editor-tableCellHeader {
+            border: 1px solid black !important;
+            padding: 4px 6px !important;
+            vertical-align: top !important;
+            text-align: start !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            font-size: 12px !important;
+            line-height: 16px !important;
+        }
+
+        .editor-tableCellHeader {
+            background-color: #f2f3f5 !important;
+            font-weight: bold !important;
+        }
+
+        /* Ensure editor table paragraphs don't interfere with spacing */
+        .editor-table .editor-paragraph {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .editor-table .editor-paragraph span {
+            white-space: pre-wrap !important;
+        }
+
+        /* Handle table overflow and responsive behavior */
+        @media print {
+            .editor-table {
+                max-width: 5.5in !important; /* Convert 600px to inches for print */
+                page-break-inside: avoid !important;
+            }
+            
+            /* If table is too wide, make it scroll horizontally or adjust column widths */
+            .editor-table[style*="max-width: 600px"] {
+                max-width: 5.5in !important;
+            }
+
+            /* Ensure editor tables don't interfere with main template layout */
+            .editor-table {
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
+        }
+
+        /* Ensure editor table content is properly contained */
+        .editor-table {
+            display: table;
+            box-sizing: border-box;
+        }
+
+        /* Handle very wide tables by making them horizontally scrollable in web view */
+        .editor-table-container {
+            max-width: 600px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .editor-table-container .editor-table {
+            margin: 0 !important;
+            min-width: 100%;
+        }
+
+        .field-row {
+            margin-bottom: 10px;
+        }
+        .field-name {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .continuation-table th {
+            background-color: #c0c0c0;
+            font-weight: bold;
+        }
+        .continuation-table td, .continuation-table th {
+            box-sizing: border-box;
+        }
+        .continuation-table .date-col {
+            width: 25%;
+        }
+        .continuation-table .time-col {
+            width: 25%;
+        }
+        .continuation-table .action-col {
+            width: 50%;
+        }
+        /* Print-specific styles */
+        @media print {
+            @page {
+                size: letter;
+                margin-top: 1.25in;
+                margin-right: 0.5in;
+                margin-bottom: 1in;
+                margin-left: 0.75in;
+
+                @top-left {
+                    content: element(header);
+                }
+
+                @bottom-right {
+                    content: element(footer);
+                }
+
+                counter-increment: page;
+            }
+
+            .cr-header-container {
+                position: running(header);
+                height: 0.6in;
+                width: 7.25in;
+                box-sizing: border-box;
+                padding-right: 0.2in;
+                margin-top: 0.25in;
+            }
+
+            .cr-header-logo {
+                height: 0.6in;
+            }
+
+            .com-ir-footer {
+                position: running(footer);
+                width: auto;
+                text-align: center;
+                padding: 8px 32px;
+                font-size: 11pt;
+            }
+
+            .com-ir-photo-section {
+                page-break-inside: avoid;
+            }
+
+            /* Page numbering */
+            .pageNumber:before {
+                content: counter(page);
+            }
+
+            .totalPages:before {
+                content: counter(pages);
+            }
+        }
+    </style>
+    <script>
+        function stripStyles(html) {
+            return html.replace(/style="[^"]*"/g, '');
+        }
+    </script>
+</head>
+
+<body>
+    <!-- <div class="header"> -->
+    <div class="cr-header-container">
+        <img src="https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/images/EAO_Compliance_IR_Report_Logo.png"
+            class="cr-header-logo" alt="EAO Logo">
+        <div class="cr-header-title">CONTINUATION REPORT</div>
+    </div>
+    <!-- </div> -->
+    <div class="com-ir-footer">
+        <span class="pageNumber"></span>
+    </div>
+    <div class="content">
+        <div class="field-row">
+            <span class="field-name cr-details-header">PROJECT:</span>
+            <span class="field-value">{{ project_name }}</span>
+        </div>
+        <div class="field-row">
+            <span class="field-name cr-details-header">AUTHORIZATION:</span>
+            <span class="field-value">{{ authorization }}</span>
+        </div>
+        <div class="field-row">
+            <span class="field-name cr-details-header">CASE FILE:</span>
+            <span class="field-value">{{ case_file_number }}</span>
+        </div>
+        <div class="field-row">
+            <span class="field-name cr-details-header">PRIMARY OFFICER:</span>
+            <span class="field-value">{{ primary_officer }}</span>
+        </div>
+        <div class="field-row">
+            <span class="field-name cr-details-header">OTHER OFFICERS:</span>
+            <span class="field-value">
+                {% if other_officers %}
+                    {% for officer in other_officers %}
+                        {{ officer }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                {% else %}
+                    None
+                {% endif %}
+            </span>
+        </div>
+        <table class="continuation-table">
+            <thead>
+                <tr>
+                    <th class="date-col">DATE (YYYY-MM-DD)</th>
+                    <th class="time-col">TIME (24h)</th>
+                    <th class="action-col">ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in continuation_report_entries %}
+                <tr>
+                    <td class="date-col">{{ entry.date }}</td>
+                    <td class="time-col">{{ entry.time }}</td>
+                    <td class="action-col">{{ entry.action }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    </body>
+</html>

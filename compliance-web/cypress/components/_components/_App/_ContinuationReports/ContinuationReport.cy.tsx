@@ -1,5 +1,7 @@
 import ContinuationReport from "@/components/App/ContinuationReports/ContinuationReport";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createMemoryHistory, createRootRoute, createRoute, createRouter, RouterProvider } from "@tanstack/react-router";
+import { mount } from "cypress/react";
 
 describe("ContinuationReport.cy.tsx", () => {
   const queryClient = new QueryClient();
@@ -12,12 +14,26 @@ describe("ContinuationReport.cy.tsx", () => {
     isInspection: false,
   };
 
+  const mountWithRouter = (props: typeof defaultProps) => {
+    const rootRoute = createRootRoute();
+    const indexRoute = createRoute({
+      getParentRoute: () => rootRoute,
+      path: '/',
+      component: () => (
+        <QueryClientProvider client={queryClient}>
+          <ContinuationReport {...props} />
+        </QueryClientProvider>
+      )
+    });
+    const routeTree = rootRoute.addChildren([indexRoute]);
+    const memoryHistory = createMemoryHistory({ initialEntries: ['/'] });
+    const router = createRouter({ routeTree, history: memoryHistory });
+
+    mount(<RouterProvider router={router as never} />);
+  };
+
   beforeEach(() => {
-    cy.mount(
-      <QueryClientProvider client={queryClient}>
-        <ContinuationReport {...defaultProps} />
-      </QueryClientProvider>
-    );
+    mountWithRouter(defaultProps);
   });
 
   it("renders the component title", () => {
@@ -29,11 +45,7 @@ describe("ContinuationReport.cy.tsx", () => {
   });
 
   it("hides New Entry button when allowCreateEntry is false", () => {
-    cy.mount(
-      <QueryClientProvider client={queryClient}>
-        <ContinuationReport {...defaultProps} allowCreateEntry={false} />
-      </QueryClientProvider>
-    );
+    mountWithRouter({ ...defaultProps, allowCreateEntry: false });
     cy.contains("New Entry").should("not.exist");
   });
 

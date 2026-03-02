@@ -1,5 +1,6 @@
 import {
   ContinuationReportAPIData,
+  ContinuationReportExportAPIData,
   ContinuationReportPaginated,
 } from "@/models/ContinuationReport";
 import { OnSuccessType, request } from "@/utils/axiosUtils";
@@ -22,6 +23,15 @@ const createContinuationReportEntry = (crEntry: ContinuationReportAPIData) => {
     url: "/continuation-reports",
     method: "post",
     data: crEntry,
+  });
+};
+
+const continuationReportExport = (payload: ContinuationReportExportAPIData) => {
+  return request({
+    url: `/continuation-reports/render`,
+    method: "POST",
+    data: payload,
+    responseType: "blob",
   });
 };
 
@@ -67,4 +77,8 @@ export const useContinuationReportEntries = (
     staleTime: Infinity,
     enabled: !!caseFileId,
   });
+};
+
+export const useContinuationReportExport = (onSuccess: OnSuccessType) => {
+  return useMutation({ mutationFn: continuationReportExport, onSuccess });
 };

@@ -127,14 +127,21 @@ class ContinuationReport(BaseModelVersioned):
         session.flush()
 
     @classmethod
-    def get_by_case_file(cls, case_file_id, page_no, page_size, search_text):
-        """Get crs by case file id."""
+    def get_by_case_file_paginated(cls, case_file_id, page_no, page_size, search_text):
+        """Get crs by case file id paginated."""
         query = cls.query.filter_by(case_file_id=case_file_id, is_deleted=False)
         if search_text:
             query = query.filter(cls.text.ilike(f"%{search_text}%"))
         query = query.order_by(cls.date_created.desc())
         pagination = query.paginate(page=page_no, per_page=page_size)
         return pagination.items, pagination.total
+
+    @classmethod
+    def get_all_by_case_file(cls, case_file_id):
+        """Get all crs by case file id."""
+        query = cls.query.filter_by(case_file_id=case_file_id, is_deleted=False)
+        query = query.order_by(cls.date_created.asc())
+        return query.all()
 
 
 class ContinuationReportKey(BaseModelVersioned):

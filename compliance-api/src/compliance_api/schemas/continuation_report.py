@@ -159,3 +159,15 @@ class CRGetQueryParamSchema(PaginationParameterSchema):
         metadata={"description": "The case file id."}, required=True
     )
     search_text = fields.Str(metadata={"description": "The text to be searched"})
+
+
+class CRExport(BaseSchema):
+    """Query parameter for the CR query."""
+
+    case_file_number = fields.String(
+        metadata={"description": "The case file number."}, required=False
+    )
+
+    inspection_number = fields.String(
+        metadata={"description": "The inspection number."}, required=False
+    )
