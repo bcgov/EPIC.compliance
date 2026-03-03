@@ -14,11 +14,11 @@ class AdministrativePenaltyService:
     """Administrative Penalty Service."""
 
     @staticmethod
-    def get_all(inspection_id):
+    def get_all(inspection_id: int, sort_by: str = None):
         """Get all administrative penalties for an inspection."""
         if not inspection_id:
             return []
-        return AdministrativePenalty.get_by_inspection_id(inspection_id)
+        return AdministrativePenalty.get_by_inspection_id(inspection_id, sort_by=sort_by)
 
     @staticmethod
     def get_by_id(administrative_penalty_id):

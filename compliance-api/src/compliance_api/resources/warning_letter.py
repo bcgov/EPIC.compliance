@@ -81,7 +81,7 @@ class WarningLetters(Resource):
     def get():
         """Fetch all warning letters."""
         inspection_id = request.args.get("inspection_id")
-        warning_letters = WarningLetterService.get_all(inspection_id)
+        warning_letters = WarningLetterService.get_all(inspection_id, sort_by="warning_letter_number")
         warning_letter_list_schema = WarningLetterSchema(many=True)
         return warning_letter_list_schema.dump(warning_letters), HTTPStatus.OK
 

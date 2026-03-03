@@ -18,12 +18,12 @@ class ViolationTicketService:
     """Service layer for ViolationTicket operations."""
 
     @classmethod
-    def get_all(cls, inspection_id: int = None) -> List[ViolationTicketModel]:
+    def get_all(cls, inspection_id: int = None, sort_by: str = None) -> List[ViolationTicketModel]:
         """Get all violation tickets for an inspection."""
         if inspection_id is None:
-            return ViolationTicketModel.get_all()
+            return ViolationTicketModel.get_all(sort_by=sort_by)
         return ViolationTicketModel.get_by_params(
-            {"inspection_id": inspection_id}, default_filters=False
+            {"inspection_id": inspection_id}, default_filters=False, sort_by=sort_by
         )
 
     @classmethod

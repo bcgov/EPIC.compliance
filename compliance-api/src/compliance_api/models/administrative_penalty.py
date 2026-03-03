@@ -275,9 +275,9 @@ class AdministrativePenalty(BaseModelVersioned):
         return administrative_penalty
 
     @classmethod
-    def get_by_inspection_id(cls, inspection_id):
+    def get_by_inspection_id(cls, inspection_id, sort_by: str = None):
         """Find all administrative penalties that have entries in the requirement map for the given inspection."""
-        return (
+        query = (
             cls.query.join(
                 AdministrativePenaltyInspectionRequirementMap,
                 AdministrativePenaltyInspectionRequirementMap.administrative_penalty_id
@@ -295,9 +295,14 @@ class AdministrativePenalty(BaseModelVersioned):
                 cls.is_deleted.is_(False),
             )
             .distinct()
-            .order_by(cls.created_date.desc())
-            .all()
         )
+
+        if sort_by and hasattr(cls, sort_by):
+            query = query.order_by(getattr(cls, sort_by).asc())
+        else:
+            query = query.order_by(cls.created_date.desc())
+
+        return query.all()
 
     @classmethod
     def get_by_administrative_penalty_number(cls, administrative_penalty_number):

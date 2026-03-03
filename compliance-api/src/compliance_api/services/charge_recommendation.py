@@ -15,11 +15,11 @@ class ChargeRecommendationService:
     """Service for charge recommendation management."""
 
     @staticmethod
-    def get_all(inspection_id):
+    def get_all(inspection_id, sort_by: str = None) -> List[ChargeRecommendation]:
         """Get all charge recommendations for an inspection."""
         if not inspection_id:
             return []
-        return ChargeRecommendation.get_by_inspection_id(inspection_id)
+        return ChargeRecommendation.get_by_inspection_id(inspection_id, sort_by=sort_by)
 
     @staticmethod
     def get_by_id(charge_recommendation_id):

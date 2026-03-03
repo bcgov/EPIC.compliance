@@ -29,11 +29,11 @@ class OrderService:
     """Service layer for Order operations."""
 
     @classmethod
-    def get_all(cls, inspection_id: int = None) -> List[OrderModel]:
+    def get_all(cls, inspection_id: int = None, sort_by: str = None) -> List[OrderModel]:
         """Get all orders for an inspection."""
         if inspection_id is None:
-            return OrderModel.get_all()
-        return OrderModel.get_by_inspection_id(inspection_id)
+            return OrderModel.get_all(sort_by=sort_by)
+        return OrderModel.get_by_inspection_id(inspection_id, sort_by=sort_by)
 
     @classmethod
     def get_projectwise_orders(cls, case_file_id: int) -> List[OrderModel]:

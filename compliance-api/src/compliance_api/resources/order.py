@@ -88,7 +88,7 @@ class Orders(Resource):
     def get():
         """Fetch all orders."""
         inspection_id = request.args.get("inspection_id")
-        orders = OrderService.get_all(inspection_id)
+        orders = OrderService.get_all(inspection_id, sort_by="order_number")
         order_list_schema = OrderSchema(many=True)
         return order_list_schema.dump(orders), HTTPStatus.OK
 

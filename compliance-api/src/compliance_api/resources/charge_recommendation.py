@@ -60,7 +60,10 @@ class ChargeRecommendations(Resource):
         inspection_id = request.args.get("inspection_id")
         if not inspection_id:
             raise BadRequestError("inspection_id is required")
-        charge_recommendations = ChargeRecommendationService.get_all(inspection_id)
+        charge_recommendations = ChargeRecommendationService.get_all(
+            inspection_id,
+            sort_by="charge_recommendation_number"
+        )
         charge_recommendation_list_schema = ChargeRecommendationSchema(many=True)
         return (
             charge_recommendation_list_schema.dump(charge_recommendations),

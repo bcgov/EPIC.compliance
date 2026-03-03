@@ -27,12 +27,12 @@ class WarningLetterService:
     """Service layer for Warning Letter operations."""
 
     @classmethod
-    def get_all(cls, inspection_id: int = None) -> List[WarningLetterModel]:
+    def get_all(cls, inspection_id: int = None, sort_by: str = None) -> List[WarningLetterModel]:
         """Get all warning letters for an inspection."""
         if inspection_id is None:
-            return WarningLetterModel.get_all()
+            return WarningLetterModel.get_all(sort_by=sort_by)
         return WarningLetterModel.get_by_params(
-            {"inspection_id": inspection_id}, default_filters=False
+            {"inspection_id": inspection_id}, default_filters=False, sort_by=sort_by
         )
 
     @classmethod

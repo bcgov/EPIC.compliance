@@ -14,7 +14,7 @@
 """Super class to handle all operations related to base model."""
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, String, asc
+from sqlalchemy import Boolean, Column, DateTime, String
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 
 from .db import db
@@ -51,7 +51,7 @@ class BaseModel(db.Model):
         return query_obj.all()
 
     @classmethod
-    def get_by_params(cls, params: dict, default_filters=True):
+    def get_by_params(cls, params: dict, default_filters=True, sort_by=None):
         """Return based on the params."""
         query = {}
         for key, value in params.items():
@@ -60,7 +60,10 @@ class BaseModel(db.Model):
             query["is_active"] = True
         if hasattr(cls, "is_deleted"):
             query["is_deleted"] = False
-        rows = cls.query.filter_by(**query).order_by(asc("id")).all()
+        query_obj = cls.query.filter_by(**query)
+        if sort_by and hasattr(cls, sort_by):
+            query_obj = query_obj.order_by(getattr(cls, sort_by))
+        rows = query_obj.all()
         return rows
 
     @classmethod

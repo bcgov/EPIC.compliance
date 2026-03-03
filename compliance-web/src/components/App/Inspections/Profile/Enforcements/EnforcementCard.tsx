@@ -37,7 +37,6 @@ const EnforcementCard = ({
   violationTicket?: ViolationTicket;
   restorativeJustice?: RestorativeJustice;
 }) => {
-  // console.log(chargeRecommendation)
   const requirementSummaryFormatted = formatRequirementSummary(
     order,
     warningLetter,

@@ -13,11 +13,11 @@ class RestorativeJusticeService:
     """Service for restorative justice management."""
 
     @staticmethod
-    def get_all(inspection_id):
+    def get_all(inspection_id, sort_by: str = None):
         """Get all restorative justices for an inspection."""
         if not inspection_id:
             return []
-        return RestorativeJusticeModel.get_by_inspection_id(inspection_id)
+        return RestorativeJusticeModel.get_by_inspection_id(inspection_id, sort_by=sort_by)
 
     @staticmethod
     def get_by_id(restorative_justice_id):

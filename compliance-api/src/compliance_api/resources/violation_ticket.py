@@ -47,7 +47,7 @@ class ViolationTickets(Resource):
     def get():
         """Fetch all violation tickets."""
         inspection_id = request.args.get("inspection_id", type=int)
-        violation_tickets = ViolationTicketService.get_all(inspection_id)
+        violation_tickets = ViolationTicketService.get_all(inspection_id, sort_by="vt_number")
         return ViolationTicketSchema(many=True).dump(violation_tickets), HTTPStatus.OK
 
     @staticmethod

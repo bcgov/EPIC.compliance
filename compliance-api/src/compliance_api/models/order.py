@@ -283,7 +283,7 @@ class Order(BaseModelVersioned):
         )
 
     @classmethod
-    def get_by_inspection_id(cls, inspection_id):
+    def get_by_inspection_id(cls, inspection_id, sort_by: str = None):
         """Find all orders by inspection id that have entries in the requirement map for the given inspection.
 
         Uses a two-query approach to ensure all requirement maps are loaded for each order,
@@ -324,13 +324,18 @@ class Order(BaseModelVersioned):
 
         # Load the full orders with ALL their requirement maps using a fresh query
         # Use joinedload to eagerly load all requirement maps without any filters
-        return (
+        query = (
             db.session.query(cls)
             .filter(cls.id.in_(order_id_list))
             .options(joinedload(cls.order_requirement_maps))
-            .order_by(cls.created_date.desc())
-            .all()
         )
+
+        if sort_by and hasattr(cls, sort_by):
+            query = query.order_by(getattr(cls, sort_by).asc())
+        else:
+            query = query.order_by(cls.created_date.desc())
+
+        return query.all()
 
     @classmethod
     def has_replacement_order(cls, original_order_id: int):

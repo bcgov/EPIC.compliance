@@ -60,7 +60,7 @@ class RestorativeJustices(Resource):
         inspection_id = request.args.get("inspection_id")
         if not inspection_id:
             raise BadRequestError("inspection_id is required")
-        restorative_justices = RestorativeJusticeService.get_all(inspection_id)
+        restorative_justices = RestorativeJusticeService.get_all(inspection_id, sort_by="restorative_justice_number")
         restorative_justice_list_schema = RestorativeJusticeSchema(many=True)
         return (
             restorative_justice_list_schema.dump(restorative_justices),

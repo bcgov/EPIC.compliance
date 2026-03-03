@@ -252,19 +252,18 @@ class RestorativeJustice(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def get_by_inspection_id(cls, inspection_id, session=None):
+    def get_by_inspection_id(cls, inspection_id, sort_by: str = None, session=None):
         """Find all restorative justices by inspection id."""
-        return (
-            session.query(cls)
-            .filter(
-                and_(
-                    cls.inspection_id == inspection_id,
-                    cls.is_active.is_(True),
-                    cls.is_deleted.is_(False),
-                )
+        query = session.query(cls).filter(
+            and_(
+                cls.inspection_id == inspection_id,
+                cls.is_active.is_(True),
+                cls.is_deleted.is_(False),
             )
-            .all()
         )
+        if sort_by:
+            query = query.order_by(getattr(cls, sort_by))
+        return query.all()
 
     @classmethod
     @with_session

@@ -73,7 +73,10 @@ class AdministrativePenalties(Resource):
         inspection_id = request.args.get("inspection_id")
         if not inspection_id:
             raise BadRequestError("inspection_id is required")
-        administrative_penalties = AdministrativePenaltyService.get_all(inspection_id)
+        administrative_penalties = AdministrativePenaltyService.get_all(
+            inspection_id,
+            sort_by="administrative_penalty_number",
+        )
         administrative_penalty_list_schema = AdministrativePenaltySchema(many=True)
         return (
             administrative_penalty_list_schema.dump(administrative_penalties),
