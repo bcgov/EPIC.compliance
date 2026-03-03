@@ -1,10 +1,10 @@
 import { FirstNation } from "@/models/FirstNation";
-import { requestTrackAPI } from "@/utils/axiosUtils";
+import { request } from "@/utils/axiosUtils";
 import { useStaticQuery } from "@/hooks/useCustomQueries";
 
-/** FETCH First Nations from TRACK API */
+/** FETCH First Nations from Compliance API (proxied from TRACK API) */
 const fetchFirstNations = (): Promise<FirstNation[]> => {
-  return requestTrackAPI({ url: "/indigenous-nations", params: { is_active: true } });
+  return request({ url: "/first-nations", params: { is_active: true } });
 };
 
 

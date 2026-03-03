@@ -35,6 +35,7 @@ from .continuation_report import API as CONTINUATION_REPORT_API
 from .document_job import API as FILE_JOB_API
 from .document_type import API as DOCUMENT_TYPE_API
 from .enforcement_action import API as ENFORCEMENT_ACTION_API
+from .first_nation import API as FIRST_NATION_API
 from .inspection import API as INSPECTION_API
 from .inspection_record import API as IR_API
 from .inspection_requirement import API as INSPECTION_REQUIREMENT_API
@@ -126,3 +127,4 @@ API.add_namespace(INSPECTION_REQUIREMENTS_API, path="inspection-requirements")
 API.add_namespace(SENTENCE_TYPE_OPTION_API, path="sentence-type-options")
 API.add_namespace(FILE_JOB_API, path="document-jobs")
 API.add_namespace(REPORT_API, path="reports")
+API.add_namespace(FIRST_NATION_API, path="first-nations")
