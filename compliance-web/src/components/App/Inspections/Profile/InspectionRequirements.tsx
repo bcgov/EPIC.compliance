@@ -27,7 +27,7 @@ import { useRequirementStore } from "./Requirements/requirementStore";
 import RequirementLoading from "./Requirements/RequirementLoading";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
-import { useReportStore } from "./Reports/reportStore";
+import { useInspectionReportsData } from "@/hooks/useInspectionReports";
 
 interface InspectionRequirementsProps {
   inspectionData: Inspection;
@@ -45,7 +45,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
     setRequirementFigures,
     setRequirementsList,
   } = useRequirementStore();
-  const { inspectionReportsData } = useReportStore();
+  const { data: inspectionReportsData } = useInspectionReportsData(inspectionData?.id);
   const [activeRequirementId, setActiveRequirementId] = React.useState<
     number | null
   >(null);

@@ -177,10 +177,10 @@ const deleteInspectionRecord = ({
   });
 };
 
-export const useInspectionReportsData = (inspectionId: number) => {
+export const useInspectionReportsData = (inspectionId?: number) => {
   return useQuery({
     queryKey: ["inspection-reports", inspectionId],
-    queryFn: () => fetchInspectionReports(inspectionId),
+    queryFn: () => fetchInspectionReports(inspectionId!),
     enabled: !!inspectionId,
     refetchOnMount: true,
     refetchInterval: 30000,

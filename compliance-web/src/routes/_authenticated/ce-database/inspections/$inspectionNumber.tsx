@@ -27,7 +27,7 @@ import {
 } from "@/utils/constants";
 import InspectionEnforcements from "@/components/App/Inspections/Profile/InspectionEnforcements";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
-import { useReportStore } from "@/components/App/Inspections/Profile/Reports/reportStore";
+import { useInspectionReportsData } from "@/hooks/useInspectionReports";
 
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/$inspectionNumber"
@@ -57,7 +57,7 @@ function InspectionProfilePage() {
     error,
     isLoading,
   } = useInspectionByNumber(inspectionNumber!);
-  const { inspectionReportsData } = useReportStore();
+  const { data: inspectionReportsData } = useInspectionReportsData(inspectionData?.id);
 
   const { data: caseFileData } = useCaseFileByNumber(
     inspectionData?.case_file.case_file_number ?? ""
