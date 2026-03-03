@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { StaffUser } from "@/models/Staff";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { useAuth } from "react-oidc-context";
@@ -25,28 +26,29 @@ export const useIsRolesAllowed = (
   users?: StaffUser[]
 ): boolean => {
   const { user: authUser } = useAuth();
-  
-  if (!authUser?.access_token) {
-    return false;
-  }
 
-  const payload = jwtDecode<CustomJwtPayload>(authUser.access_token);
-  
-  // Get roles from resource_access if available
-  const resourceRoles = payload.resource_access?.[OidcConfig.client_id]?.roles || [];
-  
-  // Check if the user has any of the required roles (from groups or resource_access)
-  const isRoleAllowed = roles.some((role) => 
-    resourceRoles.includes(role)
-  );
+  return useMemo(() => {
+    if (!authUser?.access_token) {
+      return false;
+    }
 
-  // Check if the logged-in user is part of the provided users list
-  const isUserAllowed =
-    users?.some(
-      (user) => user?.auth_user_guid === authUser?.profile?.preferred_username
-    ) ?? false;
+    const payload = jwtDecode<CustomJwtPayload>(authUser.access_token);
 
-  return isRoleAllowed || isUserAllowed;
+    // Get roles from resource_access if available
+    const resourceRoles =
+      payload.resource_access?.[OidcConfig.client_id]?.roles || [];
+
+    // Check if the user has any of the required roles (from groups or resource_access)
+    const isRoleAllowed = roles.some((role) => resourceRoles.includes(role));
+
+    // Check if the logged-in user is part of the provided users list
+    const isUserAllowed =
+      users?.some(
+        (user) => user?.auth_user_guid === authUser?.profile?.preferred_username
+      ) ?? false;
+
+    return isRoleAllowed || isUserAllowed;
+  }, [authUser?.access_token, authUser?.profile?.preferred_username, roles, users]);
 };
 
 export const useCurrentLoggedInUser = () => {
