@@ -397,7 +397,7 @@ export default function ReportTopSection() {
                 <Button onClick={handleIssueIR}>Issue IR</Button>
               )}
               {isShowReopenIRButton && (
-                <Button onClick={handleReopenIR}>Reopen IR</Button>
+                <Button onClick={handleReopenIR}>Reissue IR</Button>
               )}
             </>
           )}
