@@ -7,13 +7,13 @@ import pandas as pd
 
 from flask import current_app
 from sqlalchemy import and_, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from compliance_api.models import db
 from compliance_api.models.administrative_penalty import AdministrativePenalty, DecisionEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation
 from compliance_api.models.compliance_finding import ComplianceFindingOption
-from compliance_api.models.enforcement_action import EnforcementActionOption
+from compliance_api.models.enforcement_action import EnforcementActionOption, EnforcementActionOptionEnum
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection.inspection_option import InspectionInitiationOption, InspectionTypeOption
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
@@ -124,6 +124,14 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
     def _build_inspection_requirements_query(self, project_id: int):
         """Build base query for Project Compliance History Report."""
 
+        # Alias all enforcement types to join on ALL linked enforcement actions.
+        order_alias = aliased(Order)
+        warning_letter_alias = aliased(WarningLetter)
+        violation_ticket_alias = aliased(ViolationTicket)
+        admin_penalty_alias = aliased(AdministrativePenalty)
+        restorative_justice_alias = aliased(RestorativeJustice)
+        charge_rec_alias = aliased(ChargeRecommendation)
+
         requirement_order_subquery = get_requirement_order_sub_query()
         requirement_warning_letter_subquery = get_requirement_warning_letter_sub_query()
         requirement_violation_ticket_subquery = get_requirement_violation_ticket_sub_query()
@@ -148,26 +156,30 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 InspectionReqEnforcementMap.enforcement_action_id.label("enforcement_action_id"),
                 EnforcementActionOption.name.label("enforcement_action"),
                 # Enforcement statuses
-                Order.order_status.label("order_status"),
-                WarningLetter.status.label("warning_letter_status"),
-                ViolationTicket.status.label("violation_ticket_status"),
-                AdministrativePenalty.referral_status.label("admin_penalty_status"),
-                ChargeRecommendation.status.label("charge_rec_status"),
-                RestorativeJustice.status.label("restorative_justice_status"),
+                order_alias.order_status.label("order_status"),
+                warning_letter_alias.status.label("warning_letter_status"),
+                violation_ticket_alias.status.label("violation_ticket_status"),
+                admin_penalty_alias.referral_status.label("admin_penalty_status"),
+                charge_rec_alias.status.label("charge_rec_status"),
+                restorative_justice_alias.status.label("restorative_justice_status"),
                 # Enforcement document numbers
-                Order.order_number.label("order_number"),
-                WarningLetter.warning_letter_number.label("warning_letter_number"),
-                ViolationTicket.ticket_number.label("violation_ticket_number"),
-                AdministrativePenalty.administrative_penalty_number.label("admin_penalty_number"),
-                ChargeRecommendation.charge_recommendation_number.label("charge_rec_number"),
-                RestorativeJustice.restorative_justice_number.label("restorative_justice_number"),
-                AdministrativePenalty.decision.label("ap_dm_decision"),
-                AdministrativePenalty.penalty_amount.label("ap_penalty_amount"),
+                order_alias.order_number.label("order_number"),
+                warning_letter_alias.warning_letter_number.label("warning_letter_number"),
+                violation_ticket_alias.ticket_number.label("violation_ticket_number"),
+                admin_penalty_alias.administrative_penalty_number.label("admin_penalty_number"),
+                charge_rec_alias.charge_recommendation_number.label("charge_rec_number"),
+                restorative_justice_alias.restorative_justice_number.label("restorative_justice_number"),
+                admin_penalty_alias.decision.label("ap_dm_decision"),
+                admin_penalty_alias.penalty_amount.label("ap_penalty_amount"),
                 InspectionRecord.date_issued.label("ir_date_issued"),
                 StaffUser,
                 Inspection.inspection_status.label("inspection_status"),
             )
-            .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
+            .join(Inspection, and_(
+                InspectionRequirement.inspection_id == Inspection.id,
+                Inspection.is_active.is_(True),
+                Inspection.is_deleted.is_(False)
+            ))
             .outerjoin(
                 inspection_type_subquery,
                 inspection_type_subquery.c.inspection_id == Inspection.id
@@ -184,7 +196,11 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 InspectionReqEnforcementMap.is_active.is_(True),
                 InspectionReqEnforcementMap.is_deleted.is_(False)
             ))
-            .join(InspectionRecord, InspectionRecord.inspection_id == Inspection.id)
+            .join(InspectionRecord, and_(
+                InspectionRecord.inspection_id == Inspection.id,
+                InspectionRecord.is_active.is_(True),
+                InspectionRecord.is_deleted.is_(False)
+            ))
             .outerjoin(
                 EnforcementActionOption,
                 InspectionReqEnforcementMap.enforcement_action_id == EnforcementActionOption.id
@@ -195,56 +211,52 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 requirement_order_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                Order,
-                Order.id == requirement_order_subquery.c.order_id
+                order_alias,
+                order_alias.id == requirement_order_subquery.c.order_id
             )
             .outerjoin(
                 requirement_warning_letter_subquery,
                 requirement_warning_letter_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                WarningLetter,
-                WarningLetter.id == requirement_warning_letter_subquery.c.warning_letter_id
+                warning_letter_alias,
+                warning_letter_alias.id == requirement_warning_letter_subquery.c.warning_letter_id
             )
             .outerjoin(
                 requirement_violation_ticket_subquery,
                 requirement_violation_ticket_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                ViolationTicket,
-                ViolationTicket.id == requirement_violation_ticket_subquery.c.violation_ticket_id
+                violation_ticket_alias,
+                violation_ticket_alias.id == requirement_violation_ticket_subquery.c.violation_ticket_id
             )
             .outerjoin(
                 requirement_admin_penalty_subquery,
                 requirement_admin_penalty_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                AdministrativePenalty,
-                AdministrativePenalty.id == requirement_admin_penalty_subquery.c.administrative_penalty_id
+                admin_penalty_alias,
+                admin_penalty_alias.id == requirement_admin_penalty_subquery.c.administrative_penalty_id
             )
             .outerjoin(
                 requirement_charge_rec_subquery,
                 requirement_charge_rec_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                ChargeRecommendation,
-                ChargeRecommendation.id == requirement_charge_rec_subquery.c.charge_recommendation_id
+                charge_rec_alias,
+                charge_rec_alias.id == requirement_charge_rec_subquery.c.charge_recommendation_id
             )
             .outerjoin(
                 requirement_restorative_justice_subquery,
                 requirement_restorative_justice_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                RestorativeJustice,
-                RestorativeJustice.id == requirement_restorative_justice_subquery.c.restorative_justice_id
+                restorative_justice_alias,
+                restorative_justice_alias.id == requirement_restorative_justice_subquery.c.restorative_justice_id
             )
             .filter(
                 InspectionRequirement.is_active.is_(True),
                 InspectionRequirement.is_deleted.is_(False),
-                InspectionRecord.is_active.is_(True),
-                InspectionRecord.is_deleted.is_(False),
-                Inspection.is_active.is_(True),
-                Inspection.is_deleted.is_(False),
                 Inspection.project_id == project_id,
                 Inspection.start_date >= self.start_date if self.start_date else True,
                 Inspection.start_date <= self.end_date if self.end_date else True,
@@ -265,6 +277,8 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
             raw_enforcement_status = ServiceUtils.get_enforcement_status_by_type(row)
             primary_officer = row.StaffUser
             req_source_details = inspection_requirement.requirement_source_details
+            is_ap_penalty = row.enforcement_action_id \
+                and row.enforcement_action_id == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
 
             condition_num_string = ""
             source_string = ""
@@ -288,9 +302,9 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 "compliance_finding": row.compliance_finding,
                 "enforcement_action": row.enforcement_action,
                 "enforcement_status": raw_enforcement_status.value if raw_enforcement_status else None,
-                "ap_dm_decision": row.ap_dm_decision.value if row.ap_dm_decision else None,
+                "ap_dm_decision": row.ap_dm_decision.value if is_ap_penalty and row.ap_dm_decision else None,
                 "ap_penalty_amount": row.ap_penalty_amount
-                if row.ap_penalty_amount and row.ap_dm_decision == DecisionEnum.AP_ISSUED else None,
+                if is_ap_penalty and row.ap_dm_decision == DecisionEnum.AP_ISSUED else None,
                 "enforcement_document_number": ServiceUtils.get_enforcement_number_by_type(row),
                 "condition_number": condition_num_string,
                 "requirement_source": source_string,

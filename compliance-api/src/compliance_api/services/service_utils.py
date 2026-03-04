@@ -506,7 +506,8 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
         section_sources = {
             RequirementSourceEnum.ACT_2018,
             RequirementSourceEnum.ACT_2002,
-            RequirementSourceEnum.CERTIFIED_PROJECT_DESCRIPTION
+            RequirementSourceEnum.CERTIFIED_PROJECT_DESCRIPTION,
+            RequirementSourceEnum.COMPLIANCE_AGREEMENT,
         }
         condition_sources = {
             RequirementSourceEnum.EAC_CERTIFICATE,
@@ -524,9 +525,6 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
         exemption_sources = {
             RequirementSourceEnum.EXEMPTION_ORDER,
         }
-        agreement_sources = {
-            RequirementSourceEnum.COMPLIANCE_AGREEMENT,
-        }
         if requirement_source in section_sources:
             return getattr(detail_obj, "section_number", "")
         if requirement_source in condition_sources:
@@ -539,8 +537,6 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             return getattr(detail_obj, "regulation_number", "")
         if requirement_source in exemption_sources:
             return getattr(detail_obj, "clause_number", "")
-        if requirement_source in agreement_sources:
-            return getattr(detail_obj, "compliance_number", "")
         return getattr(detail_obj, "section_number", "")
 
     @staticmethod

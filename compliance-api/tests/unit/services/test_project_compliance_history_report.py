@@ -5,8 +5,11 @@ import pytest
 from sqlalchemy import text
 
 from compliance_api.models import db
+from compliance_api.models.administrative_penalty import (
+    AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, ReferralStatusEnum)
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.compliance_finding import ComplianceFindingOption
+from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
 from compliance_api.models.inspection.inspection_requirement import InspectionRequirement
@@ -161,6 +164,215 @@ class TestProjectComplianceReportGenerator:
         # Check that result is bytes (Excel file)
         assert isinstance(result, bytes)
         assert len(result) > 0
+
+    def test_linked_ap_shows_dm_decision_and_penalty_amount(self):
+        """Test that linked APs display DM Decision and AP Value correctly."""
+        # 1. Create second inspection with requirement
+        insp_req_b = self._create_test_inspection_requirement(self.project.id)
+
+        # 2. Update requirement B's enforcement action to AP (ID 6)
+        db.session.query(InspectionReqEnforcementMap).filter(
+            InspectionReqEnforcementMap.requirement_id == insp_req_b.id
+        ).update({"enforcement_action_id": EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value})
+        db.session.flush()
+
+        # 3. Create AP on original inspection
+        ap = self._create_administrative_penalty(
+            inspection_id=self.insp_req.inspection_id,
+            decision=DecisionEnum.AP_ISSUED,
+            penalty_amount=5000.00
+        )
+
+        # 4. Link AP to requirement B
+        ap_req_map = AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap.id,
+            inspection_requirement_id=insp_req_b.id
+        )
+        db.session.add(ap_req_map)
+        db.session.flush()
+
+        # 5. Generate report and check
+        generator = project_compliance.ProjectComplianceReportGenerator({
+            "project_id": self.project.id
+        })
+        results = generator._build_inspection_requirements_query(self.project.id).all()
+        formatted = generator._format_inspection_requirements_data(results)
+
+        # Find the linked AP row
+        ap_rows = [r for r in formatted if r.get("enforcement_action") == "Administrative Penalty Recommendation"]
+        assert len(ap_rows) >= 1
+
+        linked_ap_row = [r for r in ap_rows if r.get("ir_number") == insp_req_b.inspection.ir_number]
+        assert len(linked_ap_row) == 1
+        assert linked_ap_row[0]["ap_dm_decision"] == "AP Issued"
+        assert linked_ap_row[0]["ap_penalty_amount"] == 5000.00
+
+    def test_order_row_does_not_show_ap_fields_when_requirement_has_both(self):
+        """Test that Order rows don't show AP data when requirement has both Order and AP."""
+        from compliance_api.models.order import Order, OrderInspectionRequirementMap
+
+        # 1. Create requirement with BOTH Order and AP enforcement actions
+        insp_req = self._create_test_inspection_requirement(self.project.id)
+
+        # Add AP enforcement action (already has ID 1, add ID 5 for Order and ID 6 for AP)
+        db.session.query(InspectionReqEnforcementMap).filter(
+            InspectionReqEnforcementMap.requirement_id == insp_req.id
+        ).delete()
+
+        # Add Order enforcement action
+        order_enf_map = InspectionReqEnforcementMap(
+            requirement_id=insp_req.id,
+            enforcement_action_id=EnforcementActionOptionEnum.ORDER.value  # 5
+        )
+        # Add AP enforcement action
+        ap_enf_map = InspectionReqEnforcementMap(
+            requirement_id=insp_req.id,
+            enforcement_action_id=EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value  # 6
+        )
+        db.session.add_all([order_enf_map, ap_enf_map])
+        db.session.flush()
+
+        # 2. Create and link an Order
+        order = Order(
+            order_number=fake.pystr(min_chars=10, max_chars=15),
+            inspection_id=insp_req.inspection_id,
+            issuing_officer_id=fake.random_int(min=1, max=10),
+        )
+        db.session.add(order)
+        db.session.flush()
+
+        order_req_map = OrderInspectionRequirementMap(
+            order_id=order.id,
+            inspection_requirement_id=insp_req.id
+        )
+        db.session.add(order_req_map)
+        db.session.flush()
+
+        # 3. Create and link an AP with decision
+        ap = self._create_administrative_penalty(
+            inspection_id=insp_req.inspection_id,
+            decision=DecisionEnum.AP_ISSUED,
+            penalty_amount=7500.00
+        )
+        ap_req_map = AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap.id,
+            inspection_requirement_id=insp_req.id
+        )
+        db.session.add(ap_req_map)
+        db.session.flush()
+
+        # 4. Generate report
+        generator = project_compliance.ProjectComplianceReportGenerator({
+            "project_id": self.project.id
+        })
+        results = generator._build_inspection_requirements_query(self.project.id).all()
+        formatted = generator._format_inspection_requirements_data(results)
+
+        # 5. Find rows for this requirement by IR number
+        req_rows = [r for r in formatted if r.get("ir_number") == insp_req.inspection.ir_number]
+        assert len(req_rows) == 2  # Should have 2 rows: one for Order, one for AP
+
+        order_row = next((r for r in req_rows if r.get("enforcement_action") == "Order"), None)
+        ap_row = next(
+            (r for r in req_rows if r.get("enforcement_action") == "Administrative Penalty Recommendation"),
+            None
+        )
+
+        assert order_row is not None, "Order row should exist"
+        assert ap_row is not None, "AP row should exist"
+
+        # Order row should NOT show AP data
+        assert order_row["ap_dm_decision"] is None, "Order row should not show DM Decision"
+        assert order_row["ap_penalty_amount"] is None, "Order row should not show AP Value"
+
+        # AP row SHOULD show AP data
+        assert ap_row["ap_dm_decision"] == "AP Issued", "AP row should show DM Decision"
+        assert ap_row["ap_penalty_amount"] == 7500.00, "AP row should show AP Value"
+
+    def test_multiple_aps_linked_to_same_requirement_shows_all(self):
+        """Test that multiple APs linked to the same requirement each get their own row."""
+        # 1. Create requirement with AP enforcement action
+        insp_req = self._create_test_inspection_requirement(self.project.id)
+
+        # Update enforcement action to AP
+        db.session.query(InspectionReqEnforcementMap).filter(
+            InspectionReqEnforcementMap.requirement_id == insp_req.id
+        ).update({"enforcement_action_id": EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value})
+        db.session.flush()
+
+        # 2. Create TWO APs with different data
+        ap1 = self._create_administrative_penalty(
+            inspection_id=insp_req.inspection_id,
+            decision=DecisionEnum.AP_ISSUED,
+            penalty_amount=1000.00
+        )
+        ap1.administrative_penalty_number = "AP1-TEST-001"
+
+        ap2 = self._create_administrative_penalty(
+            inspection_id=insp_req.inspection_id,
+            decision=DecisionEnum.AP_NOT_PROCEEDING,
+            penalty_amount=2000.00
+        )
+        ap2.administrative_penalty_number = "AP2-TEST-002"
+        db.session.flush()
+
+        # 3. Link BOTH APs to the same requirement
+        ap_req_map1 = AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap1.id,
+            inspection_requirement_id=insp_req.id
+        )
+        ap_req_map2 = AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap2.id,
+            inspection_requirement_id=insp_req.id
+        )
+        db.session.add_all([ap_req_map1, ap_req_map2])
+        db.session.flush()
+
+        # 4. Generate report
+        generator = project_compliance.ProjectComplianceReportGenerator({
+            "project_id": self.project.id
+        })
+        results = generator._build_inspection_requirements_query(self.project.id).all()
+        formatted = generator._format_inspection_requirements_data(results)
+
+        # 5. Find rows for this requirement
+        req_rows = [r for r in formatted if r.get("ir_number") == insp_req.inspection.ir_number]
+
+        # EXPECTED: 2 rows, one for each AP
+        assert len(req_rows) == 2, f"Expected 2 rows for 2 linked APs, got {len(req_rows)}"
+
+        # Verify different AP data in each row
+        ap_numbers = [r.get("enforcement_document_number") for r in req_rows]
+        assert len(set(ap_numbers)) == 2, f"Each row should have a different AP number, got {ap_numbers}"
+        assert "AP1-TEST-001" in ap_numbers, "Should include AP1 number"
+        assert "AP2-TEST-002" in ap_numbers, "Should include AP2 number"
+
+        # Verify each AP has correct decision
+        ap1_row = next((r for r in req_rows if r.get("enforcement_document_number") == "AP1-TEST-001"), None)
+        ap2_row = next((r for r in req_rows if r.get("enforcement_document_number") == "AP2-TEST-002"), None)
+
+        assert ap1_row is not None, "AP1 row should exist"
+        assert ap2_row is not None, "AP2 row should exist"
+
+        assert ap1_row["ap_dm_decision"] == "AP Issued", "AP1 should show AP Issued decision"
+        assert ap1_row["ap_penalty_amount"] == 1000.00, "AP1 should show $1000 penalty"
+
+        assert ap2_row["ap_dm_decision"] == "AP Not Proceeding", "AP2 should show AP Not Proceeding decision"
+        assert ap2_row["ap_penalty_amount"] is None, "AP2 should not show penalty for Not Proceeding decision"
+
+    # Helper method:
+    def _create_administrative_penalty(self, inspection_id, decision=None, penalty_amount=None):
+        """Create an administrative penalty for testing."""
+        ap = AdministrativePenalty(
+            administrative_penalty_number=fake.pystr(min_chars=10, max_chars=15),
+            inspection_id=inspection_id,
+            referral_status=ReferralStatusEnum.DRAFTING,
+            decision=decision,
+            penalty_amount=penalty_amount
+        )
+        db.session.add(ap)
+        db.session.flush()
+        return ap
 
     def _create_test_project(self):
         """Create a project for testing."""

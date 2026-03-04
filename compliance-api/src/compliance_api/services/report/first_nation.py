@@ -8,7 +8,7 @@ from compliance_api.models.inspection.inspection_firstnation import InspectionFi
 from compliance_api.models.inspection.inspection_option import InspectionAttendanceOption
 from flask import current_app
 from sqlalchemy import and_, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from compliance_api.models import db
 from compliance_api.models.administrative_penalty import AdministrativePenalty
@@ -151,6 +151,14 @@ class FirstNationReportGenerator(BaseReportGenerator):
     def _build_inspections_tab_query(self):
         """Build base query for First Nation Report."""
 
+        # Create aliases for enforcement document models
+        order_alias = aliased(Order)
+        warning_letter_alias = aliased(WarningLetter)
+        violation_ticket_alias = aliased(ViolationTicket)
+        administrative_penalty_alias = aliased(AdministrativePenalty)
+        charge_recommendation_alias = aliased(ChargeRecommendation)
+        restorative_justice_alias = aliased(RestorativeJustice)
+
         requirement_order_subquery = get_requirement_order_sub_query()
         requirement_warning_letter_subquery = get_requirement_warning_letter_sub_query()
         requirement_violation_ticket_subquery = get_requirement_violation_ticket_sub_query()
@@ -178,19 +186,19 @@ class FirstNationReportGenerator(BaseReportGenerator):
                 InspectionReqEnforcementMap.enforcement_action_id.label("enforcement_action_id"),
                 EnforcementActionOption.name.label("enforcement_action"),
                 # Enforcement statuses
-                Order.order_status.label("order_status"),
-                WarningLetter.status.label("warning_letter_status"),
-                ViolationTicket.status.label("violation_ticket_status"),
-                AdministrativePenalty.referral_status.label("admin_penalty_status"),
-                ChargeRecommendation.status.label("charge_rec_status"),
-                RestorativeJustice.status.label("restorative_justice_status"),
+                order_alias.order_status.label("order_status"),
+                warning_letter_alias.status.label("warning_letter_status"),
+                violation_ticket_alias.status.label("violation_ticket_status"),
+                administrative_penalty_alias.referral_status.label("admin_penalty_status"),
+                charge_recommendation_alias.status.label("charge_rec_status"),
+                restorative_justice_alias.status.label("restorative_justice_status"),
                 # Enforcement document numbers
-                Order.order_number.label("order_number"),
-                WarningLetter.warning_letter_number.label("warning_letter_number"),
-                ViolationTicket.ticket_number.label("violation_ticket_number"),
-                AdministrativePenalty.administrative_penalty_number.label("admin_penalty_number"),
-                ChargeRecommendation.charge_recommendation_number.label("charge_rec_number"),
-                RestorativeJustice.restorative_justice_number.label("restorative_justice_number"),
+                order_alias.order_number.label("order_number"),
+                warning_letter_alias.warning_letter_number.label("warning_letter_number"),
+                violation_ticket_alias.ticket_number.label("violation_ticket_number"),
+                administrative_penalty_alias.administrative_penalty_number.label("admin_penalty_number"),
+                charge_recommendation_alias.charge_recommendation_number.label("charge_rec_number"),
+                restorative_justice_alias.restorative_justice_number.label("restorative_justice_number"),
                 InspectionRecord.date_issued.label("ir_date_issued"),
                 StaffUser,
                 Inspection.inspection_status.label("inspection_status"),
@@ -225,48 +233,48 @@ class FirstNationReportGenerator(BaseReportGenerator):
                 requirement_order_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                Order,
-                Order.id == requirement_order_subquery.c.order_id
+                order_alias,
+                order_alias.id == requirement_order_subquery.c.order_id
             )
             .outerjoin(
                 requirement_warning_letter_subquery,
                 requirement_warning_letter_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                WarningLetter,
-                WarningLetter.id == requirement_warning_letter_subquery.c.warning_letter_id
+                warning_letter_alias,
+                warning_letter_alias.id == requirement_warning_letter_subquery.c.warning_letter_id
             )
             .outerjoin(
                 requirement_violation_ticket_subquery,
                 requirement_violation_ticket_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                ViolationTicket,
-                ViolationTicket.id == requirement_violation_ticket_subquery.c.violation_ticket_id
+                violation_ticket_alias,
+                violation_ticket_alias.id == requirement_violation_ticket_subquery.c.violation_ticket_id
             )
             .outerjoin(
                 requirement_admin_penalty_subquery,
                 requirement_admin_penalty_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                AdministrativePenalty,
-                AdministrativePenalty.id == requirement_admin_penalty_subquery.c.administrative_penalty_id
+                administrative_penalty_alias,
+                administrative_penalty_alias.id == requirement_admin_penalty_subquery.c.administrative_penalty_id
             )
             .outerjoin(
                 requirement_charge_rec_subquery,
                 requirement_charge_rec_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                ChargeRecommendation,
-                ChargeRecommendation.id == requirement_charge_rec_subquery.c.charge_recommendation_id
+                charge_recommendation_alias,
+                charge_recommendation_alias.id == requirement_charge_rec_subquery.c.charge_recommendation_id
             )
             .outerjoin(
                 requirement_restorative_justice_subquery,
                 requirement_restorative_justice_subquery.c.inspection_requirement_id == InspectionRequirement.id
             )
             .outerjoin(
-                RestorativeJustice,
-                RestorativeJustice.id == requirement_restorative_justice_subquery.c.restorative_justice_id
+                restorative_justice_alias,
+                restorative_justice_alias.id == requirement_restorative_justice_subquery.c.restorative_justice_id
             )
             .filter(
                 InspectionRequirement.is_active.is_(True),
