@@ -13,7 +13,9 @@ import PopoverProvider from "@/components/Shared/Popover/PopoverProvider";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { refetchOnWindowFocus: false } },
+});
 
 function App() {
   const environment = AppConfig.environment;

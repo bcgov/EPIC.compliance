@@ -26,6 +26,8 @@ function Layout() {
 
   const matches = useMatches();
 
+  const isSessionExpired = matches.some((route) => route.routeId === "/session-expired");
+
   const isProfileLayout = matches.some((route) =>
     [
       "/_authenticated/ce-database/case-files/$caseFileNumber",
@@ -39,6 +41,23 @@ function Layout() {
       setAppHeaderHeight(appBarRef.current.offsetHeight);
     }
   }, [setAppHeaderHeight]);
+
+  // If session expired, show only the content without header/sidebar
+  if (isSessionExpired) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          width: "100vw",
+        }}
+      >
+        <Outlet />
+      </Box>
+    );
+  }
 
   return (
     <>

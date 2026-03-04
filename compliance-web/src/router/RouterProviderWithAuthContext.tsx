@@ -1,7 +1,7 @@
 import { RouterProvider } from "@tanstack/react-router";
 import { useAuth } from "react-oidc-context";
 import router from "./router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStaffUserValidation } from "@/hooks/useAuthorization";
 import { trackAnalytics } from "@epic/centre-analytics";
 import { AppConfig } from "@/utils/config";
@@ -16,30 +16,33 @@ declare module "@tanstack/react-router" {
 export default function RouterProviderWithAuthContext() {
   const authentication = useAuth();
   const { isAccessDenied, preferredUsername } = useStaffUserValidation();
+  const [signedOut, setSignedOut] = useState(false);
 
   useEffect(() => {
     const removeExpiring = authentication.events.addAccessTokenExpiring(() => {
       // eslint-disable-next-line no-console
       console.log("AccessTokenExpiring: Refreshing token");
-      try{
+      try {
         authentication.signinSilent();
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error("Silent renew failed", error);
-        authentication.signoutRedirect();
+        setSignedOut(true);
       }
     });
 
-    const removeSilentRenewError = authentication.events.addSilentRenewError((error) => {
-      // eslint-disable-next-line no-console
-      console.log("Silent renew failed, logging out", error);
-      authentication.signoutRedirect();
-    });
+    const removeSilentRenewError = authentication.events.addSilentRenewError(
+      (error) => {
+        // eslint-disable-next-line no-console
+        console.log("Silent renew failed, logging out", error);
+        setSignedOut(true);
+      },
+    );
 
     const removeExpired = authentication.events.addAccessTokenExpired(() => {
       // eslint-disable-next-line no-console
       console.log("Token expired, logging out");
-      authentication.signoutRedirect();
+      setSignedOut(true);
     });
 
     return () => {
@@ -47,7 +50,18 @@ export default function RouterProviderWithAuthContext() {
       removeSilentRenewError();
       removeExpired();
     };
-  }, [authentication, authentication.events, authentication.signinSilent, authentication.signoutRedirect]);
+  }, [
+    authentication,
+    authentication.events,
+    authentication.signinSilent,
+    authentication.signoutRedirect,
+  ]);
+
+  useEffect(() => {
+    if (signedOut) {
+      router.navigate({ to: "/session-expired" });
+    }
+  }, [signedOut]);
 
   // Show access denied if user is authenticated but not a valid staff user
   if (authentication.isAuthenticated && isAccessDenied) {
@@ -57,7 +71,7 @@ export default function RouterProviderWithAuthContext() {
         <p>You are not authorized to access this application.</p>
         <p>User ID: {preferredUsername}</p>
         <p>Please contact your administrator to get access.</p>
-        <button 
+        <button
           onClick={() => authentication.signoutRedirect()}
           style={{
             padding: "0.5rem 1rem",
@@ -66,7 +80,7 @@ export default function RouterProviderWithAuthContext() {
             color: "white",
             border: "none",
             borderRadius: "4px",
-            cursor: "pointer"
+            cursor: "pointer",
           }}
         >
           Sign Out

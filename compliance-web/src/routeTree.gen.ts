@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SessionExpiredRouteImport } from './routes/session-expired'
 import { Route as OidcCallbackRouteImport } from './routes/oidc-callback'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -26,6 +27,11 @@ import { Route as AuthenticatedCeDatabaseInspectionsInspectionNumberRouteImport 
 import { Route as AuthenticatedCeDatabaseComplaintsComplaintNumberRouteImport } from './routes/_authenticated/ce-database/complaints/$complaintNumber'
 import { Route as AuthenticatedCeDatabaseCaseFilesCaseFileNumberRouteImport } from './routes/_authenticated/ce-database/case-files/$caseFileNumber'
 
+const SessionExpiredRoute = SessionExpiredRouteImport.update({
+  id: '/session-expired',
+  path: '/session-expired',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OidcCallbackRoute = OidcCallbackRouteImport.update({
   id: '/oidc-callback',
   path: '/oidc-callback',
@@ -121,6 +127,7 @@ const AuthenticatedCeDatabaseCaseFilesCaseFileNumberRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/oidc-callback': typeof OidcCallbackRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/review-board': typeof AuthenticatedReviewBoardRoute
   '/admin/agencies': typeof AuthenticatedAdminAgenciesRoute
   '/admin/proponents': typeof AuthenticatedAdminProponentsRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/oidc-callback': typeof OidcCallbackRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/review-board': typeof AuthenticatedReviewBoardRoute
   '/admin/agencies': typeof AuthenticatedAdminAgenciesRoute
   '/admin/proponents': typeof AuthenticatedAdminProponentsRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/oidc-callback': typeof OidcCallbackRoute
+  '/session-expired': typeof SessionExpiredRoute
   '/_authenticated/review-board': typeof AuthenticatedReviewBoardRoute
   '/_authenticated/admin/agencies': typeof AuthenticatedAdminAgenciesRoute
   '/_authenticated/admin/proponents': typeof AuthenticatedAdminProponentsRoute
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/oidc-callback'
+    | '/session-expired'
     | '/review-board'
     | '/admin/agencies'
     | '/admin/proponents'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/oidc-callback'
+    | '/session-expired'
     | '/review-board'
     | '/admin/agencies'
     | '/admin/proponents'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/oidc-callback'
+    | '/session-expired'
     | '/_authenticated/review-board'
     | '/_authenticated/admin/agencies'
     | '/_authenticated/admin/proponents'
@@ -230,10 +242,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   OidcCallbackRoute: typeof OidcCallbackRoute
+  SessionExpiredRoute: typeof SessionExpiredRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/session-expired': {
+      id: '/session-expired'
+      path: '/session-expired'
+      fullPath: '/session-expired'
+      preLoaderRoute: typeof SessionExpiredRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oidc-callback': {
       id: '/oidc-callback'
       path: '/oidc-callback'
@@ -397,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   OidcCallbackRoute: OidcCallbackRoute,
+  SessionExpiredRoute: SessionExpiredRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
