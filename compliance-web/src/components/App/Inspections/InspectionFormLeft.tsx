@@ -6,11 +6,12 @@ import { Initiation } from "@/models/Initiation";
 import { IRType } from "@/models/IRType";
 import { ProjectStatus } from "@/models/ProjectStatus";
 import { StaffUser } from "@/models/Staff";
-import { MQ } from "@/styles/responsive";
-import { Box, Stack, useMediaQuery } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC } from "react";
 import { useFormContext } from "react-hook-form";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
+import { DRAWER_WIDTHS } from "@/utils/constants";
 
 type InspectionFormLeftProps = {
   initiationList: Initiation[];
@@ -25,7 +26,7 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
   irTypeList,
   projectStatusList,
 }) => {
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.INSPECTION_DRAWER);
   const { watch } = useFormContext();
   const startDate = watch("startDate");
   const endDate = watch("endDate");
@@ -36,9 +37,9 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
         sx={{
           background: BCDesignTokens.surfaceColorBackgroundLightGray,
           padding: "1rem 1rem 1rem 2rem",
-          width: isMdToLg ? "auto" : "718px",
-          overflow: isMdToLg ? "unset" : "auto",
-          paddingRight: isMdToLg ? 4 : "1rem",
+          width: isDrawerConstrained ? "auto" : "718px",
+          overflow: isDrawerConstrained ? "unset" : "auto",
+          paddingRight: isDrawerConstrained ? 4 : "1rem",
           boxSizing: "border-box",
         }}
       >

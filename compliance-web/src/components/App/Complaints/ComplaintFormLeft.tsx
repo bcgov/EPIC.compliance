@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { Box, Stack, useMediaQuery } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { StaffUser } from "@/models/Staff";
 import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAutoComplete";
 import { BCDesignTokens } from "epic.theme";
@@ -10,7 +10,8 @@ import RequirementSourceForm from "./RequirementSourceForm";
 import { RequirementSource } from "@/models/RequirementSource";
 
 import { Complaint } from "@/models/Complaint";
-import { MQ } from "@/styles/responsive";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
+import { DRAWER_WIDTHS } from "@/utils/constants";
 
 type ComplaintFormLeftProps = {
   staffUsersList: StaffUser[];
@@ -27,7 +28,7 @@ const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
   complaint,
   caseFileId,
 }) => {
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.COMPLAINT_DRAWER);
   
   return (
     <>
@@ -35,9 +36,9 @@ const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
         sx={{
           background: BCDesignTokens.surfaceColorBackgroundLightGray,
           padding: "1rem 1rem 1rem 2rem",
-          width: isMdToLg ? "auto" : "718px",
-          overflow: isMdToLg ? "unset" : "auto",
-          paddingRight: isMdToLg ? 4 : "1rem",
+          width: isDrawerConstrained ? "auto" : "718px",
+          overflow: isDrawerConstrained ? "unset" : "auto",
+          paddingRight: isDrawerConstrained ? 4 : "1rem",
           boxSizing: "border-box",
         }}
       >

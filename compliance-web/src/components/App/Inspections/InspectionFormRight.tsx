@@ -10,13 +10,13 @@ import { FirstNation } from "@/models/FirstNation";
 import { StaffUser } from "@/models/Staff";
 import { useDrawer } from "@/store/drawerStore";
 import { useModal } from "@/store/modalStore";
-import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { FC, useEffect } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
-import { AttendanceEnum } from "@/utils/constants";
+import { AttendanceEnum, DRAWER_WIDTHS } from "@/utils/constants";
 import ControlledCheckbox from "@/components/Shared/Controlled/ControlledCheckbox";
-import { MQ } from "@/styles/responsive";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
 
 type InspectionFormRightProps = {
   attendanceList: Attendance[];
@@ -41,7 +41,7 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
   const { isOpen } = useDrawer();
   const { setOpen, setClose } = useModal();
   const { control, resetField, getValues, setValue } = useFormContext();
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.INSPECTION_DRAWER);
 
   const attendanceOptions = attendanceList.filter(
     (attendance) =>
@@ -140,10 +140,10 @@ const InspectionFormRight: FC<InspectionFormRightProps> = ({
     <>
       <Box
         sx={{
-          width: isMdToLg ? "auto" : "399px",
+          width: isDrawerConstrained ? "auto" : "399px",
           boxSizing: "border-box",
-          overflow: isMdToLg ? "unset" : "auto",
-          marginLeft: isMdToLg ? 2 : "unset",
+          overflow: isDrawerConstrained ? "unset" : "auto",
+          marginLeft: isDrawerConstrained ? 2 : "unset",
         }}
       >
         <Stack>

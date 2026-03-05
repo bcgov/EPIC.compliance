@@ -65,8 +65,7 @@ function ComplaintProfilePage(): React.ReactNode {
   }, [complaintData?.status, isUserEditAllowed]);
 
   const drawerWidth = useResponsiveDrawerWidth(
-    DRAWER_WIDTHS.COMPLAINT_DRAWER,
-    { mdToLgMax: "750px" }
+    DRAWER_WIDTHS.COMPLAINT_DRAWER
   );
 
   const handleOpenEditModal = () => {

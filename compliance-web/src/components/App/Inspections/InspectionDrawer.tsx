@@ -12,20 +12,21 @@ import {
   useProjectStatusesData,
   useUpdateInspection,
 } from "@/hooks/useInspections";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
 import { useStaffUsersData } from "@/hooks/useStaff";
 import { CaseFile } from "@/models/CaseFile";
 import { Inspection, InspectionFormData } from "@/models/Inspection";
 import { StaffUser } from "@/models/Staff";
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box, useMediaQuery } from "@mui/material";
+import { Box } from "@mui/material";
 import dayjs from "dayjs";
 import { useCallback, useMemo } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
 import InspectionFormLeft from "./InspectionFormLeft";
 import InspectionFormRight from "./InspectionFormRight";
-import { AttendanceEnum } from "@/utils/constants";
+import { AttendanceEnum, DRAWER_WIDTHS } from "@/utils/constants";
 import {
   formatInspectionAPIData,
   InspectionFormSchema,
@@ -33,7 +34,6 @@ import {
 } from "./InspectionFormUtils";
 import { Agency } from "@/models/Agency";
 import { FirstNation } from "@/models/FirstNation";
-import { MQ } from "@/styles/responsive";
 
 type InspectionDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -73,7 +73,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
 }) => {
   const { appHeaderHeight } = useMenuStore();
   const queryClient = useQueryClient();
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.INSPECTION_DRAWER);
 
   const { data: initiationList } = useInitiationsData();
   const { data: irTypeList } = useIRTypesData();
@@ -236,8 +236,8 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: isMdToLg ? "column" : "row",
-            overflow: isMdToLg ? "auto" : undefined,
+            flexDirection: isDrawerConstrained ? "column" : "row",
+            overflow: isDrawerConstrained ? "auto" : undefined,
           }}
         >
           <InspectionFormLeft

@@ -1,5 +1,5 @@
 import { FC, useEffect, useState, useRef, useCallback } from "react";
-import { Box, Grid, IconButton, useMediaQuery } from "@mui/material";
+import { Box, Grid, IconButton } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
 import { EnforcementAction } from "@/models/EnforcementAction";
 import { useFormContext, useWatch } from "react-hook-form";
@@ -30,7 +30,8 @@ import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import RequirementFormLeftEditSection from "./RequirementFormLeftEditSection";
 import { Inspection } from "@/models/Inspection";
 import { useEnforcementActionsData } from "@/hooks/useInspectionRequirements";
-import { MQ } from "@/styles/responsive";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
+import { DRAWER_WIDTHS } from "@/utils/constants";
 
 type RequirementFormLeftProps = {
   appHeaderHeight: number;
@@ -97,7 +98,7 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
     }
   );
 
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.REQUIREMENT_DRAWER);
 
   const inputFocus = useCallback((inputRef: HTMLInputElement | null) => {
     if (inputRef) {
@@ -370,10 +371,10 @@ Changing it will delete the existing document so you can create a new one`;
       sx={{
         background: BCDesignTokens.surfaceColorBackgroundLightGray,
         padding: "0.5rem 1rem 1rem 1.5rem",
-        width: isMdToLg ? "auto" : "730px",
-        overflow: isMdToLg ? "unset" : "auto",
+        width: isDrawerConstrained ? "auto" : "730px",
+        overflow: isDrawerConstrained ? "unset" : "auto",
         boxSizing: "border-box",
-        paddingRight: isMdToLg ? 4 : "1.5rem",
+        paddingRight: isDrawerConstrained ? 4 : "1.5rem",
       }}
     >
       {isReadOnly ? (
@@ -389,7 +390,7 @@ Changing it will delete the existing document so you can create a new one`;
         label="Inspection Details"
         name="findings"
         placeholder="Enter Inspection Details..."
-        height={ isMdToLg ? "auto" : `calc(100vh - ${appHeaderHeight + 363}px)`}
+        height={ isDrawerConstrained ? "auto" : `calc(100vh - ${appHeaderHeight + 363}px)`}
         isAdvanced
         mentionsList={mentionDataList}
         key={`lexical-editor-${mentionVersion}`}

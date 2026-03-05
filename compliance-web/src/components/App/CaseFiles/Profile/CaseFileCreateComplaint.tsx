@@ -39,8 +39,7 @@ const CaseFileCreateComplaint = ({
   );
 
   const drawerWidth = useResponsiveDrawerWidth(
-    DRAWER_WIDTHS.COMPLAINT_DRAWER,
-    { mdToLgMax: "750px" }
+    DRAWER_WIDTHS.COMPLAINT_DRAWER
   );
 
   const handleOpenComplaintDrawer = useCallback(() => {

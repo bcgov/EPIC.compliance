@@ -62,8 +62,7 @@ const IRRegulatoryConsideration = () => {
   );
 
   const drawerWidth = useResponsiveDrawerWidth(
-    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
-    { mdToLgMax: "750px" }
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER
   );
 
   const handleOpenEditRequirementModal = useCallback(() => {

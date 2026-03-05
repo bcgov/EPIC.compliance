@@ -95,8 +95,7 @@ function InspectionProfilePage() {
   );
 
   const drawerWidth = useResponsiveDrawerWidth(
-    DRAWER_WIDTHS.INSPECTION_DRAWER,
-    { mdToLgMax: "715px" }
+    DRAWER_WIDTHS.INSPECTION_DRAWER
   );
 
   const handleOpenEditModal = useCallback(() => {

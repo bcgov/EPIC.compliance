@@ -17,13 +17,13 @@ import {
 } from "@/models/InspectionRequirementSource";
 import { useModal } from "@/store/modalStore";
 import { AddRounded } from "@mui/icons-material";
-import { Box, Button, useMediaQuery } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { FC, useEffect, useMemo, useState } from "react";
 import { useRequirementStore } from "./requirementStore";
 import { CaseFile } from "@/models/CaseFile";
-import { MODAL_WIDTHS } from "@/utils/constants";
+import { DRAWER_WIDTHS, MODAL_WIDTHS } from "@/utils/constants";
 import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
-import { MQ } from "@/styles/responsive";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 interface RequirementFormRightProps {
@@ -47,7 +47,7 @@ const RequirementFormRight: FC<RequirementFormRightProps> = ({
 }) => {
   const { setOpen, setClose } = useModal();
 
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.REQUIREMENT_DRAWER);
   
   
   // Helper function to synchronize requirementSourceTitle across all items
@@ -214,8 +214,7 @@ const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requi
   };
 
   const modalWidth = useResponsiveDrawerWidth(
-    MODAL_WIDTHS.REQUIREMENT_SOURCE,
-    { mdToLgMax: "700px" }
+    MODAL_WIDTHS.REQUIREMENT_SOURCE
   );
 
   const handleAddRequirementSource = () => {
@@ -410,10 +409,10 @@ const syncRequirementSourceTitle = (allItems: RequirementSourceFormData[], requi
     <Box
       sx={{
         padding: "1.5rem 1rem",
-        width: isMdToLg ? "auto" : "510px",
-        overflow: isMdToLg ? "unset" : "auto",
+        width: isDrawerConstrained ? "auto" : "510px",
+        overflow: isDrawerConstrained ? "unset" : "auto",
         boxSizing: "border-box",
-        marginLeft: isMdToLg ? 0 : 2,
+        marginLeft: isDrawerConstrained ? 0 : 2,
       }}
     >
       {!isRegulatoryConsideration && isRequirementEditable && (

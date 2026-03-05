@@ -16,9 +16,9 @@ import { RequirementSourceFormData } from "@/models/InspectionRequirementSource"
 import { useMenuStore } from "@/store/menuStore";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Box } from "@mui/material";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
 import RequirementFormLeft from "./RequirementFormLeft";
 import RequirementFormRight from "./RequirementFormRight";
 import {
@@ -34,9 +34,8 @@ import {
 import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { MQ } from "@/styles/responsive";
 import { useReportStore } from "../Reports/reportStore";
-import { InspectionStatusEnum } from "@/utils/constants";
+import { DRAWER_WIDTHS, InspectionStatusEnum } from "@/utils/constants";
 
 type RequirementDrawerProps = {
   inspectionData: Inspection;
@@ -89,7 +88,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
   const { data: inspectionRequirementTypesList } =
     useInspectionRequirementTypesData();
 
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.REQUIREMENT_DRAWER);
 
   const isRequirementEditable = useMemo(
     () =>
@@ -374,8 +373,8 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: isMdToLg ? "column-reverse" : "row",
-            overflow: isMdToLg ? "auto" : undefined,
+            flexDirection: isDrawerConstrained ? "column-reverse" : "row",
+            overflow: isDrawerConstrained ? "auto" : undefined,
           }}
         >
           <RequirementFormLeft

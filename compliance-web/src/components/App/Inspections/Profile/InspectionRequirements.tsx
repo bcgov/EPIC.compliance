@@ -142,8 +142,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
   );
 
   const drawerWidth = useResponsiveDrawerWidth(
-    DRAWER_WIDTHS.REQUIREMENT_DRAWER,
-    { mdToLgMax: "750px" }
+    DRAWER_WIDTHS.REQUIREMENT_DRAWER
   );
 
   const handleOpenAddRequirementModal = useCallback(() => {

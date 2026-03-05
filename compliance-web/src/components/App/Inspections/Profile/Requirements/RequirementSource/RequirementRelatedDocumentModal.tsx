@@ -243,7 +243,7 @@ const RequirementRelatedDocumentModal: React.FC<
                 display: "flex",
                 flexDirection: isMdToLg? "column" : "row",
                 overflow: isMdToLg ? "auto" : "unset",
-                gap: isMdToLg ? 0 : "unset",
+                gap: isMdToLg ? 0 : 2,
               }}>
               <Box flex={1}>
                 <Box

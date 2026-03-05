@@ -1,5 +1,5 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { Box, useMediaQuery } from "@mui/material";
+import { Box } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import ComplaintFormLeft from "./ComplaintFormLeft";
 import DrawerTitleBar from "@/components/Shared/Drawer/DrawerTitleBar";
@@ -31,7 +31,8 @@ import DrawerActionBarTop from "@/components/Shared/Drawer/DrawerActionBarTop";
 import DrawerActionBarBottom from "@/components/Shared/Drawer/DrawerActionBarBottom";
 import { CaseFile } from "@/models/CaseFile";
 import { useCurrentLoggedInUser } from "@/hooks/useAuthorization";
-import { MQ } from "@/styles/responsive";
+import useIsDrawerConstrained from "@/hooks/useIsDrawerConstrained";
+import { DRAWER_WIDTHS } from "@/utils/constants";
 
 type ComplaintDrawerProps = {
   onSubmit: (submitMsg: string) => void;
@@ -66,7 +67,7 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
   caseFile,
 }) => {
   const { appHeaderHeight } = useMenuStore();
-  const isMdToLg = useMediaQuery(MQ.mdToLg);
+  const isDrawerConstrained = useIsDrawerConstrained(DRAWER_WIDTHS.COMPLAINT_DRAWER);
 
   const { data: complaintSourceList } = useComplaintSourcesData();
   const { data: requirementSourceList } = useRequirementSourcesData();
@@ -187,8 +188,8 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           height={`calc(100vh - ${appHeaderHeight + 129}px)`} // 64px (DrawerTitleBar height) + 65px (DrawerActionBar height)
           sx={{
             display: "flex",
-            flexDirection: isMdToLg ? "column" : "row",
-            overflow: isMdToLg ? "auto" : "unset"
+            flexDirection: isDrawerConstrained ? "column" : "row",
+            overflow: isDrawerConstrained ? "auto" : "unset"
           }}
         >
           <ComplaintFormLeft
@@ -200,10 +201,10 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
           />
           <Box
             sx={{
-              width: isMdToLg ? "auto" : "399px",
+              width: isDrawerConstrained ? "auto" : "399px",
               boxSizing: "border-box",
-              overflow: isMdToLg? "unset" : "auto",
-              margin: isMdToLg ? 2 : "unset"
+              overflow: isDrawerConstrained? "unset" : "auto",
+              margin: isDrawerConstrained ? 2 : "unset"
             }}
           >
             <ComplaintSourceForm
