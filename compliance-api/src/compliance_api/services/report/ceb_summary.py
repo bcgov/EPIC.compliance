@@ -197,6 +197,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 Inspection.inspection_status.label("inspection_status"),
                 CaseFile.case_file_number.label("case_file_number"),
                 CaseFile.date_created.label("case_file_date_created"),
+                Inspection.start_date.label("inspection_start_date")
             )
             .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
             .join(CaseFile, Inspection.case_file_id == CaseFile.id)
@@ -343,7 +344,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
@@ -375,6 +377,10 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 if primary_officer else None,
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
                 "case_file_number": row.case_file_number,
+                "inspection_start_date": (
+                    row.inspection_start_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                    if row.inspection_start_date else None
+                ),
             }
             result.append(item)
         return result
@@ -397,7 +403,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
@@ -462,6 +469,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "Primary Officer",
             "Inspection Status",
             "Case File Number",
+            "Inspection Start Date",
         ]
 
         columns = [
@@ -481,6 +489,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "primary_officer",
             "inspection_status",
             "case_file_number",
+            "inspection_start_date",
         ]
 
         return headers, columns
