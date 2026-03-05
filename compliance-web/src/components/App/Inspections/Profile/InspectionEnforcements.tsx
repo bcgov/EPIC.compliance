@@ -651,28 +651,6 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
                 openEnforcementModal={openEnforcementModal}
               />
             ))}
-          {inspectionOrdersData?.map((order) => (
-            <Box
-              key={order.id}
-              onClick={() => openEnforcementOrderDrawer(order)}
-            >
-              <EnforcementCard
-                order={order}
-                requirementEnforcements={requirementEnforcements}
-              />
-            </Box>
-          ))}
-          {inspectionWarningLettersData?.map((warningLetter) => (
-            <Box
-              key={warningLetter.id}
-              onClick={() => openEnforcementWarningLetterDrawer(warningLetter)}
-            >
-              <EnforcementCard
-                warningLetter={warningLetter}
-                requirementEnforcements={requirementEnforcements}
-              />
-            </Box>
-          ))}
           {inspectionAdministrativePenaltiesData?.map((penality) => (
             <Box
               key={penality.id}
@@ -697,13 +675,13 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               />
             </Box>
           ))}
-          {inspectionViolationTicketsData?.map((violationTicket) => (
+          {inspectionOrdersData?.map((order) => (
             <Box
-              key={violationTicket.id}
-              onClick={() => openViolationTicketUpdateModal(violationTicket)}
+              key={order.id}
+              onClick={() => openEnforcementOrderDrawer(order)}
             >
               <EnforcementCard
-                violationTicket={violationTicket}
+                order={order}
                 requirementEnforcements={requirementEnforcements}
               />
             </Box>
@@ -717,6 +695,28 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
             >
               <EnforcementCard
                 restorativeJustice={restorativeJustice}
+                requirementEnforcements={requirementEnforcements}
+              />
+            </Box>
+          ))}
+          {inspectionViolationTicketsData?.map((violationTicket) => (
+            <Box
+              key={violationTicket.id}
+              onClick={() => openViolationTicketUpdateModal(violationTicket)}
+            >
+              <EnforcementCard
+                violationTicket={violationTicket}
+                requirementEnforcements={requirementEnforcements}
+              />
+            </Box>
+          ))}
+          {inspectionWarningLettersData?.map((warningLetter) => (
+            <Box
+              key={warningLetter.id}
+              onClick={() => openEnforcementWarningLetterDrawer(warningLetter)}
+            >
+              <EnforcementCard
+                warningLetter={warningLetter}
                 requirementEnforcements={requirementEnforcements}
               />
             </Box>
