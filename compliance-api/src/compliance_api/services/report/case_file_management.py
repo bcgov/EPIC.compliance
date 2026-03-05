@@ -125,6 +125,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 InspectionRequirement,
                 InspectionRequirement.summary.label("summary"),
                 Inspection.ir_number.label("ir_number"),
+                Inspection.start_date.label("inspection_start_date"),
                 Topic.name.label("topic_name"),
                 InspectionRecord.ir_progress.label("ir_progress"),
                 Project.id.label("project_id"),
@@ -383,7 +384,8 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
@@ -450,7 +452,8 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
@@ -470,6 +473,10 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 "ir_progress": row.ir_progress.value if row.ir_progress else None,
                 "project_name": project_name,
                 "project_type": project_type,
+                "inspection_start_date": (
+                    row.inspection_start_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                )
+                if row.inspection_start_date else None,
                 "compliance_finding": row.compliance_finding,
                 "enforcement_action": row.enforcement_action,
                 "enforcement_status": raw_enforcement_status.value if raw_enforcement_status else None,
@@ -496,6 +503,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
             "IR Progress",
             "Project Name",
             "Project Type",
+            "Inspection Start Date",
             "Compliance Finding",
             "Enforcement Action",
             "Enforcement Status",
@@ -515,6 +523,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
             "ir_progress",
             "project_name",
             "project_type",
+            "inspection_start_date",
             "compliance_finding",
             "enforcement_action",
             "enforcement_status",
@@ -551,7 +560,8 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None

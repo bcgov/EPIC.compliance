@@ -343,7 +343,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
@@ -397,7 +398,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 if row.project_id in self.project_map:
                     project = self.project_map[row.project_id]
                 else:
-                    project = TrackService.get_project_by_id(row.project_id, as_of_date=row.case_file_date_created)
+                    date = row.case_file_date_created.date() if row.case_file_date_created else None
+                    project = TrackService.get_project_by_id(row.project_id, as_of_date=date)
                     self.project_map[row.project_id] = project
                 project_name = project.get("name") if project else None
                 project_type = project.get("type", None).get("name", None) if project else None
