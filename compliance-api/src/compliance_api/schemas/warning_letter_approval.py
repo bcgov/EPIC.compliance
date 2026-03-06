@@ -25,7 +25,7 @@ class WarningLetterApprovalSchema(AutoSchemaBase):  # pylint: disable=too-many-a
     @post_dump
     def convert_enum_to_key_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Convert enum to key value schema."""
         if (
             "warning_letter_status" in data
@@ -64,7 +64,7 @@ class UpdateWarningLetterApprovalStatusSchema(BaseSchema):
     @post_load
     def validate_fields(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Perform custom validation for allowed fields."""
         status = data["approval_status"]
         if status == WarningLetterApprovalStatusEnum.APPROVAL_PENDING:

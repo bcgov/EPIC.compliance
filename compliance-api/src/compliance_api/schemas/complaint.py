@@ -165,7 +165,7 @@ class ComplaintCreateSchema(ComplaintUpdateSchema):
     @validates_schema
     def validate_order(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that the order is selected if requirement source is ORDER."""
         requirement_source_id = data.get("requirement_source_id", [])
         requirement_source_details = data.get("requirement_source_details", {})
@@ -181,7 +181,7 @@ class ComplaintCreateSchema(ComplaintUpdateSchema):
     @validates_schema
     def validate_contact_description(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that the description is selected if complaint source is OTHER."""
         source_type_id = data.get("source_type_id", [])
         complaint_source_contact = data.get("complaint_source_contact", {})
@@ -225,7 +225,7 @@ class ComplaintSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the inspection status enum."""
         if "status" in data and data.get("status", None) is not None:
             data["status"] = ComplaintStatusEnum(data["status"]).value
@@ -352,7 +352,7 @@ class ComplaintStatusSchema(BaseSchema):
     @post_load
     def extract_status_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the status enum."""
         status_enum = data.get("status")
         if status_enum:

@@ -121,7 +121,8 @@ class DocumentJobService:
                     headers={
                         "Content-Type": "application/octet-stream",
                         "x-amz-acl": "public-read",
-                    }
+                    },
+                    timeout=60
                 )
 
                 if put_request.status_code != 200:

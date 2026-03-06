@@ -461,7 +461,6 @@ def _get_first_requirement_source_sub_query():
 
 def _get_all_requirement_sources_sub_query():
     """Get all unique requirement source names for each requirement."""
-
     return (
         db.session.query(
             InspectionReqSourceDetailModel.requirement_id,

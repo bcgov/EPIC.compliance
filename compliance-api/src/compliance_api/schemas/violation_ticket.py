@@ -114,7 +114,7 @@ class ViolationTicketSchema(AutoSchemaBase):  # pylint: disable=too-many-ancesto
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Convert the violation ticket status enum to KeyValueSchema format."""
         if "status" in data and data["status"] is not None:
             if not isinstance(data["status"], dict):
@@ -137,7 +137,7 @@ class ViolationTicketStatusSchema(BaseSchema):  # pylint: disable=too-many-ances
     @post_load
     def extract_status_value(
         self, data, **kwargs
-    ):  # pylint: disable=unused-argument,no-self-use
+    ):  # pylint: disable=unused-argument
         """Extract the value of the status enum."""
         if "status" in data and hasattr(data["status"], "value"):
             data["status"] = data["status"].value

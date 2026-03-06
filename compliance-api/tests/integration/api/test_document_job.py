@@ -66,7 +66,6 @@ def test_get_most_recent_document_job_success(client,
                                               mock_auth_service
                                               ):
     """Test getting most recent document job for user and inspection."""
-
     staff_user = created_staff
 
     # Create document jobs

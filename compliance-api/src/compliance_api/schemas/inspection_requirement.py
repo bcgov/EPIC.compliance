@@ -237,7 +237,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_section_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the section number."""
         section_number = data.get("section_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -257,7 +257,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_amendment_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the amendment number."""
         amendment_number = data.get("amendment_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -274,7 +274,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_condition_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the condition number."""
         condition_number = data.get("condition_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -291,7 +291,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_compliance_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the compliance number."""
         compliance_number = data.get("compliance_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -306,7 +306,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_clause_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the clause number."""
         clause_number = data.get("clause_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -321,7 +321,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_regulation_number(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the regulation number."""
         regulation_number = data.get("regulation_number", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -336,7 +336,7 @@ class InspectionReqSourceDetailCreateSchema(BaseSchema):
     @validates_schema
     def validate_order_id(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure the correct requirement is selected for the order id."""
         order_id = data.get("order_id", [])
         requirement_source_id = data.get("requirement_source_id", None)
@@ -407,7 +407,7 @@ class InspectionRequirementCreateSchema(BaseSchema):
     @validates_schema
     def validate_agency_id(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Validate the agency if the requirement type is regulatory considerations."""
         req_type = data.get("req_type")
         agency_id = data.get("agency_id", None)
@@ -546,7 +546,7 @@ class InspectionRequirementSchema(AutoSchemaBase):  # pylint: disable=too-many-a
     @pre_dump
     def pre_dump_enforcement_actions(
         self, obj, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the enforcement actions."""
         if hasattr(obj, "enforcement_actions"):
             prepared_enforcement_actions = []
@@ -564,7 +564,7 @@ class InspectionRequirementSchema(AutoSchemaBase):  # pylint: disable=too-many-a
     @post_dump
     def nullify_nested(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Make nested objects null if the referenced ID is null."""
         if data.get("req_type"):
             data["req_type"] = {
@@ -590,7 +590,7 @@ class InspectionReqImageSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
     @post_dump
     def post_dump_image_type(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the image type enum."""
         data["image_type"] = ImageTypeEnum(data["image_type"]).value
         return data

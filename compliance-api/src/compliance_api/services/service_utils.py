@@ -660,7 +660,7 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
         """Remove the first part of a project code (e.g., 'PRGTRA_20250001_OR001' -> '20250001_OR001')."""
         if "_" in auto_generated_number:
             return auto_generated_number[
-                auto_generated_number.index("_") + 1 :
+                auto_generated_number.index("_") + 1:
             ]  # Return from the first underscore onwards
         return auto_generated_number  # Return original if no underscore found
 

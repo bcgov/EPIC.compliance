@@ -264,7 +264,7 @@ class OrderPreview(Resource):
     @ApiHelper.swagger_decorators(API, endpoint_description="Preview order")
     @API.expect(order_render_request_model)
     @auth.require
-    def post(order_id):  # pylint: disable=no-self-use, unused-argument
+    def post(order_id):  # pylint: disable=unused-argument
         """Preview order."""
         render_request = RenderRequestSchema().load(API.payload or {})
         output_format = render_request.get("output_format", "html")
@@ -289,7 +289,7 @@ class OrderApprovals(Resource):
     @API.response(code=200, description="Success", model=[order_approval_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all order approvals")
     @auth.require
-    def get(order_id):  # pylint: disable=no-self-use, unused-argument
+    def get(order_id):  # pylint: disable=unused-argument
         """Fetch all order approvals."""
         approvals = OrderApprovalService.get_all_approvals(order_id)
         approval_schema = OrderApprovalSchema(many=True)

@@ -6,7 +6,7 @@ from compliance_api.models.staff_user import StaffUser
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, UNAPPROVED_PROJECT_NAME
 
 
-class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
+class ReviewBoardInspectionRecordSchema(Schema):
     """Schema for Review Board Inspection Record response."""
 
     # IR Number
@@ -49,13 +49,13 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
     ir_progress = fields.Method("get_ir_progress", dump_only=True)
     approval_status = fields.Method("get_approval_status", dump_only=True)
 
-    def get_project_title(self, obj):  # pylint: disable=no-self-use
+    def get_project_title(self, obj):
         """Get project title from inspection."""
         if obj.inspection and obj.inspection.project:
             return obj.inspection.project.name
         return UNAPPROVED_PROJECT_NAME
 
-    def get_primary_officer(self, obj):  # pylint: disable=no-self-use
+    def get_primary_officer(self, obj):
         """Get primary officer from inspection."""
         if obj.inspection and obj.inspection.primary_officer:
             officer = obj.inspection.primary_officer
@@ -67,14 +67,14 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_send_for_review_date(self, obj):  # pylint: disable=no-self-use
+    def get_send_for_review_date(self, obj):
         """Get send for review date from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.created_date:
             return latest_approval.created_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
+    def get_deputy_director(self, obj):
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_by:
@@ -87,47 +87,47 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_approved_date(self, obj):  # pylint: disable=no-self-use
+    def get_approved_date(self, obj):
         """Get approved date from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_date:
             return latest_approval.approved_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_date_report_sent(self, obj):  # pylint: disable=no-self-use
+    def get_date_report_sent(self, obj):
         """Get date report sent from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.date_report_sent:
             return latest_approval.date_report_sent.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_expected_return_date(self, obj):  # pylint: disable=no-self-use
+    def get_expected_return_date(self, obj):
         """Get expected return date from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.date_expected_return:
             return latest_approval.date_expected_return.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_date_response(self, obj):  # pylint: disable=no-self-use
+    def get_date_response(self, obj):
         """Get date response from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.date_response:
             return latest_approval.date_response.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_ir_status(self, obj):  # pylint: disable=no-self-use
+    def get_ir_status(self, obj):
         """Get IR status from inspection record."""
         if hasattr(obj, "ir_status") and obj.ir_status:
             return {"id": obj.ir_status.id, "name": obj.ir_status.name}
         return None
 
-    def get_ir_progress(self, obj):  # pylint: disable=no-self-use
+    def get_ir_progress(self, obj):
         """Get IR progress from inspection record."""
         if hasattr(obj, "ir_progress") and obj.ir_progress:
             return {"id": obj.ir_progress.name, "name": obj.ir_progress.value}
         return None
 
-    def get_approval_status(self, obj):  # pylint: disable=no-self-use
+    def get_approval_status(self, obj):
         """Get approval status from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if (
@@ -141,19 +141,19 @@ class ReviewBoardInspectionRecordSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+    def get_inspection_types(self, obj):
         """Get inspection types as comma-separated string."""
         if obj.inspection and obj.inspection.types:
             type_names = [o.type.name for o in obj.inspection.types]
             return ", ".join(type_names)
         return ""
 
-    def _get_latest_approval(self, obj):  # pylint: disable=no-self-use
+    def _get_latest_approval(self, obj):
         """Get the latest approval data that was pre-fetched by the service layer."""
         return getattr(obj, "_latest_approval", None)
 
 
-class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
+class ReviewBoardWarningLetterSchema(Schema):
     """Schema for warning letter review board response."""
 
     # IR Number
@@ -187,7 +187,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
     )
     approval_status = fields.Method("get_approval_status", dump_only=True)
 
-    def get_project_title(self, obj):  # pylint: disable=no-self-use
+    def get_project_title(self, obj):
         """Get project title from inspection."""
         return (
             obj.inspection.project.name
@@ -195,7 +195,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             else UNAPPROVED_PROJECT_NAME
         )
 
-    def get_issuing_officer(self, obj):  # pylint: disable=no-self-use
+    def get_issuing_officer(self, obj):
         """Get issuing officer information."""
         if obj.issuing_officer:
             officer = obj.issuing_officer
@@ -207,7 +207,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_primary_officer(self, obj):  # pylint: disable=no-self-use
+    def get_primary_officer(self, obj):
         """Get primary officer from pre-fetched data."""
         if obj.inspection and obj.inspection.primary_officer:
             officer = obj.inspection.primary_officer
@@ -219,25 +219,25 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def _get_latest_approval(self, obj):  # pylint: disable=no-self-use
+    def _get_latest_approval(self, obj):
         """Get the latest approval data that was pre-fetched by the service layer."""
         return getattr(obj, "_latest_approval", None)
 
-    def get_approved_date(self, obj):  # pylint: disable=no-self-use
+    def get_approved_date(self, obj):
         """Get approved date from latest approval."""
         approval = self._get_latest_approval(obj)
         if approval and approval.approved_date:
             return approval.approved_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_review_requested_date(self, obj):  # pylint: disable=no-self-use
+    def get_review_requested_date(self, obj):
         """Get review requested date from latest approval."""
         approval = self._get_latest_approval(obj)
         if approval and approval.created_date:
             return approval.created_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_approved_by(self, obj):  # pylint: disable=no-self-use
+    def get_approved_by(self, obj):
         """Get approved by staff user name from latest approval."""
         approval = self._get_latest_approval(obj)
         if approval and approval.approved_by_id:
@@ -247,7 +247,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
                 return f"{staff_user.first_name} {staff_user.last_name}"
         return None
 
-    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
+    def get_deputy_director(self, obj):
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_by_id:
@@ -262,7 +262,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
                 }
         return None
 
-    def get_warning_letter_status(self, obj):  # pylint: disable=no-self-use
+    def get_warning_letter_status(self, obj):
         """Get warning letter status."""
         if hasattr(obj, "warning_letter_status") and obj.warning_letter_status:
             return {
@@ -271,7 +271,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_warning_letter_progress(self, obj):  # pylint: disable=no-self-use
+    def get_warning_letter_progress(self, obj):
         """Get warning letter progress."""
         if hasattr(obj, "warning_letter_progress") and obj.warning_letter_progress:
             return {
@@ -280,7 +280,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_approval_status(self, obj):  # pylint: disable=no-self-use
+    def get_approval_status(self, obj):
         """Get approval status from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if (
@@ -294,7 +294,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+    def get_inspection_types(self, obj):
         """Get inspection types as comma-separated string."""
         if obj.inspection and obj.inspection.types:
             type_names = [o.type.name for o in obj.inspection.types]
@@ -302,7 +302,7 @@ class ReviewBoardWarningLetterSchema(Schema):  # pylint: disable=no-self-use
         return ""
 
 
-class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
+class ReviewBoardOrderSchema(Schema):
     """Schema for Review Board Order response."""
 
     # IR Number
@@ -339,13 +339,13 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
         format=INPUT_DATE_TIME_FORMAT, dump_only=True
     )
 
-    def get_project_title(self, obj):  # pylint: disable=no-self-use
+    def get_project_title(self, obj):
         """Get project title from inspection."""
         if obj.inspection and obj.inspection.project:
             return obj.inspection.project.name
         return UNAPPROVED_PROJECT_NAME
 
-    def get_issuing_officer(self, obj):  # pylint: disable=no-self-use
+    def get_issuing_officer(self, obj):
         """Get issuing officer from pre-fetched data."""
         if obj.issuing_officer:
             return {
@@ -356,7 +356,7 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_primary_officer(self, obj):  # pylint: disable=no-self-use
+    def get_primary_officer(self, obj):
         """Get primary officer from pre-fetched data."""
         if obj.inspection and obj.inspection.primary_officer:
             officer = obj.inspection.primary_officer
@@ -368,14 +368,14 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_send_for_review_date(self, obj):  # pylint: disable=no-self-use
+    def get_send_for_review_date(self, obj):
         """Get send for review date from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.created_date:
             return latest_approval.created_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_deputy_director(self, obj):  # pylint: disable=no-self-use
+    def get_deputy_director(self, obj):
         """Get deputy director name from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_by_id:
@@ -390,26 +390,26 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
                 }
         return None
 
-    def get_approved_date(self, obj):  # pylint: disable=no-self-use
+    def get_approved_date(self, obj):
         """Get approved date from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if latest_approval and latest_approval.approved_date:
             return latest_approval.approved_date.strftime(INPUT_DATE_TIME_FORMAT)
         return None
 
-    def get_order_status(self, obj):  # pylint: disable=no-self-use
+    def get_order_status(self, obj):
         """Get order status."""
         if obj.order_status:
             return {"id": obj.order_status.name, "name": obj.order_status.value}
         return None
 
-    def get_order_progress(self, obj):  # pylint: disable=no-self-use
+    def get_order_progress(self, obj):
         """Get order progress."""
         if obj.order_progress:
             return {"id": obj.order_progress.name, "name": obj.order_progress.value}
         return None
 
-    def get_approval_status(self, obj):  # pylint: disable=no-self-use
+    def get_approval_status(self, obj):
         """Get approval status from latest approval."""
         latest_approval = self._get_latest_approval(obj)
         if (
@@ -423,19 +423,19 @@ class ReviewBoardOrderSchema(Schema):  # pylint: disable=no-self-use
             }
         return None
 
-    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+    def get_inspection_types(self, obj):
         """Get inspection types as comma-separated string."""
         if obj.inspection and obj.inspection.types:
             type_names = [o.type.name for o in obj.inspection.types]
             return ", ".join(type_names)
         return ""
 
-    def _get_latest_approval(self, obj):  # pylint: disable=no-self-use
+    def _get_latest_approval(self, obj):
         """Get the latest approval data that was pre-fetched by the service layer."""
         return getattr(obj, "_latest_approval", None)
 
 
-class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self-use
+class ReviewBoardAdministrativePenaltySchema(Schema):
     """Schema for Review Board Administrative Penalty response."""
 
     # IR Number
@@ -466,13 +466,13 @@ class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self
     decision = fields.Method("get_decision", dump_only=True)
     penalty_amount = fields.Decimal(dump_only=True, as_string=True)
 
-    def get_project_title(self, obj):  # pylint: disable=no-self-use
+    def get_project_title(self, obj):
         """Get project title from inspection."""
         if obj.inspection and obj.inspection.project:
             return obj.inspection.project.name
         return UNAPPROVED_PROJECT_NAME
 
-    def get_primary_officer(self, obj):  # pylint: disable=no-self-use
+    def get_primary_officer(self, obj):
         """Get primary officer from pre-fetched data."""
         officer = getattr(obj, "_primary_officer", None)
         if officer:
@@ -484,19 +484,19 @@ class ReviewBoardAdministrativePenaltySchema(Schema):  # pylint: disable=no-self
             }
         return None
 
-    def get_referral_status(self, obj):  # pylint: disable=no-self-use
+    def get_referral_status(self, obj):
         """Get referral status."""
         if obj.referral_status:
             return {"id": obj.referral_status.name, "name": obj.referral_status.value}
         return None
 
-    def get_decision(self, obj):  # pylint: disable=no-self-use
+    def get_decision(self, obj):
         """Get decision."""
         if obj.decision:
             return {"id": obj.decision.name, "name": obj.decision.value}
         return None
 
-    def get_inspection_types(self, obj):  # pylint: disable=no-self-use
+    def get_inspection_types(self, obj):
         """Get inspection types as comma-separated string."""
         if obj.inspection and obj.inspection.types:
             type_names = [o.type.name for o in obj.inspection.types]

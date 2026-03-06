@@ -168,7 +168,7 @@ class InspectionRecordApprovals(Resource):
     @auth.require
     def get(
         inspection_id, inspection_record_id
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Fetch all inspection record approvals."""
         approvals = InspectionRecordApprovalService.get_all_approvals(
             inspection_record_id
@@ -289,7 +289,7 @@ class InspectionRecordPreview(Resource):
     @auth.require
     def post(
         inspection_id, inspection_record_id
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Preview inspection record."""
         render_request = RenderRequestSchema().load(API.payload or {})
         output_format = render_request.get("output_format", "html")

@@ -113,7 +113,7 @@ class OrderSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the inspection status enum."""
         if "order_status" in data and data["order_status"] is not None:
             data["order_status"] = {
@@ -150,7 +150,7 @@ class OrderStatusSchema(BaseSchema):
     @post_load
     def extract_status_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the status enum."""
         status_enum = data.get("status")
         if status_enum:

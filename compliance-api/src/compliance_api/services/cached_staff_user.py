@@ -51,7 +51,7 @@ class CachedStaffUserService:
             List of serialized staff user dictionaries
         """
         # pylint: disable=import-outside-toplevel
-        from compliance_api.services.staff_user import _set_permission_level_in_compliance_user_obj
+        from .staff_user import _set_permission_level_in_compliance_user_obj
 
         current_app.logger.debug(
             "Fetching all staff users with auth data (no cache)"

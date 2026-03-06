@@ -10,7 +10,6 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.continuation_report import ContinuationReport as ContinuationReportModel
 from compliance_api.models.continuation_report import ContinuationReportKey as ContinuationReportKeyModel
 from compliance_api.models.db import session_scope
-from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.utils.enum import PermissionEnum
 
@@ -105,6 +104,8 @@ class ContinuationReportService:
     @classmethod
     def render(cls, case_file_number):
         """Export continuation report as PDF."""
+        from .case_file import CaseFileService  # pylint: disable=import-outside-toplevel
+
         if case_file_number is None:
             raise ValueError("Case file number must be provided.")
 

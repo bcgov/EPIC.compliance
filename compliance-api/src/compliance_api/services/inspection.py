@@ -279,7 +279,8 @@ class InspectionService:
     @classmethod
     def update(cls, inspection_id: int, inspection_data: dict):
         """Update inspection."""
-        from compliance_api.services import InspectionRecordService  # pylint: disable=import-outside-toplevel
+        #  pylint: disable=import-outside-toplevel
+        from .inspection_record.inspection_record import InspectionRecordService
 
         inspection = InspectionModel.find_by_id(inspection_id)
         if not inspection:
@@ -767,7 +768,6 @@ def _set_warning_letter_enforcement_action_object(
     warning_letter: WarningLetterModel,
 ):
     """Make warning letter detail object."""
-
     enforcement_action["progress"] = {
         "id": warning_letter.progress.name,
         "name": warning_letter.progress.value,

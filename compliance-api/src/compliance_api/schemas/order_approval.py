@@ -25,7 +25,7 @@ class OrderApprovalSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @post_dump
     def convert_enum_to_key_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Convert enum to key value schema."""
         if "order_status" in data and data["order_status"] is not None:
             data["order_status"] = {
@@ -61,7 +61,7 @@ class UpdateOrderApprovalStatusSchema(BaseSchema):
     @post_load
     def validate_fields(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Perform custom validation for allowed fields."""
         status = data["approval_status"]
         if status == OrderApprovalStatusEnum.APPROVAL_PENDING:

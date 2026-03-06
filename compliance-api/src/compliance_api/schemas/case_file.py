@@ -66,7 +66,7 @@ class CaseFileSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the casefile status enum."""
         if "case_file_status" in data and data["case_file_status"] is not None:
             data["case_file_status"] = CaseFileStatusEnum(
@@ -191,7 +191,7 @@ class CaseFileStatusSchema(BaseSchema):
     @post_load
     def extract_status_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the status enum."""
         status_enum = data.get("status")
         if status_enum:

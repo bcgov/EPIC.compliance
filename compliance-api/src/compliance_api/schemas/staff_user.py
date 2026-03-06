@@ -36,7 +36,7 @@ class StaffUserSchemaSkeleton(AutoSchemaBase):  # pylint: disable=too-many-ances
     permission = fields.Raw()
     name = fields.Method("get_full_name")
 
-    def get_full_name(self, obj):  # pylint: disable=no-self-use
+    def get_full_name(self, obj):
         """Derive fullname from either an object or a dictionary."""
         if obj is None:
             return ""
@@ -55,7 +55,7 @@ class StaffUserSchemaSkeleton(AutoSchemaBase):  # pylint: disable=too-many-ances
     @post_dump
     def nullify_nested(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Make nested objects null if the referenced ID is null."""
         if data.get("deputy_director_id") is None:
             data["deputy_director"] = None
@@ -111,7 +111,7 @@ class StaffUserUpdateSchema(BaseSchema):
     @post_load
     def extract_permission_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the permission enum."""
         permission_enum = data.get("permission")
         if permission_enum:
@@ -158,7 +158,7 @@ class StaffUserCreateSchema(BaseSchema):
     @post_load
     def extract_permission_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the permission enum."""
         permission_enum = data.get("permission")
         if permission_enum:

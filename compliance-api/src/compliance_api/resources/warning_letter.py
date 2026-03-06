@@ -238,7 +238,7 @@ class WarningLetterPreview(Resource):
     @ApiHelper.swagger_decorators(API, endpoint_description="Preview warning letter")
     @API.expect(warning_letter_render_request_model)
     @auth.require
-    def post(warning_letter_id):  # pylint: disable=no-self-use, unused-argument
+    def post(warning_letter_id):  # pylint: disable=unused-argument
         """Preview warning letter."""
         render_request = RenderRequestSchema().load(API.payload or {})
         output_format = render_request.get("output_format", "html")
@@ -269,7 +269,7 @@ class WarningLetterApprovals(Resource):
         API, endpoint_description="Fetch all warning letter approvals"
     )
     @auth.require
-    def get(warning_letter_id):  # pylint: disable=no-self-use, unused-argument
+    def get(warning_letter_id):  # pylint: disable=unused-argument
         """Fetch all warning letter approvals."""
         approvals = WarningLetterApprovalService.get_all_approvals(warning_letter_id)
         approval_schema = WarningLetterApprovalSchema(many=True)

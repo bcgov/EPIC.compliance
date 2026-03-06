@@ -43,7 +43,7 @@ class InspectionAttendanceSchema(AutoSchemaBase):  # pylint: disable=too-many-an
     @post_dump
     def preprocess_data(
         self, data, **kwargs
-    ):  # pylint: disable=unused-argument, no-self-use
+    ):  # pylint: disable=unused-argument
         """Pre-process the 'data' field to handle single text value or list of key-value pairs."""
         if isinstance(data.get("data", None), str):
             data["data"] = data.get("data")
@@ -167,7 +167,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @pre_load
     def end_date_populate(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Populate the end_date if it is not provided."""
         if data.get("end_date") is None:
             data["end_date"] = data["start_date"]
@@ -176,7 +176,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_attendance_other(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that the other attendance info is entered is OTHER is chosen as attendance option."""
         value = data.get("attendance_option_ids", [])
         attendance_other = data.get("attendance_other", None)
@@ -190,7 +190,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_dates(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that end_date is after start_date."""
         start_date = data.get("start_date")
         end_date = data.get("end_date")
@@ -203,7 +203,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_attendance_option_ids(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that all attendance option IDs are valid."""
         valid_values = {member.value for member in InspectionAttendanceOptionEnum}
         value = data.get("attendance_option_ids", [])
@@ -245,7 +245,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_agency_attendance_ids(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that agency_attendance_ids is valid if required."""
         # Retrieve the context to access other fields
         attendance_option_ids = data.get("attendance_option_ids", [])
@@ -260,7 +260,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_officer_attendance_ids(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that attending_officer_ids is valid if required."""
         # Retrieve the context to access other fields
         attendance_option_ids = data.get("attendance_option_ids", [])
@@ -278,7 +278,7 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @validates_schema
     def validate_firstnation_attendance_ids(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Ensure that firstnation_attendance_ids is valid if required."""
         # Retrieve the context to access other fields
         attendance_option_ids = data.get("attendance_option_ids", [])
@@ -438,7 +438,7 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @pre_dump
     def pre_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the inspection status enum."""
         if hasattr(data, "ir_progress") and data.ir_progress is not None:
             if not isinstance(data.ir_progress, dict):
@@ -457,7 +457,7 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the inspection status enum."""
         if "inspection_status" in data and data["inspection_status"] is not None:
             data["inspection_status"] = InspectionStatusEnum(
@@ -467,7 +467,7 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
             data["inspection_status"] = ""
         return data
 
-    def get_inspection_types(self, obj):  # pylint: disable=no-self-use, unused-argument
+    def get_inspection_types(self, obj):  # pylint: disable=unused-argument
         """Get the inspection type objects."""
         if obj.types:
             return [{"id": o.type.id, "name": o.type.name} for o in obj.types]
@@ -475,7 +475,7 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
 
     def get_inspection_type_names(
         self, obj
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Get the inspection type names as comma seprated list."""
         if obj.types:
             return ", ".join([o.type.name for o in obj.types])
@@ -584,7 +584,7 @@ class InspectionStatusSchema(BaseSchema):
     @post_load
     def extract_status_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the status enum."""
         status_enum = data.get("status")
         if status_enum:

@@ -45,7 +45,7 @@ class AgencyCreateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     @pre_load
     def uppercase_abbreviation(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Convert the abbreviation to uppercase before loading."""
         if "abbreviation" in data and data["abbreviation"]:
             data["abbreviation"] = data["abbreviation"].upper()

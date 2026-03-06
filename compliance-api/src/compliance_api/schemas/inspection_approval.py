@@ -9,7 +9,7 @@ from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from .base_schema import AutoSchemaBase, BaseSchema
 from .staff_user import StaffUserSchema
-from . import KeyValueSchema
+from .common import KeyValueSchema
 
 
 class InspectionRecordApprovalSchema(
@@ -30,7 +30,7 @@ class InspectionRecordApprovalSchema(
     @post_dump
     def convert_enum_to_key_value(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Convert enum to key value schema."""
         if "approval_status" in data and data["approval_status"] is not None:
             data["approval_status"] = {
@@ -61,7 +61,7 @@ class UpdateInspectionRecordApprovalStatusSchema(BaseSchema):
     @post_load
     def validate_fields(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Perform custom validation for allowed fields."""
         status = data["approval_status"]
         if status == IRApprovalStatusEnum.APPROVAL_PENDING:
@@ -79,7 +79,7 @@ class UpdateInspectionRecordApprovalSchema(BaseSchema):
     @post_load
     def validate_fields(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Perform custom validation for allowed fields."""
         allowed_fields = {
             "date_report_sent": fields.DateTime(

@@ -25,7 +25,7 @@ class IRDownloadRequestSchema(AutoSchemaBase):  # pylint: disable=too-many-ances
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of the download status enum."""
         if "download_status" in data and data["download_status"] is not None:
             data["download_status"] = {

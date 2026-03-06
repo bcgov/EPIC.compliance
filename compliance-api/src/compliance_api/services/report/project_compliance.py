@@ -123,7 +123,6 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
 
     def _build_inspection_requirements_query(self, project_id: int):
         """Build base query for Project Compliance History Report."""
-
         # Alias all enforcement types to join on ALL linked enforcement actions.
         order_alias = aliased(Order)
         warning_letter_alias = aliased(WarningLetter)

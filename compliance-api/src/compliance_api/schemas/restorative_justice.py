@@ -96,7 +96,7 @@ class RestorativeJusticeSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
             self._transform_single_item(data)
         return data
 
-    def _transform_single_item(self, item):  # pylint: disable=no-self-use
+    def _transform_single_item(self, item):
         """Transform a single item."""
         # Transform enum values to their string representation
         if "status" in item and item["status"]:

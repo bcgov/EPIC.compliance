@@ -43,7 +43,7 @@ class InspectionRecordSchema(AutoSchemaBase):  # pylint: disable=too-many-ancest
     record_prepared_by_position = fields.Nested(KeyValueSchema, dump_only=True)
 
     @post_dump(pass_original=True)
-    def post_dump_actions(self, data, original, many, **kwargs):  # pylint: disable=no-self-use, unused-argument
+    def post_dump_actions(self, data, original, many, **kwargs):  # pylint: disable=unused-argument
         """Post dump actions."""
         if "ir_progress" in data and data["ir_progress"] is not None:
             data["ir_progress"] = {
@@ -64,7 +64,7 @@ class UpdateInspectionRecordSchema(BaseSchema):
     @post_load
     def validate_fields(
         self, data, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Perform custom validation for allowed fields."""
         allowed_fields = {
             "mailing_address": fields.Str(validate=validate.Length(max=255)),

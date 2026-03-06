@@ -8,7 +8,6 @@ from compliance_api.utils.constant import AUTH_APP
 from compliance_api.utils.enum import PermissionEnum
 
 from .authorize_service.auth_service import AuthService
-from .cached_staff_user import CachedStaffUserService
 
 
 class StaffUserService:
@@ -45,6 +44,10 @@ class StaffUserService:
 
         This returns serialized data from CachedStaffUserService.
         """
+        #  Flagged by static analysis, but fine at runtime because of lazy importing
+        #  pylint: disable=cyclic-import, import-outside-toplevel
+        from .cached_staff_user import CachedStaffUserService
+
         return CachedStaffUserService.get_all_staff_users_with_auth()
 
     @staticmethod

@@ -54,7 +54,7 @@ class ContinuationReportKeySchema(AutoSchemaBase):  # pylint: disable=too-many-a
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of key_context enum."""
         if "key_context" in data and data["key_context"] is not None:
             data["key_context"] = ContextEnum(data["key_context"]).value
@@ -86,7 +86,7 @@ class ContinuationReportSchema(AutoSchemaBase):  # pylint: disable=too-many-ance
     @post_dump
     def post_dump_actions(
         self, data, many, **kwargs
-    ):  # pylint: disable=no-self-use, unused-argument
+    ):  # pylint: disable=unused-argument
         """Extract the value of context enum."""
         if "context_type" in data and data["context_type"] is not None:
             data["context_type"] = ContextEnum(data["context_type"]).value
@@ -120,7 +120,7 @@ class ContinuationReportUpdateSchema(BaseSchema):  # pylint: disable=too-many-an
     )
 
     @validates("date_created")
-    def validate_date_created(self, value):  # pylint: disable=no-self-use
+    def validate_date_created(self, value):
         """Validate that date_created is not later than current date + 1."""
         current_date_plus_one = datetime.utcnow() + timedelta(days=1)
         if value > current_date_plus_one:

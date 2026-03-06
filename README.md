@@ -4,8 +4,8 @@ This document outlines the setup instructions for both the backend and front-end
 
 ## Backend Setup in WSL
 
-### 1. Install Python 3.10
-Ensure Python 3.10 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
+### 1. Install Python 3.12
+Ensure Python 3.12 is installed in your WSL environment. Download it from the [official Python website](https://www.python.org/downloads/release/python-3124/).
 
 ### 2. Set Up PYTHONPATH
 Add the following line to your `.bashrc` or `.zshrc` file to set the `PYTHONPATH` environment variable:
@@ -29,7 +29,7 @@ Once the setup is completed use make run to start the server:
 
 ## Backend Setup on Windows
 
-## Step 1: Download the Python 3.10 Version
+## Step 1: Download the Python 3.12 Version
 
 1. Visit the official Python website: [Python Downloads](https://www.python.org/downloads/)
 2. Download and install the latest version of Python for your operating system.

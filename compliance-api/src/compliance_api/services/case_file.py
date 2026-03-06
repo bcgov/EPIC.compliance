@@ -150,7 +150,9 @@ class CaseFileService:
     @classmethod
     def create(cls, case_file_data: dict):
         """Create case file."""
-        from .continuation_report import ContinuationReportService  # pylint: disable=import-outside-toplevel
+        #  Flagged by static analysis, but fine at runtime because of lazy importing
+        #  pylint: disable=cyclic-import, import-outside-toplevel
+        from .continuation_report import ContinuationReportService
 
         case_file_obj = _create_case_file_object(case_file_data)
         _validate_existence_by_file_number(case_file_obj.get("case_file_number", None))

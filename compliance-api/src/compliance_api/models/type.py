@@ -14,7 +14,7 @@ class EncryptedType(TypeDecorator):  # pylint: disable=too-many-ancestors
 
     impl = String  # Use the base type that this will convert to/from
 
-    def _get_cipher_suite(self, initialization_vector):  # pylint: disable=no-self-use
+    def _get_cipher_suite(self, initialization_vector):
         """Create a new cipher object with the provided IV."""
         return AES.new(
             current_app.config["DB_ECRPT_KEY"].encode("utf-8"),
@@ -22,7 +22,7 @@ class EncryptedType(TypeDecorator):  # pylint: disable=too-many-ancestors
             initialization_vector,
         )
 
-    def process_bind_param(self, value, dialect):  # pylint: disable=no-self-use
+    def process_bind_param(self, value, dialect):
         """Encrypt the value before storing in the database."""
         if value is not None:
             initialization_vector = get_random_bytes(
@@ -37,7 +37,7 @@ class EncryptedType(TypeDecorator):  # pylint: disable=too-many-ancestors
             )
         return None
 
-    def process_result_value(self, value, dialect):  # pylint: disable=no-self-use
+    def process_result_value(self, value, dialect):
         """Decrypt the value when retrieving from the database."""
         if value is not None:
             encrypted_value = base64.b64decode(value.encode("utf-8"))
@@ -49,7 +49,7 @@ class EncryptedType(TypeDecorator):  # pylint: disable=too-many-ancestors
             return decrypted_value.decode("utf-8")
         return None
 
-    def process_literal_param(self, value, dialect):  # pylint: disable=no-self-use
+    def process_literal_param(self, value, dialect):
         """Process literal values in SQLAlchemy expressions."""
         return self.process_bind_param(value, dialect)
 

@@ -156,7 +156,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
 
     def _build_inspections_tab_query(self):
         """Build base query for CEB Summary Report."""
-
         requirement_order_subquery = get_requirement_order_sub_query()
         requirement_warning_letter_subquery = get_requirement_warning_letter_sub_query()
         requirement_violation_ticket_subquery = get_requirement_violation_ticket_sub_query()

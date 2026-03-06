@@ -150,7 +150,6 @@ class FirstNationReportGenerator(BaseReportGenerator):
 
     def _build_inspections_tab_query(self):
         """Build base query for First Nation Report."""
-
         # Create aliases for enforcement document models
         order_alias = aliased(Order)
         warning_letter_alias = aliased(WarningLetter)
