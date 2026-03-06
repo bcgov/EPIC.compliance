@@ -55,7 +55,7 @@ const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit }) => {
 
   return (
     <>
-      <ModalTitleBar title={"Reopen IR?"} />
+      <ModalTitleBar title={"Reissue IR?"} />
       <DialogContent dividers>
         <Typography variant="body1" mb={2}>
           You are about to reopen Inspection Record:{" "}
