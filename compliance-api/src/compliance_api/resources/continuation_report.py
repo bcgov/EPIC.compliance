@@ -154,12 +154,11 @@ class ContinuationReportExport(Resource):
         try:
             request_params = CRExport().load(API.payload)
             case_file_number = request_params.get("case_file_number")
-            inspection_number = request_params.get("inspection_number")
-            pdf_data = ContinuationReportService.render(case_file_number, inspection_number)
+            pdf_data = ContinuationReportService.render(case_file_number)
             return send_file(
                 pdf_data,
                 as_attachment=True,
-                download_name=f'{inspection_number or case_file_number}.pdf',
+                download_name=f'{case_file_number}.pdf',
                 mimetype='application/pdf'
             )
         except ValidationError as validation_error:

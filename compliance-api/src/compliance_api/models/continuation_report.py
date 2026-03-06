@@ -140,7 +140,7 @@ class ContinuationReport(BaseModelVersioned):
     def get_all_by_case_file(cls, case_file_id):
         """Get all crs by case file id."""
         query = cls.query.filter_by(case_file_id=case_file_id, is_deleted=False)
-        query = query.order_by(cls.date_created.asc())
+        query = query.order_by(cls.date_created.desc())
         return query.all()
 
 

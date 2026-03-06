@@ -46,5 +46,4 @@ export interface ContinuationReportAPIData {
 
 export interface ContinuationReportExportAPIData {
   case_file_number: string;
-  inspection_number: string;
 }

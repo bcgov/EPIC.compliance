@@ -1,20 +1,23 @@
 import { FileDownloadRounded } from "@mui/icons-material";
 import { Button, CircularProgress } from "@mui/material";
 import { downloadFile } from "@/utils/appUtils";
-import dateUtils from "@/utils/dateUtils";
 import { useContinuationReportExport } from "@/hooks/useContinuationReports";
 import { useParams } from "@tanstack/react-router";
+import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
+import { useProjectAbbreviationById } from "@/hooks/useProjects";
 
 export default function ContinuationReportExport() {
   const params = useParams({ strict: false });
-  const inspectionNumber = params?.inspectionNumber;
   const caseFileNumber = params?.caseFileNumber;
+  const { data: caseFileData } = useCaseFileByNumber(caseFileNumber!);
+  const { data: projectAbbreviation } = useProjectAbbreviationById(caseFileData?.project_id);
+
 
   const { mutate: downloadContinuationReport, isPending } =
     useContinuationReportExport((data) => {
       downloadFile(
         data,
-        `continuation-reports-${dateUtils.formatDate(new Date().toISOString(), "YYYY-MM-DD-HH-mm-ss")}.pdf`,
+        `${projectAbbreviation}_${caseFileNumber}_CREP.pdf`,
       );
     });
 
@@ -29,7 +32,6 @@ export default function ContinuationReportExport() {
       onClick={() =>
         downloadContinuationReport({
           case_file_number: caseFileNumber!,
-          inspection_number: inspectionNumber!,
         })
       }
       disabled={isPending}

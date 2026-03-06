@@ -28,6 +28,7 @@ export type ContinuationReportContextType = {
   contextType: string;
   contextId: number;
   allowCreateEntry?: boolean;
+  allowExport?: boolean;
 };
 
 export default function ContinuationReport({
@@ -35,6 +36,7 @@ export default function ContinuationReport({
   contextType,
   contextId,
   allowCreateEntry,
+  allowExport = false,
 }: ContinuationReportContextType) {
   const queryClient = useQueryClient();
   const { setOpen, setClose } = useModal();
@@ -132,7 +134,7 @@ export default function ContinuationReport({
             )}
           </Box>
           <Grid container gap={1} justifyContent={"space-between"}>
-            <Grid item xs={8}>
+            <Grid item xs={allowExport ? 8 : 12}>
               <SearchTextField
                 id="searchTextField"
                 value={searchText}
@@ -142,9 +144,11 @@ export default function ContinuationReport({
                 fullWidth
               />
             </Grid>
-            <Grid item xs={3}>
-              <ContinuationReportExport />
-            </Grid>
+            {allowExport && (
+              <Grid item xs={3}>
+                <ContinuationReportExport />
+              </Grid>
+            )}
           </Grid>
           {!caseFileId || status === "pending" ? (
             <LoadingPage isLoading={isLoading} />

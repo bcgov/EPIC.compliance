@@ -10,7 +10,6 @@ from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.continuation_report import ContinuationReport as ContinuationReportModel
 from compliance_api.models.continuation_report import ContinuationReportKey as ContinuationReportKeyModel
 from compliance_api.models.db import session_scope
-from compliance_api.models.inspection import Inspection as InspectionModel
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.utils.enum import PermissionEnum
@@ -104,16 +103,13 @@ class ContinuationReportService:
         )
 
     @classmethod
-    def render(cls, case_file_number, inspection_number):
+    def render(cls, case_file_number):
         """Export continuation report as PDF."""
-        if case_file_number is None and inspection_number is None:
-            raise ValueError("Either case_file_number or inspection_number must be provided.")
+        if case_file_number is None:
+            raise ValueError("Case file number must be provided.")
 
         if case_file_number:
             case_file = CaseFileService.get_by_file_number(case_file_number)
-        elif inspection_number:
-            inspection = InspectionModel.get_by_ir_number(inspection_number)
-            case_file = CaseFileService.get_by_file_number(inspection.case_file.case_file_number)
 
         if not case_file:
             raise ResourceNotFoundError("Case file not found.")

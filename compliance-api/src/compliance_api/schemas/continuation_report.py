@@ -167,7 +167,3 @@ class CRExport(BaseSchema):
     case_file_number = fields.String(
         metadata={"description": "The case file number."}, required=False
     )
-
-    inspection_number = fields.String(
-        metadata={"description": "The inspection number."}, required=False
-    )

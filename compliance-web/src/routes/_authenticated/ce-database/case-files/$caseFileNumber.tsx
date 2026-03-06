@@ -117,6 +117,7 @@ function CaseFileProfilePage() {
           contextType={CR_CONTEXT_TYPE.CASEFILE}
           contextId={caseFileData.id}
           allowCreateEntry={showCreateCREntryButton}
+          allowExport={true}
         />
       </Box>
     </>

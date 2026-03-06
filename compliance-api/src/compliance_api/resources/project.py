@@ -65,3 +65,22 @@ class Project(Resource):
         if not project:
             raise ResourceNotFoundError(f"Project with {project_id} not found")
         return ProjectSchema().dump(project), HTTPStatus.OK
+
+
+@cors_preflight("GET, OPTIONS")
+@API.route("/<int:project_id>/abbreviation", methods=["GET", "OPTIONS"])
+@API.doc(params={"project_id": "The unique identifier of project"})
+class ProjectAbbreviation(Resource):
+    """Resource for fetching a project's abbreviation by id."""
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a projects abbreviation by id")
+    @API.response(code=200, description="Success")
+    @API.response(404, "Not Found")
+    def get(project_id):
+        """Fetch a project's abbreviation by id."""
+        abbreviation = ProjectService.get_project_abbreviation_by_id(project_id)
+        if not abbreviation:
+            raise ResourceNotFoundError(f"Project with {project_id} not found")
+        return abbreviation, HTTPStatus.OK

@@ -12,6 +12,10 @@ const fetchProjectById = (id: number): Promise<Project> => {
   return request({ url: `/projects/${id}` });
 };
 
+const fetchProjectAbbreviationById = (id: number): Promise<string> => {
+  return request({ url: `/projects/${id}/abbreviation` });
+}
+
 export const useProjectsData = (args?: { includeUnapproved?: boolean }) => {
   return useQuery({
     queryKey: ["projects"],
@@ -39,3 +43,11 @@ export const useProjectById = (projectId: number) => {
     enabled: !!projectId,
   });
 };
+
+export const useProjectAbbreviationById = (projectId?: number) => {
+  return useQuery({
+    queryKey: ["projects", projectId, "abbreviation"],
+    queryFn: () => fetchProjectAbbreviationById(projectId!),
+    enabled: !!projectId,
+  });
+}
