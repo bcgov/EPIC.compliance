@@ -199,10 +199,10 @@ export const useInspectionById = (inspectionId: number) => {
   });
 };
 
-export const useInspectionsMoreDetailsByCaseFileId = (caseFileId: number) => {
+export const useInspectionsMoreDetailsByCaseFileId = (caseFileId?: number) => {
   return useQuery({
     queryKey: ["inspections-details-by-caseFileId", caseFileId],
-    queryFn: () => fetchInspectionsMoreDetails(caseFileId),
+    queryFn: () => fetchInspectionsMoreDetails(caseFileId!),
     enabled: !!caseFileId,
   });
 };

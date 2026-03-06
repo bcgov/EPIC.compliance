@@ -18,6 +18,7 @@ import React, { useCallback } from "react";
 import { useAuth } from "react-oidc-context";
 import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { CaseFileStatusEnum } from "@/utils/constants";
+import { useInspectionsMoreDetailsByCaseFileId } from "@/hooks/useInspections";
 
 interface CaseFileActionsProps {
   status: string;
@@ -42,6 +43,8 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
   const { data: caseFileOpenItems } = useCaseFileOpenItems(
     caseFileData?.id ?? 0
   );
+
+  const { data: detailedInspections} = useInspectionsMoreDetailsByCaseFileId(caseFileData?.id);
 
   const isPrimaryOfficer =
     caseFileData?.primary_officer?.auth_user_guid ===
@@ -209,6 +212,14 @@ const CaseFileActions: React.FC<CaseFileActionsProps> = ({
                 updateCaseFileStatus({
                   id: caseFileData?.id ?? 0,
                   caseFileStatus: { status: "OPEN" },
+                });
+                queryClient.invalidateQueries({
+                  queryKey: ["case-file", caseFileData?.case_file_number],
+                });
+                detailedInspections?.map((inspection) => {
+                  queryClient.invalidateQueries({
+                    queryKey: ["inspection", inspection.ir_number],
+                  });
                 });
               }}
             />
