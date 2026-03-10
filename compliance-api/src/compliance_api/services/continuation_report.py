@@ -200,7 +200,7 @@ def _get_report_data(case_file):
         ),
         "authorization": case_file.authorization,
         "other_officers": [
-            f"{cfo.officer.first_name} {cfo.officer.last_name}" for cfo in case_file.case_file_officers
+            f"{cfo.officer.first_name} {cfo.officer.last_name}" for cfo in case_file.case_file_officers if cfo.officer
         ],
         "continuation_report_entries": [
             {

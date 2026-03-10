@@ -5,20 +5,39 @@ import { useContinuationReportExport } from "@/hooks/useContinuationReports";
 import { useParams } from "@tanstack/react-router";
 import { useCaseFileByNumber } from "@/hooks/useCaseFiles";
 import { useProjectAbbreviationById } from "@/hooks/useProjects";
+import { useInspectionByNumber } from "@/hooks/useInspections";
+import { useComplaintByNumber } from "@/hooks/useComplaints";
 
 export default function ContinuationReportExport() {
   const params = useParams({ strict: false });
-  const caseFileNumber = params?.caseFileNumber;
-  const { data: caseFileData } = useCaseFileByNumber(caseFileNumber!);
-  const { data: projectAbbreviation } = useProjectAbbreviationById(caseFileData?.project_id);
 
+  const caseFileNumberFromParams = params?.caseFileNumber;
+  const inspectionNumberFromParams = params?.inspectionNumber;
+  const compliantNumberFromParams = params?.complaintNumber;
+
+  const { data: caseFileData } = useCaseFileByNumber(caseFileNumberFromParams!);
+  const { data: inspectionData } = useInspectionByNumber(
+    inspectionNumberFromParams!,
+  );
+  const { data: complaintData } = useComplaintByNumber(
+    compliantNumberFromParams!,
+  );
+
+  const caseFileNumber =
+    caseFileData?.case_file_number ||
+    inspectionData?.case_file?.case_file_number ||
+    complaintData?.case_file?.case_file_number;
+
+  const projectId =
+    caseFileData?.project_id ||
+    inspectionData?.case_file?.project?.id ||
+    complaintData?.case_file?.project?.id;
+
+  const { data: projectAbbreviation } = useProjectAbbreviationById(projectId!);
 
   const { mutate: downloadContinuationReport, isPending } =
     useContinuationReportExport((data) => {
-      downloadFile(
-        data,
-        `${projectAbbreviation}_${caseFileNumber}_CREP.pdf`,
-      );
+      downloadFile(data, `${projectAbbreviation || "UNPRVD"}_${caseFileNumber}_CREP.pdf`);
     });
 
   return (
