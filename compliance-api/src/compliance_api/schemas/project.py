@@ -12,11 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Project Schema."""
-from marshmallow import EXCLUDE
+from marshmallow import EXCLUDE, Schema, fields
 
 from compliance_api.models.project import Project as ProjectModel
 
 from .base_schema import AutoSchemaBase
+
+
+class ProjectTypeSchema(Schema):
+    """Schema for project type from EPIC.Track."""
+
+    id = fields.Int()
+    name = fields.Str()
+    short_name = fields.Str(allow_none=True)
+    sort_order = fields.Int(allow_none=True)
+    is_active = fields.Bool()
+
+
+class ProjectSubTypeSchema(Schema):
+    """Schema for project sub-type from EPIC.Track."""
+
+    id = fields.Int()
+    name = fields.Str()
+    short_name = fields.Str(allow_none=True)
+    sort_order = fields.Int(allow_none=True)
+    is_active = fields.Bool()
+
+
+class ProjectProponentSchema(Schema):
+    """Schema for project proponent from EPIC.Track."""
+
+    id = fields.Int()
+    name = fields.Str()
+    is_active = fields.Bool()
+    relationship_holder_id = fields.Int(allow_none=True)
 
 
 class ProjectSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
@@ -28,3 +57,13 @@ class ProjectSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
         unknown = EXCLUDE
         model = ProjectModel
         include_fk = True
+
+
+class ProjectDetailSchema(ProjectSchema):  # pylint: disable=too-many-ancestors
+    """Project schema including enriched data from EPIC.Track."""
+
+    ea_certificate = fields.Str(allow_none=True)
+    description = fields.Str(allow_none=True)
+    type = fields.Nested(ProjectTypeSchema, allow_none=True)
+    sub_type = fields.Nested(ProjectSubTypeSchema, allow_none=True)
+    proponent = fields.Nested(ProjectProponentSchema, allow_none=True)

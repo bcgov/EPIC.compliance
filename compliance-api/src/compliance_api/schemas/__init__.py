@@ -53,7 +53,7 @@ from .order import (
     OrderSchema, OrderStatusSchema, OrderUpdateSchema, ResetOrderFieldSchema)
 from .order_approval import CreateOrderApprovalSchema, OrderApprovalSchema, UpdateOrderApprovalStatusSchema
 from .paginate import PaginationParameterSchema
-from .project import ProjectSchema
+from .project import ProjectDetailSchema, ProjectSchema
 from .requirement_source import RequirementSourceSchema
 from .restorative_justice import (
     RestorativeJusticeCreateSchema, RestorativeJusticeSchema, RestorativeJusticeUpdateSchema)

@@ -19,8 +19,9 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
-from compliance_api.schemas import ProjectSchema
+from compliance_api.schemas import ProjectDetailSchema, ProjectSchema
 from compliance_api.services import ProjectService
+from compliance_api.services.epic_track_service.track_service import TrackService
 from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
@@ -60,11 +61,18 @@ class Project(Resource):
     @API.response(code=200, model=project_list_model, description="Success")
     @API.response(404, "Not Found")
     def get(project_id):
-        """Fetch an project by id."""
+        """Fetch a project by id."""
         project = ProjectService.get_project_by_id(project_id)
         if not project:
             raise ResourceNotFoundError(f"Project with {project_id} not found")
-        return ProjectSchema().dump(project), HTTPStatus.OK
+        track_data = TrackService.get_project_by_id(project_id)
+        if track_data:
+            project.ea_certificate = track_data.get("ea_certificate")
+            project.description = track_data.get("description")
+            project.type = track_data.get("type", {})
+            project.sub_type = track_data.get("sub_type", {})
+            project.proponent = track_data.get("proponent", {})
+        return ProjectDetailSchema().dump(project), HTTPStatus.OK
 
 
 @cors_preflight("GET, OPTIONS")
