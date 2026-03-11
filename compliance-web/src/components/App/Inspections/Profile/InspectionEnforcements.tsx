@@ -38,7 +38,7 @@ import ViolationTicketCreateModal from "@/components/App/Inspections/Profile/Enf
 import ViolationTicketUpdateModal from "@/components/App/Inspections/Profile/Enforcements/ViolationTicket/ViolationTicketUpdateModal";
 import RestorativeJusticeCreateModal from "@/components/App/Inspections/Profile/Enforcements/RestorativeJustice/RestorativeJusticeCreateModal";
 import RestorativeJusticeUpdateModal from "@/components/App/Inspections/Profile/Enforcements/RestorativeJustice/RestorativeJusticeUpdateModal";
-import { prepNonProceededRequirements } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
+import { partitionEnforcementsByOrigin, prepNonProceededRequirements } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
 import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
 import { useChargeRecommendationsData } from "@/hooks/useChargeRecommendations";
 import { useViolationTicketsData } from "@/hooks/useViolationTickets";
@@ -131,6 +131,24 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
     data: inspectionRestorativeJusticeData,
     isLoading: isInspectionRestorativeJusticeLoading,
   } = useRestorativeJusticeByInspection(inspectionData.id);
+
+  const sortedInspectionOrdersData = useMemo(() => {
+    if (!inspectionOrdersData) return [];
+    return partitionEnforcementsByOrigin(
+      inspectionOrdersData.filter((order) => order.inspection_id !== undefined) as Array<InspectionOrder & { inspection_id: number }>,
+      inspectionData.id
+    );
+  }, [inspectionOrdersData, inspectionData.id]);
+
+  const sortedAdministrativePenaltiesData = useMemo(() => {
+    if (!inspectionAdministrativePenaltiesData) return [];
+    return partitionEnforcementsByOrigin(
+      inspectionAdministrativePenaltiesData.filter(
+        (penalty) => penalty.inspection_id !== undefined
+      ) as Array<AdministrativePenalty & { inspection_id: number }>,
+      inspectionData.id
+    );
+  }, [inspectionAdministrativePenaltiesData, inspectionData.id]);
 
   useEffect(() => {
     if (
@@ -651,7 +669,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
                 openEnforcementModal={openEnforcementModal}
               />
             ))}
-          {inspectionAdministrativePenaltiesData?.map((penality) => (
+          {sortedAdministrativePenaltiesData?.map((penality: AdministrativePenalty) => (
             <Box
               key={penality.id}
               onClick={() => openAdministrativePenaltyUpdateModal(penality)}
@@ -675,7 +693,7 @@ const InspectionEnforcements: React.FC<InspectionEnforcementsProps> = ({
               />
             </Box>
           ))}
-          {inspectionOrdersData?.map((order) => (
+          {sortedInspectionOrdersData?.map((order: InspectionOrder) => (
             <Box
               key={order.id}
               onClick={() => openEnforcementOrderDrawer(order)}

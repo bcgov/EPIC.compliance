@@ -268,6 +268,21 @@ export const getDefaultFormValues = (
   };
 };
 
+
+// Partitions enforcements into two groups: those linked to the current inspection and those linked to other inspections.
+// The enforcements linked to the current inspection are returned first, followed by the linked enforcements.
+// If there are no linked enforcements, only the created enforcements are returned.
+export const partitionEnforcementsByOrigin = <T extends { inspection_id: number }>(enforcements: T[], inspection_id: number): T[] => {
+  const linkedEnforcements = enforcements.filter(e => e.inspection_id !== inspection_id);
+  const createdEnforcements = enforcements.filter(e => e.inspection_id === inspection_id);
+  
+  // If there is are linked enforcement, we return them second
+  if (linkedEnforcements.length > 0) {
+    return [...createdEnforcements, ...linkedEnforcements];
+  }
+  return createdEnforcements;
+}
+
 // Enforcement type constants
 export const ENFORCEMENT_TYPES = {
   ORDER: EnforcementActionEnum.ORDER,
