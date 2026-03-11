@@ -11,8 +11,6 @@ import {
   AutocompleteProps,
   Chip,
   Box,
-  Popper,
-  PopperProps,
 } from "@mui/material";
 import { useEffect, useMemo } from "react";
 import { Controller, useFormContext } from "react-hook-form";
@@ -71,14 +69,6 @@ const ControlledAutoComplete = <T,>({
     return options;
   }, [isSortOptions, options, getOptionLabel]);
 
-  const CustomPopper = (props: PopperProps) => (
-    <Popper
-      {...props}
-      placement="bottom-start"
-      modifiers={[{ name: "flip", enabled: false }]}
-    />
-  );
-
   const selectAllOption = useMemo(
     () => ({
       name: "Select All",
@@ -113,7 +103,6 @@ const ControlledAutoComplete = <T,>({
           {...field}
           {...props}
           id={name}
-          PopperComponent={CustomPopper}
           options={
             showSelectAllOption
               ? [selectAllOption as T, ...sortedOptions]
