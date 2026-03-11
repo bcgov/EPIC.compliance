@@ -199,9 +199,15 @@ def _get_report_data(case_file):
             else ""
         ),
         "authorization": case_file.authorization,
-        "other_officers": [
-            f"{cfo.officer.first_name} {cfo.officer.last_name}" for cfo in case_file.case_file_officers if cfo.officer
-        ],
+        "other_officers": (
+            [
+                f"{cfo.officer.first_name} {cfo.officer.last_name}"
+                for cfo in case_file.case_file_officers
+                if cfo.officer and cfo.is_active and not cfo.is_deleted
+            ]
+            if case_file.case_file_officers
+            else ""
+        ),
         "continuation_report_entries": [
             {
                 "date": entry.date_created.strftime("%Y-%m-%d"),
