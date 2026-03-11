@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 from faker import Faker
 
 from compliance_api.models import CaseFile as CaseFileModel
+from compliance_api.models import Inspection as InspectionModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import InspectionReqEnforcementMap
 from compliance_api.models import InspectionReqEnforcementMap as InspectionReqEnforcementMapModel
@@ -172,6 +173,42 @@ def test_get_inspections_by_case_file_id(
     assert "total" in result.json
     assert result.json["total"] >= 1
     assert len(result.json["items"]) >= 1
+
+
+def test_get_inspections_filtered_by_close_as_note_status(
+    client, auth_header, created_case_file, mocker, mock_track_service
+):
+    """Get inspections filtered by close as note status."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+
+    inspection_data = copy.copy(InspectionScenario.default_value.value)
+    inspection_data.update(
+        {
+            "case_file_id": created_case_file.id,
+            "initiation_id": 1,
+            "start_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
+    )
+    created_inspection = InspectionService.create(inspection_data)
+
+    InspectionModel.update_inspection(
+        created_inspection.id,
+        {"inspection_status": InspectionStatusEnum.CLOSE_AS_NOTE},
+    )
+
+    url = urljoin(
+        API_BASE_URL,
+        f"inspections?statuses={InspectionStatusEnum.CLOSE_AS_NOTE.value}",
+    )
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.OK
+    assert "items" in result.json
+    assert any(
+        inspection["id"] == created_inspection.id
+        for inspection in result.json["items"]
+    )
 
 
 def test_get_inspections(

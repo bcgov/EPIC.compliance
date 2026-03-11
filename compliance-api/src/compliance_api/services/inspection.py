@@ -1072,7 +1072,7 @@ def _get_enum_filters(args):
     # Status filter
     if args.get("statuses"):
         status_enum = [
-            InspectionStatusEnum[status.upper().strip()]
+            InspectionStatusEnum(status.strip())
             for status in args["statuses"].split(",")
         ]
         filters.append(InspectionModel.inspection_status.in_(status_enum))
