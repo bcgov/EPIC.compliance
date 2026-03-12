@@ -71,7 +71,7 @@ const InspectionSummary = () => {
     }
   };
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending: isSaving } =
     useUpdateInspectionRecord(handleOnSuccess);
 
   const { mutate: resetInspectionRecord } =
@@ -120,6 +120,7 @@ const InspectionSummary = () => {
             ? () => handleResetInspectionSummary("inspection_scope")
             : undefined
         }
+        isSaving={isSaving}
       >
         <Typography
           variant="body1"
@@ -147,6 +148,7 @@ const InspectionSummary = () => {
               ? () => handleResetInspectionSummary("preliminary_review_details")
               : undefined
           }
+          isSaving={isSaving}
         >
           <Typography
             variant="body1"
@@ -171,6 +173,7 @@ const InspectionSummary = () => {
             : undefined
         }
         isResetting={isRegenerating}
+        isSaving={isSaving}
       >
         <Typography
           variant="body1"

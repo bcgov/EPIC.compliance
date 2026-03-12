@@ -73,13 +73,13 @@ export default function OfficerStepper() {
     handleNext();
   };
 
-  const { mutateAsync: updateIRApprovalStatusAsync } =
+  const { mutateAsync: updateIRApprovalStatusAsync,  isPending: isApprovalPending } =
     useUpdateIRApproval(onSuccessApproval);
 
-  const { mutate: updateIRReportToFinal } =
+  const { mutate: updateIRReportToFinal, isPending: isReportFinalPending } =
     useUpdateIRReportToFinal(onSuccessIRReport);
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending: isInspectionRecordPending } =
     useUpdateInspectionRecord(onSuccessIRReport);
 
   const onUpdateIRApprovalStep = async (
@@ -186,6 +186,7 @@ export default function OfficerStepper() {
               <PreliminaryReview
                 onUpdateIRApprovalStep={onUpdateIRApprovalStep}
                 nextStep={handleNext}
+                isPending={isApprovalPending}
               />
             )}
           </>
@@ -195,6 +196,7 @@ export default function OfficerStepper() {
             onUpdateIRApprovalStep={onUpdateIRApprovalStep}
             onNext={handleNext}
             onBack={handleBack}
+            isPending={isApprovalPending}
           />
         )}
         {activeStep === 2 && (
@@ -204,6 +206,7 @@ export default function OfficerStepper() {
             onUpdateIRReportToPreliminary={() =>
               onUpdateIRReport("preliminary")
             }
+            isPending={isReportFinalPending || isInspectionRecordPending}
           />
         )}
         </Box>

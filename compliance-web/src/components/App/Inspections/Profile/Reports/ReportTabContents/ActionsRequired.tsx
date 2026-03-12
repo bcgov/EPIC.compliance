@@ -27,7 +27,7 @@ const ActionsRequired = () => {
     notify.success("Actions required updated");
   };
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending: isSaving } =
     useUpdateInspectionRecord(handleOnSuccess);
 
   const handleSaveActionsRequired = (editorValue: string) => {
@@ -46,6 +46,7 @@ const ActionsRequired = () => {
       title={`Actions Required by ${proponentLabel} and Comments`}
       defaultValue={actionsRequired}
       onEditSubmit={!isReportsReadOnly ? handleSaveActionsRequired : undefined}
+      isSaving={isSaving}
     >
       <Typography
         variant="body1"

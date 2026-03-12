@@ -39,10 +39,6 @@ class InspectionRecordService:
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         ServiceUtils.access_check_update_for_inspection(inspection)
         ServiceUtils.inspection_status_check(inspection)
-        existing_ir = InspectionRecordModel.get_by_inspection_id(inspection_id)
-        #  Raise error, if ir exists and the request is to create another ir of the same status
-        if existing_ir:
-            raise ResourceExistsError("IR for the given inspection already exists.")
         ir_status = ir_request_data.get("ir_status")
         ir_builder = InspectionRecordDataBuilder(
             inspection=inspection, ir_status=ir_status.value
@@ -57,6 +53,18 @@ class InspectionRecordService:
         )
         ir_obj = _create_ir_object(ir_data, ir_status, inspection_id)
         with session_scope() as session:
+            # Check for existing IR inside transaction with row lock to prevent race conditions
+            # Query only the ID to avoid outer join issues with with_for_update()
+            existing_ir_id = (
+                session.query(InspectionRecordModel.id)
+                .filter_by(
+                    inspection_id=inspection_id, is_deleted=False, is_active=True
+                )
+                .with_for_update()
+                .first()
+            )
+            if existing_ir_id:
+                raise ResourceExistsError("IR for the given inspection already exists.")
             # pylint: disable=import-outside-toplevel
             from compliance_api.services.inspection_record.inspection_record_approval import (
                 InspectionRecordApprovalService)

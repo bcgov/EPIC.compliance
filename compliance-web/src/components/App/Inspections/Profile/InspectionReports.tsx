@@ -82,7 +82,7 @@ const InspectionReports: React.FC<InspectionReportsProps> = ({
     });
   };
 
-  const { mutate: createInspectionRecord } =
+  const { mutate: createInspectionRecord, isPending } =
     useCreateInspectionRecord(handleOnSuccess);
 
   const handleProceedToReport = () => {
@@ -154,7 +154,7 @@ const InspectionReports: React.FC<InspectionReportsProps> = ({
 
       <Button
         onClick={handleProceedToReport}
-        disabled={!reportVersion}
+        disabled={!reportVersion || isPending}
         sx={{
           width: "fit-content",
         }}

@@ -35,11 +35,13 @@ type PreliminaryReviewProps = {
     approvalPayloads: InspectionRecordApprovalPayload[]
   ) => void;
   nextStep: () => void;
+  isPending?: boolean;
 };
 
 const PreliminaryReview: React.FC<PreliminaryReviewProps> = ({
   onUpdateIRApprovalStep,
   nextStep,
+  isPending = false,
 }) => {
   const { irApprovalsData } = useReportStore();
 
@@ -138,7 +140,11 @@ const PreliminaryReview: React.FC<PreliminaryReviewProps> = ({
               minDate={dateSent ?? undefined}
             />
           </Box>
-          <Button size="small" type="submit" disabled={!isValid}>
+          <Button
+            size="small"
+            type="submit"
+            disabled={!isValid || isPending}
+          >
             Save & Next
           </Button>
         </Box>

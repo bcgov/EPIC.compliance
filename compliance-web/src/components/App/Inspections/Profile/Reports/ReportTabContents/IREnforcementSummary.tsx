@@ -40,7 +40,7 @@ const IREnforcementSummary = () => {
     }
   };
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending: isSaving } =
     useUpdateInspectionRecord(handleOnSuccess);
 
   const handleSaveEnforcementSummary = (editorValue: string) => {
@@ -79,6 +79,7 @@ const IREnforcementSummary = () => {
       onEditSubmit={!isReportsReadOnly ? handleSaveEnforcementSummary : undefined}
       onReset={!isReportsReadOnly ? handleResetEnforcementSummary : undefined}
       isResetting={isRegenerating}
+      isSaving={isSaving}
     >
       <Typography
         variant="body1"

@@ -24,6 +24,7 @@ type IRBoxContainerProps = {
   onEditSubmit?: (editorValue: string) => void;
   onReset?: () => void;
   isResetting?: boolean;
+  isSaving?: boolean;
 };
 
 const IRBoxContainer = ({
@@ -35,6 +36,7 @@ const IRBoxContainer = ({
   onEditSubmit,
   onReset,
   isResetting = false,
+  isSaving = false,
 }: IRBoxContainerProps) => {
   const { setOpen, setClose } = useModal();
   const [isEdit, setIsEdit] = useState<boolean>(false);
@@ -154,11 +156,17 @@ const IRBoxContainer = ({
                 variant="contained"
                 color="secondary"
                 onClick={handleCancel}
+                disabled={isSaving}
               >
                 Cancel
               </Button>
-              <Button variant="contained" color="primary" onClick={handleSave}>
-                Save
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving..." : "Save"}
               </Button>
             </Box>
           </>

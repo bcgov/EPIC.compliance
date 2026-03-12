@@ -21,12 +21,14 @@ type IRVersionSelectProps = {
   onBack: () => void;
   onUpdateIRReportToFinal: () => void;
   onUpdateIRReportToPreliminary: () => void;
+  isPending?: boolean;
 };
 
 const IRVersionSelect: React.FC<IRVersionSelectProps> = ({
   onBack,
   onUpdateIRReportToFinal,
   onUpdateIRReportToPreliminary,
+  isPending = false,
 }) => {
   const defaultValues = useMemo<IRVersionSelectSchemaType>(() => {
     return initFormData;
@@ -85,7 +87,7 @@ const IRVersionSelect: React.FC<IRVersionSelectProps> = ({
             <Button variant="outlined" size="small" onClick={onBack}>
               Previous
             </Button>
-            <Button size="small" type="submit" disabled={!isValid}>
+            <Button size="small" type="submit" disabled={!isValid || isPending}>
               Save & Finish
             </Button>
           </Box>

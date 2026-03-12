@@ -35,12 +35,14 @@ type RegPartyResponseProps = {
   ) => void;
   onNext: () => void;
   onBack: () => void;
+  isPending?: boolean;
 };
 
 const RegPartyResponse: React.FC<RegPartyResponseProps> = ({
   onUpdateIRApprovalStep,
   onNext,
   onBack,
+  isPending = false,
 }) => {
   const { irApprovalsData } = useReportStore();
 
@@ -138,7 +140,7 @@ const RegPartyResponse: React.FC<RegPartyResponseProps> = ({
             <Button variant="outlined" size="small" onClick={onBack}>
               Previous
             </Button>
-            <Button size="small" type="submit" disabled={!isValid}>
+            <Button size="small" type="submit" disabled={!isValid || isPending}>
               Save & Next
             </Button>
           </Box>

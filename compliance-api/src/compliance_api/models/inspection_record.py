@@ -2,6 +2,8 @@
 
 from enum import Enum
 
+from flask import current_app
+
 from sqlalchemy import JSON, Column, DateTime
 from sqlalchemy import Enum as SqlEnum
 from sqlalchemy import ForeignKey, Integer, String
@@ -158,6 +160,16 @@ class InspectionRecord(BaseModelVersioned):
     @classmethod
     def get_by_inspection_id(cls, inspection_id):
         """Find all inspection records by inspection id."""
-        return cls.query.filter_by(
+        results = cls.query.filter_by(
             inspection_id=inspection_id, is_deleted=False, is_active=True
-        ).first()
+        ).all()
+
+        # Log warning if multiple active records found (should never happen)
+        if len(results) > 1:
+            current_app.logger.warning(
+                f"Data integrity issue: Found {len(results)} active inspection records "
+                f"for inspection_id={inspection_id}. IDs: {[r.id for r in results]}"
+            )
+
+        # Return first record for backward compatibility
+        return results[0] if results else None

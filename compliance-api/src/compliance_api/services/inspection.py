@@ -289,8 +289,8 @@ class InspectionService:
         ServiceUtils.access_check_update_for_inspection(inspection)
         inspection_obj = _create_inspection_update_obj(inspection_data)
         with session_scope() as session:
-            #  If the history flag is changed, delete the inspection record if one already created
-            if inspection.is_history != inspection_obj.get("is_history", False):
+            #  If the history flag is explicitly changed, delete the inspection record if one already created
+            if "is_history" in inspection_data and inspection.is_history != inspection_obj.get("is_history", False):
                 inspection_record = InspectionRecordService.get_by_inspection_id(
                     inspection.id
                 )

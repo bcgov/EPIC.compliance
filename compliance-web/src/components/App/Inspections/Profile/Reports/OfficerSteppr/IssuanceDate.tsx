@@ -43,7 +43,7 @@ const IssuanceDate: React.FC = () => {
   const {
     handleSubmit,
     reset,
-    formState: { isDirty },
+    formState: { isDirty},
   } = methods;
 
   // Reset form with defaultValues when they change
@@ -58,7 +58,7 @@ const IssuanceDate: React.FC = () => {
     setInspectionReportsData(data);
   };
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending } =
     useUpdateInspectionRecord(handleOnSuccess);
 
   const onSubmitHandler = (data: IssuanceDateSchemaType) => {
@@ -102,7 +102,7 @@ const IssuanceDate: React.FC = () => {
           <Button
             size="small"
             type="submit"
-            disabled={!isDirty}
+            disabled={!isDirty || isPending}
             sx={{ width: "150px" }}
           >
             Save & Record

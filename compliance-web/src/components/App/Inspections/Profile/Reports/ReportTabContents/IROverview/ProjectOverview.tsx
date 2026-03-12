@@ -48,7 +48,7 @@ const ProjectOverview = () => {
     setClose();
   };
 
-  const { mutate: updateInspectionRecord } =
+  const { mutate: updateInspectionRecord, isPending: isSaving } =
     useUpdateInspectionRecord(handleOnSuccess);
 
   const updateMailingAddress = (mailingAddress: string) => {
@@ -192,6 +192,7 @@ const ProjectOverview = () => {
               <Button
                 variant="text"
                 color="secondary"
+                disabled={isSaving}
                 size="small"
                 onClick={addMailingAddress}
                 startIcon={<AddRounded />}
