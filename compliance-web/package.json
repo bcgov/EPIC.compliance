@@ -12,7 +12,8 @@
     "cy:unit": "cypress run --component",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "chromatic": "npx chromatic --project-token=chpt_725abf107f71179"
+    "chromatic": "npx chromatic --project-token=chpt_725abf107f71179",
+    "vitest": "vitest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
