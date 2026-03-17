@@ -20,6 +20,7 @@ from compliance_api.models import InspectionAttendanceOptionEnum
 from compliance_api.models import InspectionFirstnation as InspectionFirstnationModel
 from compliance_api.models import InspectionInitiationOption as InspectionInitiationOptionModel
 from compliance_api.models import InspectionOfficer as InspectionOfficerModel
+from compliance_api.models import InspectionRecordApproval as InspectionRecordApprovalModel
 from compliance_api.models import InspectionReqEnforcementMap as InspectionReqEnforcementMapModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models import InspectionStatusEnum
@@ -683,13 +684,14 @@ def _validate_inspection_can_be_closed(pending_items: list):
 
 
 def _handle_close_as_note(inspection, session):
-    """Handle close as note.
+    """Handle Close as Note to File by updating requirements and inspection record.
 
-    Mark compliance finding as 'Not Determined' and
-    Enforcement action as 'Not Applicable' unless the
-    Enforcement action is 'Order' and is issued
+    Mark compliance finding as 'Not Determined' and Enforcement action as 'Not Applicable' unless the
+    Enforcement action is 'Order' and is issued.
+    Delete the inspection record if it was created.
     Args:
         inspection (InspectionModel): Inspection model.
+        session (Session): Database session.
     """
     requirements = InspectionRequirementModel.get_by_inspection_id(inspection.id)
     for requirement in requirements:
@@ -730,6 +732,22 @@ def _handle_close_as_note(inspection, session):
                 },
                 session,
             )
+    # Soft delete inspection record and approvals
+    inspection_record = InspectionRecord.query.filter_by(inspection_id=inspection.id, is_active=True).first()
+    if inspection_record:
+        approvals = InspectionRecordApprovalModel.get_approvals_by_ir(inspection_record.id)
+        if approvals:
+            for approval in approvals:
+                InspectionRecordApprovalModel.update_approval(
+                    approval_id=approval.id,
+                    approval_update_data={"is_deleted": True, "is_active": False},
+                    session=session,
+                )
+        InspectionRecord.update_inspection_record(
+            inspection_record_id=inspection_record.id,
+            ir_update_data={"is_deleted": True, "is_active": False},
+            session=session,
+        )
 
 
 def _make_inspection_object(inspections):
