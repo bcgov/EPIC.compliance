@@ -309,6 +309,14 @@ def _add_page_number(run):
     run._r.append(fld_char_end)
 
 
+def _remove_compatibility_mode(doc):
+    """Remove Word 2010 compatibility mode."""
+    settings = doc.settings.element
+    compatibility = settings.find(qn('w:compat'))
+    if compatibility is not None:
+        settings.remove(compatibility)
+
+
 def _remove_cell_margins(cell):
     table_cell = cell._tc
     table_cell_pr = table_cell.get_or_add_tcPr()
@@ -727,6 +735,7 @@ def _add_requirement_details_table(doc, req):
 def generate_inspection_report_docx(preview_data):
     """Generate a DOCX file from inspection report preview data."""
     doc = Document()
+    _remove_compatibility_mode(doc)
 
     # Set document margins
     sections = doc.sections
