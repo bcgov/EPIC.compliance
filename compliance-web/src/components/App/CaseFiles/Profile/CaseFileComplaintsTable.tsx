@@ -19,7 +19,15 @@ import { useMemo, useState } from "react";
 
 const CaseFileComplaintsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   const { data } = useComplaintsByCaseFileId(caseFile.id);
-  const complaints = useMemo(() => data?.items || [], [data]);
+  const complaints = useMemo(
+    () =>
+      [...(data?.items || [])].sort(
+        (a, b) =>
+          new Date(a.date_received).getTime() -
+          new Date(b.date_received).getTime()
+      ),
+    [data]
+  );
 
   const [expandedComplaints, setExpandedComplaints] = useState<Set<number>>(
     new Set()
