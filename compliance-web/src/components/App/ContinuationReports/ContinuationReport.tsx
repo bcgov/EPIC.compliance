@@ -1,7 +1,6 @@
 import {
   Box,
   Button,
-  Grid,
   SelectChangeEvent,
   Typography,
 } from "@mui/material";
@@ -65,7 +64,7 @@ export default function ContinuationReport({
     caseFileId,
     page,
     rowsPerPage,
-    debouncedSearchText
+    debouncedSearchText,
   );
 
   const handleOnSubmit = useCallback(
@@ -77,7 +76,7 @@ export default function ContinuationReport({
       setClose();
       notify.success(submitMsg);
     },
-    [queryClient, caseFileId, setClose]
+    [queryClient, caseFileId, setClose],
   );
 
   const handleAddNewEntry = useCallback(() => {
@@ -96,7 +95,7 @@ export default function ContinuationReport({
     (_event: React.ChangeEvent<unknown>, newPage: number) => {
       setPage(newPage);
     },
-    []
+    [],
   );
 
   const handleRowsPerPageChange = (event: SelectChangeEvent) => {
@@ -132,21 +131,28 @@ export default function ContinuationReport({
               </Button>
             )}
           </Box>
-          <Grid container gap={1} justifyContent={"space-between"}>
-            <Grid item xs={8}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 3, minHeight: 40 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               <SearchTextField
                 id="searchTextField"
                 value={searchText}
                 onChange={(value) => {
                   setSearchText(value);
                 }}
+                sx={{
+                  m: 0,
+                  "& .MuiInputBase-root": {
+                    height: 40,
+                    boxSizing: "border-box",
+                  },
+                }}
                 fullWidth
               />
-            </Grid>
-            <Grid item xs={3}>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
               <ContinuationReportExport />
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
           {!caseFileId || status === "pending" ? (
             <LoadingPage isLoading={isLoading} />
           ) : isError ? (

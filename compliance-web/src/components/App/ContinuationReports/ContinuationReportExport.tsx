@@ -47,7 +47,7 @@ export default function ContinuationReportExport() {
       startIcon={
         isPending ? <CircularProgress size={16} /> : <FileDownloadRounded />
       }
-      sx={{ ml: -2 }}
+      sx={{ whiteSpace: "nowrap", height: 40 }}
       onClick={() =>
         downloadContinuationReport({
           case_file_number: caseFileNumber!,
