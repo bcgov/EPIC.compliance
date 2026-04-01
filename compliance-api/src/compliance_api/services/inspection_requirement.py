@@ -1425,10 +1425,20 @@ def _apply_inspection_status_sort(query, subq, sort_order):
 
 def _process_inspection_requirement_query_results(query_results):
     """Process inspection requirement query results."""
-    # Process results
+    # Process results and deduplicate by requirement ID
     processed_requirements = []
+    seen_requirements = {}  # Track requirement IDs to avoid duplicates
+
     for result in query_results:
         requirement = result[0]
+        requirement_id = requirement.id
+
+        # Skip if we've already processed this requirement
+        if requirement_id in seen_requirements:
+            continue
+
+        seen_requirements[requirement_id] = True
+
         item = {
             "id": requirement.id,
             "topic": requirement.topic,
