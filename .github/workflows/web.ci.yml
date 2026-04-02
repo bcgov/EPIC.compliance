@@ -23,7 +23,7 @@ jobs:
     if: github.repository == 'bcgov/EPIC.compliance'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: "true"
 
   linting:
@@ -35,7 +35,7 @@ jobs:
         node-version: [24.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -57,7 +57,7 @@ jobs:
         node-version: [24.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
