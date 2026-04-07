@@ -791,8 +791,11 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
         )
         .outerjoin(
             subqueries["requirement_order"],
-            subqueries["requirement_order"].c.inspection_requirement_id
-            == models["req"].id,
+            and_(
+                subqueries["requirement_order"].c.inspection_requirement_id == models["req"].id,
+                # Prevent cross-product by only joining Orderss if the enforcement action is an Order
+                models["enf_map"].enforcement_action_id == EnforcementActionOptionEnum.ORDER.value,
+            ),
         )
         .outerjoin(
             models["order"],
@@ -832,8 +835,12 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
         )
         .outerjoin(
             subqueries["requirement_admin_penalty"],
-            subqueries["requirement_admin_penalty"].c.inspection_requirement_id
-            == models["req"].id,
+            and_(
+                subqueries["requirement_admin_penalty"].c.inspection_requirement_id == models["req"].id,
+                # Prevent cross-product by only joining APs if the enforcement action is AP recommendation
+                models["enf_map"].enforcement_action_id
+                == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
+            )
         )
         .outerjoin(
             models["admin_penalty"],
@@ -1425,19 +1432,11 @@ def _apply_inspection_status_sort(query, subq, sort_order):
 
 def _process_inspection_requirement_query_results(query_results):
     """Process inspection requirement query results."""
-    # Process results and deduplicate by requirement ID
+    # Process results
     processed_requirements = []
-    seen_requirements = {}  # Track requirement IDs to avoid duplicates
 
     for result in query_results:
         requirement = result[0]
-        requirement_id = requirement.id
-
-        # Skip if we've already processed this requirement
-        if requirement_id in seen_requirements:
-            continue
-
-        seen_requirements[requirement_id] = True
 
         item = {
             "id": requirement.id,
