@@ -1,493 +1,20 @@
 """DOCX Generator for Inspection Reports."""
 
-import re
 from io import BytesIO
 from pathlib import Path
 
 import requests
-from bs4 import BeautifulSoup
 from docx import Document
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 from requests.exceptions import RequestException
 
-
-def _add_hyperlink(paragraph, text, url):
-    """Add a hyperlink to a paragraph."""
-    part = paragraph.part
-    r_id = part.relate_to(
-        url,
-        'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
-        is_external=True
-    )
-    hyperlink = OxmlElement('w:hyperlink')
-    hyperlink.set(qn('r:id'), r_id)
-
-    # Create a new run object (a wrapper around a new w:r element)
-    new_run = OxmlElement('w:r')
-    # Set the run's text
-    rpr = OxmlElement('w:rPr')
-
-    # Add color (blue) and underline for hyperlink style
-    c = OxmlElement('w:color')
-    c.set(qn('w:val'), '0563C1')  # hyperlink blue
-    rpr.append(c)
-
-    u = OxmlElement('w:u')
-    u.set(qn('w:val'), 'single')
-    rpr.append(u)
-
-    new_run.append(rpr)
-    new_run.text = text
-
-    hyperlink.append(new_run)
-    paragraph._p.append(hyperlink)
-
-    return hyperlink
-
-
-def _set_cell_background(cell, fill):
-    """Set cell background color."""
-    shading_elm = OxmlElement('w:shd')
-    shading_elm.set(qn('w:fill'), fill)
-    cell._element.get_or_add_tcPr().append(shading_elm)
-
-
-def set_cell_border(cell, **kwargs):
-    """Set cell borders."""
-    tc = cell._tc
-    tc_para = tc.get_or_add_tcPr()
-
-    tc_borders = OxmlElement('w:tcBorders')
-    for edge in ('start', 'top', 'end', 'bottom', 'insideH', 'insideV'):
-        if edge in kwargs:
-            edge_data = kwargs[edge]
-            edge_el = OxmlElement(f'w:{edge}')
-            for key, value in edge_data.items():
-                edge_el.set(qn(f'w:{key}'), str(value))
-            tc_borders.append(edge_el)
-    tc_para.append(tc_borders)
-
-
-def _add_html_to_container(container, html_text, *, font_size=None, clear_first=True):
-    if not html_text:
-        return
-
-    soup = BeautifulSoup(html_text, "html.parser")
-
-    # Clear the first paragraph if requested
-    if clear_first and hasattr(container, 'paragraphs') and container.paragraphs:
-        container.paragraphs[0].text = ""
-        first_para_used = False
-    else:
-        first_para_used = True
-
-    # if div, get its children
-    children = soup.children
-    if len(list(soup.children)) == 1 and list(soup.children)[0].name == 'div':
-        children = list(soup.children)[0].children
-
-    for element in children:
-        if element.name == "p":
-            # Use the first empty paragraph if available
-            if not first_para_used and hasattr(container, 'paragraphs') and container.paragraphs:
-                para = container.paragraphs[0]
-                # Handle text with inline formatting (italic, bold)
-                if element.find(['i', 'em', 'strong', 'b']):
-                    _add_formatted_text_to_para(para, element, font_size)
-                else:
-                    text = element.get_text(strip=True)
-                    # Replace 2+ spaces with single space
-                    text = re.sub(r' {2,}', ' ', text)
-                    if text:
-                        run = para.add_run(text)
-                        if font_size:
-                            run.font.size = font_size
-                first_para_used = True
-            else:
-                _add_paragraph(container, element, font_size)
-
-        elif element.name in ("ol", "ul"):
-            _add_list(container, element, font_size)
-            first_para_used = True  # Mark as used after adding list
-
-        elif element.name == "table":
-            add_html_table_to_container(container, element)
-            first_para_used = True  # Mark as used after adding table
-
-
-def _add_paragraph(container, p_tag, font_size):
-    # Blank paragraph (<p><br/></p>)
-    para = container.add_paragraph()
-
-    # Handle text with inline formatting (italic, bold)
-    if p_tag.find(['i', 'em', 'strong', 'b']):
-        _add_formatted_text_to_para(para, p_tag, font_size)
-    else:
-        text = p_tag.get_text(strip=True)
-        # Replace 2+ spaces with single space
-        text = re.sub(r' {2,}', ' ', text)
-        if not text:
-            return
-        run = para.add_run(text)
-        if font_size:
-            run.font.size = font_size
-
-
-def _get_restarted_list_number_num_id(document):
-    styles = document.styles
-    num_id_list_number = -1
-
-    # Find numId used by 'List Number' style
-    for style in styles:
-        if style.name == "List Number":
-            num_id_list_number = style._element.pPr.numPr.numId.val
-            break
-
-    if num_id_list_number == -1:
-        return None
-
-    numbering = document.part.numbering_part.numbering_definitions._numbering
-    ct_num = numbering.num_having_numId(num_id_list_number)
-    abstract_num_id = ct_num.abstractNumId.val
-
-    # Create new numbering instance
-    new_ct_num = numbering.add_num(abstract_num_id)
-    new_num_id = new_ct_num.numId
-
-    # Force restart at 1
-    start_override = new_ct_num.add_lvlOverride(0)._add_startOverride()
-    start_override.val = 1
-
-    return new_num_id
-
-
-def _add_list(container, list_tag, font_size):
-    style = "List Number" if list_tag.name == "ol" else "List Bullet"
-
-    document = container.part.document
-    restarted_num_id = None
-
-    if list_tag.name == "ol":
-        restarted_num_id = _get_restarted_list_number_num_id(document)
-
-    first = True
-
-    for li in list_tag.find_all("li", recursive=False):
-        para = container.add_paragraph(style=style)
-        para.paragraph_format.left_indent = Inches(0.5)
-        para.paragraph_format.hanging_indent = Inches(0.25)
-
-        if list_tag.name == "ol" and first and restarted_num_id is not None:
-            para_props = para._element.pPr
-            num_props = para_props._add_numPr()
-
-            ilvl = OxmlElement("w:ilvl")
-            ilvl.set(qn("w:val"), "0")
-
-            num_id = OxmlElement("w:numId")
-            num_id.set(qn("w:val"), str(restarted_num_id))
-
-            num_props.append(ilvl)
-            num_props.append(num_id)
-            first = False
-
-        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
-        run = para.add_run(text)
-        if font_size:
-            run.font.size = font_size
-
-
-def _add_html_paragraphs_to_cell(cell, html, font_size=Pt(11)):
-    soup = BeautifulSoup(html, "html.parser")
-
-    # Clear the first existing paragraph
-    if cell.paragraphs:
-        cell.paragraphs[0].text = ""
-        first_para_used = False
-    else:
-        first_para_used = True
-
-    # Find only direct child paragraphs, not nested ones
-    # First, get the root element(s)
-    root_elements = [el for el in soup.children if el.name == 'p']
-
-    # If we have a wrapper <p>, get its children instead
-    if len(root_elements) == 1 and root_elements[0].find_all('p', recursive=False):
-        paragraphs = root_elements[0].find_all('p', recursive=False)
-    else:
-        paragraphs = soup.find_all('p', recursive=False)
-
-    for p in paragraphs:
-        # Handle empty <p><br/></p>
-        text = p.get_text(strip=True)
-        # Data has duplicate (sometimes four spaces) in a row
-        # Replace 2+ spaces with single space
-        text = re.sub(r' {2,}', ' ', text)
-
-        # Use the first empty paragraph if available
-        if not first_para_used:
-            para = cell.paragraphs[0]
-            first_para_used = True
-        else:
-            para = cell.add_paragraph()
-
-        # Handle text with inline formatting (italic, bold)
-        if p.find(['i', 'em', 'strong', 'b']):
-            _add_formatted_text_to_para(para, p, font_size)
-        else:
-            run = para.add_run(text if text else "")
-            run.font.size = font_size
-
-
-def _add_formatted_text_to_para(para, element, font_size):
-    """Add text with inline formatting (bold, italic) to a paragraph."""
-    for child in element.children:
-        if isinstance(child, str):
-            # Replace 2+ spaces with single space
-            text = re.sub(r' {2,}', ' ', child)
-            if text:
-                run = para.add_run(text)
-                run.font.size = font_size
-        elif child.name in ['strong', 'b']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.bold = True
-            run.font.size = font_size
-        elif child.name in ['em', 'i']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.italic = True
-            run.font.size = font_size
-        elif child.name == 'br':
-            pass  # Skip <br> tags inside paragraphs
-        else:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.font.size = font_size
-
-
-def _set_empty_paragraph_spacing(doc):
-    """Set line spacing to 0.5 for all empty paragraph blocks."""
-    # Iterate through all paragraphs in the doc body
-    for para in doc.paragraphs:
-        if not para.text.strip():
-            para.paragraph_format.line_spacing = 0.5
-
-    # Check paragraphs inside table
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                for para in cell.paragraphs:
-                    if not para.text.strip() and not _has_images(para):
-                        para.paragraph_format.line_spacing = 0.5
-
-
-def _has_images(para):
-    """Check if a paragraph contains any images."""
-    for run in para.runs:
-        if run._element.xpath('.//pic:pic'):
-            return True
-    return False
-
-
-def _add_page_number(run):
-    fld_char_begin = OxmlElement('w:fldChar')
-    fld_char_begin.set(qn('w:fldCharType'), 'begin')
-
-    instr_text = OxmlElement('w:instrText')
-    instr_text.text = 'PAGE'
-
-    fld_char_end = OxmlElement('w:fldChar')
-    fld_char_end.set(qn('w:fldCharType'), 'end')
-
-    run._r.append(fld_char_begin)
-    run._r.append(instr_text)
-    run._r.append(fld_char_end)
-
-
-def _remove_compatibility_mode(doc):
-    """Remove Word 2010 compatibility mode."""
-    settings = doc.settings.element
-    compatibility = settings.find(qn('w:compat'))
-    if compatibility is not None:
-        settings.remove(compatibility)
-
-
-def _remove_cell_margins(cell):
-    table_cell = cell._tc
-    table_cell_pr = table_cell.get_or_add_tcPr()
-
-    tc_margin = OxmlElement('w:tcMar')
-    for side in ('top', 'left', 'bottom', 'right'):
-        elem = OxmlElement(f'w:{side}')
-        elem.set(qn('w:w'), '0')
-        elem.set(qn('w:type'), 'dxa')
-        tc_margin.append(elem)
-
-    table_cell_pr.append(tc_margin)
-
-
-def add_html_table_to_container(container, table_element):
-    """Convert an HTML table to a docx table."""
-    rows = table_element.find_all('tr')
-    if not rows:
-        return
-
-    max_cols = max(len(row.find_all(['th', 'td'])) for row in rows)
-
-    # Create docx table
-    docx_table = container.add_table(rows=len(rows), cols=max_cols)
-    docx_table.style = 'Table Grid'
-    docx_table.autofit = False
-
-    # Set table width
-    if hasattr(container, 'width'):
-        parent_width_emu = container.width if isinstance(container.width, int) else container.width.emu
-        table_width_emu = parent_width_emu - Inches(0.16).emu
-    else:
-        table_width_emu = Inches(7.09).emu
-
-    # Apply width at XML level
-    tbl = docx_table._element
-    table_props = tbl.tblPr
-    if table_props is None:
-        table_props = OxmlElement('w:tblPr')
-        tbl.insert(0, table_props)
-
-    table_width = OxmlElement('w:tblW')
-    table_width.set(qn('w:w'), str(int(table_width_emu / 635)))
-    table_width.set(qn('w:type'), 'dxa')
-    table_props.append(table_width)
-
-    # Populate table
-    for row_idx, tr in enumerate(rows):
-        docx_row = docx_table.rows[row_idx]
-
-        # Try to extract row height from style attribute
-        style = tr.get('style', '')
-        if 'height:' in style:
-            # Extract height value (e.g., "66px")
-            import re as regex
-            height_match = regex.search(r'height:\s*(\d+)px', style)
-            if height_match:
-                height_px = int(height_match.group(1))
-                # Convert pixels to inches (roughly 96 DPI)
-                height_inches = height_px / 96
-                docx_row.height = Inches(height_inches)
-
-        cells = tr.find_all(['th', 'td'])
-        for col_idx, cell in enumerate(cells):
-            docx_cell = docx_row.cells[col_idx]
-
-            # Clear default paragraph
-            docx_cell.paragraphs[0].text = ""
-
-            # Process cell content - handle paragraphs, lists, and formatting
-            first_element = True
-            for element in cell.children:
-                if element.name == 'p':
-                    # Use first paragraph or create new one
-                    if first_element and docx_cell.paragraphs:
-                        para = docx_cell.paragraphs[0]
-                        first_element = False
-                    else:
-                        para = docx_cell.add_paragraph()
-
-                    # Add formatted text to paragraph
-                    _add_formatted_text_to_table_para(para, element)
-
-                elif element.name in ('ul', 'ol'):
-                    # If list is first element, remove the empty default paragraph
-                    if first_element and docx_cell.paragraphs and not docx_cell.paragraphs[0].text.strip():
-                        p = docx_cell.paragraphs[0]._element
-                        p.getparent().remove(p)
-                    # Add list to cell
-                    _add_list_to_table_cell(docx_cell, element)
-                    first_element = False
-
-            # Make header cells bold
-            if cell.name == 'th':
-                for para in docx_cell.paragraphs:
-                    for run in para.runs:
-                        run.bold = True
-
-            # Set borders
-            set_cell_border(
-                docx_cell,
-                top={"sz": 4, "val": "single", "color": "000000"},
-                bottom={"sz": 4, "val": "single", "color": "000000"},
-                start={"sz": 4, "val": "single", "color": "000000"},
-                end={"sz": 4, "val": "single", "color": "000000"}
-            )
-
-
-def _add_formatted_text_to_table_para(para, p_element):
-    """Add text with formatting (bold, italic) to a paragraph from a <p> element."""
-    for child in p_element.children:
-        if isinstance(child, str):
-            text = re.sub(r' {2,}', ' ', child)
-            if text:
-                run = para.add_run(text)
-                run.font.size = Pt(11)
-        elif child.name in ['strong', 'b']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.bold = True
-            run.font.size = Pt(11)
-        elif child.name in ['em', 'i']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.italic = True
-            run.font.size = Pt(11)
-        elif child.name == 'span':
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            if text:
-                run = para.add_run(text)
-                run.font.size = Pt(11)
-        elif child.name == 'br':
-            para.add_run('\n')
-
-
-def _add_list_to_table_cell(cell, list_element, restart_numbering=True):
-    """Add a list (ordered or unordered) to a table cell."""
-    style = "List Number" if list_element.name == "ol" else "List Bullet"
-
-    document = cell.part.document
-    restarted_num_id = None
-
-    if list_element.name == "ol" and restart_numbering:
-        restarted_num_id = _get_restarted_list_number_num_id(document)
-
-    first = True
-
-    for li in list_element.find_all('li', recursive=False):
-        para = cell.add_paragraph(style=style)
-
-        if (
-            list_element.name == "ol"
-            and restart_numbering
-            and first
-            and restarted_num_id is not None
-        ):
-            para_props = para._element.pPr
-            num_props = para_props._add_numPr()
-
-            ilvl = OxmlElement("w:ilvl")
-            ilvl.set(qn("w:val"), "0")
-
-            num_id = OxmlElement("w:numId")
-            num_id.set(qn("w:val"), str(restarted_num_id))
-
-            num_props.append(ilvl)
-            num_props.append(num_id)
-
-        text = re.sub(r' {2,}', ' ', li.get_text(strip=True))
-        run = para.add_run(text)
-        run.font.size = Pt(11)
+from .docx_utils import (
+    _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode,
+    _set_cell_background, _set_empty_paragraph_spacing)
+from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container
 
 
 def _add_photo(photo, cell):
@@ -501,6 +28,7 @@ def _add_photo(photo, cell):
             image_stream = BytesIO(response.content)
 
             # Insert the image
+            para = cell.add_paragraph()  # Add empty paragraph above
             para = cell.add_paragraph()
             run = para.add_run()
             run.add_picture(image_stream, width=Inches(4))
@@ -509,6 +37,7 @@ def _add_photo(photo, cell):
             caption_para = cell.add_paragraph()
             caption_run = caption_para.add_run(caption_text)
             caption_run.font.size = Pt(9)
+            para = cell.add_paragraph()
         except RequestException:
             # If image fails, show placeholder text
             para = cell.add_paragraph()
@@ -530,12 +59,14 @@ def _add_figure(figure, cell):
         response = requests.get(figure_url)
         response.raise_for_status()
         image_stream = BytesIO(response.content)
+        para = cell.add_paragraph()  # Add empty paragraph below
         para = cell.add_paragraph()
         run = para.add_run()
         run.add_picture(image_stream, width=Inches(4))
         caption_para = cell.add_paragraph()
         caption_run = caption_para.add_run(caption_text)
         caption_run.font.size = Pt(9)
+        para = cell.add_paragraph()
 
     except RequestException:
         para = cell.add_paragraph()
@@ -560,14 +91,14 @@ def _add_requirement_details_table(doc, req):
 
         # Set Requirement header spacing
         para.paragraph_format.space_before = Inches(0.04)
-        para.paragraph_format.space_after = Inches(0.08)
+        para.paragraph_format.space_after = Inches(0.02)
 
         ends_with_table = False
         for idx, source in enumerate(source_details):
             # Add requirement header for first source
             if idx == 0:
                 run = para.add_run(f"Requirement {req.get('sort_order', '')}: ")
-                para.paragraph_format.space_after = Inches(0.08)
+                para.paragraph_format.space_after = Inches(0.02)
                 run.bold = True
 
             # Add requirement title
@@ -684,7 +215,6 @@ def _add_requirement_details_table(doc, req):
 
             # Add spacing between multiple sources
             if idx < len(source_details) - 1:
-                para = cell.add_paragraph()
                 para = cell.add_paragraph()  # New paragraph for next source
 
             # Check if last description ends with a table
@@ -932,11 +462,18 @@ def generate_inspection_report_docx(preview_data):
     # Row 12: Inspecting Officer(s)
     set_header_cell(info_table.cell(11, 0), "Inspecting Officer(s)")
     merged_cell = info_table.cell(11, 1).merge(info_table.cell(11, 3))
-    inspecting_officers = officer_details.get('inspecting_officers', [])
+    inspecting_officers = officer_details.get("inspecting_officers", [])
+
     if inspecting_officers:
-        officer_text = '\n'.join([f"{officer.get('name', '')}\n{officer.get('position', '')}"
-                                  for officer in inspecting_officers])
-        merged_cell.text = officer_text
+        p = merged_cell.paragraphs[0]
+        for i, officer in enumerate(inspecting_officers):
+            if i > 0:
+                p = merged_cell.add_paragraph()  # paragraph between officers
+                p.paragraph_format.space_after = Inches(0.08)
+
+            p.add_run(officer.get("name", ""))
+            p.add_run("\n")
+            p.add_run(officer.get("position", ""))
 
     # Row 13: Record Prepared By
     set_header_cell(info_table.cell(12, 0), "Record Prepared By")
