@@ -5,8 +5,8 @@ from docx import Document
 from docx.shared import Pt
 
 from compliance_api.services.inspection_record.html_to_docx import (
-    _add_formatted_text_to_container, _add_formatted_text_to_table_cell, _add_html_to_container,
-    _add_html_paragraphs_to_cell, _add_paragraph)
+    _add_formatted_text_to_container, _add_formatted_text_to_table_cell, _add_html_paragraphs_to_cell,
+    _add_html_to_container, _add_paragraph)
 
 
 class TestAddFormattedTextToContainer:

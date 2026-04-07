@@ -12,8 +12,8 @@ from docx.shared import Inches, Pt, RGBColor
 from requests.exceptions import RequestException
 
 from .docx_utils import (
-    _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode,
-    _set_cell_background, _set_empty_paragraph_spacing)
+    _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode, _set_cell_background,
+    _set_empty_paragraph_spacing)
 from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container
 
 
