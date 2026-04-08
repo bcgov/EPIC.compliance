@@ -125,13 +125,27 @@ describe("InspectionFormLeft Component", () => {
     cy.get('.cy-start-date').should("exist");
     cy.get('.cy-end-date').should("exist");
 
+    // Open start date picker and wait for calendar to be visible
     cy.get('.cy-start-date button[aria-label="Choose date"]').click();
-    cy.get(".MuiPickersDay-root", { timeout: 10000 }).contains("10").click(); // Select the start date
-    cy.get('input[name="startDate"]').should("contain.value", "10");
+    cy.get(".MuiDateCalendar-root").should("be.visible");
+    
+    // Use regex to match exactly "10" (avoids matching "2026" in header)
+    cy.get(".MuiPickersDay-root").contains(/^10$/).click();
+    
+    // Wait for calendar to close before proceeding
+    cy.get(".MuiDateCalendar-root").should("not.exist");
+    cy.get('.cy-start-date input').should("contain.value", "10");
 
+    // Open end date picker and wait for calendar to be visible
     cy.get('.cy-end-date button[aria-label="Choose date"]').click();
-    cy.get(".MuiPickersDay-root", { timeout: 10000 }).contains("20").click(); // Select the end date
-    cy.get('input[name="endDate"]').should("contain.value", "20");
+    cy.get(".MuiDateCalendar-root").should("be.visible");
+    
+    // Use regex to match exactly "20"
+    cy.get(".MuiPickersDay-root").contains(/^20$/).click();
+    
+    // Wait for calendar to close and verify value
+    cy.get(".MuiDateCalendar-root").should("not.exist");
+    cy.get('.cy-end-date input').should("contain.value", "20");
   });
 
   it("allows selecting initiation", () => {
