@@ -30,7 +30,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useState } from "react";
 import OrderDrawer from "@/components/App/Inspections/Profile/Enforcements/Orders/OrderDrawer";
 import { useDrawer } from "@/store/drawerStore";
 import { useStaffUsersData } from "@/hooks/useStaff";
@@ -48,21 +48,9 @@ const styleOverFlowClipped = {
 
 const CaseFileInspectionsTable = ({ caseFile }: { caseFile: CaseFile }) => {
   const { setOpen, setClose } = useDrawer();
-  const { data: rawDetailedInspections, isLoading: isLoadingInspections } =
+  const { data: detailedInspections, isLoading: isLoadingInspections } =
     useInspectionsMoreDetailsByCaseFileId(caseFile.id);
   const { data: staffUsersList } = useStaffUsersData();
-
-  const detailedInspections = useMemo(
-    () =>
-      rawDetailedInspections
-        ? [...rawDetailedInspections].sort(
-            (a, b) =>
-              new Date(a.start_date).getTime() -
-              new Date(b.start_date).getTime()
-          )
-        : undefined,
-    [rawDetailedInspections]
-  );
 
   const [expandedInspections, setExpandedInspections] = useState<Set<number>>(
     new Set()

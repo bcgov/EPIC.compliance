@@ -99,7 +99,7 @@ class InspectionService:
         Uses a single optimized query to fetch all enforcement actions and build
         requirement details, eliminating multiple database calls and iterations.
         """
-        inspections = InspectionModel.get_by_params({"case_file_id": case_file_id})
+        inspections = InspectionModel.get_by_params({"case_file_id": case_file_id}, sort_by="ir_number")
 
         if not inspections:
             return []
