@@ -162,6 +162,7 @@ export enum AttendanceEnum {
 }
 
 export enum EnforcementActionEnum {
+  TO_BE_DETERMINED = "1",
   NOT_APPLICABLE = "2",
   WARNING_LETTER = "4",
   ORDER = "5",

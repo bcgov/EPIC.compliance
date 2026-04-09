@@ -418,9 +418,9 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
                     ):
                         result = "Order"
                     else:
-                        result = "Not Determined"
+                        result = "To Be Determined"
                 else:
-                    result = "Not Determined"
+                    result = "To Be Determined"
         if ir_status == IRStatusEnum.FINAL.value:
             if (
                 requirement.compliance_finding_id
