@@ -119,7 +119,6 @@ const RequirementFormLeftEditSection: FC<
               getOptionKey={(option) => option.id}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               fullWidth
-              isRequired={true}
               disabled={disableEnforcementAction}
             />
             <ControlledAutoComplete
@@ -133,7 +132,6 @@ const RequirementFormLeftEditSection: FC<
               }
               fullWidth
               sx={{ marginBottom: "-0.5rem" }}
-              isRequired={true}
               disabled={disableEnforcementAction}
               renderOptionBadge={(option) => {
                 // Define which enforcement action IDs are considered historical

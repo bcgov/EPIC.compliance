@@ -114,8 +114,8 @@ const LexicalEditor = ({
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <Grid container>
-        <Grid item xs={2}>
+      <Grid container sx={{ flexWrap: "nowrap", alignItems: "center" }}>
+        <Grid item sx={{ flexGrow: 1, minWidth: 0 }}>
           <Tooltip title={label} arrow>
             <span>
               <InputLabel
@@ -137,7 +137,7 @@ const LexicalEditor = ({
             </span>
           </Tooltip>
         </Grid>
-        <Grid item xs={10} sx={{ textAlign: "right" }}>
+        <Grid item sx={{ flexShrink: 0 }}>
           {!disabled && <LexicalToolbar isAdvanced={isAdvanced} />}
         </Grid>
       </Grid>
