@@ -7,7 +7,6 @@ from sqlalchemy.orm import aliased, joinedload
 
 from compliance_api.models.administrative_penalty import AdministrativePenalty
 from compliance_api.models.inspection.inspection import Inspection
-from compliance_api.models.inspection.inspection_enum import InspectionStatusEnum
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval
 from compliance_api.models.order import Order
@@ -197,10 +196,15 @@ class ReviewBoardService:
         return result_orders
 
     @classmethod
-    def get_administrative_penalties_for_open_inspections(
+    def get_open_administrative_penalties(
         cls,
     ) -> List[AdministrativePenalty]:
-        """Get all administrative penalties from OPEN inspections that are not closed."""
+        """Get all administrative penalties that are not closed.
+
+        An AP is considered closed if it meets any of the following conditions:
+        - AP referral status is 'CEB Not Proceeding'
+        - AP referral status is 'Referred to DM' AND a decision was made.
+        """
         return (
             AdministrativePenalty.query.join(
                 Inspection, Inspection.id == AdministrativePenalty.inspection_id
@@ -214,7 +218,6 @@ class ReviewBoardService:
                 ),
             )
             .filter(
-                Inspection.inspection_status == InspectionStatusEnum.OPEN,
                 AdministrativePenalty.is_active.is_(True),
                 AdministrativePenalty.is_deleted.is_(False),
                 Inspection.is_active.is_(True),

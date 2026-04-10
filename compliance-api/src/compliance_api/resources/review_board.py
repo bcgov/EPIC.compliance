@@ -99,13 +99,13 @@ class ReviewBoardAdministrativePenalties(Resource):
     @API.response(code=200, description="Success", model=[administrative_penalty_model])
     @ApiHelper.swagger_decorators(
         API,
-        endpoint_description="Fetch administrative penalties for review board (OPEN inspections only)",
+        endpoint_description="Fetch all administrative penalties for the review board",
     )
     @auth.require
     def get():
-        """Fetch administrative penalties for review board with OPEN status only."""
+        """Fetch administrative penalties for the review board that are not closed."""
         administrative_penalties = (
-            ReviewBoardService.get_administrative_penalties_for_open_inspections()
+            ReviewBoardService.get_open_administrative_penalties()
         )
         schema = ReviewBoardAdministrativePenaltySchema(many=True)
         return schema.dump(administrative_penalties), HTTPStatus.OK
