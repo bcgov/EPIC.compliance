@@ -891,7 +891,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             selectinload(models["req"].requirement_source_details).selectinload(
                 InspectionReqSourceDetailModel.documents
             ),
-            selectinload(models["req"].enforcement_actions),
+            selectinload(models["req"].sorted_enforcement_actions),
         )
     )
 

@@ -123,6 +123,14 @@ class InspectionRequirement(BaseModelVersioned):
         order_by="ViolationTicketInspectionRequirementMap.id.asc()",
     )
 
+    @property
+    def sorted_enforcement_actions(self):
+        """Return enforcement actions with ORDER first."""
+        return sorted(
+            self.enforcement_actions,
+            key=lambda x: (x.enforcement_action_id != 5, x.id)
+        )
+
     @classmethod
     @with_session
     def create_requirement(cls, requirement_obj, session=None):

@@ -418,7 +418,7 @@ class InspectionRecordDataBuilder:
                     InspectionRequirementModel.query
                     .filter_by(inspection_id=self.inspection.id, is_deleted=False, is_active=True)
                     .options(
-                        joinedload(InspectionRequirementModel.enforcement_actions),
+                        joinedload(InspectionRequirementModel.sorted_enforcement_actions),
                         joinedload(InspectionRequirementModel.requirement_source_details)
                         .joinedload(InspectionReqSourceDetail.requirement_source),
                         joinedload(InspectionRequirementModel.agency)
@@ -802,7 +802,7 @@ class InspectionRecordDataBuilder:
 
         for requirement in requirements:
             # Get enforcement actions for this requirement
-            enforcement_actions = requirement.enforcement_actions
+            enforcement_actions = requirement.sorted_enforcement_actions
 
             if enforcement_actions:
                 for enforcement_action in enforcement_actions:

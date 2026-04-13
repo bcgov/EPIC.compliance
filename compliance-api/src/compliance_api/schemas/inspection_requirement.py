@@ -548,9 +548,14 @@ class InspectionRequirementSchema(AutoSchemaBase):  # pylint: disable=too-many-a
         self, obj, many, **kwargs
     ):  # pylint: disable=unused-argument
         """Extract the value of the enforcement actions."""
-        if hasattr(obj, "enforcement_actions"):
+        enf_actions = []
+        if hasattr(obj, "sorted_enforcement_actions"):
+            enf_actions = obj.sorted_enforcement_actions
+        elif hasattr(obj, "enforcement_actions"):
+            enf_actions = obj.enforcement_actions
+        if enf_actions:
             prepared_enforcement_actions = []
-            for action in obj.enforcement_actions:
+            for action in enf_actions:
                 if hasattr(action, "enforcement_action") and action.enforcement_action:
                     prepared_enforcement_actions.append(
                         {
