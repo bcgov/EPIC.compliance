@@ -21,11 +21,16 @@ def init_list_numbering(document):
     on the numbering part and automatically used by _add_html_to_container.
 
     Returns:
-        dict: {'bullet_num_id': int, 'number_num_id': int}
+        dict: Contains 'bullet_num_id' and 'number_abstract_num_id'
     """
+    # For bullets, we can share a single numId (no restart needed)
+    bullet_num_id = _get_multilevel_bullet_num_id(document)
+    # For numbers, store the abstractNumId so each top-level list gets a fresh numId
+    number_abstract_num_id = _create_number_abstract_num(document)
+
     numbering_ids = {
-        'bullet_num_id': _get_multilevel_bullet_num_id(document),
-        'number_num_id': _get_multilevel_number_num_id(document),
+        'bullet_num_id': bullet_num_id,
+        'number_abstract_num_id': number_abstract_num_id,
     }
     # Store on numbering definitions (shared singleton) for automatic retrieval
     numbering = document.part.numbering_part.numbering_definitions._numbering
@@ -376,13 +381,55 @@ def _get_max_abstract_num_id(numbering):
 
 
 def _get_multilevel_number_num_id(document):
-    """Create and return a numId for a multi-level numbered list with different formats per level."""
+    """Create and return a numId for a multi-level numbered list.
+
+    If an abstractNum already exists in the cache, creates a new numId referencing it.
+    Otherwise creates both abstractNum and numId.
+    """
+    numbering = document.part.numbering_part.numbering_definitions._numbering
+
+    # Check if we already have a number abstractNumId cached
+    if hasattr(numbering, '_html_numbering_ids') and 'number_abstract_num_id' in numbering._html_numbering_ids:
+        abstract_num_id = numbering._html_numbering_ids['number_abstract_num_id']
+        return _create_number_num_id_from_abstract(document, abstract_num_id)
+
+    # Create new abstract and numId
+    abstract_num_id = _create_number_abstract_num(document)
+    return _create_number_num_id_from_abstract(document, abstract_num_id)
+
+
+def _create_number_num_id_from_abstract(document, abstract_num_id):
+    """Create a new numId referencing an existing abstractNumId, with startOverride."""
+    numbering = document.part.numbering_part.numbering_definitions._numbering
+    max_num_id = _get_max_num_id(numbering)
+
+    num = OxmlElement('w:num')
+    new_num_id = max_num_id + 1
+    num.set(qn('w:numId'), str(new_num_id))
+
+    abstract_num_id_ref = OxmlElement('w:abstractNumId')
+    abstract_num_id_ref.set(qn('w:val'), str(abstract_num_id))
+    num.append(abstract_num_id_ref)
+
+    # Force restart numbering at 1 for this list
+    lvl_override = OxmlElement('w:lvlOverride')
+    lvl_override.set(qn('w:ilvl'), '0')
+    start_override = OxmlElement('w:startOverride')
+    start_override.set(qn('w:val'), '1')
+    lvl_override.append(start_override)
+    num.append(lvl_override)
+
+    numbering.append(num)
+    return new_num_id
+
+
+def _create_number_abstract_num(document):
+    """Create the abstractNum definition for numbered lists and return its ID."""
     numbering_part = document.part.numbering_part
     numbering = numbering_part.numbering_definitions._numbering
 
     # Get actual max IDs to avoid collisions
     max_abstract_num_id = _get_max_abstract_num_id(numbering)
-    max_num_id = _get_max_num_id(numbering)
 
     # Create a new abstract numbering definition
     abstract_num = OxmlElement('w:abstractNum')
@@ -452,26 +499,7 @@ def _get_multilevel_number_num_id(document):
     # Add the abstract numbering to the numbering part
     numbering.append(abstract_num)
 
-    # Create a num element that references this abstract numbering
-    num = OxmlElement('w:num')
-    new_num_id = max_num_id + 1
-    num.set(qn('w:numId'), str(new_num_id))
-
-    abstract_num_id_ref = OxmlElement('w:abstractNumId')
-    abstract_num_id_ref.set(qn('w:val'), str(abstract_num_id))
-    num.append(abstract_num_id_ref)
-
-    # Force restart numbering at 1 for each new list
-    lvl_override = OxmlElement('w:lvlOverride')
-    lvl_override.set(qn('w:ilvl'), '0')
-    start_override = OxmlElement('w:startOverride')
-    start_override.set(qn('w:val'), '1')
-    lvl_override.append(start_override)
-    num.append(lvl_override)
-
-    numbering.append(num)
-
-    return new_num_id
+    return abstract_num_id
 
 
 def _get_multilevel_bullet_num_id(document):
@@ -571,30 +599,32 @@ def _get_multilevel_bullet_num_id(document):
 
 def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, number_num_id=None, numbering_ids=None):
     """Add a list to the container, handling nested lists recursively."""
-    style = "List Number" if list_tag.name == "ol" else "List Bullet"
-
     document = container.part.document
+    numbering = document.part.numbering_part.numbering_definitions._numbering
 
-    # Extract from numbering_ids dict if provided
+    # Get bullet_num_id from cache or parameter
     if numbering_ids is not None:
         bullet_num_id = numbering_ids.get('bullet_num_id')
-        number_num_id = numbering_ids.get('number_num_id')
-    # Check numbering part cache if not explicitly provided
-    elif bullet_num_id is None and number_num_id is None:
-        numbering = document.part.numbering_part.numbering_definitions._numbering
+    elif bullet_num_id is None:
         if hasattr(numbering, '_html_numbering_ids'):
             bullet_num_id = numbering._html_numbering_ids.get('bullet_num_id')
-            number_num_id = numbering._html_numbering_ids.get('number_num_id')
-
-    # Create multi-level numbering definitions if not provided (lazy init)
     if bullet_num_id is None:
         bullet_num_id = _get_multilevel_bullet_num_id(document)
-    if number_num_id is None:
+
+    # Determine list type
+    is_ordered = list_tag.name == "ol"
+
+    # For numbered lists at level 0, create a fresh numId to restart at 1
+    if is_ordered and level == 0:
+        if hasattr(numbering, '_html_numbering_ids') and 'number_abstract_num_id' in numbering._html_numbering_ids:
+            abstract_num_id = numbering._html_numbering_ids['number_abstract_num_id']
+        else:
+            abstract_num_id = _create_number_abstract_num(document)
+        number_num_id = _create_number_num_id_from_abstract(document, abstract_num_id)
+    elif is_ordered and number_num_id is None:
+        # Nested numbered list - use shared numId from parent or create one
         number_num_id = _get_multilevel_number_num_id(document)
 
-    # Determine which numId to use based on current list type
-    is_ordered = list_tag.name == "ol"
-    style = "List Number" if is_ordered else "List Bullet"
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_tag.find_all("li", recursive=False):
@@ -607,7 +637,7 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
         )
 
         if has_direct_content:
-            para = container.add_paragraph(style=style)
+            para = container.add_paragraph()
             base_indent = 0.5 + (level * 0.5)
             para.paragraph_format.left_indent = Inches(base_indent)
             para.paragraph_format.hanging_indent = Inches(0.25)
@@ -688,27 +718,31 @@ def _add_formatted_list_item_text(para, li_element, font_size):
 def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, number_num_id=None, numbering_ids=None):
     """Add a list (ordered or unordered) to a table cell, handling nested lists and type switching."""
     document = cell.part.document
+    numbering = document.part.numbering_part.numbering_definitions._numbering
 
-    # Extract from numbering_ids dict if provided
+    # Get bullet_num_id from cache or parameter
     if numbering_ids is not None:
         bullet_num_id = numbering_ids.get('bullet_num_id')
-        number_num_id = numbering_ids.get('number_num_id')
-    # Check numbering part cache if not explicitly provided
-    elif bullet_num_id is None and number_num_id is None:
-        numbering = document.part.numbering_part.numbering_definitions._numbering
+    elif bullet_num_id is None:
         if hasattr(numbering, '_html_numbering_ids'):
             bullet_num_id = numbering._html_numbering_ids.get('bullet_num_id')
-            number_num_id = numbering._html_numbering_ids.get('number_num_id')
-
-    # Create multi-level numbering definitions if not provided (lazy init)
     if bullet_num_id is None:
         bullet_num_id = _get_multilevel_bullet_num_id(document)
-    if number_num_id is None:
+
+    # Determine list type
+    is_ordered = list_element.name == "ol"
+
+    # For numbered lists at level 0, create a fresh numId to force restart at 1
+    if is_ordered and level == 0:
+        if hasattr(numbering, '_html_numbering_ids') and 'number_abstract_num_id' in numbering._html_numbering_ids:
+            abstract_num_id = numbering._html_numbering_ids['number_abstract_num_id']
+        else:
+            abstract_num_id = _create_number_abstract_num(document)
+        number_num_id = _create_number_num_id_from_abstract(document, abstract_num_id)
+    elif is_ordered and number_num_id is None:
+        # Nested numbered list - use shared numId from parent or create one
         number_num_id = _get_multilevel_number_num_id(document)
 
-    # Determine which numId to use based on current list type
-    is_ordered = list_element.name == "ol"
-    style = "List Number" if is_ordered else "List Bullet"
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_element.find_all('li', recursive=False):
@@ -721,7 +755,7 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
         )
 
         if has_direct_content:
-            para = cell.add_paragraph(style=style)
+            para = cell.add_paragraph()
             base_indent = 0.5 + (level * 0.5)
             para.paragraph_format.left_indent = Inches(base_indent)
             para.paragraph_format.hanging_indent = Inches(0.25)
