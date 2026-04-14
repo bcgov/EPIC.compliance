@@ -5,6 +5,7 @@ import enum
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
+from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
 from ..base_model import BaseModelVersioned
@@ -128,7 +129,7 @@ class InspectionRequirement(BaseModelVersioned):
         """Return enforcement actions with ORDER first."""
         return sorted(
             self.enforcement_actions,
-            key=lambda x: (x.enforcement_action_id != 5, x.id)
+            key=lambda x: (x.enforcement_action_id != EnforcementActionOptionEnum.ORDER.value, x.id)
         )
 
     @classmethod
