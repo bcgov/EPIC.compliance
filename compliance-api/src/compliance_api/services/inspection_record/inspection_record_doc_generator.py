@@ -14,7 +14,7 @@ from requests.exceptions import RequestException
 from .docx_utils import (
     _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode, _set_cell_background,
     _set_empty_paragraph_spacing)
-from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container
+from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container, init_list_numbering
 
 
 def _add_photo(photo, cell):
@@ -266,6 +266,9 @@ def generate_inspection_report_docx(preview_data):
     """Generate a DOCX file from inspection report preview data."""
     doc = Document()
     _remove_compatibility_mode(doc)
+
+    # Initialize list numbering definitions
+    init_list_numbering(doc)
 
     # Set document margins
     sections = doc.sections

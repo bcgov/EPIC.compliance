@@ -14,7 +14,26 @@ from docx.shared import Inches, Pt
 from .docx_utils import set_cell_border
 
 
-def _add_html_to_container(container, html_text, *, font_size=None, clear_first=True):
+def init_list_numbering(document):
+    """Initialize list numbering definitions once for a document.
+
+    Call this once after creating a Document. The numbering IDs are stored
+    on the numbering part and automatically used by _add_html_to_container.
+
+    Returns:
+        dict: {'bullet_num_id': int, 'number_num_id': int}
+    """
+    numbering_ids = {
+        'bullet_num_id': _get_multilevel_bullet_num_id(document),
+        'number_num_id': _get_multilevel_number_num_id(document),
+    }
+    # Store on numbering definitions (shared singleton) for automatic retrieval
+    numbering = document.part.numbering_part.numbering_definitions._numbering
+    numbering._html_numbering_ids = numbering_ids
+    return numbering_ids
+
+
+def _add_html_to_container(container, html_text, *, font_size=None, clear_first=True, numbering_ids=None):
     """Add HTML content to a python-docx container (Document, Cell, or Paragraph)."""
     if not html_text:
         return
@@ -60,11 +79,11 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
                 _add_paragraph(container, element, font_size)
 
         elif element.name in ("ol", "ul"):
-            _add_list(container, element, font_size)
+            _add_list(container, element, font_size, numbering_ids=numbering_ids)
             first_para_used = True  # Mark as used after adding list
 
         elif element.name == "table":
-            add_html_table_to_container(container, element)
+            add_html_table_to_container(container, element, numbering_ids=numbering_ids)
             first_para_used = True  # Mark as used after adding table
 
 
@@ -201,7 +220,7 @@ def _add_html_paragraphs_to_cell(cell, html, font_size=Pt(11)):
             run.font.size = font_size
 
 
-def add_html_table_to_container(container, table_element):
+def add_html_table_to_container(container, table_element, numbering_ids=None):
     """Convert an HTML table to a docx table."""
     rows = table_element.find_all('tr')
     if not rows:
@@ -276,7 +295,7 @@ def add_html_table_to_container(container, table_element):
                         p = docx_cell.paragraphs[0]._element
                         p.getparent().remove(p)
                     # Add list to cell
-                    _add_list_to_table_cell(docx_cell, element, bullet_num_id=None, number_num_id=None)
+                    _add_list_to_table_cell(docx_cell, element, numbering_ids=numbering_ids)
                     first_element = False
 
             # Make header cells bold
@@ -336,18 +355,38 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
                 para = cell.add_paragraph()
 
 
+def _get_max_num_id(numbering):
+    """Get the highest numId currently in use."""
+    max_id = 0
+    for num in numbering.findall(qn('w:num')):
+        num_id = int(num.get(qn('w:numId'), 0))
+        if num_id > max_id:
+            max_id = num_id
+    return max_id
+
+
+def _get_max_abstract_num_id(numbering):
+    """Get the highest abstractNumId currently in use."""
+    max_id = 0
+    for abstract_num in numbering.findall(qn('w:abstractNum')):
+        abstract_num_id = int(abstract_num.get(qn('w:abstractNumId'), 0))
+        if abstract_num_id > max_id:
+            max_id = abstract_num_id
+    return max_id
+
+
 def _get_multilevel_number_num_id(document):
     """Create and return a numId for a multi-level numbered list with different formats per level."""
     numbering_part = document.part.numbering_part
     numbering = numbering_part.numbering_definitions._numbering
 
-    # Count existing abstract nums and nums
-    existing_abstract_nums = numbering.findall(qn('w:abstractNum'))
-    existing_nums = numbering.findall(qn('w:num'))
+    # Get actual max IDs to avoid collisions
+    max_abstract_num_id = _get_max_abstract_num_id(numbering)
+    max_num_id = _get_max_num_id(numbering)
 
     # Create a new abstract numbering definition
     abstract_num = OxmlElement('w:abstractNum')
-    abstract_num_id = len(existing_abstract_nums) + 200  # Different offset from bullets
+    abstract_num_id = max_abstract_num_id + 1
     abstract_num.set(qn('w:abstractNumId'), str(abstract_num_id))
 
     # Multi-level type
@@ -415,12 +454,20 @@ def _get_multilevel_number_num_id(document):
 
     # Create a num element that references this abstract numbering
     num = OxmlElement('w:num')
-    new_num_id = len(existing_nums) + 1
+    new_num_id = max_num_id + 1
     num.set(qn('w:numId'), str(new_num_id))
 
     abstract_num_id_ref = OxmlElement('w:abstractNumId')
     abstract_num_id_ref.set(qn('w:val'), str(abstract_num_id))
     num.append(abstract_num_id_ref)
+
+    # Force restart numbering at 1 for each new list
+    lvl_override = OxmlElement('w:lvlOverride')
+    lvl_override.set(qn('w:ilvl'), '0')
+    start_override = OxmlElement('w:startOverride')
+    start_override.set(qn('w:val'), '1')
+    lvl_override.append(start_override)
+    num.append(lvl_override)
 
     numbering.append(num)
 
@@ -432,14 +479,13 @@ def _get_multilevel_bullet_num_id(document):
     numbering_part = document.part.numbering_part
     numbering = numbering_part.numbering_definitions._numbering
 
-    # Count existing abstract nums and nums by iterating
-    existing_abstract_nums = numbering.findall(qn('w:abstractNum'))
-    existing_nums = numbering.findall(qn('w:num'))
+    # Get actual max IDs to avoid collisions
+    max_abstract_num_id = _get_max_abstract_num_id(numbering)
+    max_num_id = _get_max_num_id(numbering)
 
     # Create a new abstract numbering definition
     abstract_num = OxmlElement('w:abstractNum')
-    # Use a high number to avoid conflicts
-    abstract_num_id = len(existing_abstract_nums) + 100
+    abstract_num_id = max_abstract_num_id + 1
     abstract_num.set(qn('w:abstractNumId'), str(abstract_num_id))
 
     # Multi-level type
@@ -456,8 +502,8 @@ def _get_multilevel_bullet_num_id(document):
 
     bullet_fonts = [
         'Symbol',
-        'Symbol',
-        'Wingdings',
+        'Courier New',
+        'Courier New',
     ]
 
     for level in range(9):
@@ -511,7 +557,7 @@ def _get_multilevel_bullet_num_id(document):
 
     # Create a num element that references this abstract numbering
     num = OxmlElement('w:num')
-    new_num_id = len(existing_nums) + 1
+    new_num_id = max_num_id + 1
     num.set(qn('w:numId'), str(new_num_id))
 
     abstract_num_id_ref = OxmlElement('w:abstractNumId')
@@ -523,13 +569,24 @@ def _get_multilevel_bullet_num_id(document):
     return new_num_id
 
 
-def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, number_num_id=None):
+def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, number_num_id=None, numbering_ids=None):
     """Add a list to the container, handling nested lists recursively."""
     style = "List Number" if list_tag.name == "ol" else "List Bullet"
 
     document = container.part.document
 
-    # Create multi-level numbering definitions at level 0 (lazy init)
+    # Extract from numbering_ids dict if provided
+    if numbering_ids is not None:
+        bullet_num_id = numbering_ids.get('bullet_num_id')
+        number_num_id = numbering_ids.get('number_num_id')
+    # Check numbering part cache if not explicitly provided
+    elif bullet_num_id is None and number_num_id is None:
+        numbering = document.part.numbering_part.numbering_definitions._numbering
+        if hasattr(numbering, '_html_numbering_ids'):
+            bullet_num_id = numbering._html_numbering_ids.get('bullet_num_id')
+            number_num_id = numbering._html_numbering_ids.get('number_num_id')
+
+    # Create multi-level numbering definitions if not provided (lazy init)
     if bullet_num_id is None:
         bullet_num_id = _get_multilevel_bullet_num_id(document)
     if number_num_id is None:
@@ -566,6 +623,11 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
                 ilvl = OxmlElement("w:ilvl")
                 num_props.insert(0, ilvl)
             ilvl.set(qn("w:val"), str(level))
+
+            # Remove any existing numId from the style to avoid duplicates (Word 16.0 uses first)
+            existing_num_id = num_props.find(qn("w:numId"))
+            if existing_num_id is not None:
+                num_props.remove(existing_num_id)
 
             # Set the numId based on the current list type (bullet or number)
             num_id_el = OxmlElement("w:numId")
@@ -623,11 +685,22 @@ def _add_formatted_list_item_text(para, li_element, font_size):
                     run.font.size = font_size
 
 
-def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, number_num_id=None):
+def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, number_num_id=None, numbering_ids=None):
     """Add a list (ordered or unordered) to a table cell, handling nested lists and type switching."""
     document = cell.part.document
 
-    # Create multi-level numbering definitions at level 0 (lazy init)
+    # Extract from numbering_ids dict if provided
+    if numbering_ids is not None:
+        bullet_num_id = numbering_ids.get('bullet_num_id')
+        number_num_id = numbering_ids.get('number_num_id')
+    # Check numbering part cache if not explicitly provided
+    elif bullet_num_id is None and number_num_id is None:
+        numbering = document.part.numbering_part.numbering_definitions._numbering
+        if hasattr(numbering, '_html_numbering_ids'):
+            bullet_num_id = numbering._html_numbering_ids.get('bullet_num_id')
+            number_num_id = numbering._html_numbering_ids.get('number_num_id')
+
+    # Create multi-level numbering definitions if not provided (lazy init)
     if bullet_num_id is None:
         bullet_num_id = _get_multilevel_bullet_num_id(document)
     if number_num_id is None:
@@ -664,6 +737,11 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
                 ilvl = OxmlElement("w:ilvl")
                 num_props.insert(0, ilvl)
             ilvl.set(qn("w:val"), str(level))
+
+            # Remove any existing numId from the style to avoid duplicates
+            existing_num_id = num_props.find(qn("w:numId"))
+            if existing_num_id is not None:
+                num_props.remove(existing_num_id)
 
             # Set the numId based on the current list type (bullet or number)
             num_id_el = OxmlElement("w:numId")
