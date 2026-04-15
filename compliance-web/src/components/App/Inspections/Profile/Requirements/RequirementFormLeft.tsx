@@ -68,6 +68,8 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
     useState<boolean>(false);
   const [disableEnforcementAction, setDisableEnforcementAction] =
     useState<boolean>(false);
+  const [disableSecondaryEnfAction, setDisableSecondaryEnfAction] =
+    useState<boolean>(false);
   const summaryInputRef = useRef<HTMLInputElement>(null);
   const [isReadOnly, setIsReadOnly] = useState(isEditMode);
 
@@ -227,8 +229,14 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
         nonDraftAdministrativePenalties || 
         nonDraftChargeRecommendations
       );
+      setDisableSecondaryEnfAction(
+        requirementsInAdministrativePenalties.length > 0 ||
+        requirementsInViolationTickets.length > 0 ||
+        requirementsInChargeRecommendations.length > 0
+      );
     } else {
       setDisableEnforcementAction(false);
+      setDisableSecondaryEnfAction(false);
     }
   }, [
     inspectionOrdersData, 
@@ -384,6 +392,7 @@ Changing it will delete the existing document so you can create a new one`;
           inspectionData={inspectionData}
           isRegulatoryConsideration={isRegulatoryConsideration}
           disableEnforcementAction={disableEnforcementAction}
+          disableSecondaryEnfAction={disableSecondaryEnfAction}
         />
       )}
       <ControlledLexicalEditor

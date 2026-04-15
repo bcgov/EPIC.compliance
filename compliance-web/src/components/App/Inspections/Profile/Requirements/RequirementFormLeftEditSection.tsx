@@ -17,6 +17,7 @@ import { Inspection } from "@/models/Inspection";
 type RequirementFormLeftEditSectionProps = {
   isRegulatoryConsideration?: boolean;
   disableEnforcementAction?: boolean;
+  disableSecondaryEnfAction?: boolean;
   inspectionData: Inspection;
 };
 
@@ -25,6 +26,7 @@ const RequirementFormLeftEditSection: FC<
 > = ({
   isRegulatoryConsideration = false,
   disableEnforcementAction = false,
+  disableSecondaryEnfAction = false,
   inspectionData,
 }) => {
   const { control } = useFormContext();
@@ -167,7 +169,7 @@ const RequirementFormLeftEditSection: FC<
               <ControlledToggleButtonGroup
                 name="enforcementActionExtra"
                 size="small"
-                disabled={disableEnforcementAction}
+                disabled={disableSecondaryEnfAction}
                 options={[
                   {
                     id: EnforcementActionEnum.AP_RECOMMENDATION,
@@ -190,8 +192,7 @@ const RequirementFormLeftEditSection: FC<
               severity="warning"
               sx={{ fontSize: "0.75rem", mb: 1, mt: -0.5 }}
             >
-              An enforcement document has already been inprogress or issued. The
-              Enforcement Action can no longer be changed.
+              {"Enforcement Actions already in progress or issued can’t be changed. You can only modify actions that haven’t been initiated."}
             </Alert>
           )}
         </>
