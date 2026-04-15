@@ -4,6 +4,7 @@ Converts HTML content (paragraphs, lists, tables, inline formatting)
 to python-docx document elements. Supports nested lists with proper
 numbering/bullet styles matching the web editor.
 """
+import random
 import re
 
 from bs4 import BeautifulSoup
@@ -375,6 +376,22 @@ def _get_max_abstract_num_id(numbering):
     return max_id
 
 
+def _insert_abstract_num(numbering, abstract_num):
+    """Insert abstractNum element before the first num element.
+
+    OOXML requires all abstractNum elements to come before all num elements.
+    Word 16 desktop is strict about this ordering.
+    """
+    # Find the first <w:num> element
+    first_num = numbering.find(qn('w:num'))
+    if first_num is not None:
+        # Insert before the first <w:num>
+        numbering.insert(list(numbering).index(first_num), abstract_num)
+    else:
+        # No num elements yet, just append
+        numbering.append(abstract_num)
+
+
 def _get_multilevel_number_num_id(document):
     """Create and return a numId for a multi-level numbered list with different formats per level."""
     numbering_part = document.part.numbering_part
@@ -389,10 +406,20 @@ def _get_multilevel_number_num_id(document):
     abstract_num_id = max_abstract_num_id + 1
     abstract_num.set(qn('w:abstractNumId'), str(abstract_num_id))
 
+    # Add nsid (Number Set ID) - required per OOXML spec
+    nsid = OxmlElement('w:nsid')
+    nsid.set(qn('w:val'), f'{random.randint(0, 0xFFFFFFFF):08X}')
+    abstract_num.append(nsid)
+
     # Multi-level type
     multi_level = OxmlElement('w:multiLevelType')
     multi_level.set(qn('w:val'), 'hybridMultilevel')
     abstract_num.append(multi_level)
+
+    # Add tmpl (template identifier)
+    tmpl = OxmlElement('w:tmpl')
+    tmpl.set(qn('w:val'), f'{random.randint(0, 0xFFFFFFFF):08X}')
+    abstract_num.append(tmpl)
 
     # Define number formats for each level same as in web editor
     num_formats = [
@@ -449,8 +476,8 @@ def _get_multilevel_number_num_id(document):
 
         abstract_num.append(lvl)
 
-    # Add the abstract numbering to the numbering part
-    numbering.append(abstract_num)
+    # Add the abstract numbering before the first <w:num> element
+    _insert_abstract_num(numbering, abstract_num)
 
     # Create a num element that references this abstract numbering
     num = OxmlElement('w:num')
@@ -488,10 +515,20 @@ def _get_multilevel_bullet_num_id(document):
     abstract_num_id = max_abstract_num_id + 1
     abstract_num.set(qn('w:abstractNumId'), str(abstract_num_id))
 
+    # Add nsid (Number Set ID) - required per OOXML spec
+    nsid = OxmlElement('w:nsid')
+    nsid.set(qn('w:val'), f'{random.randint(0, 0xFFFFFFFF):08X}')
+    abstract_num.append(nsid)
+
     # Multi-level type
     multi_level = OxmlElement('w:multiLevelType')
     multi_level.set(qn('w:val'), 'hybridMultilevel')
     abstract_num.append(multi_level)
+
+    # Add tmpl (template identifier)
+    tmpl = OxmlElement('w:tmpl')
+    tmpl.set(qn('w:val'), f'{random.randint(0, 0xFFFFFFFF):08X}')
+    abstract_num.append(tmpl)
 
     # Define bullet characters for each level same as in web editor
     bullet_chars = [
@@ -552,8 +589,8 @@ def _get_multilevel_bullet_num_id(document):
 
         abstract_num.append(lvl)
 
-    # Add the abstract numbering to the numbering part
-    numbering.append(abstract_num)
+    # Add the abstract numbering BEFORE the first <w:num> element (OOXML requirement)
+    _insert_abstract_num(numbering, abstract_num)
 
     # Create a num element that references this abstract numbering
     num = OxmlElement('w:num')
