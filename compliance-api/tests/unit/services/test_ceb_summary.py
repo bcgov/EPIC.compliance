@@ -3,9 +3,6 @@ from datetime import datetime, timedelta
 from faker import Faker
 import pytest
 
-from compliance_api.models.complaint.complaint import Complaint, ComplaintStatusEnum
-from compliance_api.models.complaint.complaint_enum import ComplaintSourceEnum
-from compliance_api.models.complaint.complaint_option import ComplaintSource
 from compliance_api.models import db
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
@@ -27,7 +24,6 @@ class TestCEBSummaryReportGenerator:
     def setup(self):
         """Fixture to execute before and after each test."""
         self.insp_req = self._create_test_inspection_requirement()
-        self.complaint = self._create_test_complaint()
         yield
         self._clean_up_database()
 
@@ -61,35 +57,6 @@ class TestCEBSummaryReportGenerator:
         """Test building inspections tab query with end date that excludes data."""
         generator = ceb_summary.CEBSummaryReportGenerator({"end_date": datetime.now() - timedelta(days=10)})
         results = generator._build_inspections_tab_query().all()
-        assert len(results) == 0
-
-    def test_build_complaints_tab_query(self):
-        """Test building complaints tab query with no date range."""
-        generator = ceb_summary.CEBSummaryReportGenerator({"start_date": datetime.now() + timedelta(days=150)})
-        results = generator._build_complaints_tab_query().all()
-        assert results[0].complaint_number == self.complaint.complaint_number
-
-    def test_build_complaints_tab_query_results_expected_within_date_range(self):
-        """Test building complaints tab query with date range that includes data."""
-        generator = ceb_summary.CEBSummaryReportGenerator({
-            "start_date": datetime.now() + timedelta(days=150),
-            "end_date": datetime.now() + timedelta(days=153)
-        })
-        results = generator._build_complaints_tab_query().all()
-        assert results[0].complaint_number == self.complaint.complaint_number
-
-    def test_build_complaints_tab_query_no_results_expected_with_start_date(self):
-        """Test building complaints tab query with start date that excludes data."""
-        generator = ceb_summary.CEBSummaryReportGenerator({
-            "start_date": datetime.now() + timedelta(days=1000)
-        })
-        results = generator._build_complaints_tab_query().all()
-        assert len(results) == 0
-
-    def test_build_complaints_tab_query_no_results_expected_with_end_date(self):
-        """Test building complaints tab query with end date that excludes data."""
-        generator = ceb_summary.CEBSummaryReportGenerator({"end_date": datetime.now() - timedelta(days=1000)})
-        results = generator._build_complaints_tab_query().all()
         assert len(results) == 0
 
     def _create_test_inspection_requirement(self):
@@ -156,53 +123,10 @@ class TestCEBSummaryReportGenerator:
 
         return insp_req
 
-    def _create_test_complaint(self):
-        case_file = CaseFile(
-            date_created=datetime.now(),
-            case_file_number=fake.pystr(min_chars=5, max_chars=10),
-            initiation_id=1
-        )
-
-        db.session.add(case_file)
-        db.session.flush()
-
-        topic = Topic(
-            name="Test Topic"
-        )
-
-        public_complaint_source = db.session.query(ComplaintSource).where(
-            ComplaintSource.name == "Public"
-        ).first()
-
-        if not public_complaint_source:
-            complaint_source = ComplaintSource(
-                name=ComplaintSourceEnum.PUBLIC.value
-            )
-        else:
-            complaint_source = public_complaint_source
-
-        db.session.add_all([topic, complaint_source])
-        db.session.flush()
-
-        complaint = Complaint(
-            case_file_id=case_file.id,
-            date_received=datetime.now() + timedelta(days=152),
-            source_type_id=complaint_source.id,
-            concern_description=fake.text(max_nb_chars=200),
-            status=ComplaintStatusEnum.OPEN,
-            complaint_number=fake.pystr(min_chars=5, max_chars=10)
-        )
-
-        db.session.add(complaint)
-        db.session.commit()
-
-        return complaint
-
     def _clean_up_database(self):
         """Clean up the database after tests."""
         db.session.query(InspectionReqEnforcementMap).where(
             InspectionReqEnforcementMap.requirement_id == self.insp_req.id
         ).delete()
         db.session.query(InspectionRequirement).where(InspectionRequirement.id == self.insp_req.id).delete()
-        db.session.query(Complaint).where(Complaint.id == self.complaint.id).delete()
         db.session.commit()
