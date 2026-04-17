@@ -418,7 +418,7 @@ class InspectionRecordDataBuilder:
                     InspectionRequirementModel.query
                     .filter_by(inspection_id=self.inspection.id, is_deleted=False, is_active=True)
                     .options(
-                        joinedload(InspectionRequirementModel.sorted_enforcement_actions),
+                        joinedload(InspectionRequirementModel.enforcement_actions),
                         joinedload(InspectionRequirementModel.requirement_source_details)
                         .joinedload(InspectionReqSourceDetail.requirement_source),
                         joinedload(InspectionRequirementModel.agency)
