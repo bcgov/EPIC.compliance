@@ -1,13 +1,13 @@
 """CEB Summary Report Generator Service."""
 from datetime import datetime, time
 from io import BytesIO
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pandas as pd
 from flask import current_app
-from openpyxl.styles import Border, Font, PatternFill, Side
+from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table
 from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
 
@@ -63,6 +63,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             f"CEB Summary Report Generator initialized with start_date: {self.start_date}, end_date: {self.end_date}"
         )
         self.project_map = {}
+        self.template_path = Path(__file__).with_name("ceb_template.xlsx")
 
     def generate(self):
         """CEB Summary Report Generation Logic."""
@@ -84,41 +85,10 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
         requirements_data_frame = pd.json_normalize(requirements_data)
         requirements_headers, requirements_columns = self._get_requirements_tab_columns_and_headers()
 
-        # Insights Tabs
-        # Number of Inspections by IR Progress (all inspections)
-        insights_data = self._format_insights_tab_data(inspections_data)
-        insights_data_frame = pd.json_normalize(insights_data)
-        insights_headers, insights_columns = self._get_insights_tab_columns_and_headers()
-        # Inspection Requirement distribution by Project \ Type
-        insights_distribution_data = self._format_requirement_distribution_insights_data(data)
-        insights_distribution_data_frame = pd.json_normalize(insights_distribution_data)
-        insights_distribution_headers, insights_distribution_columns = (
-            self._get_insights_distribution_columns_and_headers()
-        )
-        # Enforcement distribution by Project
-        insights_enforcement_distribution_data, enforcement_status_columns = (
-            self._format_enforcement_distribution_insights_data(enforcements_data)
-        )
-        insights_enforcement_distribution_data_frame = pd.json_normalize(insights_enforcement_distribution_data)
-        insights_enforcement_distribution_headers, insights_enforcement_distribution_columns = (
-            self._get_insights_enforcement_distribution_columns_and_headers(enforcement_status_columns)
-        )
-
         output = self._to_excel(
             inspections_data_frame,
             inspections_columns,
             inspections_headers,
-            insights_data_frame,
-            insights_columns,
-            insights_headers,
-            insights_distribution_data,
-            insights_distribution_data_frame,
-            insights_distribution_columns,
-            insights_distribution_headers,
-            insights_enforcement_distribution_data,
-            insights_enforcement_distribution_data_frame,
-            insights_enforcement_distribution_columns,
-            insights_enforcement_distribution_headers,
             enforcements_data_frame,
             enforcements_columns,
             enforcements_headers,
@@ -132,17 +102,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 inspections_data_frame,
                 inspections_columns,
                 inspections_headers,
-                insights_data_frame,
-                insights_columns,
-                insights_headers,
-                insights_distribution_data,
-                insights_distribution_data_frame,
-                insights_distribution_columns,
-                insights_distribution_headers,
-                insights_enforcement_distribution_data,
-                insights_enforcement_distribution_data_frame,
-                insights_enforcement_distribution_columns,
-                insights_enforcement_distribution_headers,
                 enforcements_data_frame,
                 enforcements_columns,
                 enforcements_headers,
@@ -150,208 +109,103 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 requirements_columns,
                 requirements_headers
     ):
+        if not self.template_path.exists():
+            raise FileNotFoundError(f"CEB template not found at {self.template_path}")
+        workbook = load_workbook(self.template_path)
+
+        if inspections_data_frame.empty:
+            inspections_data_frame = pd.DataFrame(columns=inspections_columns)
+        if enforcements_data_frame.empty:
+            enforcements_data_frame = pd.DataFrame(columns=enforcements_columns)
+        if requirements_data_frame.empty:
+            requirements_data_frame = pd.DataFrame(columns=requirements_columns)
+
+        self._populate_template_table_sheet(
+            workbook=workbook,
+            sheet_name="Inspections",
+            data_frame=inspections_data_frame,
+            columns=inspections_columns,
+            headers=inspections_headers,
+        )
+        self._populate_template_table_sheet(
+            workbook=workbook,
+            sheet_name="Enforcements",
+            data_frame=enforcements_data_frame,
+            columns=enforcements_columns,
+            headers=enforcements_headers,
+        )
+        self._populate_template_table_sheet(
+            workbook=workbook,
+            sheet_name="Requirements",
+            data_frame=requirements_data_frame,
+            columns=requirements_columns,
+            headers=requirements_headers,
+        )
+
         output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        workbook.save(output)
 
-            # If there is no data, create an empty dataframe with columns so that
-            # the excel file will still have the correct headers and structure
-            if inspections_data_frame.empty:
-                inspections_data_frame = pd.DataFrame(columns=inspections_columns)
-            if insights_data_frame.empty:
-                insights_data_frame = pd.DataFrame(columns=insights_columns)
-            if insights_distribution_data_frame.empty:
-                insights_distribution_data_frame = pd.DataFrame(columns=insights_distribution_columns)
-            if insights_enforcement_distribution_data_frame.empty:
-                insights_enforcement_distribution_data_frame = pd.DataFrame(
-                    columns=insights_enforcement_distribution_columns
-                )
-            if enforcements_data_frame.empty:
-                enforcements_data_frame = pd.DataFrame(columns=enforcements_columns)
-            if requirements_data_frame.empty:
-                requirements_data_frame = pd.DataFrame(columns=requirements_columns)
-
-            # Inspections Tab
-            inspections_data_frame.to_excel(
-                writer,
-                sheet_name="Inspections",
-                columns=inspections_columns,
-                header=inspections_headers,
-                index=False,
-            )
-            worksheet = writer.sheets["Inspections"]
-            # Making the columns wider
-            self._auto_size_table_columns(
-                worksheet,
-                start_col=0,
-                num_cols=len(inspections_columns),
-                max_row=len(inspections_data_frame.index) + 1,
-            )
-
-            # Enforcements Tab
-            enforcements_data_frame.to_excel(
-                writer,
-                sheet_name="Enforcements",
-                columns=enforcements_columns,
-                header=enforcements_headers,
-                index=False,
-            )
-            enforcements_worksheet = writer.sheets["Enforcements"]
-            # Making the columns wider
-            self._auto_size_table_columns(
-                enforcements_worksheet,
-                start_col=0,
-                num_cols=len(enforcements_columns),
-                max_row=len(enforcements_data_frame.index) + 1,
-            )
-
-            # Requirements Tab
-            requirements_data_frame.to_excel(
-                writer,
-                sheet_name="Requirements",
-                columns=requirements_columns,
-                header=requirements_headers,
-                index=False,
-            )
-            requirements_worksheet = writer.sheets["Requirements"]
-            # Making the columns wider
-            self._auto_size_table_columns(
-                requirements_worksheet,
-                start_col=0,
-                num_cols=len(requirements_columns),
-                max_row=len(requirements_data_frame.index) + 1,
-            )
-
-            # Insights Tab (all three insight tables side-by-side)
-            insights_sheet_name = "Insights"
-            table_gap_columns = 1
-            insights_start_row = 0
-
-            inspections_start_col = 0
-            requirements_start_col = inspections_start_col + len(insights_columns) + table_gap_columns
-            enforcements_start_col = (
-                requirements_start_col + len(insights_distribution_columns) + table_gap_columns
-            )
-
-            insights_data_frame.to_excel(
-                writer,
-                sheet_name=insights_sheet_name,
-                columns=insights_columns,
-                header=insights_headers,
-                index=False,
-                startrow=insights_start_row,
-                startcol=inspections_start_col,
-            )
-
-            insights_distribution_data_frame.to_excel(
-                writer,
-                sheet_name=insights_sheet_name,
-                columns=insights_distribution_columns,
-                header=insights_distribution_headers,
-                index=False,
-                startrow=insights_start_row,
-                startcol=requirements_start_col,
-            )
-
-            insights_enforcement_distribution_data_frame.to_excel(
-                writer,
-                sheet_name=insights_sheet_name,
-                columns=insights_enforcement_distribution_columns,
-                header=insights_enforcement_distribution_headers,
-                index=False,
-                startrow=insights_start_row,
-                startcol=enforcements_start_col,
-            )
-
-            insights_worksheet = writer.sheets[insights_sheet_name]
-
-            # Make columns wider for all three tables in the Insights sheet, with some extra padding for readability
-            self._auto_size_table_columns(
-                insights_worksheet,
-                start_col=inspections_start_col,
-                num_cols=len(insights_columns),
-                max_row=insights_start_row + len(insights_data_frame.index) + 1,
-            )
-            self._auto_size_table_columns(
-                insights_worksheet,
-                start_col=requirements_start_col,
-                num_cols=len(insights_distribution_columns),
-                max_row=insights_start_row + len(insights_distribution_data_frame.index) + 1,
-            )
-            self._auto_size_table_columns(
-                insights_worksheet,
-                start_col=enforcements_start_col,
-                num_cols=len(insights_enforcement_distribution_columns),
-                max_row=insights_start_row + len(insights_enforcement_distribution_data_frame.index) + 1,
-            )
-
-            # Apply grid styling per table.
-            insights_header_row = insights_start_row + 1
-            self._style_table_region_as_grid(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=inspections_start_col + 1,
-                row_count=len(insights_data_frame.index) + 1,
-                col_count=len(insights_columns),
-                total_row=insights_start_row + len(insights_data_frame.index) + 1,
-            )
-            self._style_table_region_as_grid(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=requirements_start_col + 1,
-                row_count=len(insights_distribution_data_frame.index) + 1,
-                col_count=len(insights_distribution_columns),
-            )
-            self._style_table_region_as_grid(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=enforcements_start_col + 1,
-                row_count=len(insights_enforcement_distribution_data_frame.index) + 1,
-                col_count=len(insights_enforcement_distribution_columns),
-            )
-
-            # Add per-table filters in the combined Insights sheet.
-            self._add_filter_table(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=inspections_start_col + 1,
-                row_count=len(insights_data_frame.index) + 1,
-                col_count=1,
-                table_name="InsightsInspectionsTbl",
-            )
-            self._add_filter_table(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=requirements_start_col + 1,
-                row_count=len(insights_distribution_data_frame.index) + 1,
-                col_count=2,
-                table_name="InsightsRequirementsTbl",
-            )
-            self._add_filter_table(
-                insights_worksheet,
-                start_row=insights_header_row,
-                start_col=enforcements_start_col + 1,
-                row_count=len(insights_enforcement_distribution_data_frame.index) + 1,
-                col_count=2,
-                table_name="InsightsEnforcementsTbl",
-            )
-
-            # Apply outline/grouping and total row emphasis per table region.
-            self._apply_insights_distribution_outline(
-                insights_worksheet,
-                start_row=insights_start_row + 2,
-                insights_distribution_data=insights_distribution_data,
-                start_col=requirements_start_col + 1,
-                end_col=requirements_start_col + len(insights_distribution_columns),
-            )
-            self._apply_enforcement_distribution_outline(
-                insights_worksheet,
-                start_row=insights_start_row + 2,
-                insights_enforcement_distribution_data=insights_enforcement_distribution_data,
-                start_col=enforcements_start_col + 1,
-                end_col=enforcements_start_col + len(insights_enforcement_distribution_columns),
-            )
         output.seek(0)
         return output.getvalue()
+
+    @staticmethod
+    def _populate_template_table_sheet(workbook, sheet_name, data_frame, columns, headers):
+        """Populate a template worksheet table while preserving workbook pivot structure."""
+        worksheet = workbook[sheet_name]
+        table = next(iter(worksheet.tables.values()), None)
+
+        if table is None:
+            raise ValueError(f"Template sheet '{sheet_name}' does not contain an Excel table.")
+
+        min_col = 1
+        min_row = 1
+        table_column_count = len(getattr(table, "tableColumns", []) or [])
+        if table_column_count < 1:
+            raise ValueError(f"Template sheet '{sheet_name}' table has no columns.")
+        max_col = table_column_count
+
+        table_headers = [
+            worksheet.cell(row=min_row, column=column_number).value
+            for column_number in range(min_col, max_col + 1)
+        ]
+
+        header_to_column_key = dict(zip(headers, columns))
+
+        special_headers = {"Index", "Unique Key"}
+        unknown_headers = [
+            header for header in table_headers
+            if header not in special_headers and header not in header_to_column_key
+        ]
+        if unknown_headers:
+            raise ValueError(
+                f"Template sheet '{sheet_name}' has unmapped headers: {unknown_headers}"
+            )
+
+        records = data_frame.reindex(columns=columns).to_dict("records")
+
+        last_used_row = max(worksheet.max_row, min_row + 1)
+        for row_number in range(min_row + 1, last_used_row + 1):
+            for column_number in range(min_col, max_col + 1):
+                worksheet.cell(row=row_number, column=column_number).value = None
+
+        for row_index, record in enumerate(records, start=1):
+            excel_row = min_row + row_index
+            for col_offset, header in enumerate(table_headers):
+                column_number = min_col + col_offset
+                if header == "Index":
+                    value = row_index
+                elif header == "Unique Key":
+                    value = record.get("enforcement_document_number")
+                else:
+                    column_key = header_to_column_key[header]
+                    value = record.get(column_key)
+                worksheet.cell(row=excel_row, column=column_number).value = value
+
+        new_last_row = min_row + max(len(records), 1)
+        table.ref = (
+            f"{get_column_letter(min_col)}{min_row}:"
+            f"{get_column_letter(max_col)}{new_last_row}"
+        )
 
     def _build_inspections_tab_query(self):
         """Build base query for CEB Summary Report."""
@@ -567,246 +421,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
 
         return result
 
-    @staticmethod
-    def _format_insights_tab_data(inspections_data):
-        """Format insights data for excel export."""
-        progress_counts = {}
-
-        for item in inspections_data:
-            progress = item.get("ir_progress") or "Unknown"
-            progress_counts[progress] = progress_counts.get(progress, 0) + 1
-
-        result = []
-        for progress, count in sorted(progress_counts.items()):
-            result.append(
-                {
-                    "ir_progress": progress,
-                    "number_of_inspections": count,
-                }
-            )
-
-        result.append(
-            {
-                "ir_progress": "Total",
-                "number_of_inspections": len(inspections_data),
-            }
-        )
-
-        return result
-
-    def _format_requirement_distribution_insights_data(self, data):
-        """Format requirement distribution insights by project type/project."""
-        result = []
-        distribution_by_type = {}
-        seen_requirement_ids = set()
-
-        for row in data:
-            requirement_id = row.InspectionRequirement.id
-            if requirement_id in seen_requirement_ids:
-                continue
-            seen_requirement_ids.add(requirement_id)
-
-            project_name, project_type = self._get_project_details(row)
-            project_type = project_type or "Unknown"
-            project_name = project_name or "Unknown"
-
-            if project_type not in distribution_by_type:
-                distribution_by_type[project_type] = {
-                    "projects": {},
-                    "totals": {
-                        "in_count": 0,
-                        "out_count": 0,
-                        "not_determined_count": 0,
-                        "total": 0,
-                    },
-                }
-
-            projects = distribution_by_type[project_type]["projects"]
-            if project_name not in projects:
-                projects[project_name] = {
-                    "in_count": 0,
-                    "out_count": 0,
-                    "not_determined_count": 0,
-                    "total": 0,
-                }
-
-            compliance_finding = (row.compliance_finding or "").strip().lower()
-
-            if compliance_finding == "in":
-                projects[project_name]["in_count"] += 1
-                distribution_by_type[project_type]["totals"]["in_count"] += 1
-            elif compliance_finding == "out":
-                projects[project_name]["out_count"] += 1
-                distribution_by_type[project_type]["totals"]["out_count"] += 1
-            else:
-                projects[project_name]["not_determined_count"] += 1
-                distribution_by_type[project_type]["totals"]["not_determined_count"] += 1
-
-            projects[project_name]["total"] += 1
-            distribution_by_type[project_type]["totals"]["total"] += 1
-
-        for project_type in sorted(distribution_by_type.keys()):
-            totals = distribution_by_type[project_type]["totals"]
-            result.append(
-                {
-                    "project_type": project_type,
-                    "project_name": "Total",
-                    "in_count": totals["in_count"],
-                    "out_count": totals["out_count"],
-                    "not_determined_count": totals["not_determined_count"],
-                    "total": totals["total"],
-                    "row_type": "project_type_total",
-                }
-            )
-
-            projects = distribution_by_type[project_type]["projects"]
-            for project_name in sorted(projects.keys()):
-                project_counts = projects[project_name]
-                result.append(
-                    {
-                        "project_type": project_type,
-                        "project_name": f"{project_name}",
-                        "in_count": project_counts["in_count"],
-                        "out_count": project_counts["out_count"],
-                        "not_determined_count": project_counts["not_determined_count"],
-                        "total": project_counts["total"],
-                        "row_type": "project",
-                    }
-                )
-
-        return result
-
-    @staticmethod
-    def _format_enforcement_distribution_insights_data(enforcements_data):
-        """Format enforcement distribution insights by project/action with status columns."""
-        distribution_by_project = {}
-        all_statuses = set()
-
-        for row in enforcements_data:
-            project_name = row.get("project_name") or "Unknown"
-            enforcement_action = row.get("enforcement_action") or "(empty)"
-            enforcement_status = row.get("enforcement_status") or "(empty)"
-            all_statuses.add(enforcement_status)
-
-            if project_name not in distribution_by_project:
-                distribution_by_project[project_name] = {"actions": {}}
-
-            actions = distribution_by_project[project_name]["actions"]
-            if enforcement_action not in actions:
-                actions[enforcement_action] = {
-                    "statuses": {},
-                }
-
-            statuses = actions[enforcement_action]["statuses"]
-            statuses[enforcement_status] = statuses.get(enforcement_status, 0) + 1
-
-        status_columns = sorted(all_statuses)
-
-        def _build_status_count_row(statuses):
-            row = {status: statuses.get(status, 0) for status in status_columns}
-            row["total"] = sum(statuses.values())
-            return row
-
-        result = []
-        for project_name in sorted(distribution_by_project.keys()):
-            project_data = distribution_by_project[project_name]
-
-            project_statuses = {}
-            for action_data in project_data["actions"].values():
-                for status, count in action_data["statuses"].items():
-                    project_statuses[status] = project_statuses.get(status, 0) + count
-
-            project_row = {
-                "project_name": project_name,
-                "enforcement_action": "Total",
-                "row_type": "project_total",
-            }
-            project_row.update(_build_status_count_row(project_statuses))
-            result.append(
-                project_row
-            )
-
-            for enforcement_action in sorted(project_data["actions"].keys()):
-                action_data = project_data["actions"][enforcement_action]
-
-                action_row = {
-                    "project_name": project_name,
-                    "enforcement_action": f"{enforcement_action}",
-                    "row_type": "action_total",
-                }
-                action_row.update(_build_status_count_row(action_data["statuses"]))
-                result.append(
-                    action_row
-                )
-
-        return result, status_columns
-
-    @staticmethod
-    def _apply_insights_distribution_outline(
-        worksheet,
-        start_row,
-        insights_distribution_data,
-        start_col=1,
-        end_col=None,
-    ):
-        """Apply row hierarchy formatting for project rows under each project type total row."""
-        worksheet.sheet_properties.outlinePr.summaryBelow = False
-        border_side = Side(style="thin", color="000000")
-        total_row_border = Border(
-            left=border_side,
-            right=border_side,
-            top=border_side,
-            bottom=border_side,
-        )
-        if end_col is None:
-            end_col = worksheet.max_column
-
-        for index, item in enumerate(insights_distribution_data):
-            row_number = start_row + index
-            row_type = item.get("row_type")
-
-            if row_type == "project":
-                worksheet.row_dimensions[row_number].outlineLevel = 1
-                worksheet.row_dimensions[row_number].hidden = False
-            elif row_type == "project_type_total":
-                for col_number in range(start_col, end_col + 1):
-                    cell = worksheet.cell(row=row_number, column=col_number)
-                    cell.font = Font(bold=True)
-                    cell.border = total_row_border
-
-    @staticmethod
-    def _apply_enforcement_distribution_outline(
-        worksheet,
-        start_row,
-        insights_enforcement_distribution_data,
-        start_col=1,
-        end_col=None,
-    ):
-        """Apply row hierarchy formatting for enforcement rows under each project row."""
-        worksheet.sheet_properties.outlinePr.summaryBelow = False
-        border_side = Side(style="thin", color="000000")
-        total_row_border = Border(
-            left=border_side,
-            right=border_side,
-            top=border_side,
-            bottom=border_side,
-        )
-        if end_col is None:
-            end_col = worksheet.max_column
-
-        for index, item in enumerate(insights_enforcement_distribution_data):
-            row_number = start_row + index
-            row_type = item.get("row_type")
-
-            if row_type == "project_total":
-                for col_number in range(start_col, end_col + 1):
-                    cell = worksheet.cell(row=row_number, column=col_number)
-                    cell.font = Font(bold=True)
-                    cell.border = total_row_border
-            elif row_type == "action_total":
-                worksheet.row_dimensions[row_number].outlineLevel = 1
-                worksheet.row_dimensions[row_number].hidden = False
-
     def _format_requirements_tab_data(self, data):
         """Format requirements data for excel export."""
         result = []
@@ -856,73 +470,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
         return f"{row.primary_officer_first_name or ''} {row.primary_officer_last_name or ''}".strip()
 
     @staticmethod
-    def _auto_size_table_columns(worksheet, start_col, num_cols, max_row, max_width=30, min_width=10):
-        """Auto-size only a specific table region's columns."""
-        if num_cols < 1 or max_row < 1:
-            return
-
-        for col_offset in range(num_cols):
-            col_number = start_col + col_offset + 1
-            max_length = 0
-            for row_number in range(1, max_row + 1):
-                value = worksheet.cell(row=row_number, column=col_number).value
-                if value is not None:
-                    max_length = max(max_length, len(str(value)))
-            worksheet.column_dimensions[get_column_letter(col_number)].width = min(
-                max(max_length, min_width), max_width
-            )
-
-    @staticmethod
-    def _style_table_region_as_grid(
-        worksheet,
-        start_row,
-        start_col,
-        row_count,
-        col_count,
-        total_row=None,
-    ):
-        """Apply grid styling to a bounded table region."""
-        if row_count < 1 or col_count < 1:
-            return
-
-        border_side = Side(style="thin", color="000000")
-        vertical_border = Border(left=border_side, right=border_side)
-        full_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
-        header_fill = PatternFill(fill_type="solid", fgColor="F2F2F2")
-        header_font = Font(bold=True)
-        total_font = Font(bold=True)
-
-        end_row = start_row + row_count - 1
-        end_col = start_col + col_count - 1
-
-        for row_number in range(start_row, end_row + 1):
-            for col_number in range(start_col, end_col + 1):
-                worksheet.cell(row=row_number, column=col_number).border = vertical_border
-
-        for col_number in range(start_col, end_col + 1):
-            cell = worksheet.cell(row=start_row, column=col_number)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.border = full_border
-
-        if total_row and total_row > start_row:
-            for col_number in range(start_col, end_col + 1):
-                cell = worksheet.cell(row=total_row, column=col_number)
-                cell.font = total_font
-                cell.border = full_border
-
-    @staticmethod
-    def _add_filter_table(worksheet, start_row, start_col, row_count, col_count, table_name):
-        """Add an Excel table to enable filter dropdowns for a specific table region."""
-        if row_count < 1 or col_count < 1:
-            return
-
-        end_row = start_row + row_count - 1
-        end_col = start_col + col_count - 1
-        table_ref = f"{get_column_letter(start_col)}{start_row}:{get_column_letter(end_col)}{end_row}"
-        worksheet.add_table(Table(displayName=table_name, ref=table_ref))
-
-    @staticmethod
     def _get_inspections_tab_columns_and_headers():
         """Get existing columns and their headers for Excel export."""
         headers = [
@@ -931,7 +478,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "Project Name",
             "Project Type",
             "IR Issuance Date",
-            "Primary",
+            "Primary Officer",
             "Inspection Status",
             "Case File Number",
         ]
@@ -959,7 +506,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "Project Type",
             "Compliance Finding",
             "Enforcement Action",
-            "Enforcement Doc #",
+            "Enforcement Document Number",
             "Enforcement Status",
             "IR Issuance Date",
             "Primary Officer",
@@ -980,63 +527,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "primary_officer",
             "inspection_status",
             "case_file_number",
-        ]
-
-        return headers, columns
-
-    @staticmethod
-    def _get_insights_tab_columns_and_headers():
-        """Get insights columns and headers for Excel export."""
-        headers = [
-            "IR Progress",
-            "Number of Inspections",
-        ]
-
-        columns = [
-            "ir_progress",
-            "number_of_inspections",
-        ]
-
-        return headers, columns
-
-    @staticmethod
-    def _get_insights_distribution_columns_and_headers():
-        """Get insights distribution columns and headers for Excel export."""
-        headers = [
-            "Project Type",
-            "Project Name",
-            "In",
-            "Out",
-            "Not Determined",
-            "Total",
-        ]
-
-        columns = [
-            "project_type",
-            "project_name",
-            "in_count",
-            "out_count",
-            "not_determined_count",
-            "total",
-        ]
-
-        return headers, columns
-
-    @staticmethod
-    def _get_insights_enforcement_distribution_columns_and_headers(status_columns):
-        """Get enforcement distribution insights columns and headers for Excel export."""
-        headers = [
-            "Project",
-            "Enforcement Action",
-        ] + status_columns + [
-            "Total",
-        ]
-
-        columns = [
-            "project_name",
-            "enforcement_action",
-        ] + status_columns + [
-            "total",
         ]
 
         return headers, columns
