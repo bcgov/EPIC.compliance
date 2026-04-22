@@ -30,5 +30,6 @@ tenacity==9.0.0
 beautifulsoup4==4.13.3
 pandas==2.3.1
 openpyxl==3.1.5
+Pillow>=11.0.0
 python-docx==1.1.2
 lxml==5.1.0

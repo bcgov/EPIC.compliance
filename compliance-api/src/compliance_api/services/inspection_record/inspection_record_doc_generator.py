@@ -1,48 +1,63 @@
 """DOCX Generator for Inspection Reports."""
 
-from io import BytesIO
 from pathlib import Path
 
-import requests
 from docx import Document
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
-from requests.exceptions import RequestException
+from flask import current_app
 
 from .docx_utils import (
     _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode, _set_cell_background,
     _set_empty_paragraph_spacing)
 from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container, init_list_numbering
+from .image_utils import ImageDownloadError, ImageProcessingError, ImageTooLargeError, download_and_optimize_image
+
+
+def _add_image_to_cell(cell, image_url, caption_text, error_prefix="image"):
+    """Download, optimize, and add an image to a cell with caption.
+
+    Uses streaming download and image optimization for memory efficiency.
+    """
+    if not image_url:
+        return False
+
+    image_stream = None
+    try:
+        image_stream = download_and_optimize_image(image_url)
+
+        # Insert the image
+        para = cell.add_paragraph()  # Add empty paragraph above
+        para = cell.add_paragraph()
+        run = para.add_run()
+        run.add_picture(image_stream, width=Inches(4))
+
+        # Insert caption below image
+        if caption_text:
+            caption_para = cell.add_paragraph()
+            caption_run = caption_para.add_run(caption_text)
+            caption_run.font.size = Pt(9)
+        cell.add_paragraph()
+        return True
+
+    except (ImageDownloadError, ImageTooLargeError, ImageProcessingError) as e:
+        # If image fails, show placeholder text
+        para = cell.add_paragraph()
+        para.text = f"[Failed to load {error_prefix}] {caption_text}"
+        current_app.logger.info(f"Failed to load {error_prefix}: {caption_text}, from URL: {image_url}, error: {e}")
+        return False
+
+    finally:
+        if image_stream is not None:
+            image_stream.close()
 
 
 def _add_photo(photo, cell):
     photo_url = photo.get('photo_url')
     caption_text = f"Photo {photo.get('photo_number', '')}. {photo.get('photo_caption', '')}"
-
-    if photo_url:
-        try:
-            response = requests.get(photo_url)
-            response.raise_for_status()
-            image_stream = BytesIO(response.content)
-
-            # Insert the image
-            para = cell.add_paragraph()  # Add empty paragraph above
-            para = cell.add_paragraph()
-            run = para.add_run()
-            run.add_picture(image_stream, width=Inches(4))
-
-            # Insert caption below image
-            caption_para = cell.add_paragraph()
-            caption_run = caption_para.add_run(caption_text)
-            caption_run.font.size = Pt(9)
-            para = cell.add_paragraph()
-        except RequestException:
-            # If image fails, show placeholder text
-            para = cell.add_paragraph()
-            para.text = f"[Failed to load image] {caption_text}"
-            run.font.size = Pt(9)
+    _add_image_to_cell(cell, photo_url, caption_text, error_prefix="image")
 
 
 def _add_figure(figure, cell):
@@ -51,27 +66,39 @@ def _add_figure(figure, cell):
         f"Figure {figure.get('figure_number', '')}. "
         f"{figure.get('figure_caption', '')}"
     )
+    _add_image_to_cell(cell, figure_url, caption_text, error_prefix="figure")
 
-    if not figure_url:
+
+def _add_inline_image_to_cell(cell, image_url, caption_text):
+    """Add an inline image with simpler formatting for requirement/document images.
+
+    Uses streaming download and image optimization for memory efficiency.
+    """
+    if not image_url:
         return
 
+    image_stream = None
     try:
-        response = requests.get(figure_url)
-        response.raise_for_status()
-        image_stream = BytesIO(response.content)
-        para = cell.add_paragraph()  # Add empty paragraph below
-        para = cell.add_paragraph()
-        run = para.add_run()
-        run.add_picture(image_stream, width=Inches(4))
-        caption_para = cell.add_paragraph()
-        caption_run = caption_para.add_run(caption_text)
-        caption_run.font.size = Pt(9)
-        para = cell.add_paragraph()
+        cell.add_paragraph()  # Add spacing before image
+        image_stream = download_and_optimize_image(image_url)
 
-    except RequestException:
-        para = cell.add_paragraph()
-        run = para.add_run(f"[Failed to load figure] {caption_text}")
-        run.font.size = Pt(9)
+        img_para = cell.add_paragraph()
+        run = img_para.add_run()
+        run.add_picture(image_stream, width=Inches(4))
+
+        if caption_text:
+            caption_para = cell.add_paragraph()
+            caption_run = caption_para.add_run(caption_text)
+            caption_run.font.size = Pt(9)
+
+    except (ImageDownloadError, ImageTooLargeError, ImageProcessingError) as e:
+        error_para = cell.add_paragraph()
+        error_para.text = f"[Failed to load image: {caption_text or 'unknown'}]"
+        current_app.logger.info(f"Failed to load image: {caption_text or 'unknown'}, from URL: {image_url}, error: {e}")
+
+    finally:
+        if image_stream is not None:
+            image_stream.close()
 
 
 def _add_requirement_details_table(doc, req):
@@ -130,28 +157,9 @@ def _add_requirement_details_table(doc, req):
             # Add req source images
             for img in source.get('requirement_source_images', []):
                 ends_with_table = False
-                para = cell.add_paragraph()
                 image_url = img.get('image_url')
-                if image_url:
-                    try:
-                        response = requests.get(image_url)
-                        response.raise_for_status()
-                        image_stream = BytesIO(response.content)
-
-                        # Insert the image
-                        img_para = cell.add_paragraph()
-                        run = img_para.add_run()
-                        run.add_picture(image_stream, width=Inches(4))
-
-                        # Add filename as caption if available
-                        if img.get('original_file_name'):
-                            caption_para = cell.add_paragraph()
-                            caption_run = caption_para.add_run(img.get('original_file_name'))
-                            caption_run.font.size = Pt(9)
-                    except RequestException:
-                        # If image fails, show placeholder text
-                        error_para = cell.add_paragraph()
-                        error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
+                caption = img.get('original_file_name', '')
+                _add_inline_image_to_cell(cell, image_url, caption)
 
             # Add document details (come after source description and images)
             for doc_group in source.get('requirement_documents', []):
@@ -192,25 +200,9 @@ def _add_requirement_details_table(doc, req):
                     # Add document images
                     for img in document.get('document_images', []):
                         ends_with_table = False
-                        para = cell.add_paragraph()
                         image_url = img.get('image_url')
-                        if image_url:
-                            try:
-                                response = requests.get(image_url)
-                                response.raise_for_status()
-                                image_stream = BytesIO(response.content)
-
-                                img_para = cell.add_paragraph()
-                                run = img_para.add_run()
-                                run.add_picture(image_stream, width=Inches(4))
-
-                                if img.get('original_file_name'):
-                                    caption_para = cell.add_paragraph()
-                                    caption_run = caption_para.add_run(img.get('original_file_name'))
-                                    caption_run.font.size = Pt(9)
-                            except RequestException:
-                                error_para = cell.add_paragraph()
-                                error_para.text = f"[Failed to load image: {img.get('original_file_name', 'unknown')}]"
+                        caption = img.get('original_file_name', '')
+                        _add_inline_image_to_cell(cell, image_url, caption)
                     para = cell.add_paragraph()
 
             # Add spacing between multiple sources

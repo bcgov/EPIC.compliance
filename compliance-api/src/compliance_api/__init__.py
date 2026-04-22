@@ -30,7 +30,7 @@ secure_headers = secure.Secure(
     .default_src("'self'")
     .script_src("'self'", "'unsafe-inline'")
     .style_src("'self'", "'unsafe-inline'")
-    .img_src("'self'", "'data:'")
+    .img_src("'self'", "data:")
     .object_src("'self'")
     .connect_src("'self'"),
     hsts=secure.StrictTransportSecurity()
