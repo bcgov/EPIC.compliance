@@ -74,18 +74,12 @@ jobs:
 
       - name: Run Vitest
         run: |
-          npm run vitest -- --run
+          npm run vitest -- --run --coverage
 
       - name: Test with Cypress
         id: test
         run: |
           npx cypress run --component --headed --browser chrome
-
-      # Disabled because nyc is not supported and needs to be replaced.
-      # [COMP-769]
-      # - name: Coverage Report
-      #   run: |
-      #     npx nyc report --reporter=lcov --reporter=text-summary
 
   build-check:
     needs: setup-job

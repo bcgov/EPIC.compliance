@@ -2,7 +2,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
-import istanbul from "vite-plugin-istanbul";
 import tsconfigPaths from "vite-tsconfig-paths";
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,20 +15,12 @@ export default defineConfig({
     TanStackRouterVite(),
     react(),
     tsconfigPaths(),
-    istanbul({
-      cypress: true,
-      requireEnv: false
-    })
   ],
   resolve: {
     alias: {
       "@": path.resolve(dirname, "src"),
-      // Fix for MUI imports in Node 24
-      // '@mui/system': '@mui/system/esm',
-      // '@mui/material': '@mui/material/esm',
     }
   },
-  // Fix for dynamic imports in Cypress and CI
   optimizeDeps: {
     include: [
       '@mui/material',
@@ -48,13 +39,26 @@ export default defineConfig({
       },
     },
   },
-  // Help with module resolution in CI
   server: {
     fs: {
       strict: false,
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.ts',
+        '**/*.cy.ts',
+        '**/*.cy.tsx',
+        '**/routeTree.gen.ts',
+        '**/*.stories.tsx',
+      ],
+      reportsDirectory: './coverage',
+    },
     projects: [{
       extends: true,
       plugins: [
