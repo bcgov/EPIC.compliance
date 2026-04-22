@@ -28,9 +28,9 @@ from compliance_api.utils.util import allowedorigins
 secure_headers = secure.Secure(
     csp=secure.ContentSecurityPolicy()
     .default_src("'self'")
-    .script_src("'self' 'unsafe-inline'")
-    .style_src("'self' 'unsafe-inline'")
-    .img_src("'self' data:")
+    .script_src("'self'", "'unsafe-inline'")
+    .style_src("'self'", "'unsafe-inline'")
+    .img_src("'self'", "'data:'")
     .object_src("'self'")
     .connect_src("'self'"),
     hsts=secure.StrictTransportSecurity()
