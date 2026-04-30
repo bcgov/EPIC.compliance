@@ -55,7 +55,10 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     # All configuration are in config file
     app.config.from_object(get_named_config(run_mode))
     CORS(
-        app, resources={r"/*": {"origins": allowedorigins()}}, supports_credentials=True
+        app,
+        resources={r"/*": {"origins": allowedorigins()}},
+        supports_credentials=True,
+        expose_headers=["Content-Disposition"],
     )
     # Setup jwt for keycloak
     setup_jwt_manager(app, jwt)

@@ -65,10 +65,26 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
         self.project_map = {}
         self.template_path = Path(__file__).with_name("ceb_template.xlsx")
 
+    def get_filename(self):
+        """Return the filename (without extension) for the CEB Summary report."""
+        today = datetime.now()
+        start = self.effective_start_date or today
+        end = self.effective_end_date or today
+        return f"CEBSummaryReport_{start.strftime('%Y%m%d')}_{end.strftime('%Y%m%d')}"
+
     def generate(self):
         """CEB Summary Report Generation Logic."""
         # Shared source data for all tabs
         data = self._build_inspections_tab_query().all()
+
+        # Compute effective date range for filename
+        today = datetime.now()
+        if self.start_date:
+            self.effective_start_date = self.start_date
+        else:
+            issued_dates = [row.ir_date_issued for row in data if row.ir_date_issued]
+            self.effective_start_date = min(issued_dates).replace(tzinfo=None) if issued_dates else today
+        self.effective_end_date = self.end_date if self.end_date else today
 
         # Inspections Tab
         inspections_data = self._format_inspections_tab_data(data)

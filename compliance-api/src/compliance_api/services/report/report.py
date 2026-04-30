@@ -25,4 +25,4 @@ class ReportService:
         if not generator_class:
             raise ValueError(f"Unknown report type: {report_type}")
         generator = generator_class(report_data)
-        return generator.generate()
+        return generator.generate(), generator

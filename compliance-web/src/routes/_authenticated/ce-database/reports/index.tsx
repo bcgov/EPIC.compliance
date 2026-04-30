@@ -90,10 +90,11 @@ export function ReportsTab() {
   }, [report_type, officers]);
 
   const { mutate: downloadSystemReport, isPending } = useSystemReportsExport(
-    (data) => {
+    ({ data, filename }) => {
       downloadFile(
         data,
-        `${report_type}-${dateUtils.formatDate(new Date().toISOString(), "YYYY-MM-DD-HH-mm-ss")}.xlsx`,
+        filename ??
+          `${report_type}-${dateUtils.formatDate(new Date().toISOString(), "YYYY-MM-DD-HH-mm-ss")}.xlsx`,
       );
     },
   );

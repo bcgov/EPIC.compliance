@@ -57,11 +57,15 @@ class Reports(Resource):
         report_type = report_data.get("report_type")
 
         try:
-            data = ReportService.generate_report(report_data, report_type)
+            data, generator = ReportService.generate_report(report_data, report_type)
         except ValueError as value_error:
             current_app.logger.error(f"Error generating report: {value_error}")
             return {"message": str(value_error)}, 400
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"{report_type}_{timestamp}.xlsx"
+
+        if hasattr(generator, "get_filename"):
+            file_name = f"{generator.get_filename()}.xlsx"
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_name = f"{report_type}_{timestamp}.xlsx"
 
         return send_file(BytesIO(data), as_attachment=True, download_name=file_name)
