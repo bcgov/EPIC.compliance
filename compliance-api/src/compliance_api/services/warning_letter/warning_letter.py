@@ -210,7 +210,7 @@ class WarningLetterService:
                 "Warning letter can only be reset if the progress is in drafting status"
             )
 
-        # Supported fields for reset
+        # content field is only resetable field for now
         if field_name not in ["content"]:
             raise UnprocessableEntityError(
                 f"Field {field_name} is not supported for reset"
@@ -218,17 +218,16 @@ class WarningLetterService:
 
         update_data = {}
 
-        if field_name == "content":
-            # Get the inspection and requirement IDs to regenerate content
-            inspection = warning_letter.inspection
-            requirement_ids = [
-                req_map.inspection_requirement_id
-                for req_map in warning_letter.warning_letter_requirement_maps
-            ]
-            # Regenerate content using the existing method
-            issuing_officer_id = warning_letter.issuing_officer_id
-            new_content = _create_content(inspection, requirement_ids, issuing_officer_id)
-            update_data["content"] = new_content
+        # Get the inspection and requirement IDs to regenerate content
+        inspection = warning_letter.inspection
+        requirement_ids = [
+            req_map.inspection_requirement_id
+            for req_map in warning_letter.warning_letter_requirement_maps
+        ]
+        # Regenerate content using the existing method
+        issuing_officer_id = warning_letter.issuing_officer_id
+        new_content = _create_content(inspection, requirement_ids, issuing_officer_id)
+        update_data["content"] = new_content
 
         # Update the warning letter with the regenerated field
         with session_scope() as session:
