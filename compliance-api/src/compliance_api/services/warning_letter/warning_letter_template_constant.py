@@ -64,18 +64,4 @@ WARNING_LETTER_CONTENT = """<p class='editor-paragraph' dir='ltr'>
     {{ department_details.email }}
     </a> if you have any questions.
 </p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<div class="signature-block">
-    <p class="editor-paragraph" dir="ltr">Sincerely,</p>
-    <p class="editor-paragraph" dir="ltr">{{ inspection_details.officer_name }}<br>
-    {{inspection_details.officer_position}}<br>
-    Environmental Assessment Office</p>
-</div>
-<p class="editor-paragraph" style="text-align: left;"><br></p>
-<p class="editor-paragraph" dir="ltr"><strong>cc:</strong> EAO Compliance</p>
 </p>"""

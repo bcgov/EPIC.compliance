@@ -100,6 +100,7 @@ class WarningLetterService:
         ServiceUtils.check_requirement_for_enforcement_action(
             requirement_ids, EnforcementActionOptionEnum.WARNING_LETTER.value
         )
+
         with session_scope() as session:
             updated_warning_letter = WarningLetterModel.update_warning_letter(
                 warning_letter_id, update_data, session
@@ -209,28 +210,31 @@ class WarningLetterService:
                 "Warning letter can only be reset if the progress is in drafting status"
             )
 
-        # Currently only content field is supported for reset
-        if field_name != "content":
+        # Supported fields for reset
+        if field_name not in ["content"]:
             raise UnprocessableEntityError(
                 f"Field {field_name} is not supported for reset"
             )
 
-        # Get the inspection and requirement IDs to regenerate content
-        inspection = warning_letter.inspection
-        requirement_ids = [
-            req_map.inspection_requirement_id
-            for req_map in warning_letter.warning_letter_requirement_maps
-        ]
+        update_data = {}
 
-        # Regenerate content using the existing method
-        issuing_officer_id = warning_letter.issuing_officer_id
-        new_content = _create_content(inspection, requirement_ids, issuing_officer_id)
+        if field_name == "content":
+            # Get the inspection and requirement IDs to regenerate content
+            inspection = warning_letter.inspection
+            requirement_ids = [
+                req_map.inspection_requirement_id
+                for req_map in warning_letter.warning_letter_requirement_maps
+            ]
+            # Regenerate content using the existing method
+            issuing_officer_id = warning_letter.issuing_officer_id
+            new_content = _create_content(inspection, requirement_ids, issuing_officer_id)
+            update_data["content"] = new_content
 
-        # Update the warning letter with the new content
+        # Update the warning letter with the regenerated field
         with session_scope() as session:
             updated_warning_letter = WarningLetterModel.update_warning_letter(
                 warning_letter_id=warning_letter_id,
-                warning_letter_update_data={"content": new_content},
+                warning_letter_update_data=update_data,
                 session=session,
             )
 
@@ -268,6 +272,12 @@ def _create_warning_letter_data(warning_letter):
             ),
             "content": convert_inline_styles_for_pdf(warning_letter.content),
         },
+        "officer_details": {
+            "officer_name": warning_letter.issuing_officer.first_name
+            + " "
+            + warning_letter.issuing_officer.last_name,
+            "officer_position": warning_letter.issuing_officer.position.name,
+        },
         "department_details": {
             "logo_url": department_details.logo_url,
             "email": department_details.email,
@@ -285,9 +295,8 @@ def _create_warning_letter_obj(inspection, warning_letter_data: dict) -> dict:
     """
     Create a warning letter object as a dictionary.
 
-    If where_as and now_therefore are not provided, they will be generated.
+    If content is not provided, it will be generated.
     If issuing_officer_id is not provided, it will be set to the primary officer of the inspection.
-    If section_id is not provided, it will be set to the default section.
     """
     requirement_ids = warning_letter_data.get("inspection_requirement_ids", None)
     warning_letter_number = warning_letter_data.get("warning_letter_number", None)
@@ -295,21 +304,21 @@ def _create_warning_letter_obj(inspection, warning_letter_data: dict) -> dict:
         warning_letter_number = _create_warning_letter_number(
             inspection.case_file.project_id, inspection.case_file.id
         )
+
+    issuing_officer_id = warning_letter_data.get(
+        "issuing_officer_id", inspection.primary_officer_id
+    )
+
     content = warning_letter_data.get("content")
     if not content:
-        issuing_officer_id = warning_letter_data.get(
-            "issuing_officer_id", inspection.primary_officer_id
-        )
-        generated_content = _create_content(
+        content = _create_content(
             inspection, requirement_ids, issuing_officer_id
         )
-        content = content or generated_content
+
     return {
         "warning_letter_number": warning_letter_number,
         "inspection_id": inspection.id,
-        "issuing_officer_id": warning_letter_data.get(
-            "issuing_officer_id", inspection.primary_officer_id
-        ),
+        "issuing_officer_id": issuing_officer_id,
         "content": content,
         "intended_issuance_date": warning_letter_data.get("intended_issuance_date"),
         "status": WarningLetterStatusEnum.CREATED,

@@ -118,6 +118,15 @@
       margin: 0;
     }
 
+    .signature {
+      margin-top: 2em;
+    }
+
+    .signature p {
+      margin: 0;
+      margin-bottom: 0.5em;
+    }
+
     .editor-list-ol,
     .editor-list-ul {
         padding: 0;
@@ -389,6 +398,18 @@
   <div class="com-wl-content">
     {{warning_letter.content | safe | replace('style="white-space:
     pre-wrap;"', '')}}
+  </div>
+  <!-- Signature -->
+  <div class="signature">
+    <p><br></p>
+    <p><br></p>
+    <p><br></p>
+    <p><br></p>
+    <p>Sincerely,</p>
+    <p>{{officer_details.officer_name}}<br>
+    {{officer_details.officer_position}}<br>
+    Environmental Assessment Office</p>
+    <p><strong>cc:</strong> EAO Compliance</p>
   </div>
 </body>
 
