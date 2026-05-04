@@ -207,7 +207,9 @@ class InspectionRecordDataBuilder:
                             attendance_list.append(item["name"])
                 elif isinstance(option.data, str):
                     # For other attendance
-                    attendance_list.append(option.data)
+                    for item in option.data.splitlines():
+                        if item.strip():
+                            attendance_list.append(item.strip())
             else:
                 # If no data, use the attendance option name
                 if (
