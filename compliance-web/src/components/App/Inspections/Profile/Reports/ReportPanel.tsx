@@ -18,9 +18,10 @@ const ReportPanel: React.FC<ReportPanelProps> = (props) => {
       aria-labelledby={`ir-tab-${index}`}
       {...other}
       width="70%"
-      height="calc(100vh - var(--ir-tabs-container-top-position))"
       sx={{
         overflow: "auto",
+        minHeight: "200px",
+        height: "calc(100vh - var(--ir-tabs-container-top-position))",
       }}
     >
       {value === index && (

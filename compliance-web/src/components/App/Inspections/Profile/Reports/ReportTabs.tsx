@@ -130,23 +130,40 @@ export default function ReportTabs() {
       );
     };
 
-    // Calculate on initial render and window resize
-    calculateTabsPosition();
+    // Defer initial calculation to allow layout to stabilize after async content loads
+    let rafId: number;
+    const deferredCalculate = () => {
+      rafId = requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(() => {
+          calculateTabsPosition();
+        });
+      });
+    };
 
-    // Detect layout changes
-    const resizeObserver = new ResizeObserver(() => {
+    deferredCalculate();
+
+    // Recalculate whenever ReportTopSection (sibling above) changes height
+    const topSectionObserver = new ResizeObserver(() => {
       calculateTabsPosition();
     });
+    const topSection = tabsContainer.previousElementSibling;
+    if (topSection) topSectionObserver.observe(topSection);
 
-    resizeObserver.observe(tabsContainer.parentElement || tabsContainer);
+    // Defer resize handler to allow layout to settle after zoom/resize
+    const handleResize = () => {
+      requestAnimationFrame(() => {
+        calculateTabsPosition();
+      });
+    };
 
-    window.addEventListener("resize", calculateTabsPosition);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", calculateTabsPosition);
+      cancelAnimationFrame(rafId);
+      topSectionObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
     };
-  }, [inspectionRequirementsData, value, tabItems]);
+  }, []);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", pt: 2 }}>
@@ -154,11 +171,11 @@ export default function ReportTabs() {
       <Box
         ref={tabsContainerRef}
         sx={{
-          flexGrow: 1,
           display: "flex",
           flexDirection: "row",
           width: "100%",
           gap: 2,
+          minHeight: "200px",
           height: "calc(100vh - var(--ir-tabs-container-top-position))",
           position: "relative",
         }}

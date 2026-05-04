@@ -139,6 +139,7 @@ function InspectionProfilePage() {
         gap={3}
         sx={{
           flexDirection: isMdToLg ? "column" : "row",
+          alignItems: "flex-start",
         }}
       >
         <>

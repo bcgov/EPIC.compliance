@@ -38,7 +38,9 @@ export default function OfficerStepper() {
     setInspectionReportsData,
   } = useReportStore();
   const [activeStep, setActiveStep] = useState(0);
-  const [isContentExpanded, setIsContentExpanded] = useState(true);
+  const [isContentExpanded, setIsContentExpanded] = useState(
+    () => !window.matchMedia("(min-resolution: 1.5dppx)").matches
+  );
   const queryClient = useQueryClient();
 
   const isFinalReportStep = useMemo(() => {
