@@ -166,8 +166,9 @@ class CaseFileService:
                 UnapprovedProjectModel.create_project_info(
                     unapproved_project_obj, session
                 )
+            officer_ids = case_file_data.get("officer_ids", [])
             cls.insert_or_update_officers(
-                created_case_file.id, case_file_data.get("officer_ids", []), session
+                created_case_file.id, officer_ids, session
             )
             cr_entry = _create_cr_entry(
                 created_case_file.id,
@@ -178,18 +179,63 @@ class CaseFileService:
             ContinuationReportService.create(
                 cr_entry, sys_generated=True, ho_session=session
             )
+
+            # Generate CR entries for primary officer set
+            primary_officer_entries = _generate_primary_officer_cr_entries(
+                case_file_id=created_case_file.id,
+                old_primary_officer=None,
+                new_primary_officer=created_case_file.primary_officer,
+                context_type=ContextEnum.CASE_FILE,
+                context_id=created_case_file.id,
+                key=created_case_file.case_file_number,
+                key_context=ContextEnum.CASE_FILE,
+            )
+            for entry in primary_officer_entries:
+                ContinuationReportService.create(
+                    entry, sys_generated=True, ho_session=session
+                )
+
+            # Generate CR entries for other assigned officers added
+            if officer_ids:
+                new_officers = _get_staff_users_by_ids(officer_ids)
+                other_officer_entries = _generate_other_officers_cr_entries(
+                    case_file_id=created_case_file.id,
+                    old_officers=[],
+                    new_officers=new_officers,
+                    context_type=ContextEnum.CASE_FILE,
+                    context_id=created_case_file.id,
+                    key=created_case_file.case_file_number,
+                    key_context=ContextEnum.CASE_FILE,
+                )
+                for entry in other_officer_entries:
+                    ContinuationReportService.create(
+                        entry, sys_generated=True, ho_session=session
+                    )
         return created_case_file
 
     @classmethod
     def update(cls, case_file_id: int, case_file_data: dict, ho_session=None):
         """Update case file."""
+        #  pylint: disable=cyclic-import, import-outside-toplevel
+        from .continuation_report import ContinuationReportService
+
         case_file = CaseFileModel.find_by_id(case_file_id)
         if not case_file:
             return None
         _case_file_close_check(case_file)
         _access_check_for_update(case_file)
+
+        # Capture old values before update for CR entry
+        old_primary_officer_id = case_file.primary_officer_id
+        old_primary_officer = case_file.primary_officer
+        old_other_officers = [
+            cfo.officer for cfo in CaseFileOfficerModel.get_all_by_case_file_id(case_file_id)
+            if cfo.is_active
+        ]
+
+        new_primary_officer_id = case_file_data.get("primary_officer_id", None)
         case_file_obj = {
-            "primary_officer_id": case_file_data.get("primary_officer_id", None),
+            "primary_officer_id": new_primary_officer_id,
             "project_description": case_file_data.get("project_description", None),
             "is_deleted": case_file_data.get("is_deleted", False),
             "is_active": case_file_data.get("is_active", True),
@@ -200,9 +246,10 @@ class CaseFileService:
             updated_case_file = CaseFileModel.update_case_file(
                 case_file_id, case_file_obj, session
             )
+            officer_ids = case_file_data.get("officer_ids", [])
             cls.insert_or_update_officers(
                 case_file_id,
-                case_file_data.get("officer_ids", []),
+                officer_ids,
                 session,
             )
 
@@ -221,6 +268,46 @@ class CaseFileService:
                     existing_unapproved_project.update(
                         unapproved_project_update_data, commit=False
                     )
+
+            # Generate CR entries for officer changes
+            # Fetch new primary officer by ID if it changed
+            if new_primary_officer_id and new_primary_officer_id != old_primary_officer_id:
+                new_primary_officer = StaffUserModel.find_by_id(new_primary_officer_id)
+            else:
+                new_primary_officer = old_primary_officer
+            new_other_officers = _get_staff_users_by_ids(officer_ids) if officer_ids is not None else old_other_officers
+
+            # Generate primary officer change entries
+            primary_officer_entries = _generate_primary_officer_cr_entries(
+                case_file_id=case_file_id,
+                old_primary_officer=old_primary_officer,
+                new_primary_officer=new_primary_officer,
+                context_type=ContextEnum.CASE_FILE,
+                context_id=case_file_id,
+                key=case_file.case_file_number,
+                key_context=ContextEnum.CASE_FILE,
+            )
+            for entry in primary_officer_entries:
+                ContinuationReportService.create(
+                    entry, sys_generated=True, ho_session=session
+                )
+
+            # Generate other officers change entries
+            if officer_ids is not None:
+                other_officer_entries = _generate_other_officers_cr_entries(
+                    case_file_id=case_file_id,
+                    old_officers=old_other_officers,
+                    new_officers=new_other_officers,
+                    context_type=ContextEnum.CASE_FILE,
+                    context_id=case_file_id,
+                    key=case_file.case_file_number,
+                    key_context=ContextEnum.CASE_FILE,
+                )
+                for entry in other_officer_entries:
+                    ContinuationReportService.create(
+                        entry, sys_generated=True, ho_session=session
+                    )
+
             return updated_case_file
 
         if ho_session:
@@ -516,6 +603,129 @@ def _case_file_close_check(case_file):
         raise UnprocessableEntityError(
             "No change is possible as the case file is in CLOSED status"
         )
+
+
+def _format_officer_name(officer):
+    """Format officer name as 'First Last'."""
+    return f"{officer.first_name} {officer.last_name}"
+
+
+def _format_officer_names_sorted(officers):
+    """Format and sort officer names alphabetically, comma-separated."""
+    names = [_format_officer_name(officer) for officer in officers]
+    names.sort()
+    return ", ".join(names)
+
+
+def _create_officer_cr_entry(
+    case_file_id, text, context_type, context_id, key, key_context
+):
+    """Create an officer-related continuation report entry."""
+    return {
+        "case_file_id": case_file_id,
+        "text": text,
+        "rich_text": f"<p>{text}</p>",
+        "date_created": datetime.utcnow().strftime(INPUT_DATE_TIME_FORMAT),
+        "context_type": context_type,
+        "context_id": context_id,
+        "keys": [{"key": key, "key_context": key_context}],
+    }
+
+
+def _generate_primary_officer_cr_entries(
+    case_file_id,
+    old_primary_officer,
+    new_primary_officer,
+    context_type,
+    context_id,
+    key,
+    key_context,
+):
+    """Generate CR entries for primary officer changes."""
+    entries = []
+
+    if old_primary_officer is None and new_primary_officer is not None:
+        # Primary officer set (creation)
+        new_name = _format_officer_name(new_primary_officer)
+        text = f"{new_name} assigned as Primary"
+        entries.append(
+            _create_officer_cr_entry(
+                case_file_id, text, context_type, context_id, key, key_context
+            )
+        )
+    elif (
+        old_primary_officer is not None
+        and new_primary_officer is not None
+        and old_primary_officer.id != new_primary_officer.id
+    ):
+        # Primary officer changed
+        old_name = _format_officer_name(old_primary_officer)
+        new_name = _format_officer_name(new_primary_officer)
+        text = f"Primary changed from {old_name} to {new_name}"
+        entries.append(
+            _create_officer_cr_entry(
+                case_file_id, text, context_type, context_id, key, key_context
+            )
+        )
+
+    return entries
+
+
+def _generate_other_officers_cr_entries(
+    case_file_id,
+    old_officers,
+    new_officers,
+    context_type,
+    context_id,
+    key,
+    key_context,
+):
+    """Generate CR entries for other assigned officers changes.
+
+    Returns entries in order: removals first, then additions.
+    """
+    entries = []
+
+    # Get officer IDs for comparison
+    old_officer_ids = {officer.id for officer in old_officers}
+    new_officer_ids = {officer.id for officer in new_officers}
+
+    removed_ids = old_officer_ids - new_officer_ids
+    added_ids = new_officer_ids - old_officer_ids
+
+    # Generate removal entry first (if any)
+    if removed_ids:
+        removed_officers = [o for o in old_officers if o.id in removed_ids]
+        names = _format_officer_names_sorted(removed_officers)
+        text = f"{names} removed from Other Assigned Officers"
+        entries.append(
+            _create_officer_cr_entry(
+                case_file_id, text, context_type, context_id, key, key_context
+            )
+        )
+
+    # Generate addition entry second (if any)
+    if added_ids:
+        added_officers = [o for o in new_officers if o.id in added_ids]
+        names = _format_officer_names_sorted(added_officers)
+        text = f"{names} added to Other Assigned Officers"
+        entries.append(
+            _create_officer_cr_entry(
+                case_file_id, text, context_type, context_id, key, key_context
+            )
+        )
+
+    return entries
+
+
+def _get_staff_users_by_ids(officer_ids):
+    """Fetch staff users by a list of IDs."""
+    if not officer_ids:
+        return []
+    return StaffUserModel.query.filter(
+        StaffUserModel.id.in_(officer_ids),
+        StaffUserModel.is_deleted.is_(False)
+    ).all()
 
 
 def _build_case_files_paginated_query(args):

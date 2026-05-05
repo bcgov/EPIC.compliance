@@ -67,10 +67,14 @@ function CaseFileProfilePage() {
       queryClient.invalidateQueries({
         queryKey: ["case-file", caseFileNumber],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["continuation-reports", caseFileData?.id],
+        exact: false,
+      });
       setClose();
       notify.success(submitMsg);
     },
-    [queryClient, caseFileNumber, setClose]
+    [queryClient, caseFileNumber, caseFileData?.id, setClose]
   );
 
   const handleOpenEditModal = useCallback(() => {
