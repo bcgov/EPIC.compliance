@@ -40,13 +40,16 @@ class EncryptedType(TypeDecorator):  # pylint: disable=too-many-ancestors
     def process_result_value(self, value, dialect):
         """Decrypt the value when retrieving from the database."""
         if value is not None:
-            encrypted_value = base64.b64decode(value.encode("utf-8"))
-            # Extract the IV
-            initialization_vector = encrypted_value[: AES.block_size]
-            encrypted_value = encrypted_value[AES.block_size:]
-            cipher = self._get_cipher_suite(initialization_vector)
-            decrypted_value = unpad(cipher.decrypt(encrypted_value), AES.block_size)
-            return decrypted_value.decode("utf-8")
+            try:
+                encrypted_value = base64.b64decode(value.encode("utf-8"))
+                initialization_vector = encrypted_value[: AES.block_size]
+                encrypted_value = encrypted_value[AES.block_size:]
+                cipher = self._get_cipher_suite(initialization_vector)
+                decrypted_value = unpad(cipher.decrypt(encrypted_value), AES.block_size)
+                return decrypted_value.decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as e:
+                current_app.logger.warning(f"Decryption failed: {e}")
+                return None  # or "[ENCRYPTED]" if you want a placeholder
         return None
 
     def process_literal_param(self, value, dialect):

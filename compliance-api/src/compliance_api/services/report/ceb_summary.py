@@ -8,35 +8,22 @@ import pandas as pd
 from flask import current_app
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from sqlalchemy import and_
 from sqlalchemy.orm import selectinload
 
-from compliance_api.models import db
-from compliance_api.models.administrative_penalty import AdministrativePenalty
 from compliance_api.models.case_file import CaseFile
-from compliance_api.models.charge_recommendation import ChargeRecommendation
-from compliance_api.models.compliance_finding import ComplianceFindingOption
+from compliance_api.models.complaint import Complaint
+from compliance_api.models.complaint.complaint_option import ComplaintSourceEnum
 from compliance_api.models.enforcement_action import EnforcementActionOption
 from compliance_api.models.inspection.inspection import Inspection
-from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
 from compliance_api.models.inspection.inspection_requirement import InspectionRequirement
 from compliance_api.models.inspection_record import InspectionRecord
-from compliance_api.models.order import Order
-from compliance_api.models.project import Project
-from compliance_api.models.restorative_justice import RestorativeJustice
-from compliance_api.models.staff_user import StaffUser
-from compliance_api.models.topic import Topic
-from compliance_api.models.unapproved_project import UnapprovedProject
-from compliance_api.models.violation_ticket import ViolationTicket
-from compliance_api.models.warning_letter import WarningLetter
 from compliance_api.services.epic_track_service.track_service import TrackService
+from compliance_api.services.report.base import BaseReportGenerator
 from compliance_api.services.report.shared_queries import (
-    get_requirement_admin_penalty_sub_query, get_requirement_charge_rec_sub_query, get_requirement_order_sub_query,
-    get_requirement_restorative_justice_sub_query, get_requirement_violation_ticket_sub_query,
-    get_requirement_warning_letter_sub_query)
+    complaints_tab_query_base,
+    inspections_tab_query_base,
+)
 from compliance_api.services.service_utils import ServiceUtils
-
-from .base import BaseReportGenerator
 
 
 class CEBSummaryReportGenerator(BaseReportGenerator):
@@ -75,31 +62,37 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
     def generate(self):
         """CEB Summary Report Generation Logic."""
         # Shared source data for all tabs
-        data = self._build_inspections_tab_query().all()
+        inspection_data = self._build_inspections_tab_query().all()
+        complaint_data = self._build_complaints_tab_query().all()
 
         # Compute effective date range for filename
         today = datetime.now()
         if self.start_date:
             self.effective_start_date = self.start_date
         else:
-            issued_dates = [row.ir_date_issued for row in data if row.ir_date_issued]
+            issued_dates = [row.ir_date_issued for row in inspection_data if row.ir_date_issued]
             self.effective_start_date = min(issued_dates).replace(tzinfo=None) if issued_dates else today
         self.effective_end_date = self.end_date if self.end_date else today
 
         # Inspections Tab
-        inspections_data = self._format_inspections_tab_data(data)
+        inspections_data = self._format_inspections_tab_data(inspection_data)
         inspections_data_frame = pd.json_normalize(inspections_data)
         inspections_headers, inspections_columns = self._get_inspections_tab_columns_and_headers()
 
-        # Enforcements Tab
-        enforcements_data = self._format_enforcements_tab_data(data)
+        # Enforcement Tab
+        enforcements_data = self._format_enforcements_tab_data(inspection_data)
         enforcements_data_frame = pd.json_normalize(enforcements_data)
         enforcements_headers, enforcements_columns = self._get_enforcements_tab_columns_and_headers()
 
         # Requirements Tab
-        requirements_data = self._format_requirements_tab_data(data)
+        requirements_data = self._format_requirements_tab_data(inspection_data)
         requirements_data_frame = pd.json_normalize(requirements_data)
         requirements_headers, requirements_columns = self._get_requirements_tab_columns_and_headers()
+
+        # Complaints Tab
+        complaints_data = self._format_complaints_tab_data(complaint_data)
+        complaints_data_frame = pd.json_normalize(complaints_data)
+        complaints_headers, complaints_columns = self._get_complaints_tab_columns_and_headers()
 
         output = self._to_excel(
             inspections_data_frame,
@@ -110,7 +103,10 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             enforcements_headers,
             requirements_data_frame,
             requirements_columns,
-            requirements_headers)
+            requirements_headers,
+            complaints_data_frame,
+            complaints_columns,
+            complaints_headers)
         return output
 
     def _to_excel(
@@ -123,11 +119,20 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 enforcements_headers,
                 requirements_data_frame,
                 requirements_columns,
-                requirements_headers
+                requirements_headers,
+                complaints_data_frame,
+                complaints_columns,
+                complaints_headers
     ):
         if not self.template_path.exists():
             raise FileNotFoundError(f"CEB template not found at {self.template_path}")
         workbook = load_workbook(self.template_path)
+        self._reorder_pivot_column_items(
+            workbook, "Compliance Finding", ["In", "Out", "Not Determined"]
+        )
+        self._reorder_pivot_column_items(
+            workbook, "Enforcement Status", ["Issued", "Rescinded", "Closed"]
+        )
 
         if inspections_data_frame.empty:
             inspections_data_frame = pd.DataFrame(columns=inspections_columns)
@@ -135,6 +140,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             enforcements_data_frame = pd.DataFrame(columns=enforcements_columns)
         if requirements_data_frame.empty:
             requirements_data_frame = pd.DataFrame(columns=requirements_columns)
+        if complaints_data_frame.empty:
+            complaints_data_frame = pd.DataFrame(columns=complaints_columns)
 
         self._populate_template_table_sheet(
             workbook=workbook,
@@ -145,7 +152,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
         )
         self._populate_template_table_sheet(
             workbook=workbook,
-            sheet_name="Enforcements",
+            sheet_name="Enforcement",
             data_frame=enforcements_data_frame,
             columns=enforcements_columns,
             headers=enforcements_headers,
@@ -156,6 +163,13 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             data_frame=requirements_data_frame,
             columns=requirements_columns,
             headers=requirements_headers,
+        )
+        self._populate_template_table_sheet(
+            workbook=workbook,
+            sheet_name="Complaints",
+            data_frame=complaints_data_frame,
+            columns=complaints_columns,
+            headers=complaints_headers,
         )
 
         output = BytesIO()
@@ -225,127 +239,34 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
 
     def _build_inspections_tab_query(self):
         """Build base query for CEB Summary Report."""
-        requirement_order_subquery = get_requirement_order_sub_query()
-        requirement_warning_letter_subquery = get_requirement_warning_letter_sub_query()
-        requirement_violation_ticket_subquery = get_requirement_violation_ticket_sub_query()
-        requirement_admin_penalty_subquery = get_requirement_admin_penalty_sub_query()
-        requirement_charge_rec_subquery = get_requirement_charge_rec_sub_query()
-        requirement_restorative_justice_subquery = get_requirement_restorative_justice_sub_query()
-
-        query = (
-            db.session.query(
-                InspectionRequirement,
-                Inspection.ir_number.label("ir_number"),
-                InspectionRequirement.summary.label("summary"),
-                Topic.name.label("topic_name"),
-                InspectionRecord.ir_progress.label("ir_progress"),
-                Project.id.label("project_id"),
-                UnapprovedProject.name.label("unapproved_project_name"),
-                UnapprovedProject.type.label("unapproved_project_type"),
-                ComplianceFindingOption.name.label("compliance_finding"),
-                InspectionReqEnforcementMap.enforcement_action_id.label("enforcement_action_id"),
-                EnforcementActionOption.name.label("enforcement_action"),
-                # Enforcement statuses
-                Order.order_status.label("order_status"),
-                WarningLetter.status.label("warning_letter_status"),
-                ViolationTicket.status.label("violation_ticket_status"),
-                AdministrativePenalty.referral_status.label("admin_penalty_status"),
-                ChargeRecommendation.status.label("charge_rec_status"),
-                RestorativeJustice.status.label("restorative_justice_status"),
-                # Enforcement numbers
-                Order.order_number.label("order_number"),
-                WarningLetter.warning_letter_number.label("warning_letter_number"),
-                ViolationTicket.ticket_number.label("violation_ticket_number"),
-                AdministrativePenalty.administrative_penalty_number.label("admin_penalty_number"),
-                ChargeRecommendation.charge_recommendation_number.label("charge_rec_number"),
-                RestorativeJustice.restorative_justice_number.label("restorative_justice_number"),
-                InspectionRecord.date_issued.label("ir_date_issued"),
-                StaffUser.first_name.label("primary_officer_first_name"),
-                StaffUser.last_name.label("primary_officer_last_name"),
-                Inspection.inspection_status.label("inspection_status"),
-                CaseFile.case_file_number.label("case_file_number"),
-                CaseFile.date_created.label("case_file_date_created"),
-            )
-            .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
-            .join(CaseFile, Inspection.case_file_id == CaseFile.id)
-            .join(Topic, InspectionRequirement.topic_id == Topic.id)
-            .outerjoin(Project, Inspection.project_id == Project.id)
-            .outerjoin(UnapprovedProject, Inspection.case_file_id == UnapprovedProject.case_file_id)
-            .join(ComplianceFindingOption, InspectionRequirement.compliance_finding_id == ComplianceFindingOption.id)
-            .join(InspectionReqEnforcementMap, and_(
-                InspectionReqEnforcementMap.requirement_id == InspectionRequirement.id,
-                InspectionReqEnforcementMap.is_active.is_(True),
-                InspectionReqEnforcementMap.is_deleted.is_(False)
-            ))
-            .join(InspectionRecord, InspectionRecord.inspection_id == Inspection.id)
-            .join(
-                EnforcementActionOption,
-                InspectionReqEnforcementMap.enforcement_action_id == EnforcementActionOption.id
-            )
-            .join(StaffUser, Inspection.primary_officer_id == StaffUser.id)
-            .outerjoin(
-                requirement_order_subquery,
-                requirement_order_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                Order,
-                Order.id == requirement_order_subquery.c.order_id
-            )
-            .outerjoin(
-                requirement_warning_letter_subquery,
-                requirement_warning_letter_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                WarningLetter,
-                WarningLetter.id == requirement_warning_letter_subquery.c.warning_letter_id
-            )
-            .outerjoin(
-                requirement_violation_ticket_subquery,
-                requirement_violation_ticket_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                ViolationTicket,
-                ViolationTicket.id == requirement_violation_ticket_subquery.c.violation_ticket_id
-            )
-            .outerjoin(
-                requirement_admin_penalty_subquery,
-                requirement_admin_penalty_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                AdministrativePenalty,
-                AdministrativePenalty.id == requirement_admin_penalty_subquery.c.administrative_penalty_id
-            )
-            .outerjoin(
-                requirement_charge_rec_subquery,
-                requirement_charge_rec_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                ChargeRecommendation,
-                ChargeRecommendation.id == requirement_charge_rec_subquery.c.charge_recommendation_id
-            )
-            .outerjoin(
-                requirement_restorative_justice_subquery,
-                requirement_restorative_justice_subquery.c.inspection_requirement_id == InspectionRequirement.id
-            )
-            .outerjoin(
-                RestorativeJustice,
-                RestorativeJustice.id == requirement_restorative_justice_subquery.c.restorative_justice_id
-            )
-            .filter(
-                InspectionRequirement.is_active.is_(True),
-                InspectionRequirement.is_deleted.is_(False),
-                Inspection.is_active.is_(True),
-                Inspection.is_deleted.is_(False),
-                InspectionRecord.is_active.is_(True),
-                InspectionRecord.is_deleted.is_(False),
-                Inspection.start_date >= self.start_date if self.start_date else True,
-                Inspection.start_date <= self.end_date if self.end_date else True,
-            )
-            .order_by(InspectionRequirement.id, EnforcementActionOption.id)
-            .options(
-                selectinload(InspectionRequirement.requirement_source_details)
-            )
+        query = inspections_tab_query_base()  # Base query with necessary joins and filters
+        query = query.filter(
+            InspectionRequirement.is_active.is_(True),
+            InspectionRequirement.is_deleted.is_(False),
+            Inspection.is_active.is_(True),
+            Inspection.is_deleted.is_(False),
+            InspectionRecord.is_active.is_(True),
+            InspectionRecord.is_deleted.is_(False),
+            Inspection.start_date >= self.start_date if self.start_date else True,
+            Inspection.start_date <= self.end_date if self.end_date else True,
+        ).order_by(
+            InspectionRequirement.id,
+            EnforcementActionOption.id
+        ).options(
+            selectinload(InspectionRequirement.requirement_source_details)
         )
+
+        return query
+
+    def _build_complaints_tab_query(self):
+        query = complaints_tab_query_base()  # Base query with necessary joins and filters
+        query = query.filter(
+            Complaint.is_active.is_(True),
+            Complaint.is_deleted.is_(False),
+            CaseFile.is_active.is_(True),
+            CaseFile.is_deleted.is_(False),
+        ).order_by(Complaint.id)
+
         return query
 
     def _get_project_details(self, row):
@@ -478,6 +399,54 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
 
         return result
 
+    def _format_complaints_tab_data(self, data):
+        """Format complaints data for excel export."""
+        result = []
+        seen_complaints = set()
+        first_nations = TrackService.get_first_nations()
+
+        for row in data:
+            complaint_key = row.complaint_number
+            if complaint_key in seen_complaints:
+                continue
+            seen_complaints.add(complaint_key)
+
+            project_name, project_type = self._get_project_details(row)
+
+            # Get complaint source details based on source type
+            complaint_source_details = ""
+
+            if row.complaint_source == ComplaintSourceEnum.PUBLIC.value:
+                complaint_source_details = row.complaint_source_contact_full_name or ""
+            elif row.complaint_source == ComplaintSourceEnum.FIRST_NATION.value:
+                first_nation = next((fn for fn in first_nations if fn.get('id') == row.source_first_nation_id), None)
+                complaint_source_details = first_nation.get("name") if first_nation else ""
+            elif row.complaint_source == ComplaintSourceEnum.FIRST_NATIONS_ALLIANCE.value:
+                complaint_source_details = row.complaint_source_contact_alliance_name or ""
+            elif row.complaint_source == ComplaintSourceEnum.AGENCY.value:
+                complaint_source_details = row.source_agency or ""
+            elif row.complaint_source == ComplaintSourceEnum.OTHER.value:
+                complaint_source_details = row.complaint_source_contact_description or ""
+
+            item = {
+                "complaint_number": row.complaint_number,
+                "project_name": project_name,
+                "project_type": project_type,
+                "topic": row.topic,
+                "date_received":
+                    row.date_received.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                    if row.date_received else None,
+                "complaint_source": row.complaint_source,
+                "complaint_source_details": complaint_source_details,
+                "primary_officer": self._format_primary_officer_name(row),
+                "complaint_status": row.complaint_status.value if row.complaint_status else None,
+                "complaint_resolution": row.complaint_resolution,
+                "case_file_number": row.case_file_number,
+            }
+            result.append(item)
+
+        return result
+
     @staticmethod
     def _format_primary_officer_name(row):
         """Get formatted officer name from query labels."""
@@ -589,3 +558,113 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
         ]
 
         return headers, columns
+
+    @staticmethod
+    def _get_complaints_tab_columns_and_headers():
+        """Get complaints columns and headers for Excel export."""
+        headers = [
+            "Complaint Number",
+            "Project Name",
+            "Project Type",
+            "Topic",
+            "Date Received",
+            "Complaint Source",
+            "Complaint Source Details",
+            "Primary Officer",
+            "Complaint Status",
+            "Complaint Resolution",
+            "Case File Number",
+        ]
+
+        columns = [
+            "complaint_number",
+            "project_name",
+            "project_type",
+            "topic",
+            "date_received",
+            "complaint_source",
+            "complaint_source_details",
+            "primary_officer",
+            "complaint_status",
+            "complaint_resolution",
+            "case_file_number",
+        ]
+
+        return headers, columns
+
+    @staticmethod
+    def _reorder_pivot_column_items(workbook, field_name, desired_order):
+        """Reorder pivot field items to enforce a specific column display order."""
+        # Collect all unique pivot caches from worksheets
+        seen_caches = set()
+        pivot_cache_pairs = []  # List of (cache, pivot) tuples
+
+        for worksheet in workbook.worksheets:
+            if not hasattr(worksheet, '_pivots'):
+                continue
+            for pivot in worksheet._pivots:
+                cache = pivot.cache
+                if cache is not None:
+                    pivot_cache_pairs.append((cache, pivot, worksheet))
+                    seen_caches.add(id(cache))
+
+        # Group pivots by cache
+        cache_to_pivots = {}
+        for cache, pivot, ws in pivot_cache_pairs:
+            cache_id = id(cache)
+            if cache_id not in cache_to_pivots:
+                cache_to_pivots[cache_id] = {'cache': cache, 'pivots': []}
+            cache_to_pivots[cache_id]['pivots'].append(pivot)
+
+        for cache_id, cache_data in cache_to_pivots.items():
+            cache = cache_data['cache']
+            pivots = cache_data['pivots']
+
+            # Find the cache field matching field_name and record its index
+            field_idx = None
+            cache_field = None
+            for idx, cf in enumerate(cache.cacheFields):
+                if cf.name == field_name:
+                    field_idx = idx
+                    cache_field = cf
+                    break
+
+            if field_idx is None or cache_field is None:
+                continue
+            if not hasattr(cache_field, 'sharedItems') or cache_field.sharedItems is None:
+                continue
+
+            # Build a map of cache index → string value
+            values_by_cache_idx = {}
+            if hasattr(cache_field.sharedItems, '_fields'):
+                for i, item in enumerate(cache_field.sharedItems._fields):
+                    if hasattr(item, 'v'):
+                        values_by_cache_idx[i] = item.v
+
+            # Apply reordering to every pivot table that uses this cache
+            for pivot in pivots:
+                if field_idx >= len(pivot.pivotFields):
+                    continue
+
+                pivot_field = pivot.pivotFields[field_idx]
+                if pivot_field.items is None:
+                    continue
+
+                # Separate data items (have a cache index) from subtotal/blank items
+                data_items = [item for item in pivot_field.items if item.x is not None]
+                other_items = [item for item in pivot_field.items if item.x is None]
+
+                # Sort data items by position in desired_order (unknowns go last)
+                def sort_key(item):
+                    val = values_by_cache_idx.get(item.x, "")
+                    try:
+                        return desired_order.index(val)
+                    except ValueError:
+                        return len(desired_order)
+
+                data_items.sort(key=sort_key)
+                pivot_field.items = data_items + other_items
+                pivot_field.sortType = "manual"
+
+            # Tell Excel to rebuild the pivot layout from our reordered items on open
+            cache.refreshOnLoad = True

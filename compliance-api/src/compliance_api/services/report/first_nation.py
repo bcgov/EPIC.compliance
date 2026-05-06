@@ -3,11 +3,8 @@ from io import BytesIO
 from zoneinfo import ZoneInfo
 
 import pandas as pd
-from compliance_api.models.inspection.inspection_attendance import InspectionAttendance
-from compliance_api.models.inspection.inspection_firstnation import InspectionFirstnation
-from compliance_api.models.inspection.inspection_option import InspectionAttendanceOption
 from flask import current_app
-from sqlalchemy import and_, func
+from sqlalchemy import and_
 from sqlalchemy.orm import aliased, selectinload
 
 from compliance_api.models import db
@@ -21,6 +18,7 @@ from compliance_api.models.complaint.complaint_source_contact import ComplaintSo
 from compliance_api.models.compliance_finding import ComplianceFindingOption
 from compliance_api.models.enforcement_action import EnforcementActionOption
 from compliance_api.models.inspection.inspection import Inspection
+from compliance_api.models.inspection.inspection_firstnation import InspectionFirstnation
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
 from compliance_api.models.inspection.inspection_requirement import InspectionRequirement
 from compliance_api.models.inspection_record import InspectionRecord
@@ -34,9 +32,9 @@ from compliance_api.models.violation_ticket import ViolationTicket
 from compliance_api.models.warning_letter import WarningLetter
 from compliance_api.services.epic_track_service.track_service import TrackService
 from compliance_api.services.report.shared_queries import (
-    get_requirement_admin_penalty_sub_query, get_requirement_charge_rec_sub_query, get_requirement_order_sub_query,
-    get_requirement_restorative_justice_sub_query, get_requirement_violation_ticket_sub_query,
-    get_requirement_warning_letter_sub_query)
+    get_inspection_attendance_subquery, get_requirement_admin_penalty_sub_query, get_requirement_charge_rec_sub_query,
+    get_requirement_order_sub_query, get_requirement_restorative_justice_sub_query,
+    get_requirement_violation_ticket_sub_query, get_requirement_warning_letter_sub_query)
 from compliance_api.services.service_utils import ServiceUtils
 
 from .base import BaseReportGenerator
@@ -164,7 +162,7 @@ class FirstNationReportGenerator(BaseReportGenerator):
         requirement_admin_penalty_subquery = get_requirement_admin_penalty_sub_query()
         requirement_charge_rec_subquery = get_requirement_charge_rec_sub_query()
         requirement_restorative_justice_subquery = get_requirement_restorative_justice_sub_query()
-        attendance_subquery = _get_inspection_attendance_subquery()
+        attendance_subquery = get_inspection_attendance_subquery()
 
         query = (
             db.session.query(
@@ -520,26 +518,3 @@ class FirstNationReportGenerator(BaseReportGenerator):
         if cache_key not in self._project_cache:
             self._project_cache[cache_key] = TrackService.get_project_by_id(project_id, as_of_date=as_of_date)
         return self._project_cache[cache_key]
-
-
-def _get_inspection_attendance_subquery():
-    """Get subquery for inspection attendance types as comma-separated list."""
-    return (
-        db.session.query(
-            InspectionAttendance.inspection_id,
-            func.string_agg(
-                InspectionAttendanceOption.name,
-                ", "
-            ).label("attendance_types")
-        )
-        .join(
-            InspectionAttendanceOption,
-            InspectionAttendance.attendance_option_id == InspectionAttendanceOption.id
-        )
-        .filter(
-            InspectionAttendance.is_active.is_(True),
-            InspectionAttendance.is_deleted.is_(False)
-        )
-        .group_by(InspectionAttendance.inspection_id)
-        .subquery()
-    )

@@ -33,10 +33,10 @@ export default function RouteItemsList() {
           routeName: "Requirements",
           path: "/ce-database/requirements",
         },
-        // {
-        //   routeName: "Reports",
-        //   path: "/ce-database/reports",
-        // },
+        {
+          routeName: "Reports",
+          path: "/ce-database/reports",
+        },
       ],
     },
     {

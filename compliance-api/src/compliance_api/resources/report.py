@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """API endpoints for managing report resources."""
-
+import traceback
 from datetime import datetime
 from io import BytesIO
 
@@ -60,6 +60,7 @@ class Reports(Resource):
             data, generator = ReportService.generate_report(report_data, report_type)
         except ValueError as value_error:
             current_app.logger.error(f"Error generating report: {value_error}")
+            current_app.logger.error(f"Error generating report: {value_error}\n{traceback.format_exc()}")
             return {"message": str(value_error)}, 400
 
         if hasattr(generator, "get_filename"):
