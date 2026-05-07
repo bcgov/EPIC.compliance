@@ -31,7 +31,7 @@ from compliance_api.models.unapproved_project import UnapprovedProject
 from compliance_api.models.violation_ticket import ViolationTicket
 from compliance_api.models.warning_letter import WarningLetter
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.services.report.shared_queries import (
+from compliance_api.services.report.utils.shared_queries import (
     get_requirement_admin_penalty_sub_query, get_requirement_charge_rec_sub_query, get_requirement_order_sub_query,
     get_requirement_restorative_justice_sub_query, get_requirement_violation_ticket_sub_query,
     get_requirement_warning_letter_sub_query)

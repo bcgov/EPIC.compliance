@@ -26,15 +26,15 @@ import { useSystemReportsExport } from "@/hooks/useSystemReports";
 import dateUtils from "@/utils/dateUtils";
 
 const REPORT_TYPES = [
-  {
-    label: "Project Compliance History Report",
-    value: ReportType.ProjectCompliance,
-  },
+  // {
+  //   label: "Project Compliance History Report",
+  //   value: ReportType.ProjectCompliance,
+  // },
   { label: "CEB Summary Report", value: ReportType.CebSummary },
-  {
-    label: "Case File Management Report",
-    value: ReportType.CaseFileManagement,
-  },
+  // {
+  //   label: "Case File Management Report",
+  //   value: ReportType.CaseFileManagement,
+  // },
   { label: "First Nation Report", value: ReportType.FirstNation },
 ];
 
