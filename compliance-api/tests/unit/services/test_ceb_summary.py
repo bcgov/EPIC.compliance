@@ -6,6 +6,9 @@ import pytest
 from compliance_api.models import db
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
+from compliance_api.models.inspection.inspection_attendance import InspectionAttendance
+from compliance_api.models.inspection.inspection_firstnation import InspectionFirstnation
+from compliance_api.models.inspection.inspection_option import InspectionAttendanceOption
 from compliance_api.models.inspection_record import InspectionRecord
 from compliance_api.services.report import ceb_summary
 from compliance_api.models.inspection.inspection import Inspection
@@ -100,6 +103,20 @@ class TestCEBSummaryReportGenerator:
         )
 
         db.session.add(inspection_record)
+        db.session.flush()
+
+        # Get existing attendance option (seeded data) for INNER JOIN in query
+        attendance_option = db.session.query(InspectionAttendanceOption).first()
+
+        inspection_attendance = InspectionAttendance(
+            inspection_id=inspection.id,
+            attendance_option_id=attendance_option.id
+        )
+        inspection_firstnation = InspectionFirstnation(
+            inspection_id=inspection.id,
+            firstnation_id=1
+        )
+        db.session.add_all([inspection_attendance, inspection_firstnation])
         db.session.flush()
 
         insp_req = InspectionRequirement(
