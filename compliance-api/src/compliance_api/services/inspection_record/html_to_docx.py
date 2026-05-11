@@ -566,9 +566,9 @@ def _get_multilevel_bullet_num_id(document):
     ]
 
     bullet_fonts = [
-        'Symbol',
-        'Courier New',
-        'Courier New',
+        'Arial',
+        'Arial',
+        'Arial',
     ]
 
     for level in range(9):
