@@ -66,10 +66,11 @@ PRELIMINARY_REVIEW_DETAILS = """<div>
 
 ACTION_REQUIRED_BY_RP = """<p class="editor-paragraph" dir="ltr"><b><strong class="editor-text-bold">Please review
  this inspection record for errors or omissions and provide a response to Officer {{ primary_officer }}
- by</strong></b>
+ by
 {% if date_expected_return %}
-    {{ date_expected_return }}
+    {{ date_expected_return }}.
 {% else %}
+</strong></b>
     <span style="color: gray;">date will appear once due date is set.</span>
 {% endif %}
 </p>"""
