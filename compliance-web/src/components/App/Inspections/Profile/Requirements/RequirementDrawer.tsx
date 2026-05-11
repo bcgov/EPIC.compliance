@@ -340,11 +340,11 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
   const getDrawerTitle = () => {
     if (inspectionRequirementData) {
       return isRegulatoryConsideration
-        ? `Edit Regulatory Consideration`
+        ? `Edit Regulatory Considerations`
         : `Edit Requirement ${index !== undefined ? `#${index + 1}` : ""}`;
     }
     return isRegulatoryConsideration
-      ? "Create Regulatory Consideration"
+      ? "Create Regulatory Considerations"
       : "Create Requirement";
   };
 

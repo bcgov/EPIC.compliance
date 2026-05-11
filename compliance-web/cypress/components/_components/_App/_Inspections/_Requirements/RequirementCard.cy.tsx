@@ -44,11 +44,11 @@ describe("RequirementCard Component", () => {
     cy.contains("No Action Required").should("be.visible");
   });
 
-  it("renders regulatory consideration correctly", () => {
+  it("renders regulatory considerations correctly", () => {
     mountComponent(regulatoryRequirement);
 
-    // Check regulatory consideration specific content
-    cy.contains("Regulatory Consideration").should("be.visible");
+    // Check regulatory considerations specific content
+    cy.contains("Regulatory Considerations").should("be.visible");
     cy.contains("Summary").should("be.visible");
     cy.contains("Test Topic").should("be.visible");
     cy.contains("Test Agency").should("be.visible");
@@ -75,7 +75,7 @@ describe("RequirementCard Component", () => {
     mountComponent(baseRequirement);
     cy.get("[data-testid='drag-indicator']").should("be.visible");
 
-    // Mount regulatory consideration
+    // Mount regulatory considerations
     mountComponent(regulatoryRequirement);
     cy.get("[data-testid='drag-indicator']").should("not.be.visible");
   });

@@ -108,7 +108,7 @@ export default function ReportTabs() {
       },
       { title: "Enforcement Summary", component: <IREnforcementSummary /> },
       {
-        title: "Regulatory Consideration",
+        title: "Regulatory Considerations",
         component: <IRRegulatoryConsideration />,
       },
       { title: "Inspection Version Dates", component: <InspectionDates /> },

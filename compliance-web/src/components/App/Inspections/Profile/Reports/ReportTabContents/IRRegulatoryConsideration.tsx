@@ -87,7 +87,7 @@ const IRRegulatoryConsideration = () => {
 
   return (
     <IRBoxContainer
-      title="Regulatory Consideration"
+      title="Regulatory Considerations"
       onEdit={!isReportsReadOnly ? handleOpenEditRequirementModal : undefined}
     >
       {inspectionRegulatoryConsideration ? (

@@ -57,7 +57,7 @@ export const baseRequirement: InspectionRequirement = {
 
 export const regulatoryRequirement: InspectionRequirement = {
   ...baseRequirement,
-  req_type: { id: "REG", name: "Regulatory Consideration" },
+  req_type: { id: "REG", name: "Regulatory Considerations" },
 };
 
 export const mockInspection: Inspection = {

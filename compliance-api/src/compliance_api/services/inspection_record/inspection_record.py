@@ -362,7 +362,7 @@ class InspectionRecordService:
                                                 )
                                             )
 
-        # Apply style conversion to regulatory consideration findings
+        # Apply style conversion to regulatory considerations findings
         if preview_data.get("regulatory_consideration") and preview_data[
             "regulatory_consideration"
         ].get("findings"):

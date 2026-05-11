@@ -59,7 +59,7 @@ const mockRequirementType: InspectionRequirementType = {
 
 const mockRegulatoryConsiderationType: InspectionRequirementType = {
   id: REGULATORY_CONSIDERATION_TYPE_ID,
-  name: "Regulatory Consideration",
+  name: "Regulatory Considerations",
 };
 
 const mockRequirementSource: RequirementSource = {
@@ -262,7 +262,7 @@ export const RegulatoryConsideration: Story = {
     isActive: false,
     disabled: false,
     dragDisabled: false,
-    onEdit: () => console.log("Edit regulatory consideration"),
+    onEdit: () => console.log("Edit regulatory considerations"),
   },
 };
 
@@ -273,7 +273,7 @@ export const RegulatoryConsiderationActive: Story = {
     isActive: true,
     disabled: false,
     dragDisabled: false,
-    onEdit: () => console.log("Edit regulatory consideration"),
+    onEdit: () => console.log("Edit regulatory considerations"),
   },
 };
 
@@ -335,14 +335,14 @@ export const MultipleRequirements: Story = {
             />
           </Reorder.Group>
 
-          {/* Regulatory consideration - rendered outside Reorder.Group */}
+          {/* Regulatory considerations - rendered outside Reorder.Group */}
           <RequirementCard
             requirement={mockRegulatoryConsideration}
             index={3}
             isActive={false}
             disabled={false}
             dragDisabled={false}
-            onEdit={() => console.log("Edit regulatory consideration")}
+            onEdit={() => console.log("Edit regulatory considerations")}
           />
         </Box>
       </QueryClientProvider>

@@ -320,10 +320,10 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
                 size="small"
                 onClick={handleOpenAddRegulatoryConsiderationModal}
                 startIcon={<AddRounded />}
-                data-cy="new-regulatory-consideration-button"
+                data-cy="new-regulatory-considerations-button"
                 disabled={!!regulatoryConsideration}
               >
-                Regulatory Consideration
+                Regulatory Considerations
               </Button>
               <Button
                 color="secondary"

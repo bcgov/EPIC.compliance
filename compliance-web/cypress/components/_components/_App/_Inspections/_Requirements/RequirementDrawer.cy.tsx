@@ -30,7 +30,7 @@ describe("RequirementDrawer Component", () => {
       json: () =>
         Promise.resolve([
           { id: "REQ", name: "Test Source" },
-          { id: "REG", name: "Regulatory Consideration" },
+          { id: "REG", name: "Regulatory Considerations" },
         ]),
     });
     // Set Zustand store state for useReportStore

@@ -72,7 +72,7 @@ class RequirementDetailSchema(BaseSchema):
 
 
 class RegulatoryConsiderationSchema(BaseSchema):
-    """Schema for regulatory consideration."""
+    """Schema for regulatory considerations."""
 
     findings = fields.String()
     photos = fields.List(fields.Nested(RequirementPhotoSchema))
@@ -127,7 +127,7 @@ class InspectionRecordPreviewSchema(Schema):
     enforcement_summary = fields.String(allow_none=True)
     action_required_by_rp = fields.String(allow_none=True)
 
-    # Regulatory Consideration
+    # Regulatory Considerations
     regulatory_consideration = fields.Nested(RegulatoryConsiderationSchema)
 
     # Requirements

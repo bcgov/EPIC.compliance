@@ -16,7 +16,7 @@ class InspectionRequirementTypeEnum(enum.Enum):
     """Type of inspection requirements."""
 
     REQ = "Requirement"
-    REG = "Regulatory Consideration"
+    REG = "Regulatory Considerations"
 
 
 class InspectionRequirement(BaseModelVersioned):
@@ -47,7 +47,7 @@ class InspectionRequirement(BaseModelVersioned):
         Integer,
         ForeignKey("agencies.id", name="inspection_req_agency_id"),
         nullable=True,
-        comment="Associated agency if the type is regulatory consideration",
+        comment="Associated agency if the type is regulatory considerations",
     )
     req_type = Column(
         Enum(InspectionRequirementTypeEnum),

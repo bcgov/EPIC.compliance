@@ -557,7 +557,7 @@ class InspectionRecordDataBuilder:
             self.requirements = InspectionRequirementModel.get_by_inspection_id(
                 self.inspection.id
             )
-        # There will be only one regulatory consideration possible for an inspection
+        # There will be only one regulatory considerations possible for an inspection
         regulatory_consideration = next(
             (
                 req
