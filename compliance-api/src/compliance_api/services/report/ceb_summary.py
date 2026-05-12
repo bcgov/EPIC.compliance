@@ -25,7 +25,8 @@ from compliance_api.services.report.utils.shared_queries import (
 from compliance_api.services.report.utils.utils import (
     get_project_details,
     populate_template_table_sheet,
-    reorder_pivot_column_items
+    reorder_pivot_column_items,
+    sort_dataframe_for_pivot_order,
 )
 from compliance_api.services.service_utils import ServiceUtils
 
@@ -146,6 +147,19 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             requirements_data_frame = pd.DataFrame(columns=requirements_columns)
         if complaints_data_frame.empty:
             complaints_data_frame = pd.DataFrame(columns=complaints_columns)
+
+        # Sort dataframes to control pivot column order in Excel
+        # Excel builds pivot cache from first-occurrence order in source data
+        pivot_column_orders = {
+            "compliance_finding": ["In", "Out", "Not Determined"],
+            "enforcement_status": ["Issued", "Rescinded", "Closed"],
+        }
+        enforcements_data_frame = sort_dataframe_for_pivot_order(
+            enforcements_data_frame, pivot_column_orders
+        )
+        requirements_data_frame = sort_dataframe_for_pivot_order(
+            requirements_data_frame, pivot_column_orders
+        )
 
         populate_template_table_sheet(
             workbook=workbook,
