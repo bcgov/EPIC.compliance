@@ -127,8 +127,10 @@ export const useCaseFileByNumber = (caseFileNumber: string) => {
     queryKey: ["case-file", caseFileNumber],
     queryFn: async () => {
       const caseFile = await fetchCaseFile(caseFileNumber);
-      const officers = await fetchOfficers(caseFile?.id);
-      const caseFileLinks = await fetchCaseFileLinks(caseFile?.id);
+      const [officers, caseFileLinks] = await Promise.all([
+        fetchOfficers(caseFile?.id),
+        fetchCaseFileLinks(caseFile?.id),
+      ]);
       if (caseFile.project.abbreviation === UNAPPROVED_PROJECT_ABBREVIATION) {
         caseFile.project.id = UNAPPROVED_PROJECT_ID;
         delete caseFile.project.abbreviation;

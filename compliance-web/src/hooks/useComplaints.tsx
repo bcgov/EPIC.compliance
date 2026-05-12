@@ -142,8 +142,10 @@ export const useComplaintByNumber = (complaintNumber: string) => {
     queryKey: ["complaint", complaintNumber],
     queryFn: async () => {
       const complaint = await fetchComplaint(complaintNumber);
-      const source_contact = await fetchSourceContact(complaint?.id);
-      const requirement_detail = await fetchRequirementDetails(complaint?.id);
+      const [source_contact, requirement_detail] = await Promise.all([
+        fetchSourceContact(complaint?.id),
+        fetchRequirementDetails(complaint?.id),
+      ]);
       return { ...complaint, source_contact, requirement_detail };
     },
     enabled: !!complaintNumber,

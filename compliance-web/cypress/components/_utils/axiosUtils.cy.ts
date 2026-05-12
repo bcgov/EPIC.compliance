@@ -1,10 +1,10 @@
 /// <reference types="cypress" />
 
 import { getUser } from "@/utils/axiosUtils";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { User } from "oidc-client-ts";
 import { AxiosError } from "axios";
-import { setAuthToken, onError } from "@/utils/axiosUtils";
+import { onError } from "@/utils/axiosUtils";
 import { notify } from "@/store/snackbarStore";
 
 describe("axiosUtils", () => {
@@ -28,26 +28,6 @@ describe("axiosUtils", () => {
       } as User);
       const user = getUser();
       expect(user).to.have.property("access_token", "mockAccessToken");
-    });
-  });
-
-  describe("setAuthToken", () => {
-    it("should set Authorization header with access token", () => {
-      const mockClient = { defaults: { headers: { common: {} as Record<string, string> } } };
-      const oidcStorageMock = '{"access_token":"testToken123"}';
-      cy.stub(sessionStorage, "getItem").returns(oidcStorageMock);
-      cy.stub(User, "fromStorageString").returns({
-        access_token: "testToken123",
-      } as User);
-      setAuthToken(mockClient as AxiosInstance);
-      expect(mockClient.defaults.headers.common.Authorization).to.equal("Bearer testToken123");
-    });
-
-    it("should throw error when no access token is available", () => {
-      const mockClient = { defaults: { headers: { common: {} as Record<string, string> } } };
-      cy.stub(sessionStorage, "getItem").returns(null);
-      
-      expect(() => setAuthToken(mockClient as AxiosInstance)).to.throw("No access token!");
     });
   });
 

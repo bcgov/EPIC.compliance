@@ -1,7 +1,7 @@
 """Model class to handle the attendance of agencies to an inspection."""
 
 from sqlalchemy import Column, ForeignKey, Integer
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload, relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
@@ -38,7 +38,12 @@ class InspectionAgency(BaseModelVersioned):
     @classmethod
     def get_all_by_inspection(cls, inspection_id: int):
         """Retrieve all agencies by inspection id."""
-        return cls.query.filter_by(inspection_id=inspection_id, is_deleted=False).all()
+        return (
+            cls.query
+            .options(joinedload(cls.agency))
+            .filter_by(inspection_id=inspection_id, is_deleted=False)
+            .all()
+        )
 
     @classmethod
     @with_session

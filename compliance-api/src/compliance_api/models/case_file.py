@@ -15,7 +15,7 @@
 import enum
 
 from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Index, Integer, String, cast, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload, relationship
 
 from compliance_api.utils.constant import DELETE_DIC_PARAMS
 
@@ -228,7 +228,12 @@ class CaseFileOfficer(BaseModelVersioned):
     @classmethod
     def get_all_by_case_file_id(cls, case_file_id: int):
         """Retrieve all case file officers by case file id."""
-        return cls.query.filter_by(case_file_id=case_file_id, is_deleted=False).all()
+        return (
+            cls.query
+            .options(joinedload(cls.officer))
+            .filter_by(case_file_id=case_file_id, is_deleted=False)
+            .all()
+        )
 
     @classmethod
     @with_session

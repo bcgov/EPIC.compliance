@@ -53,37 +53,44 @@ export const onError = (error: AxiosError<ErrorResponseData>) => {
   throw error;
 };
 
-export function setAuthToken(client: AxiosInstance) {
-  const user = getUser();
-  if (user?.access_token) {
-    client.defaults.headers.common.Authorization = `Bearer ${user?.access_token}`;
-  } else {
-    throw new Error("No access token!");
-  }
+function addAuthInterceptor(client: AxiosInstance) {
+  client.interceptors.request.use((config) => {
+    const user = getUser();
+    if (user?.access_token) {
+      config.headers.Authorization = `Bearer ${user.access_token}`;
+    } else {
+      throw new Error("No access token!");
+    }
+    return config;
+  });
 }
 
+const apiClient = axios.create({ baseURL: AppConfig.apiUrl });
+addAuthInterceptor(apiClient);
+
+const authAPIClient = axios.create({ baseURL: AppConfig.authAPIUrl });
+addAuthInterceptor(authAPIClient);
+
+const trackAPIClient = axios.create({ baseURL: AppConfig.trackAPIUrl });
+addAuthInterceptor(trackAPIClient);
+
+const documentAPIClient = axios.create({ baseURL: AppConfig.documentAPIUrl });
+addAuthInterceptor(documentAPIClient);
+
 export const request = ({ ...options }) => {
-  const client = axios.create({ baseURL: AppConfig.apiUrl });
-  setAuthToken(client);
-  return client(options).then(onSuccess).catch(onError);
+  return apiClient(options).then(onSuccess).catch(onError);
 };
 
 export const requestAuthAPI = ({ ...options }) => {
-  const client = axios.create({ baseURL: AppConfig.authAPIUrl });
-  setAuthToken(client);
-  return client(options).then(onSuccess).catch(onError);
+  return authAPIClient(options).then(onSuccess).catch(onError);
 };
 
 export const requestTrackAPI = ({ ...options }) => {
-  const client = axios.create({ baseURL: AppConfig.trackAPIUrl });
-  setAuthToken(client);
-  return client(options).then(onSuccess).catch(onError);
+  return trackAPIClient(options).then(onSuccess).catch(onError);
 };
 
 export const requestDocumentAPI = ({ ...options }) => {
-  const client = axios.create({ baseURL: AppConfig.documentAPIUrl });
-  setAuthToken(client);
-  return client(options).then(onSuccess).catch(onError);
+  return documentAPIClient(options).then(onSuccess).catch(onError);
 };
 
 export const requestAxios = ({ ...options }) => {

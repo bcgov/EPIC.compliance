@@ -8,6 +8,7 @@ from io import BytesIO
 import pandas as pd
 from flask import g
 from sqlalchemy import String, and_, asc, case, cast, desc, func, not_
+from sqlalchemy.orm import joinedload
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -752,7 +753,7 @@ def _build_case_files_paginated_query(args):
 
 
 def _build_base_query():
-    """Build the base query with all necessary joins."""
+    """Build the base query with all necessary joins and eager loading."""
     return (
         db.session.query(CaseFileModel)
         .join(
@@ -766,6 +767,10 @@ def _build_base_query():
         .outerjoin(
             UnapprovedProjectModel,
             CaseFileModel.id == UnapprovedProjectModel.case_file_id,
+        )
+        .options(
+            joinedload(CaseFileModel.initiation),
+            joinedload(CaseFileModel.primary_officer),
         )
         .filter(CaseFileModel.is_deleted.is_(False), CaseFileModel.is_active.is_(True))
     )

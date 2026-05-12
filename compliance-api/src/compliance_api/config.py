@@ -258,12 +258,12 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
     DEBUG = False
 
-    # # Production-optimized database pooling
-    # SQLALCHEMY_ENGINE_OPTIONS = {
-    #     'pool_size': int(os.getenv('DB_POOL_SIZE', '5')),           # Configurable pool size
-    #     'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '10')),    # Configurable overflow
-    #     'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),    # Configurable timeout
-    #     'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Configurable recycle time
-    #     'pool_pre_ping': True,                                      # Always validate in production
-    #     'echo_pool': False,                                         # Disable pool logging in production
-    # }
+    # Production-optimized database pooling
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': int(os.getenv('DB_POOL_SIZE', '5')),           # Configurable pool size
+        'max_overflow': int(os.getenv('DB_MAX_OVERFLOW', '10')),    # Configurable overflow
+        'pool_timeout': int(os.getenv('DB_POOL_TIMEOUT', '30')),    # Configurable timeout
+        'pool_recycle': int(os.getenv('DB_POOL_RECYCLE', '3600')),  # Configurable recycle time
+        'pool_pre_ping': True,                                      # Always validate in production
+        'echo_pool': False,                                         # Disable pool logging in production
+    }

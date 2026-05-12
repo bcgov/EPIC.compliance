@@ -182,7 +182,6 @@ export const useInspectionReportsData = (inspectionId?: number) => {
     queryKey: ["inspection-reports", inspectionId],
     queryFn: () => fetchInspectionReports(inspectionId!),
     enabled: !!inspectionId,
-    refetchOnMount: true,
     refetchInterval: 30000,
   });
 };
