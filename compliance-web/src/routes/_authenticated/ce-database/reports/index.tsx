@@ -48,7 +48,7 @@ export function ReportsTab() {
   const methods = useForm<ReportFormValues>({
     mode: "onChange",
     defaultValues: {
-      report_type: ReportType.ProjectCompliance,
+      report_type: ReportType.CebSummary,
       project: null,
       start_date: null,
       end_date: null,
