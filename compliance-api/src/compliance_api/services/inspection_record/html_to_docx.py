@@ -122,45 +122,56 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else container.add_paragraph()
 
-    # Convert to list to check for remaining siblings
+    def process_node(node, inherited_bold=False, inherited_italic=False):
+        """Recursively process nodes, tracking inherited formatting."""
+        nonlocal para
+
+        if isinstance(node, str):
+            # Replace 2+ spaces with single space
+            text = re.sub(r' {2,}', ' ', node)
+            if text:
+                run = para.add_run(text)
+                if inherited_bold:
+                    run.bold = True
+                if inherited_italic:
+                    run.italic = True
+                if font_size:
+                    run.font.size = font_size
+        elif node.name in ['strong', 'b']:
+            # Process children with bold inherited
+            for child in node.children:
+                process_node(child, inherited_bold=True, inherited_italic=inherited_italic)
+        elif node.name in ['em', 'i']:
+            # Process children with italic inherited
+            for child in node.children:
+                process_node(child, inherited_bold=inherited_bold, inherited_italic=True)
+        elif node.name == 'br':
+            # Find remaining siblings to check if we need a new paragraph
+            parent = node.parent
+            if parent:
+                siblings = list(parent.children)
+                try:
+                    idx = siblings.index(node)
+                    remaining = siblings[idx + 1:]
+                    has_more_content = any(
+                        (isinstance(c, str) and c.strip()) or
+                        (hasattr(c, 'get_text') and c.get_text(strip=True))
+                        for c in remaining
+                    )
+                    if has_more_content:
+                        para = container.add_paragraph()
+                except ValueError:
+                    pass
+        elif hasattr(node, 'children'):
+            # For other elements, process children preserving inherited formatting
+            for child in node.children:
+                process_node(child, inherited_bold=inherited_bold, inherited_italic=inherited_italic)
+
+    # Convert to list to process all children
     children = list(element.children)
 
-    for idx, child in enumerate(children):
-        if isinstance(child, str):
-            # Replace 2+ spaces with single space
-            text = re.sub(r' {2,}', ' ', child)
-            if text:
-                run = para.add_run(text)
-                if font_size:
-                    run.font.size = font_size
-        elif child.name in ['strong', 'b']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.bold = True
-            if font_size:
-                run.font.size = font_size
-        elif child.name in ['em', 'i']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.italic = True
-            if font_size:
-                run.font.size = font_size
-        elif child.name == 'br':
-            # Only create a new paragraph if there's more content after this <br>
-            remaining = children[idx + 1:]
-            has_more_content = any(
-                (isinstance(c, str) and c.strip()) or
-                (hasattr(c, 'get_text') and c.get_text(strip=True))
-                for c in remaining
-            )
-            if has_more_content:
-                para = container.add_paragraph()
-        else:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            if text:
-                run = para.add_run(text)
-                if font_size:
-                    run.font.size = font_size
+    for child in children:
+        process_node(child)
 
 
 def _get_margin_left_inches(element):
