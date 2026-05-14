@@ -64,4 +64,4 @@ WARNING_LETTER_CONTENT = """<p class='editor-paragraph' dir='ltr'>
     {{ department_details.email }}
     </a> if you have any questions.
 </p>
-</p>"""
+"""
