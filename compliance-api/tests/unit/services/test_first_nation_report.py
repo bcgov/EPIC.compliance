@@ -126,7 +126,7 @@ class TestFirstNationReportGenerator:
         assert len(results) == 0
 
     def test_build_inspections_query_excludes_soft_deleted_attendance(self):
-        """Test that soft-deleted InspectionAttendance records are excluded."""
+        """Test that soft-deleted InspectionAttendance records are excluded from aggregation."""
         self.insp_req = self._create_test_inspection_with_first_nation(
             TEST_FIRST_NATION_ID,
             attendance_deleted=True
@@ -137,8 +137,9 @@ class TestFirstNationReportGenerator:
         })
         results = generator._build_inspections_tab_query().all()
 
-        # Should not return results since attendance is deleted
-        assert len(results) == 0
+        # Row should still be returned, but attendance field should be None
+        assert len(results) == 1
+        assert results[0].inspection_attendance is None
 
     def test_build_inspections_query_aggregates_multiple_attendance_types(self):
         """Test that multiple attendance types are aggregated into single row."""
