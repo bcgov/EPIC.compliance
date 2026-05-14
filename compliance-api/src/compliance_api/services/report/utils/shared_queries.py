@@ -288,7 +288,7 @@ def inspections_tab_query_base():
         )
         .join(Inspection, InspectionRequirement.inspection_id == Inspection.id)
         .join(Topic, InspectionRequirement.topic_id == Topic.id)
-        .join(attendance_subquery, attendance_subquery.c.inspection_id == Inspection.id)
+        .outerjoin(attendance_subquery, attendance_subquery.c.inspection_id == Inspection.id)
         .outerjoin(InspectionFirstnation, and_(
             InspectionFirstnation.is_deleted.is_(False),
             InspectionFirstnation.inspection_id == Inspection.id,

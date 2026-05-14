@@ -23,6 +23,7 @@ from compliance_api.services.report.utils.shared_queries import (
     inspections_tab_query_base,
 )
 from compliance_api.services.report.utils.utils import (
+    compact_pivot_tables,
     get_project_details,
     populate_template_table_sheet,
     reorder_pivot_column_items,
@@ -189,6 +190,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             columns=complaints_columns,
             headers=complaints_headers,
         )
+        compact_pivot_tables(workbook, gap_columns=1)
 
         output = BytesIO()
         workbook.save(output)
@@ -265,7 +267,6 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             project_name, project_type = get_project_details(self.project_map, row)
             enforcement_document_number = ServiceUtils.get_enforcement_number_by_type(row)
             raw_enforcement_status = ServiceUtils.get_enforcement_status_by_type(row)
-
             # Keep unique document numbers by enforcement action.
             # If document number is blank, count the selected enforcement action entry.
             if enforcement_document_number:

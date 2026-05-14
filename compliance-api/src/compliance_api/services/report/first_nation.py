@@ -22,7 +22,11 @@ from compliance_api.services.report.utils.shared_queries import (
     complaints_tab_query_base,
     inspections_tab_query_base,
 )
-from compliance_api.services.report.utils.utils import get_project_details, populate_template_table_sheet
+from compliance_api.services.report.utils.utils import (
+    compact_pivot_tables,
+    get_project_details,
+    populate_template_table_sheet,
+)
 
 from .base import BaseReportGenerator
 
@@ -116,6 +120,8 @@ class FirstNationReportGenerator(BaseReportGenerator):
             columns=complaints_columns,
             headers=complaints_headers,
         )
+
+        compact_pivot_tables(workbook, gap_columns=1)
 
         output = BytesIO()
         workbook.save(output)

@@ -299,13 +299,13 @@ export function ReportsTab() {
                 <Box mt={2}>
                   <ControlledAutoComplete
                     name="first_nation"
-                    label="First Nation/Alliance"
+                    label="First Nation/First Nation Alliance"
                     options={firstNations}
                     getOptionLabel={(option) => option.name}
                     isOptionEqualToValue={(option, value) =>
                       option.id === value.id
                     }
-                    placeholder="Select First Nation or Alliance"
+                    placeholder="Select First Nation or First Nation Alliance"
                     fullWidth
                     isRequired
                   />

@@ -2,7 +2,7 @@
 
 import re
 
-from flask import g
+from flask import g, current_app
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import PermissionDeniedError, ResourceNotFoundError, UnprocessableEntityError
@@ -676,6 +676,7 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
     def get_enforcement_status_by_type(result):  # pylint: disable=too-many-return-statements
         """Get the correct enforcement status based on the enforcement action type."""
         enforcement_action_id = result.enforcement_action_id
+        current_app.logger.info(f"Getting enforcement status for enforcement action ID: {enforcement_action_id}")
 
         # Map enforcement action ID to the corresponding status field
         if enforcement_action_id == EnforcementActionOptionEnum.ORDER.value:
