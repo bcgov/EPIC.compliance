@@ -28,13 +28,22 @@ const StaffForm: React.FC<StaffFormProps> = ({
       staffUsersList?.filter((p) => p.position_id == STAFF_USER_POSITION.DEPUTY_DIRECTOR),
     [staffUsersList]
   );
+
+  const availableAuthUsers = useMemo(() => {
+    if (existingStaff) return authUsersList ?? [];
+    const existingAuthUsernames = new Set(
+      (staffUsersList ?? []).map((s) => s.auth_user_guid)
+    );
+    return (authUsersList ?? []).filter((u) => !existingAuthUsernames.has(u.username));
+  }, [authUsersList, staffUsersList, existingStaff]);
+
   return (
     <>
       <ControlledAutoComplete
         name="name"
         label="Name"
         placeholder="Search for a Name"
-        options={authUsersList ?? []}
+        options={availableAuthUsers}
         getOptionLabel={(option) => `${option.first_name} ${option.last_name}`}
         getOptionKey={(option) => option.id}
         isOptionEqualToValue={(option, value) => option.id === value.id}
