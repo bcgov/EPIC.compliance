@@ -457,10 +457,22 @@ class InspectionRecordDataBuilder:
                 #  _generate_enforcement_summary_lines_for_special_actions is only called for special actions
                 #  it handles multiple requirements at once for a single action
                 if EnforcementActionOptionEnum(action_id) in special_actions:
+                    present_special_action_ids = {
+                        EnforcementActionOptionEnum(aid)
+                        for aid in grouped_enforcementactions
+                        if EnforcementActionOptionEnum(aid) in special_actions
+                    }
+                    ap_is_standalone = (
+                        EnforcementActionOptionEnum(action_id)
+                        == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION
+                        and present_special_action_ids
+                        == {EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION}
+                    )
                     summary_lines = (
                         self._generate_enforcement_summary_lines_for_special_actions(
                             EnforcementActionOptionEnum(action_id),
                             self.ir_status,
+                            ap_is_standalone=ap_is_standalone,
                         )
                     )
                     if summary_lines:
@@ -583,12 +595,52 @@ class InspectionRecordDataBuilder:
         """Return the final object."""
         return self.data
 
+    def _generate_standalone_ap_lines_from_requirements(self, requirements):
+        """Generate standalone AP summary lines directly from requirements (no AP record needed)."""
+        grouped_requirements = {}
+        sort_order_line = []
+
+        for requirement in requirements:
+            if len(requirement.requirement_source_details) == 0:
+                raise UnprocessableEntityError(
+                    f"Requirement {requirement.sort_order} doesn't have any requirement source details"
+                )
+            data_to_be_rendered = self._get_basic_data_for_enforcement_summary(requirement)
+            req_source_name = data_to_be_rendered["req_source_name"]
+            number = data_to_be_rendered["number"]
+            req_sort_order = data_to_be_rendered["req_sort_order"]
+
+            if req_source_name not in grouped_requirements:
+                grouped_requirements[req_source_name] = []
+            grouped_requirements[req_source_name].append({"number": number})
+            sort_order_line.append(f"Requirement {req_sort_order}")
+
+        condition_lines = []
+        for source_name, reqs in grouped_requirements.items():
+            valid_numbers = [req["number"] for req in reqs if req["number"] is not None]
+            if valid_numbers:
+                condition_lines.append(f" {', '.join(valid_numbers)} of {source_name}")
+
+        data_to_be_rendered["condition_lines"] = condition_lines
+        data_to_be_rendered["sort_order_line"] = ", ".join(sort_order_line)
+
+        return [
+            render_template_with_data(
+                "ENFORCEMENT_SUMMARY.ADMINISTRATIVE_PENALTY_STANDALONE",
+                ENFORCEMENT_SUMMARY.get("ADMINISTRATIVE_PENALTY_STANDALONE"),
+                data_to_be_rendered,
+            )
+        ]
+
     def _generate_enforcement_summary_lines_for_special_actions(
-        self, action, ir_status_id
+        self, action, ir_status_id, ap_is_standalone=False
     ):
         """Generate enforcement summary lines for special actions."""
         from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
 
+        ap_template_key = (
+            "ADMINISTRATIVE_PENALTY_STANDALONE" if ap_is_standalone else "ADMINISTRATIVE_PENALTY"
+        )
         object_map = {
             EnforcementActionOptionEnum.ORDER: {
                 "template": "ENFORCEMENT_SUMMARY.ORDER",
@@ -603,8 +655,8 @@ class InspectionRecordDataBuilder:
                 "foreign_key": "warning_letter_id",
             },
             EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION: {
-                "template": "ENFORCEMENT_SUMMARY.ADMINISTRATIVE_PENALTY",
-                "template_data": ENFORCEMENT_SUMMARY.get("ADMINISTRATIVE_PENALTY"),
+                "template": f"ENFORCEMENT_SUMMARY.{ap_template_key}",
+                "template_data": ENFORCEMENT_SUMMARY.get(ap_template_key),
                 "map_model": AdministrativePenaltyInspectionRequirementMapModel,
                 "foreign_key": "administrative_penalty_id",
             },
@@ -631,6 +683,35 @@ class InspectionRecordDataBuilder:
                 ]
 
         if not items:
+            if (
+                ap_is_standalone
+                and action == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION
+            ):
+                # No AP record yet — generate standalone text from requirements directly
+                from compliance_api.models.inspection.inspection_req_enforcement_map import (
+                    InspectionReqEnforcementMap as InspectionReqEnforcementMapModel,
+                )
+                ap_requirements = (
+                    InspectionRequirementModel.query
+                    .join(InspectionRequirementModel.enforcement_actions)
+                    .filter(
+                        InspectionRequirementModel.inspection_id == self.inspection.id,
+                        InspectionRequirementModel.is_active.is_(True),
+                        InspectionRequirementModel.is_deleted.is_(False),
+                        InspectionReqEnforcementMapModel.enforcement_action_id
+                        == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
+                        InspectionReqEnforcementMapModel.is_active.is_(True),
+                        InspectionReqEnforcementMapModel.is_deleted.is_(False),
+                    )
+                    .options(
+                        joinedload(InspectionRequirementModel.requirement_source_details)
+                        .joinedload(InspectionReqSourceDetail.requirement_source)
+                    )
+                    .all()
+                )
+                if not ap_requirements:
+                    return []
+                return self._generate_standalone_ap_lines_from_requirements(ap_requirements)
             return []
 
         if not self.data.get("project_details"):
