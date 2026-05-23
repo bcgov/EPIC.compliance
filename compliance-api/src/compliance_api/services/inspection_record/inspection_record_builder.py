@@ -145,7 +145,7 @@ class InspectionRecordDataBuilder:
         )
         self.data["officer_details"] = {
             "primary_officer": {
-                "name": f"{self.inspection.primary_officer.first_name} {self.inspection.primary_officer.last_name}",
+                "name": self.inspection.primary_officer.last_name,
                 "position": self.inspection.primary_officer.position.name,
             },
             "record_prepared_by": {
