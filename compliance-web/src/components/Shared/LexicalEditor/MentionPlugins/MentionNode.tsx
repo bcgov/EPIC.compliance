@@ -50,21 +50,6 @@ function $convertMentionElement(
       imageId ? parseInt(imageId) : undefined
     );
 
-    // Restore text format from CSS classes
-    const classList = domNode.classList;
-    if (classList.contains("editor-text-bold")) {
-      node.toggleFormat("bold");
-    }
-    if (classList.contains("editor-text-italic")) {
-      node.toggleFormat("italic");
-    }
-    if (classList.contains("editor-text-underline")) {
-      node.toggleFormat("underline");
-    }
-    if (classList.contains("editor-text-strikethrough")) {
-      node.toggleFormat("strikethrough");
-    }
-
     return {
       node,
     };
@@ -436,16 +421,6 @@ export class MentionNode extends TextNode {
       element.setAttribute("data-lexical-mention-name", this.__mention);
     }
 
-    // Preserve text format classes (bold, italic, underline, strikethrough)
-    const formatClasses: string[] = [];
-    if (this.hasFormat("bold")) formatClasses.push("editor-text-bold");
-    if (this.hasFormat("italic")) formatClasses.push("editor-text-italic");
-    if (this.hasFormat("underline")) formatClasses.push("editor-text-underline");
-    if (this.hasFormat("strikethrough")) formatClasses.push("editor-text-strikethrough");
-    if (formatClasses.length > 0) {
-      element.className = formatClasses.join(" ");
-    }
-
     element.textContent = this.__text;
     return { element };
   }
@@ -469,11 +444,11 @@ export class MentionNode extends TextNode {
   }
 
   canInsertTextBefore(): boolean {
-    return true;
+    return false;
   }
 
   canInsertTextAfter(): boolean {
-    return true;
+    return false;
   }
 
   // Override the select method to always put the cursor at the end of the mention
