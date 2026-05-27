@@ -1,18 +1,20 @@
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Reorder } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { AddRounded } from "@mui/icons-material";
+import { Box, Button, Typography } from "@mui/material";
 import RequirementDrawer from "@/components/App/Inspections/Profile/Requirements/RequirementDrawer";
 import {
   useInspectionRequirementImages,
   useInspectionRequirementsData,
   useUpdateInspectionRequirementBatch,
 } from "@/hooks/useInspectionRequirements";
+import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
+import { useInspectionReportsData } from "@/hooks/useInspectionReports";
 import { Inspection } from "@/models/Inspection";
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { useDrawer } from "@/store/drawerStore";
 import { notify } from "@/store/snackbarStore";
-import { AddRounded } from "@mui/icons-material";
-import { Box, Button, Typography } from "@mui/material";
-import { useQueryClient } from "@tanstack/react-query";
-import { Reorder } from "framer-motion";
-import React, { useCallback, useEffect, useMemo } from "react";
 import RequirementCard from "./Requirements/RequirementCard";
 import {
   convertRequirementImagesArrToMap,
@@ -26,14 +28,12 @@ import { DRAWER_WIDTHS } from "@/utils/constants";
 import { useRequirementStore } from "./Requirements/requirementStore";
 import RequirementLoading from "./Requirements/RequirementLoading";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
-import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
-import { useInspectionReportsData } from "@/hooks/useInspectionReports";
 
 interface InspectionRequirementsProps {
   inspectionData: Inspection;
 }
 
-const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
+const InspectionRequirements: FC<InspectionRequirementsProps> = ({
   inspectionData,
 }) => {
   const queryClient = useQueryClient();
@@ -46,15 +46,15 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
     setRequirementsList,
   } = useRequirementStore();
   const { data: inspectionReportsData } = useInspectionReportsData(inspectionData?.id);
-  const [activeRequirementId, setActiveRequirementId] = React.useState<
+  const [activeRequirementId, setActiveRequirementId] = useState<
     number | null
   >(null);
-  const [inspectionRequirements, setInspectionRequirements] = React.useState<
+  const [inspectionRequirements, setInspectionRequirements] = useState<
     InspectionRequirement[]
   >([]);
   const [regulatoryConsideration, setRegulatoryConsideration] =
-    React.useState<InspectionRequirement | null>(null);
-  const [isDataLoading, setIsDataLoading] = React.useState<boolean>(true);
+    useState<InspectionRequirement | null>(null);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(true);
 
   const {
     data: inspectionRequirementsData,
@@ -116,8 +116,16 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
       const figuresMap = convertRequirementImagesArrToMap(
         inspectionRequirementImages.figures
       );
-      setRequirementPhotos(photosMap);
-      setRequirementFigures(figuresMap);
+
+      // Recompute sort_orders from store order so server values never cause stale numbering after refetch.
+      const { requirementsList: currentList } = useRequirementStore.getState();
+      if (currentList.length > 0) {
+        setRequirementPhotos(updateImagesWithContinuousSortOrder(photosMap, currentList));
+        setRequirementFigures(updateImagesWithContinuousSortOrder(figuresMap, currentList));
+      } else {
+        setRequirementPhotos(photosMap);
+        setRequirementFigures(figuresMap);
+      }
     }
   }, [
     inspectionRequirementImages,
@@ -194,7 +202,7 @@ const InspectionRequirements: React.FC<InspectionRequirementsProps> = ({
   );
 
   // Add a ref to store the timeout ID : to prevent multiple API calls during reordering
-  const updateTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const updateTimeoutRef = useRef<NodeJS.Timeout>();
 
   const handleSortOrderChange = useCallback(
     (newRequirementListOrder: InspectionRequirement[]) => {

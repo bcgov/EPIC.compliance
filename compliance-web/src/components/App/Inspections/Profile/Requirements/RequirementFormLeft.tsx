@@ -56,7 +56,6 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
   const { control, setValue, getValues } = useFormContext();
   const { requirementPhotos, requirementFigures } = useRequirementStore();
   const [mentionDataList, setMentionDataList] = useState<MentionData[]>([]);
-  const [mentionVersion, setMentionVersion] = useState<number>(0);
   const [orderExists, setOrderExists] = useState<boolean>(false);
   const [warningLetterExists, setWarningLetterExists] =
     useState<boolean>(false);
@@ -125,7 +124,6 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
       ...(requirementFigures.get(reqId) ?? []),
     ]);
     setMentionDataList(mentionList);
-    setMentionVersion((prev) => prev + 1);
   }, [requirementPhotos, requirementFigures, requirementId]);
 
   useEffect(() => {
@@ -402,7 +400,6 @@ Changing it will delete the existing document so you can create a new one`;
         height={ isDrawerConstrained ? "auto" : `calc(100vh - ${appHeaderHeight + 363}px)`}
         isAdvanced
         mentionsList={mentionDataList}
-        key={`lexical-editor-${mentionVersion}`}
         disabled={!isRequirementEditable}
       />
     </Box>

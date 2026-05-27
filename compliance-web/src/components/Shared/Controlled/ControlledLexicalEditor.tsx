@@ -44,18 +44,9 @@ export default function ControlledLexicalEditor({
     watch,
   } = useFormContext();
 
-  // Add a memoized key that changes when the mentionsList changes
-  const [mentionsKey, setMentionsKey] = useState<number>(0);
   const [editorKey, setEditorKey] = useState<number>(0);
   const isUserTyping = useRef(false);
   const fieldValue = watch(name);
-
-  useEffect(() => {
-    // Update the mentions key whenever the mentionsList changes
-    if (mentionsList) {
-      setMentionsKey((prev) => prev + 1);
-    }
-  }, [mentionsList]);
 
   // Effect to handle programmatic updates
   useEffect(() => {
@@ -85,7 +76,7 @@ export default function ControlledLexicalEditor({
               defaultHtml={field.value?.html}
               height={height}
               mentionsList={mentionsList}
-              key={`lexical-editor-${name}-${mentionsKey}-${editorKey}`}
+              key={`lexical-editor-${name}-${editorKey}`}
               onChange={(editorState, editor) => {
                 isUserTyping.current = true;
                 editorState.read(() => {

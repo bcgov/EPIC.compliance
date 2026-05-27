@@ -1,4 +1,4 @@
-import { FC, memo, useCallback, useEffect, useState } from "react";
+import { FC, memo, useCallback, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -61,7 +61,6 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
     const { data: inspectionData } = useInspectionById(inspectionId);
     const { setOpen, setClose } = useModal();
     const [isExpanded, setIsExpanded] = useState(true);
-    const [currentRequirementId, setCurrentRequirementId] = useState<number>(0);
     const {
       requirementsList,
       requirementPhotos,
@@ -73,17 +72,12 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
       setIsImageChanged,
     } = useRequirementStore();
 
-    const [images, setImages] = useState<RequirementImage[]>([]);
-
-    useEffect(() => {
-      const currentRequirementImages: Map<number, RequirementImage[]> = isPhoto
-        ? requirementPhotos
-        : requirementFigures;
-
-      const currentReqId = !requirementId ? NaN : requirementId;
-      setCurrentRequirementId(currentReqId);
-      setImages(currentRequirementImages.get(currentReqId) ?? []);
-    }, [requirementId, requirementPhotos, requirementFigures, isPhoto]);
+    const currentRequirementId = !requirementId ? NaN : requirementId;
+    const currentRequirementImages = isPhoto ? requirementPhotos : requirementFigures;
+    const images = useMemo(
+      () => currentRequirementImages.get(currentRequirementId) ?? [],
+      [currentRequirementImages, currentRequirementId]
+    );
 
     const activationConstraint = {
       delay: 100,
@@ -150,8 +144,6 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
         // Flatten all images from all requirements into a single array
         const allImages = [...updatedImages, ...imagesType2];
 
-        if (!allImages.length) return;
-
         // For each editor instance, we need to update the mentions
         editorElements.forEach((editorElement) => {
           // Check if the editor is initialized and is accessible
@@ -211,14 +203,12 @@ const ImagesContainer: FC<ImagesContainerProps> = memo(
         );
         setRequirementsList(updatedRequirementsList);
 
-        // Update any active Lexical editor that might contain mentions related to these images
-
+        // Pass all images (all requirements, both types) so cross-requirement mention chips update correctly.
         updateActiveLexicalEditor(
-          updatedImagesWithSortOrder.get(currentRequirementId) ?? [],
-          requirementImagesType2.get(currentRequirementId) ?? []
-        ); //TODO: Check if all images are needed here
+          Array.from(updatedImagesWithSortOrder.values()).flat(),
+          Array.from(requirementImagesType2.values()).flat()
+        );
 
-        setImages(updatedImagesWithSortOrder.get(currentRequirementId) ?? []);
         setIsDataChanged(true);
         setIsImageChanged(true);
       },

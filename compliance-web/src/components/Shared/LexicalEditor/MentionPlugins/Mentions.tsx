@@ -698,7 +698,7 @@ export default function MentionsPlugin({
               node.getChildren().forEach((child) => nodes.push(child));
             }
           }
-        });
+        }, { discrete: true });
 
         return true;
       },
