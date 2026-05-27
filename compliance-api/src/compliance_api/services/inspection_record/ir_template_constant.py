@@ -84,7 +84,7 @@ ENFORCEMENT_SUMMARY = {
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Warning Letter
     {{ warning_letter_no }} has been issued for the non-compliance. See {{ sort_order_line }} for
     further information.</p>""",
-    "ORDER": """<p class="editor-paragraph" dir="ltr">In Addition, {{ regulated_party }} is not
+    "ORDER": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Order
     {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i> ({{ act_year }}).
     See {{ sort_order_line }} for further information.</p>""",
