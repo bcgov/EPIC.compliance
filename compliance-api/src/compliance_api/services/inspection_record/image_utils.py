@@ -12,6 +12,7 @@ MAX_DOWNLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 CHUNK_SIZE = 8192  # 8KB chunks for streaming
 TARGET_DPI = 300  # DPI for document images
 JPEG_QUALITY = 92  # Quality for JPEG compression
+Image.MAX_IMAGE_PIXELS = 200_000_000
 
 
 class ImageDownloadError(Exception):
@@ -153,6 +154,7 @@ def download_and_optimize_image(
         ImageTooLargeError: If image exceeds size limit
         ImageProcessingError: If image optimization fails
     """
+    print(f"Starting download and optimization for image: {url}")
     raw_stream = None
     try:
         raw_stream = download_image_stream(url, timeout)
