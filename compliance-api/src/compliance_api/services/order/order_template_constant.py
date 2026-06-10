@@ -23,7 +23,7 @@ A. The {{project_details.name}} (Project) is a reviewable project under the </sp
 <span style="white-space: pre-wrap;"> (the Act).</span></p>
 <p class="editor-paragraph" style="text-align: left;"><br></p>
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;">
-B. Environmental Assessment (EA) Certificate {{project_details.eac_certificate}} held by
+B. Environmental Assessment Certificate {{project_details.eac_certificate}} held by
  {{project_details.proponent}} ({{project_details.proponent_label}}) for the Project has
  requirements in {{requirement_details.requirement_numbers}} of {{requirement_details.requirement_sources}}
   with respect to {{requirement_details.requirement_summaries}}.</span>
@@ -46,17 +46,22 @@ C. {% else %}A. {% endif %}On
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;">
 {% if project_details.has_certificate %}D. {% else %}B. {% endif %}Section
  {{order_details.section}} of the Act specifies that the Chief Executive Assessment Officer may order the
-  {{project_details.proponent_label}} to</span></p><p class="editor-paragraph" style="text-align: left;"><br></p>
+ {{project_details.proponent_label}} to</span></p><p class="editor-paragraph" style="text-align: left;"><br></p>
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">stop doing something that is or is likely to be in contravention of the Act,
- the certificate or the order, or cause it to be stopped</em></i><br><i><em class="editor-text-italic"
+ the certificate or the exemption order, or cause it to be stopped</em></i><br><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">OR</em></i><br><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">take any measure that the Chief Executive Assessment Officer considers
  necessary in order to comply with the Act, the certificate or exemption order to mitigate the effects of
  non-compliance.</em></i><br><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">OR</em></i><br><i><em class="editor-text-italic"
 style="white-space: pre-wrap;">cease, either altogether or to the extent specified by the Chief Executive
- Assessment Officer.</em></i></p>"""
+ Assessment Officer, the construction, operation, modification, dismantling or abandonment of anything or
+ any other activities under the certificate or order.</em></i></p>
+ <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;"><br>
+E. The undersigned has received written delegation of the Chief Executive Assessment Officer's powers
+ under Section 53 of the Act.</span></p>
+"""
 NOW_THEREFORE = """
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;">
 Pursuant to Section {{order_details.section}} of the Act, I order that the {{project_details.proponent_label}}
@@ -66,6 +71,6 @@ Pursuant to Section {{order_details.section}} of the Act, I order that the {{pro
     <li value="2" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="3" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="4" class="editor-listitem"><span style="white-space: pre-wrap;">Complete the measures in clauses 1, 2
- and 3 above to the satisfaction of, and unless otherwise authorized by, the EAO Compliance and Enforcement Branch.
+ and 3 above to the satisfaction of, and unless otherwise authorized by, the CEB.
  </span></li>
 </ol>"""
