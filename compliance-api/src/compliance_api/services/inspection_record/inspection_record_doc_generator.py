@@ -556,13 +556,11 @@ def generate_inspection_report_docx(preview_data):
 
         # Add photos for regulatory considerations
         for photo in regulatory_consideration.get('photos', []):
-            para = cell.add_paragraph()
-            para.add_run(f"[Photo {photo.get('photo_number', '')}] {photo.get('photo_caption', '')}")
+            _add_photo(photo, cell)
 
         # Add figures for regulatory considerations
         for figure in regulatory_consideration.get('figures', []):
-            para = cell.add_paragraph()
-            para.add_run(f"[Figure {figure.get('figure_number', '')}] {figure.get('figure_caption', '')}")
+            _add_figure(figure, cell)
     else:
         para = cell.paragraphs[0]
         para.add_run("None at this time.")

@@ -66,8 +66,8 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
             # Use the first empty paragraph if available
             if not first_para_used and hasattr(container, 'paragraphs') and container.paragraphs:
                 para = container.paragraphs[0]
-                # Handle text with inline formatting (italic, bold)
-                if element.find(['i', 'em', 'strong', 'b', 'br']):
+                # Handle text with inline formatting (italic, bold, or span which may wrap mentions)
+                if element.find(['i', 'em', 'strong', 'b', 'br', 'span', 'a']):
                     _add_formatted_text_to_container(container, element, font_size, first_para=para)
                 else:
                     text = element.get_text(strip=True)
@@ -103,8 +103,8 @@ def _add_paragraph(container, p_tag, font_size):
     if indent_inches > 0:
         para.paragraph_format.left_indent = Inches(indent_inches)
 
-    # Handle text with inline formatting (italic, bold, or br)
-    if p_tag.find(['i', 'em', 'strong', 'b', 'br']):
+    # Handle text with inline formatting (italic, bold, br, or span which may wrap mentions)
+    if p_tag.find(['i', 'em', 'strong', 'b', 'br', 'span', 'a']):
         _add_formatted_text_to_container(container, p_tag, font_size, first_para=para)
     else:
         text = p_tag.get_text(strip=True)
@@ -229,8 +229,8 @@ def _add_html_paragraphs_to_cell(cell, html, font_size=Pt(11)):
         if indent_inches > 0:
             para.paragraph_format.left_indent = Inches(indent_inches)
 
-        # Handle text with inline formatting (italic, bold, or br)
-        if p.find(['i', 'em', 'strong', 'b', 'br']):
+        # Handle text with inline formatting (italic, bold, br, or span which may wrap mentions)
+        if p.find(['i', 'em', 'strong', 'b', 'br', 'span', 'a']):
             _add_formatted_text_to_container(cell, p, font_size, first_para=para)
         else:
             run = para.add_run(text if text else "")
