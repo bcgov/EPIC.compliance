@@ -149,8 +149,25 @@ class TestEnforcementSummaryAPHandling:
         assert "In Addition" not in summary
 
     def test_standalone_ap_with_record_references_requirement_number(self, created_inspection, mocker):
-        """Standalone AP summary must reference the correct requirement sort order."""
+        """Standalone AP summary must reference the correct requirement position number."""
         mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        # Create two plain REQ requirements before the AP requirement so the AP
+        # requirement ends up as the 3rd REQ when numbered by position.
+        for sort_order in (1, 2):
+            req = InspectionRequirement(
+                inspection_id=created_inspection.id,
+                summary=f"Plain requirement {sort_order}",
+                topic_id=1,
+                req_type=InspectionRequirementTypeEnum.REQ,
+                compliance_finding_id=1,
+                findings="finding",
+                sort_order=sort_order,
+                is_active=True,
+                is_deleted=False,
+            )
+            db.session.add(req)
+        db.session.commit()
 
         requirement = self._create_ap_requirement(created_inspection.id, sort_order=3)
         self._create_ap_record(created_inspection.id, requirement.id)
@@ -174,3 +191,131 @@ class TestEnforcementSummaryAPHandling:
         summary = self._build_enforcement_summary(created_inspection)
 
         assert "In Addition" in summary
+
+
+class TestRequirementNumberingWithRegulatoryConsideration:
+    """Regulatory Considerations must not consume a Requirement number in enforcement summaries."""
+
+    _PROJECT_DETAILS = {
+        "proponent": "Test Mining Ltd.",
+        "eac_certificate": "M99-01",
+        "name": "Test Mine Project",
+    }
+
+    def _create_reg_consideration(self, inspection_id, sort_order):
+        """Create a Regulatory Consideration (REG type) with no enforcement action."""
+        reg = InspectionRequirement(
+            inspection_id=inspection_id,
+            summary="Regulatory consideration summary",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REG,
+            compliance_finding_id=1,
+            findings="Regulatory findings",
+            sort_order=sort_order,
+            is_active=True,
+            is_deleted=False,
+        )
+        db.session.add(reg)
+        db.session.commit()
+        return reg
+
+    def _create_ap_requirement(self, inspection_id, sort_order):
+        """Create a REQ with AP enforcement action and a Schedule B source detail."""
+        requirement = InspectionRequirement(
+            inspection_id=inspection_id,
+            summary="AP requirement summary",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REQ,
+            compliance_finding_id=1,
+            findings="AP requirement finding",
+            sort_order=sort_order,
+            is_active=True,
+            is_deleted=False,
+        )
+        db.session.add(requirement)
+        db.session.flush()
+
+        db.session.add(InspectionReqEnforcementMap(
+            enforcement_action_id=6,  # ADMINISTRATIVE_PENALTY_RECOMMENDATION
+            requirement_id=requirement.id,
+        ))
+        db.session.add(InspectionReqSourceDetail(
+            requirement_id=requirement.id,
+            requirement_source_id=RequirementSourceEnum.SCHEDULE_B.value,
+            condition_number="5",
+            source_title="Schedule B - Table of Conditions",
+            description="Source description",
+        ))
+        db.session.commit()
+        return requirement
+
+    def _create_ap_record(self, inspection_id, requirement_id):
+        """Create an AdministrativePenalty linked to the given requirement."""
+        ap = AdministrativePenalty(
+            inspection_id=inspection_id,
+            referral_status=ReferralStatusEnum.DRAFTING,
+        )
+        db.session.add(ap)
+        db.session.flush()
+        db.session.add(AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap.id,
+            inspection_requirement_id=requirement_id,
+        ))
+        db.session.commit()
+        return ap
+
+    def _build_enforcement_summary(self, inspection):
+        builder = InspectionRecordDataBuilder(inspection, IRStatusEnum.FINAL.value)
+        builder.data["project_details"] = self._PROJECT_DETAILS
+        builder.build_enforcement_summary()
+        return builder.data.get("enforcement_summary", "")
+
+    def test_reg_created_before_req_does_not_shift_requirement_number(
+        self, created_inspection, mocker
+    ):
+        """Scenario 2 from the bug report: REG at sort_order=1 must not push the first REQ to 'Requirement 2'."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        # REG is created first and gets sort_order=1
+        self._create_reg_consideration(created_inspection.id, sort_order=1)
+        # The only REQ gets sort_order=2, but it is the 1st REQ by position
+        req = self._create_ap_requirement(created_inspection.id, sort_order=2)
+        self._create_ap_record(created_inspection.id, req.id)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Requirement 1" in summary
+        assert "Requirement 2" not in summary
+
+    def test_reg_in_middle_does_not_create_numbering_gap(
+        self, created_inspection, mocker
+    ):
+        """REG between two REQs must not skip a number — second REQ must be 'Requirement 2'."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        # First REQ (no AP)
+        plain_req = InspectionRequirement(
+            inspection_id=created_inspection.id,
+            summary="Plain requirement",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REQ,
+            compliance_finding_id=1,
+            findings="finding",
+            sort_order=1,
+            is_active=True,
+            is_deleted=False,
+        )
+        db.session.add(plain_req)
+        db.session.commit()
+
+        # REG in the middle
+        self._create_reg_consideration(created_inspection.id, sort_order=2)
+
+        # Second REQ with AP gets sort_order=3 but is the 2nd REQ by position
+        req = self._create_ap_requirement(created_inspection.id, sort_order=3)
+        self._create_ap_record(created_inspection.id, req.id)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Requirement 2" in summary
+        assert "Requirement 3" not in summary

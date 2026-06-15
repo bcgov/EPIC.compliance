@@ -162,12 +162,15 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
         :param photo_required: Whether to include photos.
         """
         result = []
+        req_num = 0
         for requirement in requirements:
             #  Skip regulatory considerations
             if requirement.req_type == InspectionRequirementTypeEnum.REG:
                 continue
 
+            req_num += 1
             req = ServiceUtils._build_base_requirement_dict(requirement, ir_status)
+            req["sort_order"] = req_num
 
             if requirement.requirement_source_details:
                 ServiceUtils._process_requirement_source_details(

@@ -808,6 +808,21 @@ class InspectionRecordDataBuilder:
 
         return results
 
+    def _get_req_display_number(self, requirement):
+        """Get 1-based display number for a requirement, counting only REQ types."""
+        requirements = (
+            self.requirements
+            if self.requirements
+            else InspectionRequirementModel.get_by_inspection_id(self.inspection.id)
+        )
+        count = 0
+        for req in sorted(requirements, key=lambda r: r.sort_order):
+            if req.req_type == InspectionRequirementTypeEnum.REQ:
+                count += 1
+                if req.id == requirement.id:
+                    return count
+        return requirement.sort_order
+
     def _get_basic_data_for_enforcement_summary(self, requirement):
         """Get the basic data for enforcement summary."""
         first_req_detail = requirement.requirement_source_details[0]
@@ -823,7 +838,7 @@ class InspectionRecordDataBuilder:
             "number": number,
             "req_source_name": req_source_name,
             "eac": eac,
-            "req_sort_order": requirement.sort_order,
+            "req_sort_order": self._get_req_display_number(requirement),
             "act": "Environmental Assessment Act",
             "act_year": "2018",
         }
@@ -856,7 +871,7 @@ class InspectionRecordDataBuilder:
             return render_template_with_data(
                 "ENFORCEMENT_SUMMARY.ADMINISTRATIVE_PENALTY",
                 ENFORCEMENT_SUMMARY.get("ADMINISTRATIVE_PENALTY"),
-                {"req_sort_order": requirement.sort_order},
+                {"req_sort_order": self._get_req_display_number(requirement)},
             )
         if requirement.requirement_source_details:
             data_to_be_rendered = self._get_basic_data_for_enforcement_summary(
