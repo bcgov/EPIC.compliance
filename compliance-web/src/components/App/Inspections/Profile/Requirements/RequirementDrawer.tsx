@@ -35,7 +35,11 @@ import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useReportStore } from "../Reports/reportStore";
-import { DRAWER_WIDTHS, InspectionStatusEnum } from "@/utils/constants";
+import { DRAWER_WIDTHS, EnforcementActionEnum, InspectionStatusEnum } from "@/utils/constants";
+import { useInspectionOrdersData } from "@/hooks/useInspectionOrders";
+import { useInspectionWarningLettersData } from "@/hooks/useInspectionWarningLetters";
+import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
+import { getRequirementDeleteWarning } from "../Enforcements/EnforcementUtils";
 
 type RequirementDrawerProps = {
   inspectionData: Inspection;
@@ -127,6 +131,50 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
     () =>
       inspectionData?.inspection_status === InspectionStatusEnum.CLOSED,
     [inspectionData]
+  );
+  const { data: inspectionOrdersData } = useInspectionOrdersData(
+    inspectionData.id
+  );
+  const { data: inspectionWarningLettersData } =
+    useInspectionWarningLettersData(inspectionData.id);
+  const { data: inspectionAdministrativePenaltiesData } =
+    useAdministrativePenaltiesData(inspectionData.id);
+
+  const deleteRequirementDescription = useMemo(
+    () =>
+      getRequirementDeleteWarning(requirement, [
+        {
+          enforcementActionType: EnforcementActionEnum.ORDER,
+          reqIds: inspectionOrdersData?.map((order) =>
+            order.order_requirement_maps?.map(
+              (map) => map.inspection_requirement_id
+            )
+          ),
+        },
+        {
+          enforcementActionType: EnforcementActionEnum.WARNING_LETTER,
+          reqIds: inspectionWarningLettersData?.map((warningLetter) =>
+            warningLetter.warning_letter_requirement_maps?.map(
+              (map) => map.inspection_requirement_id
+            )
+          ),
+        },
+        {
+          enforcementActionType: EnforcementActionEnum.AP_RECOMMENDATION,
+          reqIds: inspectionAdministrativePenaltiesData?.map(
+            (administrativePenalty) =>
+              administrativePenalty.administrative_penalty_requirement_maps?.map(
+                (map) => map.inspection_requirement_id
+              )
+          ),
+        },
+      ]),
+    [
+      requirement,
+      inspectionOrdersData,
+      inspectionWarningLettersData,
+      inspectionAdministrativePenaltiesData,
+    ]
   );
   const onCreateSuccess = useCallback(() => {
     onSubmit("Requirement created successfully!", true);
@@ -402,7 +450,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
           isShowActionBar={!isInspectionClosed && !inspectionReportsData?.date_issued}
           onDeleteAction={onDeleteRequirement}
           onDeleteTitle="Delete Requirement"
-          onDeleteDescription="You are about to delete this Requirement. Are you sure?"
+          onDeleteDescription={deleteRequirementDescription}
           isDirtyManual={isDataChanged}
           customCancelFn={handleClearData}
           isLoading={isUpdateInspectionRequirementPending}

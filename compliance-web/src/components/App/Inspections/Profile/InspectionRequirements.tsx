@@ -141,6 +141,17 @@ const InspectionRequirements: FC<InspectionRequirementsProps> = ({
       queryClient.invalidateQueries({
         queryKey: ["inspection-requirement-images", inspectionData.id],
       });
+      // Deleting/updating a requirement can also delete or unlink its draft
+      // enforcement actions, so refetch them to avoid showing stale state.
+      queryClient.invalidateQueries({
+        queryKey: ["inspection-orders", inspectionData.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["inspection-warning-letters", inspectionData.id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["inspection-administrative-penalties", inspectionData.id],
+      });
       notify.success(submitMsg);
       if (isClose) {
         setClose();

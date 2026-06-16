@@ -1,7 +1,11 @@
 import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { InspectionOrder } from "@/models/InspectionOrder";
 import { InspectionWarningLetter } from "@/models/InspectionWarningLetter";
-import { EnforcementActionEnum } from "@/utils/constants";
+import {
+  defaultRequirementDeleteWarning,
+  EnforcementActionEnum,
+  hasLinkedEnforcementDeleteWarning,
+} from "@/utils/constants";
 import * as yup from "yup";
 import dateUtils from "@/utils/dateUtils";
 import { AdministrativePenalty } from "@/models/AdministrativePenalty";
@@ -71,6 +75,42 @@ export const prepNonProceededRequirements = (
     ) || []
   }));
 };
+
+// Determine whether a requirement has an enforcement action record created
+export const hasCreatedEnforcementAction = (
+  requirement: InspectionRequirement | undefined,
+  enforcementsByType: {
+    enforcementActionType: EnforcementActionEnum;
+    reqIds: (number[] | undefined)[] | undefined;
+  }[]
+): boolean => {
+  if (!requirement) return false;
+  return enforcementsByType.some(({ enforcementActionType, reqIds }) => {
+    const isMarkedForType = requirement.enforcement_action_data?.some(
+      (enforcement) => enforcement.id === enforcementActionType
+    );
+    if (!isMarkedForType) return false;
+    const nonProceeded = prepNonProceededRequirements({
+      requirements: [requirement],
+      reqIds,
+      enforcementActionType,
+    });
+    return nonProceeded.length === 0;
+  });
+};
+
+// Pick the delete confirmation message for a requirement: the longer warning when an
+// enforcement action record has actually been created for it, otherwise the default.
+export const getRequirementDeleteWarning = (
+  requirement: InspectionRequirement | undefined,
+  enforcementsByType: {
+    enforcementActionType: EnforcementActionEnum;
+    reqIds: (number[] | undefined)[] | undefined;
+  }[]
+): string =>
+  hasCreatedEnforcementAction(requirement, enforcementsByType)
+    ? hasLinkedEnforcementDeleteWarning
+    : defaultRequirementDeleteWarning;
 
 export const formatRequirementSummary = (
   order?: InspectionOrder,

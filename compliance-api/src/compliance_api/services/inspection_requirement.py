@@ -24,7 +24,9 @@ from compliance_api.models import InspectionReqSourceDetail as InspectionReqSour
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models import InspectionRequirementImage as InspectionRequirementImageModel
 from compliance_api.models import InspectionStatusEnum
+from compliance_api.models import OrderApproval as OrderApprovalModel
 from compliance_api.models import WarningLetter as WarningLetterModel
+from compliance_api.models import WarningLetterApproval as WarningLetterApprovalModel
 from compliance_api.models import WarningLetterProgressEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import \
@@ -226,6 +228,9 @@ class InspectionRequirementService:
             InspectionReqDetailDocumentModel.delete_by_requirement_id(
                 requirement_id, session
             )
+            order_ids_to_reset, warning_letter_ids_to_reset = (
+                _cleanup_linked_draft_enforcement_actions(requirement, session)
+            )
             # Querying the latest requirements after deleting the item
             requirements = InspectionRequirementModel.get_by_inspection_id(
                 inspection_id
@@ -234,6 +239,8 @@ class InspectionRequirementService:
                 requirement_id, enforcement_ids=[], session=session
             )
             _update_sort_order_subsequent(requirements)
+        # Now that the deletion is committed, regenerate the summaries
+        _reset_enforcement_summaries(order_ids_to_reset, warning_letter_ids_to_reset)
 
     @classmethod
     def update_sort_order(cls, inspection_id, requirement_id, sort_order_data):
@@ -2193,3 +2200,140 @@ def _check_orders_and_warning_letters(requirement):
             WarningLetterProgressEnum.DEPUTY_REVIEW,
         ]:
             raise UnprocessableEntityError("Active warning letter found")
+
+
+def _cleanup_linked_draft_enforcement_actions(requirement, session):
+    """Delete or unlink the draft enforcement actions linked to a requirement."""
+    order_ids_to_reset = _cleanup_orders(requirement, session)
+    warning_letter_ids_to_reset = _cleanup_warning_letters(requirement, session)
+    _cleanup_administrative_penalties(requirement, session)
+    return order_ids_to_reset, warning_letter_ids_to_reset
+
+
+def _has_other_linked_requirements(enforcement_maps, requirement_id):
+    """Return True if the enforcement action is still linked to other live requirements."""
+    other_requirement_ids = [
+        enforcement_map.inspection_requirement_id
+        for enforcement_map in enforcement_maps
+        if enforcement_map.inspection_requirement_id != requirement_id
+    ]
+    if not other_requirement_ids:
+        return False
+    return bool(
+        InspectionRequirementModel.get_requirement_by_ids(other_requirement_ids)
+    )
+
+
+def _cleanup_orders(requirement, session):
+    """Delete sole-linked draft orders and unlink merged ones."""
+    order_ids_to_reset = []
+    for requirement_map in requirement.orders_requirement_maps:
+        order = requirement_map.order
+        if (
+            not order
+            or order.is_deleted
+            or order.order_progress != OrderProgressEnum.DRAFTING
+        ):
+            continue
+        order_maps = OrderInspectionRequirementMapModel.get_by_order_id(order.id)
+        if _has_other_linked_requirements(order_maps, requirement.id):
+            # Merged order: keep it, unlink this requirement and reset its summary later.
+            OrderInspectionRequirementMapModel.bulk_delete(
+                order.id, [requirement.id], session
+            )
+            order_ids_to_reset.append(order.id)
+            continue
+        # Only this requirement was linked: delete the order with its approvals and maps.
+        for approval in OrderApprovalModel.get_approvals_by_order(order.id):
+            approval.update({"is_active": False, "is_deleted": True}, commit=False)
+        OrderInspectionRequirementMapModel.delete_by_order(order.id, session)
+        OrderModel.update_order(
+            order.id, {"is_active": False, "is_deleted": True}, session
+        )
+    return order_ids_to_reset
+
+
+def _cleanup_warning_letters(requirement, session):
+    """Delete sole-linked draft warning letters and unlink merged ones."""
+    warning_letter_ids_to_reset = []
+    for requirement_map in requirement.warning_letter_requirement_maps:
+        warning_letter = requirement_map.warning_letter
+        if (
+            not warning_letter
+            or warning_letter.is_deleted
+            or warning_letter.progress != WarningLetterProgressEnum.DRAFTING
+        ):
+            continue
+        warning_letter_maps = (
+            WarningLetterInspectionRequirementMapModel.get_by_warning_letter_id(
+                warning_letter.id
+            )
+        )
+        if _has_other_linked_requirements(warning_letter_maps, requirement.id):
+            # Merged warning letter: keep it, unlink this requirement and reset later.
+            WarningLetterInspectionRequirementMapModel.bulk_delete(
+                warning_letter.id, [requirement.id], session
+            )
+            warning_letter_ids_to_reset.append(warning_letter.id)
+            continue
+        # Only this requirement was linked: delete the warning letter and its approvals.
+        for approval in WarningLetterApprovalModel.get_approvals_by_warning_letter(
+            warning_letter.id
+        ):
+            approval.update({"is_active": False, "is_deleted": True}, commit=False)
+        WarningLetterInspectionRequirementMapModel.delete_by_warning_letter(
+            warning_letter.id, session
+        )
+        WarningLetterModel.update_warning_letter(
+            warning_letter.id, {"is_active": False, "is_deleted": True}, session
+        )
+    return warning_letter_ids_to_reset
+
+
+def _cleanup_administrative_penalties(requirement, session):
+    """Delete sole-linked draft administrative penalties and unlink merged ones."""
+    penalty_maps = (
+        AdministrativePenaltyInspectionRequirementMapModel.query.filter_by(
+            inspection_requirement_id=requirement.id,
+            is_deleted=False,
+            is_active=True,
+        ).all()
+    )
+    for requirement_map in penalty_maps:
+        penalty = requirement_map.administrative_penalty
+        if (
+            not penalty
+            or penalty.is_deleted
+            or penalty.referral_status != ReferralStatusEnum.DRAFTING
+        ):
+            continue
+        all_penalty_maps = AdministrativePenaltyInspectionRequirementMapModel.get_by_administrative_penalty_id(
+            penalty.id
+        )
+        if _has_other_linked_requirements(all_penalty_maps, requirement.id):
+            # Merged penalty: keep it and only unlink this requirement.
+            AdministrativePenaltyInspectionRequirementMapModel.bulk_delete(
+                penalty.id, [requirement.id], session
+            )
+            continue
+        # Only this requirement was linked: delete the penalty and its maps.
+        AdministrativePenaltyInspectionRequirementMapModel.delete_by_administrative_penalty(
+            penalty.id, session
+        )
+        AdministrativePenaltyModel.update_administrative_penalty(
+            penalty.id, {"is_active": False, "is_deleted": True}, session
+        )
+
+
+def _reset_enforcement_summaries(order_ids, warning_letter_ids):
+    """Regenerate the summaries of merged enforcement actions after a requirement is removed."""
+    # pylint: disable=import-outside-toplevel
+    from compliance_api.services.order.order import OrderService
+    from compliance_api.services.warning_letter.warning_letter import (
+        WarningLetterService,
+    )
+
+    for order_id in order_ids:
+        OrderService.reset_field(order_id, ["where_as", "now_therefore"])
+    for warning_letter_id in warning_letter_ids:
+        WarningLetterService.reset_field(warning_letter_id, "content")

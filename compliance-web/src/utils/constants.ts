@@ -247,3 +247,7 @@ export const DEFAULT_PAGE_SIZE = 15;
 
 export type ALERT_SEVERITY_COLORS = "error" | "info" | "success" | "warning";
 export type VARIANT_COLORS = "default" | "primary" | "secondary" | ALERT_SEVERITY_COLORS;
+
+export const hasLinkedEnforcementDeleteWarning = "This requirement is associated with an enforcement action in Drafting status. If you delete this requirement, the associated enforcement action may be updated or deleted. Review and save any information you wish to retain before proceeding."
+
+export const defaultRequirementDeleteWarning = "You are about to delete this Requirement. Are you sure?"

@@ -5,8 +5,15 @@ import json
 from http import HTTPStatus
 from urllib.parse import urljoin
 
+from compliance_api.models import InspectionReqSourceDetail as InspectionReqSourceDetailModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models import InspectionStatusEnum, RequirementSourceEnum
+from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
+from compliance_api.models.administrative_penalty import AdministrativePenaltyInspectionRequirementMap
+from compliance_api.models.order import Order as OrderModel
+from compliance_api.models.order import OrderInspectionRequirementMap
+from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
+from compliance_api.models.warning_letter import WarningLetterInspectionRequirementMap
 from tests.utilities.factory_scenario.inspection_requirement_scenario import InspectionRequirementScenario
 
 
@@ -288,6 +295,282 @@ def test_delete_inspection_requirement(
         created_inspection_requirement.id
     )
     assert deleted_req is None
+
+
+def test_delete_requirement_deletes_sole_linked_draft_order(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_inspection_requirement,
+    created_order,
+    created_order_requirement_map,
+):
+    """Deleting the only requirement linked to a draft order deletes the order."""
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/{created_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+    assert (
+        InspectionRequirementModel.find_by_id(created_inspection_requirement.id) is None
+    )
+    # The orphaned draft order should also be removed.
+    assert OrderModel.find_by_id(created_order.id) is None
+
+
+def test_delete_requirement_keeps_merged_draft_order(
+    client,
+    auth_header_super_user,
+    db,
+    created_inspection,
+    created_inspection_requirement,
+    created_order,
+    created_order_requirement_map,
+):
+    """Deleting one of several requirements linked to a draft order keeps the order.
+
+    The deleted requirement should be unlinked while the remaining requirement stays
+    associated with the order.
+    """
+    deleted_requirement_summary = created_inspection_requirement.summary
+    second_requirement_summary = "Second requirement merged into the same order"
+    second_requirement = InspectionRequirementModel(
+        inspection_id=created_inspection.id,
+        summary=second_requirement_summary,
+        topic_id=created_inspection_requirement.topic_id,
+        compliance_finding_id=created_inspection_requirement.compliance_finding_id,
+        req_type=created_inspection_requirement.req_type,
+        sort_order=2,
+        is_active=True,
+        is_deleted=False,
+    )
+    db.session.add(second_requirement)
+    db.session.flush()
+    second_order_map = OrderInspectionRequirementMap(
+        order_id=created_order.id,
+        inspection_requirement_id=second_requirement.id,
+        is_active=True,
+        is_deleted=False,
+    )
+    db.session.add(second_order_map)
+    db.session.commit()
+
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/{created_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    # The merged order remains in the system.
+    remaining_order = OrderModel.find_by_id(created_order.id)
+    assert remaining_order is not None
+    # Only the deleted requirement is unlinked; the other requirement stays.
+    remaining_requirement_ids = {
+        order_map.inspection_requirement_id
+        for order_map in OrderInspectionRequirementMap.get_by_order_id(created_order.id)
+    }
+    assert created_inspection_requirement.id not in remaining_requirement_ids
+    assert second_requirement.id in remaining_requirement_ids
+    # The order summary is regenerated: it mentions the remaining requirement and no
+    # longer mentions the deleted requirement.
+    assert second_requirement_summary in remaining_order.where_as
+    assert deleted_requirement_summary not in remaining_order.where_as
+
+
+def test_delete_requirement_deletes_sole_linked_draft_warning_letter(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_warning_letter,
+    created_warning_letter_inspection_requirement,
+):
+    """Deleting the only requirement linked to a draft warning letter deletes it."""
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_warning_letter_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+    assert (
+        InspectionRequirementModel.find_by_id(
+            created_warning_letter_inspection_requirement.id
+        )
+        is None
+    )
+    # The orphaned draft warning letter should also be removed.
+    assert WarningLetterModel.find_by_id(created_warning_letter.id) is None
+
+
+def test_delete_requirement_keeps_merged_draft_warning_letter(
+    client,
+    auth_header_super_user,
+    db,
+    created_inspection,
+    created_warning_letter,
+    created_warning_letter_inspection_requirement,
+):
+    """Deleting one of several requirements linked to a draft warning letter keeps it.
+
+    The deleted requirement is unlinked while the remaining requirement stays
+    associated with the warning letter.
+    """
+    second_requirement = InspectionRequirementModel(
+        inspection_id=created_inspection.id,
+        summary="Second requirement merged into the same warning letter",
+        topic_id=created_warning_letter_inspection_requirement.topic_id,
+        compliance_finding_id=(
+            created_warning_letter_inspection_requirement.compliance_finding_id
+        ),
+        req_type=created_warning_letter_inspection_requirement.req_type,
+        findings="Second requirement finding",
+        sort_order=2,
+        is_active=True,
+        is_deleted=False,
+    )
+    db.session.add(second_requirement)
+    db.session.flush()
+    # The remaining requirement needs source details so the warning letter content
+    # can be regenerated after the deletion.
+    db.session.add(
+        InspectionReqSourceDetailModel(
+            requirement_id=second_requirement.id,
+            requirement_source_id=RequirementSourceEnum.ACT_2018.value,
+            section_number="2.1",
+            condition_number="",
+            amendment_number="",
+            source_title="Second requirement source title",
+            description="Second requirement source description",
+        )
+    )
+    db.session.add(
+        WarningLetterInspectionRequirementMap(
+            warning_letter_id=created_warning_letter.id,
+            inspection_requirement_id=second_requirement.id,
+            is_active=True,
+            is_deleted=False,
+        )
+    )
+    db.session.commit()
+
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_warning_letter_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    # The merged warning letter remains in the system.
+    assert WarningLetterModel.find_by_id(created_warning_letter.id) is not None
+    # Only the deleted requirement is unlinked; the other requirement stays.
+    remaining_requirement_ids = {
+        wl_map.inspection_requirement_id
+        for wl_map in WarningLetterInspectionRequirementMap.get_by_warning_letter_id(
+            created_warning_letter.id
+        )
+    }
+    assert (
+        created_warning_letter_inspection_requirement.id
+        not in remaining_requirement_ids
+    )
+    assert second_requirement.id in remaining_requirement_ids
+
+
+def test_delete_requirement_deletes_sole_linked_draft_administrative_penalty(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Deleting the only requirement linked to a draft AP deletes the penalty."""
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_administrative_penalty_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+    assert (
+        InspectionRequirementModel.find_by_id(
+            created_administrative_penalty_inspection_requirement.id
+        )
+        is None
+    )
+    # The orphaned draft administrative penalty should also be removed.
+    assert (
+        AdministrativePenaltyModel.find_by_id(created_administrative_penalty.id) is None
+    )
+
+
+def test_delete_requirement_keeps_merged_draft_administrative_penalty(
+    client,
+    auth_header_super_user,
+    db,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Deleting one of several requirements linked to a draft AP keeps the penalty.
+
+    The deleted requirement is unlinked while the remaining requirement stays
+    associated with the administrative penalty.
+    """
+    second_requirement = InspectionRequirementModel(
+        inspection_id=created_inspection.id,
+        summary="Second requirement merged into the same administrative penalty",
+        topic_id=created_administrative_penalty_inspection_requirement.topic_id,
+        compliance_finding_id=(
+            created_administrative_penalty_inspection_requirement.compliance_finding_id
+        ),
+        req_type=created_administrative_penalty_inspection_requirement.req_type,
+        findings="Second requirement finding",
+        sort_order=2,
+        is_active=True,
+        is_deleted=False,
+    )
+    db.session.add(second_requirement)
+    db.session.flush()
+    db.session.add(
+        AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=created_administrative_penalty.id,
+            inspection_requirement_id=second_requirement.id,
+            is_active=True,
+            is_deleted=False,
+        )
+    )
+    db.session.commit()
+
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_administrative_penalty_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    # The merged administrative penalty remains in the system.
+    assert (
+        AdministrativePenaltyModel.find_by_id(created_administrative_penalty.id)
+        is not None
+    )
+    # Only the deleted requirement is unlinked; the other requirement stays.
+    remaining_requirement_ids = {
+        ap_map.inspection_requirement_id
+        for ap_map in (
+            AdministrativePenaltyInspectionRequirementMap.get_by_administrative_penalty_id(
+                created_administrative_penalty.id
+            )
+        )
+    }
+    assert (
+        created_administrative_penalty_inspection_requirement.id
+        not in remaining_requirement_ids
+    )
+    assert second_requirement.id in remaining_requirement_ids
 
 
 def test_create_requirement_with_invalid_inspection(
