@@ -108,9 +108,8 @@ def optimize_image_for_docx(
     with Image.open(image_stream) as img:
         original_width, original_height = img.size
 
-        # Backstop check against absurd images BEFORE decoding. Image.open only
-        # reads the header, so img.size is available without a full raster
-        # decode. draft()/thumbnail() below keep real memory bounded; this just
+        # Backstop check against absurd images BEFORE decoding.
+        # img.size is available without a full raster decode. this
         # rejects pathological non-JPEG bombs (worker OOM / DoS).
         if original_width * original_height > MAX_IMAGE_PIXELS:
             raise ImageTooLargeError(
@@ -122,10 +121,8 @@ def optimize_image_for_docx(
         # Only resize if image is larger than target.
         if original_width > target_width_px:
             # thumbnail() shrinks in place preserving aspect ratio. For JPEG it
-            # invokes the decoder's draft mode, downscaling during decode so a
-            # large scan never materializes its full-resolution raster in
-            # memory. Bounding the height by original_height keeps width the
-            # constraining dimension.
+            # downscales during decode so a large scan never materializes full-
+            # resolution in memory.
             img.thumbnail((target_width_px, original_height), Image.LANCZOS)
 
         # Convert RGBA to RGB for JPEG compatibility (handles transparency)
