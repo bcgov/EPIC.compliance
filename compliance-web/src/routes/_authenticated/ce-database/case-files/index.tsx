@@ -1,6 +1,6 @@
 import CaseFileDrawer from "@/components/App/CaseFiles/CaseFileDrawer";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
-import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
+import { KC_USER_GROUPS, useCurrentStaffUser, useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { useCaseFilesData } from "@/hooks/useCaseFiles";
 import { useProjectsData } from "@/hooks/useProjects";
 import { useInitiationsData } from "@/hooks/useCaseFiles";
@@ -46,7 +46,8 @@ export function CaseFiles() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
-  const { user: currentUser, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
+  const { currentStaff } = useCurrentStaffUser();
   
   const [sorting, setSorting] = useState<MRT_SortingState>([
     { id: "date_created", desc: true },
@@ -80,12 +81,6 @@ export function CaseFiles() {
   );
   const cachedSorting = getSorting(caseFilesColumnFiltersCacheKey);
 
-  const currentStaff = useMemo(() => {
-    if (!currentUser?.profile?.preferred_username || !staffList) return null;
-    return staffList.find(
-      (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
-    );
-  }, [currentUser?.profile?.preferred_username, staffList]);
 
   // Restore cached filters on component mount
   useEffect(() => {

@@ -56,6 +56,11 @@ export const useCurrentLoggedInUser = () => {
   return user?.profile;
 };
 
+export const useCurrentStaffUser = () => {
+  const { staffUser, isLoading } = useStaffUserValidation();
+  return { currentStaff: staffUser ?? null, isLoading };
+};
+
 export const useStaffUserValidation = () => {
   const { user, isAuthenticated } = useAuth();
   const preferredUsername = user?.profile?.preferred_username;

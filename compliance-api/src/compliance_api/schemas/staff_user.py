@@ -69,6 +69,38 @@ class StaffUserSchemaSkeleton(AutoSchemaBase):  # pylint: disable=too-many-ances
         return data
 
 
+class StaffUserSlimSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
+    """Read-only staff user schema without permission data.
+
+    Intended for endpoints accessible to lowest role (VIEWER).
+    Returns only the fields needed for list filters.
+    """
+
+    class Meta(AutoSchemaBase.Meta):  # pylint: disable=too-few-public-methods
+        """Meta."""
+
+        unknown = EXCLUDE
+        model = StaffUser
+        include_fk = True
+        exclude = AutoSchemaBase.Meta.exclude + (
+            "deputy_director_id",
+            "supervisor_id",
+        )
+
+    position = fields.Nested(KeyValueSchema, dump_only=True)
+    name = fields.Method("get_full_name")
+
+    def get_full_name(self, obj):
+        """Derive fullname from object or dict."""
+        if isinstance(obj, dict):
+            first_name = obj.get("first_name", "")
+            last_name = obj.get("last_name", "")
+        else:
+            first_name = getattr(obj, "first_name", "")
+            last_name = getattr(obj, "last_name", "")
+        return f"{first_name} {last_name}".strip()
+
+
 class StaffUserSchema(StaffUserSchemaSkeleton):  # pylint: disable=too-many-ancestors
     """Staff User schema."""
 

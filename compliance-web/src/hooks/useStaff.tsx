@@ -8,7 +8,7 @@ import { useStaticQuery } from "@/hooks/useCustomQueries";
 import { STAFF_USER_POSITION } from "@/utils/constants";
 
 const fetchStaffUsers = (): Promise<StaffUser[]> => {
-  return request({ url: "/staff-users" });
+  return request({ url: "/staff-users/active" });
 };
 
 /** FETCH users from AUTH API */

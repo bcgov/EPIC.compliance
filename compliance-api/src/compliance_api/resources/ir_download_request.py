@@ -2,12 +2,12 @@
 
 from http import HTTPStatus
 
-from flask import request
+from flask import g
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
-from compliance_api.schemas import CreateIRDownloadRequestSchema, IRDownloadRequestQuerySchema, IRDownloadRequestSchema
+from compliance_api.schemas import CreateIRDownloadRequestSchema, IRDownloadRequestSchema
 from compliance_api.services import IRDownloadRequestService
 from compliance_api.utils.util import cors_preflight
 
@@ -38,7 +38,7 @@ class IRDownloadRequests(Resource):
     @API.response(code=201, model=ir_download_request_schema, description="Created")
     @API.response(400, "Bad Request")
     @API.response(409, "Conflict - Request already exists")
-    def post(inspection_record_id):
+    def post(inspection_id, inspection_record_id):
         """Create an IR download request.
 
         Creates a new download request for the specified inspection record.
@@ -68,29 +68,16 @@ class IRDownloadRequestLatest(Resource):
     @API.response(404, "Not Found")
     @ApiHelper.swagger_decorators(
         API,
-        endpoint_description="Fetch the latest IR download request for a staff member",
-    )
-    @API.doc(
-        params={
-            "created_by": {
-                "description": "Staff ID (GUID) of the user who created the request",
-                "in": "query",
-                "type": "string",
-                "required": True,
-            }
-        }
+        endpoint_description="Fetch the latest IR download request for the calling user",
     )
     @auth.require
-    def get(inspection_record_id):
-        """Fetch the latest IR download request by inspection record and staff ID.
+    def get(inspection_id, inspection_record_id):
+        """Fetch the latest IR download request by inspection record for the calling user.
 
         Returns the most recent download request for the specified inspection record
-        and staff member, ordered by creation date descending.
+        and the authenticated caller, ordered by creation date descending.
         """
-        # Validate query parameters
-        query_schema = IRDownloadRequestQuerySchema()
-        query_params = query_schema.load(request.args)
-        staff_id = query_params.get("created_by")
+        staff_id = g.token_info.get("preferred_username")
 
         download_request = IRDownloadRequestService.get_latest_download_request(
             inspection_record_id, staff_id
@@ -98,8 +85,7 @@ class IRDownloadRequestLatest(Resource):
 
         if not download_request:
             raise ResourceNotFoundError(
-                f"No download request found for inspection record {inspection_record_id} "
-                f"and staff ID {staff_id}"
+                f"No download request found for inspection record {inspection_record_id}"
             )
 
         return IRDownloadRequestSchema().dump(download_request), HTTPStatus.OK

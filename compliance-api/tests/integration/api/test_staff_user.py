@@ -280,3 +280,21 @@ def test_delete_user_with_non_super_user(mock_auth_service, client, auth_header)
     result = client.delete(url, headers=auth_header)
 
     assert result.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_get_users_viewer_forbidden(client, auth_header):
+    """VIEWER token must not be able to list staff users and all info."""
+    url = urljoin(API_BASE_URL, "staff-users")
+
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_get_user_by_id_viewer_forbidden(client, auth_header):
+    """VIEWER token must not be able to fetch a staff user by id"""
+    url = urljoin(API_BASE_URL, "staff-users/1")
+
+    result = client.get(url, headers=auth_header)
+
+    assert result.status_code == HTTPStatus.FORBIDDEN

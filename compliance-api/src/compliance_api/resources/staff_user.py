@@ -19,7 +19,8 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
-from compliance_api.schemas import KeyValueSchema, StaffUserCreateSchema, StaffUserSchema, StaffUserUpdateSchema
+from compliance_api.schemas import KeyValueSchema, StaffUserCreateSchema, StaffUserSchema, StaffUserSlimSchema, StaffUserUpdateSchema
+from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.services.cached_staff_user import CachedStaffUserService
 from compliance_api.services import StaffUserService
 from compliance_api.utils.enum import PermissionEnum
@@ -39,6 +40,9 @@ user_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 user_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, StaffUserSchema(), "StaffUserList"
 )
+user_slim_model = ApiHelper.convert_ma_schema_to_restx_model(
+    API, StaffUserSlimSchema(), "StaffUserSlim"
+)
 key_value_list_model = ApiHelper.convert_ma_schema_to_restx_model(
     API, KeyValueSchema(), "List"
 )
@@ -53,6 +57,7 @@ class StaffUsers(Resource):
     @API.response(code=200, description="Success", model=[user_list_model])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch all users")
     @auth.require
+    @auth.has_one_of_roles([PermissionEnum.SUPERUSER, PermissionEnum.ADMIN, PermissionEnum.USER])
     def get():
         """Fetch all users."""
         users = CachedStaffUserService.get_all_staff_users_with_auth()
@@ -73,6 +78,25 @@ class StaffUsers(Resource):
         return StaffUserSchema().dump(created_user), HTTPStatus.CREATED
 
 
+@cors_preflight("GET, OPTIONS")
+@API.route("/active", methods=["GET", "OPTIONS"])
+class StaffUsersActive(Resource):
+    """Read-only staff list accessible to all authenticated roles.
+
+    Returns id, name, position, and is_active only, no permission data.
+    Used by officer picker dropdowns and list filters.
+    """
+
+    @staticmethod
+    @auth.require
+    @ApiHelper.swagger_decorators(API, endpoint_description="Fetch active staff (slim, no permission data)")
+    @API.response(code=200, description="Success", model=[user_slim_model])
+    def get():
+        """Fetch all active staff without permission data."""
+        users = StaffUserModel.get_all_with_relationships(default_filters=True)
+        return StaffUserSlimSchema(many=True).dump(users), HTTPStatus.OK
+
+
 @cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route("/<int:user_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
 @API.doc(params={"user_id": "The user identifier"})
@@ -81,6 +105,7 @@ class StaffUser(Resource):
 
     @staticmethod
     @auth.require
+    @auth.has_one_of_roles([PermissionEnum.SUPERUSER, PermissionEnum.ADMIN, PermissionEnum.USER])
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch a user by id")
     @API.response(code=200, model=user_list_model, description="Success")
     @API.response(404, "Not Found")

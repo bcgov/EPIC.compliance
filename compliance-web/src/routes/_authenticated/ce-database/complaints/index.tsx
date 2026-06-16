@@ -4,6 +4,7 @@ import {
   useComplaintsData,
 } from "@/hooks/useComplaints";
 import { useStaffUsersData } from "@/hooks/useStaff";
+import { useCurrentStaffUser } from "@/hooks/useAuthorization";
 import { useProjectsData } from "@/hooks/useProjects";
 import { useTopicsData } from "@/hooks/useTopics";
 import { useComplaintSourcesData } from "@/hooks/useComplaints";
@@ -21,7 +22,6 @@ import {
 } from "material-react-table";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import type { User } from "oidc-client-ts";
 import Pagination from "@/components/Shared/Pagination";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
@@ -31,7 +31,6 @@ import {
 import ComplaintsGridExport from "@/components/App/Complaints/ComplaintsGrid/ComplaintsGridExport";
 import ShowOnlyMyComplaintsSwitch from "@/components/App/Complaints/ComplaintsGrid/ShowOnlyMyComplaintsSwitch";
 import { AppConfig } from "@/utils/config";
-import { StaffUser } from "@/models/Staff";
 import { ComplaintStatusEnum, STAFF_USER_POSITION } from "@/utils/constants";
 
 export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
@@ -39,14 +38,6 @@ export const Route = createFileRoute("/_authenticated/ce-database/complaints/")(
 );
 
 const complaintsColumnFiltersCacheKey = "complaints-column-filters";
-
-// Helper to get current staff from user and staff list
-const getCurrentStaff = (currentUser: User | undefined | null, staffList: StaffUser[] | undefined) => {
-  if (!currentUser?.profile?.preferred_username || !staffList) return null;
-  return staffList.find(
-    (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
-  );
-};
 
 // Helper to create default filters for a staff member
 const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
@@ -79,7 +70,8 @@ export function Complaints() {
   const { data: complaintSources } = useComplaintSourcesData();
   const { data: complaintResolutions } = useComplaintResolutionsData();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
-  const { user: currentUser, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
+  const { currentStaff, isLoading: currentStaffLoading } = useCurrentStaffUser();
 
   const [sorting, setSorting] = useState<MRT_SortingState>(() => [
     { id: "date_received", desc: true },
@@ -113,13 +105,10 @@ export function Complaints() {
   const cachedExternalFilters = getExternalFilters(complaintsColumnFiltersCacheKey);
   const cachedSorting = getSorting(complaintsColumnFiltersCacheKey);
 
-  const currentStaff = useMemo(() => {
-    return getCurrentStaff(currentUser, staffList);
-  }, [currentUser, staffList]);
 
   useEffect(() => {
     // Don't initialize if already done, or if it isn't loaded yet
-    if (!hasHydrated || filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+    if (!hasHydrated || filtersInitialized.current || authLoading || currentStaffLoading || !currentStaff) {
       return;
     }
 
@@ -181,7 +170,7 @@ export function Complaints() {
     }
 
     setIsRestored(true);
-  }, [authLoading, staffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
+  }, [authLoading, currentStaffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
 
   // Debounced cache persistence - only after initialization
   const cacheTimeoutRef = useRef<NodeJS.Timeout>();

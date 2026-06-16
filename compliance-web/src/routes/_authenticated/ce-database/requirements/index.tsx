@@ -23,6 +23,7 @@ import {
 } from "@/hooks/useInspectionRequirements";
 import { useInspectionRequirementsGrid } from "@/hooks/useInspectionRequirementsGrid";
 import { useStaffUsersData } from "@/hooks/useStaff";
+import { useCurrentStaffUser } from "@/hooks/useAuthorization";
 import {
   useConvertFiltersToQueryParams,
   useRequirementsGridColumns,
@@ -50,7 +51,8 @@ function Requirements() {
   const { data: enforcementActions } = useEnforcementActionsData();
   const { data: requirementSources } = useRequirementSourcesData();
   const { data: staffUsers, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
-  const { user: currentUser, isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading } = useAuth();
+  const { currentStaff, isLoading: currentStaffLoading } = useCurrentStaffUser();
   const isMdToLg = useMediaQuery(MQ.mdToLg);
     
   // State for "My Requirements" switch - default to true for first-time users
@@ -83,17 +85,11 @@ function Requirements() {
   const cachedExternalFilters = getExternalFilters(requirementsColumnFiltersCacheKey);
   const cachedSorting = getSorting(requirementsColumnFiltersCacheKey);
 
-  const currentStaff = useMemo(() => {
-    if (!currentUser?.profile?.preferred_username || !staffUsers) return null;
-    return staffUsers.find(
-      (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
-    );
-  }, [currentUser, staffUsers]);
 
   // Initialize filters only once when all data is ready
   useEffect(() => {
     // Don't initialize if already done, or if required data isn't loaded yet
-    if (!hasHydrated || filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+    if (!hasHydrated || filtersInitialized.current || authLoading || currentStaffLoading || !currentStaff) {
       return;
     }
 
@@ -166,7 +162,7 @@ function Requirements() {
     setIsRestored(true);
   }, [
     authLoading,
-    staffLoading,
+    currentStaffLoading,
     currentStaff,
     cachedColumnFilters,
     cachedExternalFilters,

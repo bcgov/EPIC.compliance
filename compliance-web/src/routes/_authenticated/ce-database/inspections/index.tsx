@@ -7,10 +7,10 @@ import {
   MRT_Updater,
 } from "material-react-table";
 import { useAuth } from "react-oidc-context";
-import { User } from "oidc-client-ts";
 import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable";
 import { useInspectionsData } from "@/hooks/useInspections";
 import { useStaffUsersData } from "@/hooks/useStaff";
+import { useCurrentStaffUser } from "@/hooks/useAuthorization";
 import { useProjectsData } from "@/hooks/useProjects";
 import { useInitiationsData } from "@/hooks/useInspections";
 import { Inspection, InspectionGridQueryParams } from "@/models/Inspection";
@@ -28,21 +28,11 @@ import {
 import ShowOnlyMyInspectionsSwitch from "@/components/App/Inspections/InspectionsGrid/ShowOnlyMyInspectionsSwitch";
 import InspectionsGridExport from "@/components/App/Inspections/InspectionsGrid/InspectionsGridExport";
 import { AppConfig } from "@/utils/config";
-import { StaffUser } from "@/models/Staff";
-
 export const Route = createFileRoute(
   "/_authenticated/ce-database/inspections/"
 )({ component: Inspections });
 
 const inspectionsColumnFiltersCacheKey = "inspections-column-filters";
-
-// Helper to get current staff from user and staff list
-const getCurrentStaff = (currentUser: User | undefined | null, staffList: StaffUser[] | undefined) => {
-  if (!currentUser?.profile?.preferred_username || !staffList) return null;
-  return staffList.find(
-    (staff) => staff.auth_user_guid === currentUser.profile.preferred_username
-  );
-};
 
 // Helper to create default filters for a staff member
 const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
@@ -72,8 +62,9 @@ const createDefaultFilters = (staffId: string, defaultMyChecked: boolean): {
 export function Inspections() {
   const { data: projects } = useProjectsData();
   const { data: initiations } = useInitiationsData();
-  const { isLoading: authLoading, user: currentUser } = useAuth();
+  const { isLoading: authLoading } = useAuth();
   const { data: staffList, isLoading: staffLoading } = useStaffUsersData({ isActive: true, otherPositions: false });
+  const { currentStaff, isLoading: currentStaffLoading } = useCurrentStaffUser();
 
   const irProgressOptions = useMemo(
     () =>
@@ -125,14 +116,11 @@ export function Inspections() {
   const cachedExternalFilters = getExternalFilters(inspectionsColumnFiltersCacheKey);
   const cachedSorting = getSorting(inspectionsColumnFiltersCacheKey);
 
-  const currentStaff = useMemo(() => {
-    return getCurrentStaff(currentUser, staffList);
-  }, [currentUser, staffList]);
 
   // Initialization effect
   useEffect(() => {
     // Don't initialize if already done, or if it isn't loaded yet
-    if (!hasHydrated || filtersInitialized.current || authLoading || staffLoading || !currentStaff) {
+    if (!hasHydrated || filtersInitialized.current || authLoading || currentStaffLoading || !currentStaff) {
       return;
     }
 
@@ -195,7 +183,7 @@ export function Inspections() {
     }
 
     setIsRestored(true);
-  }, [authLoading, staffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
+  }, [authLoading, currentStaffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
 
   // Debounced cache persistence - only after initialization
   const cacheTimeoutRef = useRef<NodeJS.Timeout>();

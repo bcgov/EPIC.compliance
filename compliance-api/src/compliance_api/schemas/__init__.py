@@ -58,7 +58,7 @@ from .requirement_source import RequirementSourceSchema
 from .restorative_justice import (
     RestorativeJusticeCreateSchema, RestorativeJusticeSchema, RestorativeJusticeUpdateSchema)
 from .section import SectionSchema
-from .staff_user import StaffUserCreateSchema, StaffUserSchema, StaffUserUpdateSchema
+from .staff_user import StaffUserCreateSchema, StaffUserSchema, StaffUserSlimSchema, StaffUserUpdateSchema
 from .topic import TopicCreateSchema, TopicSchema
 from .violation_ticket import (
     ViolationTicketCreateSchema, ViolationTicketSchema, ViolationTicketStatusSchema, ViolationTicketUpdateSchema)

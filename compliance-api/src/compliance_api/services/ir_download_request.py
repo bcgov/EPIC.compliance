@@ -1,5 +1,7 @@
 """Service for IR download request."""
 
+from flask import g
+
 from compliance_api.exceptions import UnprocessableEntityError
 from compliance_api.models import DownloadStatusEnum
 from compliance_api.models import InspectionRecord as InspectionRecordModel
@@ -10,19 +12,14 @@ class IRDownloadRequestService:
     """IRDownloadRequestService."""
 
     @classmethod
-    def create_download_request(cls, inspection_record_id, staff_id=None):
+    def create_download_request(cls, inspection_record_id):
         """Create a download request for an inspection record.
 
         Args:
             inspection_record_id: ID of the inspection record
-            staff_id: Staff ID (GUID) of the user creating the request.
-                     If not provided, uses current user from context.
 
         Returns:
             Created download request
-
-        Raises:
-            ResourceExistsError: If a pending/not-started request already exists
         """
         # Verify inspection record exists
         inspection_record = InspectionRecordModel.find_by_id(inspection_record_id)
@@ -31,11 +28,13 @@ class IRDownloadRequestService:
                 f"Inspection record with ID {inspection_record_id} not found"
             )
 
+        created_by = g.token_info.get("preferred_username")
+
         # Create new download request
         request_data = {
             "inspection_record_id": inspection_record_id,
             "download_status": DownloadStatusEnum.NOT_STARTED,
-            "created_by": staff_id,
+            "created_by": created_by,
         }
 
         download_request = IRDownloadRequestModel.create_download_request(request_data)
