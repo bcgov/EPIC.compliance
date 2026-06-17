@@ -68,9 +68,9 @@ jobs:
         run: |
           npm ci
 
-      - name: Install Playwright browsers
+      - name: Install Playwright Chromium
         run: |
-          npx playwright install --with-deps
+          npx playwright install chromium
 
       - name: Run Vitest
         run: |
@@ -87,10 +87,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 24.x
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 24.x
       - name: Install dependencies
         run: |
           npm install

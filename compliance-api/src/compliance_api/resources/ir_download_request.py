@@ -38,7 +38,7 @@ class IRDownloadRequests(Resource):
     @API.response(code=201, model=ir_download_request_schema, description="Created")
     @API.response(400, "Bad Request")
     @API.response(409, "Conflict - Request already exists")
-    def post(inspection_id, inspection_record_id):
+    def post(inspection_id, inspection_record_id):  # pylint: disable=unused-argument
         """Create an IR download request.
 
         Creates a new download request for the specified inspection record.
@@ -71,7 +71,7 @@ class IRDownloadRequestLatest(Resource):
         endpoint_description="Fetch the latest IR download request for the calling user",
     )
     @auth.require
-    def get(inspection_id, inspection_record_id):
+    def get(inspection_id, inspection_record_id):  # pylint: disable=unused-argument
         """Fetch the latest IR download request by inspection record for the calling user.
 
         Returns the most recent download request for the specified inspection record

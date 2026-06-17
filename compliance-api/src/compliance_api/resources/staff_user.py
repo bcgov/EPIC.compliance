@@ -19,7 +19,9 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
-from compliance_api.schemas import KeyValueSchema, StaffUserCreateSchema, StaffUserSchema, StaffUserSlimSchema, StaffUserUpdateSchema
+from compliance_api.schemas import (
+    KeyValueSchema, StaffUserCreateSchema, StaffUserSchema, StaffUserSlimSchema, StaffUserUpdateSchema
+)
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.services.cached_staff_user import CachedStaffUserService
 from compliance_api.services import StaffUserService

@@ -292,7 +292,7 @@ def test_get_users_viewer_forbidden(client, auth_header):
 
 
 def test_get_user_by_id_viewer_forbidden(client, auth_header):
-    """VIEWER token must not be able to fetch a staff user by id"""
+    """VIEWER token must not be able to fetch a staff user by id."""
     url = urljoin(API_BASE_URL, "staff-users/1")
 
     result = client.get(url, headers=auth_header)
