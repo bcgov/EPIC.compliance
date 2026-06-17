@@ -215,7 +215,10 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
         (ticket) => ticket.status?.id !== ViolationTicketStatus.ISSUED
       );
       const nonDraftAdministrativePenalties = requirementsInAdministrativePenalties.some(
-        (penalty) => penalty.referral_status?.id !== AdministrativePenaltyStatus.DRAFTING
+        (penalty) =>
+          penalty.referral_status?.id !== AdministrativePenaltyStatus.DRAFTING &&
+          // Referred to AMP Unit is treated the same as Drafting for workflow purposes
+          penalty.referral_status?.id !== AdministrativePenaltyStatus.REFERRED_TO_AMP_UNIT
       );
       const nonDraftChargeRecommendations = requirementsInChargeRecommendations.some(
         (charge) => charge.status?.id !== ChargeRecommendationStatus.DRAFTING

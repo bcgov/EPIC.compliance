@@ -184,6 +184,7 @@ export enum ViolationTicketStatus {
 
 export enum AdministrativePenaltyStatus {
   DRAFTING = "DRAFTING",
+  REFERRED_TO_AMP_UNIT = "REFERRED_TO_AMP_UNIT",
   DEPUTY_REVIEW = "DEPUTY_REVIEW",
   CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING",
   REFERRED_TO_DM = "REFERRED_TO_DM"
@@ -212,6 +213,7 @@ export enum CaseFileStatusEnum {
 
 export const APReferralStatus = {
   DRAFTING: { id: "DRAFTING", name: "Drafting" },
+  REFERRED_TO_AMP_UNIT: { id: "REFERRED_TO_AMP_UNIT", name: "Referred to AMP Unit" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
   CEB_NOT_PROCEEDING: { id: "CEB_NOT_PROCEEDING", name: "CEB Not Proceeding" },
   REFERRED_TO_DM: { id: "REFERRED_TO_DM", name: "Referred to DM" },

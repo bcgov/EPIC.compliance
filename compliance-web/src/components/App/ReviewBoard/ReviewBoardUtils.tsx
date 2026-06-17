@@ -160,6 +160,7 @@ const determineItemSection = (
   if (item.card_type.name === "AP") {
     switch (item.approval_status?.id) {
       case AdministrativePenaltyStatus.DRAFTING:
+      case AdministrativePenaltyStatus.REFERRED_TO_AMP_UNIT:
         sectionIndex = ReviewBoardCardTypeEnum.DRAFTING;
         break;
       case AdministrativePenaltyStatus.DEPUTY_REVIEW:

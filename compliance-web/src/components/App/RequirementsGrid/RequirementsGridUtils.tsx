@@ -298,6 +298,10 @@ const enforcementStatusOptions = [
   },
   // AP Referral Statuses that are not in OTHER ENFORCEMENT ACTIONS
   {
+    value: APReferralStatus.REFERRED_TO_AMP_UNIT.id,
+    text: "Referred to AMP Unit",
+  },
+  {
     value: APReferralStatus.CEB_NOT_PROCEEDING.id,
     text: "CEB Not Proceeding",
   },

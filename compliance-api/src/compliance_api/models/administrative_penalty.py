@@ -21,6 +21,7 @@ class ReferralStatusEnum(Enum):
     """Enum for Administrative Penalty Referral Status."""
 
     DRAFTING = "Drafting"
+    REFERRED_TO_AMP_UNIT = "Referred to AMP Unit"
     DEPUTY_REVIEW = "Deputy Review"
     CEB_NOT_PROCEEDING = "CEB Not Proceeding"
     REFERRED_TO_DM = "Referred to DM"

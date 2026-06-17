@@ -1558,6 +1558,11 @@ def _validate_and_delete_enforcement_action(
     model = enforcement_action_config["model"]
     status_field = enforcement_action_config["status_field"]
     allowed_status = enforcement_action_config["allowed_status"]
+    allowed_statuses = (
+        allowed_status
+        if isinstance(allowed_status, (list, tuple, set))
+        else (allowed_status,)
+    )
     map_field = enforcement_action_config["map_field"]
     update_method = enforcement_action_config["update_method"]
     error_message = enforcement_action_config["error_message"]
@@ -1575,7 +1580,7 @@ def _validate_and_delete_enforcement_action(
 
     # Check if any are not in the allowed status
     if any(
-        getattr(action, status_field) != allowed_status
+        getattr(action, status_field) not in allowed_statuses
         for action in requirement_enforcement_actions
     ):
         raise UnprocessableEntityError(error_message)
@@ -1633,7 +1638,11 @@ def _check_enforcement_action_existennce(
         EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: {
             "model": AdministrativePenaltyModel,
             "status_field": "referral_status",
-            "allowed_status": ReferralStatusEnum.DRAFTING,
+            # Referred to AMP Unit is treated the same as Drafting for workflow purposes
+            "allowed_status": (
+                ReferralStatusEnum.DRAFTING,
+                ReferralStatusEnum.REFERRED_TO_AMP_UNIT,
+            ),
             "map_field": "administrative_penalty_requirement_maps",
             "update_method": AdministrativePenaltyModel.update_administrative_penalty,
             "error_message": (
