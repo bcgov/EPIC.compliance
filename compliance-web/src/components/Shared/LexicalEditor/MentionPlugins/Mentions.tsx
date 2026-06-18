@@ -26,7 +26,6 @@ import {
   $setSelection,
   SELECTION_CHANGE_COMMAND,
   $getSelection,
-  $createTextNode,
   $getRoot,
   LexicalNode,
   ElementNode,
@@ -300,70 +299,28 @@ export default function MentionsPlugin({
 
         // Check if there's a node to replace (from @ typing)
         if (nodeToReplace) {
-          // Get the parent of the node to replace
-          const parentNode = nodeToReplace.getParent();
-
-          if (parentNode) {
-            // Check if there's already a space before the node
-            const siblings = parentNode.getChildren();
-            const nodeIndex = siblings.indexOf(nodeToReplace);
-            const prevNode = nodeIndex > 0 ? siblings[nodeIndex - 1] : null;
-
-            // Add a space before if needed and if not at the beginning of the parent
-            const needsSpaceBefore =
-              nodeIndex > 0 &&
-              prevNode &&
-              prevNode instanceof TextNode &&
-              !prevNode.getTextContent().endsWith(" ");
-
-            if (needsSpaceBefore) {
-              const spaceNodeBefore = $createTextNode(" ");
-              nodeToReplace.insertBefore(spaceNodeBefore);
-            }
-
-            // Replace the @ text with the mention node
-            nodeToReplace.replace(mentionNode);
-
-            // Add a space after the mention node
-            const spaceNodeAfter = $createTextNode(" ");
-            mentionNode.insertAfter(spaceNodeAfter);
-
-            // Set selection after the space
-            spaceNodeAfter.select();
-          } else {
-            // Fallback if no parent
-            nodeToReplace.replace(mentionNode);
-
-            // Add a space after the mention node
-            const spaceNode = $createTextNode(" ");
-            mentionNode.insertAfter(spaceNode);
-
-            // Set selection after the space
-            spaceNode.select();
-          }
+          nodeToReplace.replace(mentionNode);
         } else {
-          // If no node to replace, just insert the mention node at current selection
           const selection = $getSelection();
           if (selection) {
-            // Insert a space before if needed
-            const textContent = selection.getTextContent();
-            const needsSpaceBefore =
-              textContent.length > 0 && !textContent.endsWith(" ");
-
-            if (needsSpaceBefore) {
-              const spaceNodeBefore = $createTextNode(" ");
-              selection.insertNodes([spaceNodeBefore, mentionNode]);
-            } else {
-              selection.insertNodes([mentionNode]);
-            }
-
-            // Add a space after
-            const spaceNodeAfter = $createTextNode(" ");
-            mentionNode.insertAfter(spaceNodeAfter);
-
-            // Put cursor after the space
-            spaceNodeAfter.select();
+            selection.insertNodes([mentionNode]);
           }
+        }
+        const parent = mentionNode.getParent();
+        if (parent) {
+          const indexAfterMention = mentionNode.getIndexWithinParent() + 1;
+          const selectionAfter = $createRangeSelection();
+          selectionAfter.anchor.set(
+            parent.getKey(),
+            indexAfterMention,
+            "element"
+          );
+          selectionAfter.focus.set(
+            parent.getKey(),
+            indexAfterMention,
+            "element"
+          );
+          $setSelection(selectionAfter);
         }
 
         closeMenu();
