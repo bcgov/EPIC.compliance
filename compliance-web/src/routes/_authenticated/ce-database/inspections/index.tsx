@@ -137,29 +137,50 @@ export function Inspections() {
 
     if (hasCache) {
       // Restore from cache
-      if (cachedColumnFilters.length > 0) {
-        setColumnFilters(cachedColumnFilters);
+      const restored = (cachedExternalFilters ?? {}) as Record<
+        string,
+        string[] | string
+      >;
+
+      if (restored.globalFilter) {
+        setGlobalFilter(restored.globalFilter as string);
       }
-      
-      if (cachedExternalFilters) {
-        const restored = cachedExternalFilters as Record<string, string[] | string>;
-        setExternalFilters(restored);
 
-        if (restored.globalFilter) {
-          setGlobalFilter(restored.globalFilter as string);
-        }
+      // The toggle is the source of truth for the "my inspections" filter.
+      let restoredMyChecked: boolean;
+      if (restored.myInspectionsChecked !== undefined) {
+        restoredMyChecked = Boolean(restored.myInspectionsChecked);
+      } else {
+        // Derive from the cached primary_officer filter (legacy cache)
+        const primaryOfficer = restored.primary_officer_ids;
+        restoredMyChecked =
+          Array.isArray(primaryOfficer) &&
+          primaryOfficer.some((id) => Boolean(id));
+      }
+      setMyInspectionsChecked(restoredMyChecked);
 
-        // Restore switch state
-        if (restored.myInspectionsChecked !== undefined) {
-          setMyInspectionsChecked(Boolean(restored.myInspectionsChecked));
-        } else {
-          // Get from primary_officer filter
-          const primaryOfficer = restored.primary_officer_ids;
-          const derivedState =
-            Array.isArray(primaryOfficer) &&
-            primaryOfficer.some((id) => Boolean(id));
-          setMyInspectionsChecked(derivedState);
-        }
+      // Reconcile the cached filters with the toggle so they can never disagree.
+      const staffId = currentStaff.id.toString();
+      const baseColumnFilters = cachedColumnFilters.filter(
+        (f) => f.id !== "primary_officer"
+      );
+      const baseExternalFilters: Record<string, string[] | string> = {
+        ...restored,
+      };
+      delete baseExternalFilters.primary_officer_ids;
+
+      if (restoredMyChecked) {
+        setColumnFilters([
+          ...baseColumnFilters,
+          { id: "primary_officer", value: [staffId] },
+        ]);
+        setExternalFilters({
+          ...baseExternalFilters,
+          primary_officer_ids: [staffId],
+        });
+      } else {
+        setColumnFilters(baseColumnFilters);
+        setExternalFilters(baseExternalFilters);
       }
 
       if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0) {

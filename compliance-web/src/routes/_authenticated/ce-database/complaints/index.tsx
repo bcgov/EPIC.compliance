@@ -125,28 +125,50 @@ export function Complaints() {
 
     if (hasCache) {
       // Restore from cache
-      if (cachedColumnFilters.length > 0) {
-        setColumnFilters(cachedColumnFilters);
+      const restored = (cachedExternalFilters ?? {}) as Record<
+        string,
+        string[] | string
+      >;
+
+      if (restored.globalFilter) {
+        setGlobalFilter(restored.globalFilter as string);
       }
-      
-      if (cachedExternalFilters) {
-        const restored = cachedExternalFilters as Record<string, string[] | string>;
-        setExternalFilters(restored);
 
-        if (restored.globalFilter) {
-          setGlobalFilter(restored.globalFilter as string);
-        }
+      // The toggle is the source of truth for the "my complaints" filter.
+      let restoredMyChecked: boolean;
+      if (restored.myFilesChecked !== undefined) {
+        restoredMyChecked = Boolean(restored.myFilesChecked);
+      } else {
+        // Derive from the cached primary_officer filter (legacy cache)
+        const primaryOfficer = restored.primary_officer_ids;
+        restoredMyChecked =
+          Array.isArray(primaryOfficer) &&
+          primaryOfficer.some((id) => Boolean(id));
+      }
+      setMyFilesChecked(restoredMyChecked);
 
-        if (restored.myFilesChecked !== undefined) {
-          setMyFilesChecked(Boolean(restored.myFilesChecked));
-        } else {
-          // Get from primary officer filter
-          const primaryOfficer = restored.primary_officer_ids;
-          const derivedState =
-            Array.isArray(primaryOfficer) &&
-            primaryOfficer.some((id) => Boolean(id));
-          setMyFilesChecked(derivedState);
-        }
+      // Reconcile the cached filters with the toggle so they can never disagree.
+      const staffId = currentStaff.id.toString();
+      const baseColumnFilters = cachedColumnFilters.filter(
+        (f) => f.id !== "primary_officer_ids"
+      );
+      const baseExternalFilters: Record<string, string[] | string> = {
+        ...restored,
+      };
+      delete baseExternalFilters.primary_officer_ids;
+
+      if (restoredMyChecked) {
+        setColumnFilters([
+          ...baseColumnFilters,
+          { id: "primary_officer_ids", value: [staffId] },
+        ]);
+        setExternalFilters({
+          ...baseExternalFilters,
+          primary_officer_ids: [staffId],
+        });
+      } else {
+        setColumnFilters(baseColumnFilters);
+        setExternalFilters(baseExternalFilters);
       }
 
       if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0) {

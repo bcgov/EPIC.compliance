@@ -90,63 +90,58 @@ export function CaseFiles() {
 
     let restoredFilters = false;
 
-    // Restore column filters
-    if (cachedColumnFilters.length > 0) {
-      setColumnFilters(cachedColumnFilters);
-      restoredFilters = true;
-    }
-
     const hasCachedExternalFilters =
       cachedExternalFilters &&
       Object.keys(cachedExternalFilters).length > 0;
 
-    // Restore external filters
-    if (hasCachedExternalFilters) {
-      const restoredExternalFilters = cachedExternalFilters as Record<
+    // Restore cached filters
+    if (cachedColumnFilters.length > 0 || hasCachedExternalFilters) {
+      const restoredExternalFilters = (cachedExternalFilters ?? {}) as Record<
         string,
         string[] | string
       >;
-      setExternalFilters(restoredExternalFilters);
 
       // Restore global filter
       if (restoredExternalFilters.globalFilter) {
         setGlobalFilter(restoredExternalFilters.globalFilter as string);
       }
 
-      // Restore "My Files" switch state
+      // The toggle is the source of truth for the "My Files" filter.
+      let restoredSwitchState: boolean;
       if (restoredExternalFilters.myFilesChecked !== undefined) {
-        const restoredSwitchState = Boolean(
-          restoredExternalFilters.myFilesChecked
-        );
-        setMyFilesChecked(restoredSwitchState);
-
-        // Set up column filters for UI display if switch is ON
-        if (restoredSwitchState) {
-          setColumnFilters((prev) => {
-            const filtered = prev.filter((f) => f.id !== "primary_officer");
-            return [
-              ...filtered,
-              { id: "primary_officer", value: [currentStaff.id.toString()] },
-            ];
-          });
-        }
+        restoredSwitchState = Boolean(restoredExternalFilters.myFilesChecked);
       } else {
-        // Fallback: derive from primary_officer filter
+        // Fallback: derive from the cached primary_officer filter (legacy cache)
         const primaryOfficerFilter =
           restoredExternalFilters.primary_officer_ids || [];
-        const derivedSwitchState = primaryOfficerFilter.length > 0;
-        setMyFilesChecked(derivedSwitchState);
-
-        if (derivedSwitchState) {
-          setColumnFilters((prev) => {
-            const filtered = prev.filter((f) => f.id !== "primary_officer");
-            return [
-              ...filtered,
-              { id: "primary_officer", value: [currentStaff.id.toString()] },
-            ];
-          });
-        }
+        restoredSwitchState = primaryOfficerFilter.length > 0;
       }
+      setMyFilesChecked(restoredSwitchState);
+
+      // Reconcile the cached filters with the toggle so they can never disagree.
+      const staffId = currentStaff.id.toString();
+      const baseColumnFilters = cachedColumnFilters.filter(
+        (f) => f.id !== "primary_officer"
+      );
+      const baseExternalFilters: Record<string, string[] | string> = {
+        ...restoredExternalFilters,
+      };
+      delete baseExternalFilters.primary_officer_ids;
+
+      if (restoredSwitchState) {
+        setColumnFilters([
+          ...baseColumnFilters,
+          { id: "primary_officer", value: [staffId] },
+        ]);
+        setExternalFilters({
+          ...baseExternalFilters,
+          primary_officer_ids: [staffId],
+        });
+      } else {
+        setColumnFilters(baseColumnFilters);
+        setExternalFilters(baseExternalFilters);
+      }
+
       restoredFilters = true;
     }
 
