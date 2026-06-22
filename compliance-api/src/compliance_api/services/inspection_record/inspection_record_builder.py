@@ -425,6 +425,7 @@ class InspectionRecordDataBuilder:
                         .joinedload(InspectionReqSourceDetail.requirement_source),
                         joinedload(InspectionRequirementModel.agency)
                     )
+                    .order_by(InspectionRequirementModel.sort_order)
                     .all()
                 )
             if not self.data.get("project_details"):
@@ -895,6 +896,7 @@ class InspectionRecordDataBuilder:
     def _get_requirements_by_enforcement_action(self, requirements):
         """Group requirements by enforcement action ID."""
         grouped_requirements = {}
+        requirements = sorted(requirements, key=lambda r: r.sort_order)
 
         for requirement in requirements:
             # Get enforcement actions for this requirement
