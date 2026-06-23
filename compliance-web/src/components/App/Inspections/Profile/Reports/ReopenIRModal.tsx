@@ -5,6 +5,7 @@ import { FC } from "react";
 import {
   useResetInspectionRecord,
   useUpdateInspectionRecord,
+  useUpdateIRApproval,
 } from "@/hooks/useInspectionReports";
 import { useReportStore } from "./reportStore";
 import { InspectionRecord } from "@/models/InspectionRecord";
@@ -13,9 +14,10 @@ import { notify } from "@/store/snackbarStore";
 
 type ReopenIRModalProps = {
   onSubmit: (message: string) => void;
+  previousApprovalId?: number;
 };
 
-const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit }) => {
+const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit, previousApprovalId }) => {
   const { inspectionData, inspectionReportsData, setInspectionReportsData } =
     useReportStore();
 
@@ -31,6 +33,9 @@ const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit }) => {
 
   const { mutate: updateInspectionRecord, isPending } =
     useUpdateInspectionRecord(handleOnUpdateSuccess);
+
+  const { mutate: updateIRApproval } =
+    useUpdateIRApproval(handleOnUpdateSuccess);
 
   const { mutate: resetInspectionRecord } =
     useResetInspectionRecord(handleOnResetSuccess);
@@ -48,9 +53,18 @@ const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit }) => {
       inspectionRecordId: inspectionReportsData?.id ?? 0,
       updateRecord: {
         field_name: "ir_progress",
-        value: IRProgressEnum.FINAL_APPROVED,
+        value: IRProgressEnum.FINALIZING_RECORD,
       },
     });
+    updateIRApproval({
+       inspectionId: inspectionData?.id ?? 0,
+        inspectionRecordId: inspectionReportsData?.id ?? 0,
+        approvalId: previousApprovalId ?? 0,
+        approvalPayload: {
+          field_name: "is_active",
+          value: "false",
+        },
+    })
   };
 
   return (

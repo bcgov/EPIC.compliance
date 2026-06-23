@@ -125,6 +125,11 @@ class InspectionRecordApprovalService:
             date_report_sent = approval_update_data[field_name]
             date_expected_return = date_report_sent + timedelta(days=5)
             approval_update_data["date_expected_return"] = date_expected_return
+
+        if field_name == "is_active":
+            value = False if value in ["false", "False", False] else True
+            approval_update_data["is_active"] = value
+
         with session_scope() as session:
             ir_update_data = {}
             updated_approval = InspectionRecordApprovalModel.update_approval(
@@ -146,13 +151,14 @@ class InspectionRecordApprovalService:
                 ir_update_data["action_required_by_rp"] = ir_data.get(
                     "action_required_by_rp"
                 )
-            ir_update_data["ir_progress"] = IRProgressEnum.HOLDER_PRELIMINARY_REVIEW
-            # Update ir_progress to HOLDER_PRELIMINARY_REVIEW
-            InspectionRecordModel.update_inspection_record(
-                inspection_record_id=inspection_record_id,
-                ir_update_data=ir_update_data,
-                session=session,
-            )
+            if field_name != "is_active":
+                ir_update_data["ir_progress"] = IRProgressEnum.HOLDER_PRELIMINARY_REVIEW
+                # Update ir_progress to HOLDER_PRELIMINARY_REVIEW
+                InspectionRecordModel.update_inspection_record(
+                    inspection_record_id=inspection_record_id,
+                    ir_update_data=ir_update_data,
+                    session=session,
+                )
 
         return updated_approval
 

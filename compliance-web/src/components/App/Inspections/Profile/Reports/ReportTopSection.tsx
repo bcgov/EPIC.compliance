@@ -237,6 +237,7 @@ export default function ReportTopSection() {
               queryKey: ["inspection", inspectionData?.ir_number],
             });
           }}
+          previousApprovalId = {irApprovalsData?.[0]?.id ?? 0}
         />
       ),
     });
@@ -246,6 +247,7 @@ export default function ReportTopSection() {
     refetchInspectionReportsData,
     queryClient,
     inspectionData,
+    irApprovalsData,
   ]);
 
   const handleApproval = useCallback(

@@ -112,6 +112,13 @@ class UpdateInspectionRecordApprovalSchema(BaseSchema):
                     "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
                 },
             ),
+            "is_active": fields.Boolean(
+                metadata={
+                    "description": "Set to false when a record is reopened to indicate the approval is no \
+                        longer active."
+                },
+                required=True,
+            ),
         }
 
         field_name = data["field_name"]
