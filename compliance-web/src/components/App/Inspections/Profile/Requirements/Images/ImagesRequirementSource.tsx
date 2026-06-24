@@ -16,6 +16,7 @@ import {
 import { BCDesignTokens } from "epic.theme";
 import { useImageUpload } from "@/hooks/useImageUpload";
 import { RequirementImage, UploadedImageFile } from "@/models/Image";
+import { downscaleImage } from "@/utils/imageDownscale";
 
 type ImagesRequirementSourceProps = {
   uploadedImages: RequirementImage[];
@@ -32,6 +33,7 @@ const ImagesRequirementSource: React.FC<ImagesRequirementSourceProps> = ({
     null
   );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const previousPreviewUrlRef = useRef<string | null>(null);
 
   const handlePreviewEnter = (
@@ -84,14 +86,20 @@ const ImagesRequirementSource: React.FC<ImagesRequirementSourceProps> = ({
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = (event) => {
+    input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
-      if (file) {
+      if (!file) return;
+
+      setIsProcessing(true);
+      try {
+        const processedFile = await downscaleImage(file);
         uploadImage({
           inspectionId: inspectionId,
-          fileName: file.name,
-          file: file,
+          fileName: processedFile.name,
+          file: processedFile,
         });
+      } finally {
+        setIsProcessing(false);
       }
     };
     input.click();
@@ -101,6 +109,8 @@ const ImagesRequirementSource: React.FC<ImagesRequirementSourceProps> = ({
     setUploadedImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
+  const isBusy = isProcessing || isPending;
+
   return (
     <>
       <Stack direction={"row"} gap={2} alignItems={"center"} sx={{ my: 2 }}>
@@ -109,6 +119,7 @@ const ImagesRequirementSource: React.FC<ImagesRequirementSourceProps> = ({
           size="small"
           onClick={handleUploadImage}
           startIcon={<UploadRounded />}
+          disabled={isBusy}
         >
           Upload Image
         </Button>
@@ -117,8 +128,8 @@ const ImagesRequirementSource: React.FC<ImagesRequirementSourceProps> = ({
           the report.
         </Typography>
       </Stack>
-      {isPending && <CircularProgress size={20} />}
-      {!isPending && (
+      {isBusy && <CircularProgress size={20} />}
+      {!isBusy && (
         <Box
           sx={{
             maxHeight: "136px",

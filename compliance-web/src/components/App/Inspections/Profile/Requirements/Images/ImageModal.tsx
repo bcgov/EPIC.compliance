@@ -16,6 +16,7 @@ import { useImageUpload } from "@/hooks/useImageUpload";
 import dayjs from "dayjs";
 import dateUtils from "@/utils/dateUtils";
 import { ImageTypeEnum } from "@/components/App/Inspections/Profile/Requirements/RequirementUtils";
+import { downscaleImage } from "@/utils/imageDownscale";
 
 type ImageModalProps = {
   file?: File;
@@ -141,7 +142,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
     reset(defaultValues);
   }, [defaultValues, reset]);
 
-  const onSubmitHandler = (data: ImageSchemaType) => {
+  const onSubmitHandler = async (data: ImageSchemaType) => {
     if (requirementImage) {
       const formData = data as ImageFormData;
       const isOtherSelected =
@@ -160,10 +161,11 @@ const ImageModal: React.FC<ImageModalProps> = ({
         taken_by_text: isOtherSelected ? formData.takenByOther : undefined,
       });
     } else {
+      const processedFile = file ? await downscaleImage(file) : new File([], "");
       uploadImage({
         inspectionId,
-        fileName: file?.name ?? "",
-        file: file ?? new File([], ""),
+        fileName: processedFile.name,
+        file: processedFile,
       });
     }
   };
