@@ -258,7 +258,6 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
             <OrderApprovalButtons
               inspectionOrder={enforcementOrder}
               inspection={inspection}
-              isOrderClosed={isOrderClosed}
               caseFileId={inspection.case_file_id ?? 0}
               openEnforcementOrderDrawer={openEnforcementOrderDrawer}
             />

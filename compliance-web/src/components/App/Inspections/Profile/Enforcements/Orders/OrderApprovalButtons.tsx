@@ -35,13 +35,11 @@ const OrderApprovalButtons = ({
   inspectionOrder,
   inspection,
   caseFileId,
-  isOrderClosed,
   openEnforcementOrderDrawer,
 }: {
   inspectionOrder: InspectionOrder;
   inspection: Inspection;
   caseFileId: number;
-  isOrderClosed: boolean;
   openEnforcementOrderDrawer?: (order: InspectionOrder) => void;
 }) => {
   const { setOpen, setClose } = useModal();
@@ -208,40 +206,25 @@ const OrderApprovalButtons = ({
     [latestOrder]
   );
 
-  const isShowRescindButton = useMemo(
-    () => {
-      if (latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
-        latestOrder.order_status?.id === OrderStatusEnum.OPEN) {
-        // Only show rescind button if you are the primary officer or superuser
-        // in case if the inspection is closed
-        // isReadOnly true means the Order is in closed state
-        if (isOrderClosed || inspection.inspection_status === InspectionStatusEnum.CLOSED) {
-          return isPrimaryOfficerOrSuperUser;
-        }
-        return true;
-      }
-    return false;
-    },
-    [latestOrder, inspection, isOrderClosed, isPrimaryOfficerOrSuperUser]
+  const isOrderIssuedAndOpen = useMemo(
+    () =>
+      latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
+      latestOrder.order_status?.id === OrderStatusEnum.OPEN,
+    [latestOrder]
   );
-  const isShowCloseButton = useMemo(
-    () => {
-      if (latestOrder?.order_progress?.id === OrderProgressEnum.ISSUED &&
-        latestOrder.order_status?.id === OrderStatusEnum.OPEN) {
-        // Do not show close button if the inspection is open and readonly is true
-        if (inspection.inspection_status === InspectionStatusEnum.OPEN && isOrderClosed) {
-          return false;
-        }
-        // Show close button if the inspection is closed and readonly is true
-        if (inspection.inspection_status === InspectionStatusEnum.CLOSED && isOrderClosed) {
-          return true;
-        }
-        return true;
-      }
+
+  const isShowRescindButton = useMemo(() => {
+    if (!isOrderIssuedAndOpen) {
       return false;
-    },
-    [latestOrder, inspection, isOrderClosed]
-  );
+    }
+    // When the inspection is closed, only the primary officer or superuser may rescind.
+    if (inspection.inspection_status === InspectionStatusEnum.CLOSED) {
+      return isPrimaryOfficerOrSuperUser;
+    }
+    return true;
+  }, [isOrderIssuedAndOpen, inspection, isPrimaryOfficerOrSuperUser]);
+
+  const isShowCloseButton = isOrderIssuedAndOpen;
   const isShowReopenButton = useMemo(
     () =>
       latestOrder?.order_status?.id === OrderStatusEnum.CLOSED &&
