@@ -270,44 +270,48 @@ class CaseFileService:
                         unapproved_project_update_data, commit=False
                     )
 
-            # Generate CR entries for officer changes
-            # Fetch new primary officer by ID if it changed
-            if new_primary_officer_id and new_primary_officer_id != old_primary_officer_id:
-                new_primary_officer = StaffUserModel.find_by_id(new_primary_officer_id)
-            else:
-                new_primary_officer = old_primary_officer
-            new_other_officers = _get_staff_users_by_ids(officer_ids) if officer_ids is not None else old_other_officers
-
-            # Generate primary officer change entries
-            primary_officer_entries = _generate_primary_officer_cr_entries(
-                case_file_id=case_file_id,
-                old_primary_officer=old_primary_officer,
-                new_primary_officer=new_primary_officer,
-                context_type=ContextEnum.CASE_FILE,
-                context_id=case_file_id,
-                key=case_file.case_file_number,
-                key_context=ContextEnum.CASE_FILE,
-            )
-            for entry in primary_officer_entries:
-                ContinuationReportService.create(
-                    entry, sys_generated=True, ho_session=session
+            if not case_file_obj["is_deleted"]:
+                # Fetch new primary officer by ID if it changed
+                if new_primary_officer_id and new_primary_officer_id != old_primary_officer_id:
+                    new_primary_officer = StaffUserModel.find_by_id(new_primary_officer_id)
+                else:
+                    new_primary_officer = old_primary_officer
+                new_other_officers = (
+                    _get_staff_users_by_ids(officer_ids)
+                    if officer_ids is not None
+                    else old_other_officers
                 )
 
-            # Generate other officers change entries
-            if officer_ids is not None:
-                other_officer_entries = _generate_other_officers_cr_entries(
+                # Generate primary officer change entries
+                primary_officer_entries = _generate_primary_officer_cr_entries(
                     case_file_id=case_file_id,
-                    old_officers=old_other_officers,
-                    new_officers=new_other_officers,
+                    old_primary_officer=old_primary_officer,
+                    new_primary_officer=new_primary_officer,
                     context_type=ContextEnum.CASE_FILE,
                     context_id=case_file_id,
                     key=case_file.case_file_number,
                     key_context=ContextEnum.CASE_FILE,
                 )
-                for entry in other_officer_entries:
+                for entry in primary_officer_entries:
                     ContinuationReportService.create(
                         entry, sys_generated=True, ho_session=session
                     )
+
+                # Generate other officers change entries
+                if officer_ids is not None:
+                    other_officer_entries = _generate_other_officers_cr_entries(
+                        case_file_id=case_file_id,
+                        old_officers=old_other_officers,
+                        new_officers=new_other_officers,
+                        context_type=ContextEnum.CASE_FILE,
+                        context_id=case_file_id,
+                        key=case_file.case_file_number,
+                        key_context=ContextEnum.CASE_FILE,
+                    )
+                    for entry in other_officer_entries:
+                        ContinuationReportService.create(
+                            entry, sys_generated=True, ho_session=session
+                        )
 
             return updated_case_file
 
