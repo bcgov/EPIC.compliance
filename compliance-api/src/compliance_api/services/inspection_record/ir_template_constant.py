@@ -96,7 +96,7 @@ ENFORCEMENT_SUMMARY = {
     further information. The findings for {{ sort_order_line }} may be referred to a decision maker
     for consideration of an Administrative Penalty.</p>""",
     "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of
-    {{ eac }} was refered to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
+    {{ eac }} was referred to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
     information.</p>""",
     "DEFAULT": """<p class="editor-paragraph" dir="ltr">The EAO CEB may inspect to determine if
     {{ project_name }} has been brought into compliance with these requirements. Continued non-compliance
