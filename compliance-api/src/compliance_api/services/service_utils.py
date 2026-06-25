@@ -448,10 +448,12 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
                 == EnforcementActionOptionEnum.REFERRAL_TO_ANOTHER_AGENCY.value
                 for action in enforcement_actions
             ):
-                result = (
-                    " - ".join([action.name for action in enforcement_actions])
-                    + " - "
-                    + requirement.agency.name
+                result = " - ".join(
+                    f"Referred to {requirement.agency.name}"
+                    if action.id
+                    == EnforcementActionOptionEnum.REFERRAL_TO_ANOTHER_AGENCY.value
+                    else action.name
+                    for action in enforcement_actions
                 )
             if not result:
                 result = "".join([action.name for action in enforcement_actions])
