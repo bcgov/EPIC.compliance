@@ -49,6 +49,15 @@ def _add_image_to_cell(cell, image_url, caption_text, error_prefix="image"):
         current_app.logger.info(f"Failed to load {error_prefix}: {caption_text}, from URL: {image_url}, error: {e}")
         return False
 
+    except Exception as e:  # noqa: B902
+        # Prevent a single bad image from aborting an otherwise successful document.
+        para = cell.add_paragraph()
+        para.text = f"[Failed to load {error_prefix}] {caption_text}"
+        current_app.logger.exception(
+            f"Unexpected error loading {error_prefix}: {caption_text}, from URL: {image_url}, error: {e}"
+        )
+        return False
+
     finally:
         if image_stream is not None:
             image_stream.close()

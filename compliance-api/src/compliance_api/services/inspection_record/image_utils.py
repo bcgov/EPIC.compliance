@@ -12,13 +12,9 @@ MAX_DOWNLOAD_SIZE = 50 * 1024 * 1024  # 50MB
 CHUNK_SIZE = 8192  # 8KB chunks for streaming
 TARGET_DPI = 300  # DPI for document images
 JPEG_QUALITY = 92  # Quality for JPEG compression
-# Sanity ceiling on source pixels (width * height), checked against the image
-# header *before* decoding. This is a backstop against absurd decompression
-# bombs in formats that decode the full raster (PNG/TIFF). It is deliberately
-# generous so legitimate high-DPI scans (e.g. 1200-DPI Letter ~135M px) pass;
-# real memory safety comes from draft-mode decoding in optimize_image_for_docx,
-# which downscales JPEGs during decode so the full raster is never allocated.
-MAX_IMAGE_PIXELS = 250_000_000
+# Sanity ceiling on source pixels (width * height). Covers most realistic scans
+# (600 DPI on letter) and prevents excessive memory usage
+MAX_IMAGE_PIXELS = 50_000_000
 Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 
@@ -50,36 +46,27 @@ def download_image_stream(url: str, timeout: int = DEFAULT_TIMEOUT) -> BytesIO:
         ImageTooLargeError: If image exceeds MAX_DOWNLOAD_SIZE
     """
     try:
-        response = requests.get(url, stream=True, timeout=timeout)
-        response.raise_for_status()
-
-        # Check content-length if available
-        content_length = response.headers.get('content-length')
-        if content_length and int(content_length) > MAX_DOWNLOAD_SIZE:
-            response.close()
-            raise ImageTooLargeError(
-                f"Image size {int(content_length)} bytes exceeds limit of {MAX_DOWNLOAD_SIZE} bytes"
-            )
-
-        # Stream download with size tracking
-        image_data = BytesIO()
-        downloaded_size = 0
-
-        for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
-            downloaded_size += len(chunk)
-            if downloaded_size > MAX_DOWNLOAD_SIZE:
-                image_data.close()
-                response.close()
+        with requests.get(url, stream=True, timeout=timeout) as response:
+            response.raise_for_status()
+            content_length = response.headers.get('content-length')
+            if content_length and int(content_length) > MAX_DOWNLOAD_SIZE:
                 raise ImageTooLargeError(
-                    f"Image size exceeds limit of {MAX_DOWNLOAD_SIZE} bytes"
+                    f"Image size {int(content_length)} bytes exceeds limit of {MAX_DOWNLOAD_SIZE} bytes"
                 )
-            image_data.write(chunk)
-
-        image_data.seek(0)
-        return image_data
-
+            image_data = BytesIO()
+            downloaded_size = 0
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                downloaded_size += len(chunk)
+                if downloaded_size > MAX_DOWNLOAD_SIZE:
+                    image_data.close()
+                    raise ImageTooLargeError(
+                        f"Image size exceeds limit of {MAX_DOWNLOAD_SIZE} bytes"
+                    )
+                image_data.write(chunk)
+            image_data.seek(0)
+            return image_data
     except RequestException as e:
-        raise ImageDownloadError(f"Failed to download image: {e}") from e
+        raise ImageDownloadError(f"Failed to download image. URL: {url}, Error: {e}") from e
 
 
 def optimize_image_for_docx(
@@ -104,13 +91,16 @@ def optimize_image_for_docx(
         BytesIO stream containing the optimized image
     """
     target_width_px = int(target_width_inches * dpi)
+    try:
+        img_ctx = Image.open(image_stream)
+    except Image.DecompressionBombError as e:
+        raise ImageTooLargeError(f"Image exceeds decompression bomb limit: {e}") from e
 
-    with Image.open(image_stream) as img:
+    with img_ctx as img:
         original_width, original_height = img.size
 
-        # Backstop check against absurd images BEFORE decoding.
-        # img.size is available without a full raster decode. this
-        # rejects pathological non-JPEG bombs (worker OOM / DoS).
+        # Backstop check against absurd images BEFORE decoding to prevent excessive memory usage.
+        # Rejects pathological non-JPEG bombs (worker OOM / DoS).
         if original_width * original_height > MAX_IMAGE_PIXELS:
             raise ImageTooLargeError(
                 f"Image dimensions {original_width}x{original_height} "
@@ -121,8 +111,7 @@ def optimize_image_for_docx(
         # Only resize if image is larger than target.
         if original_width > target_width_px:
             # thumbnail() shrinks in place preserving aspect ratio. For JPEG it
-            # downscales during decode so a large scan never materializes full-
-            # resolution in memory.
+            # downscales during decode.
             img.thumbnail((target_width_px, original_height), Image.LANCZOS)
 
         # Convert RGBA to RGB for JPEG compatibility (handles transparency)
