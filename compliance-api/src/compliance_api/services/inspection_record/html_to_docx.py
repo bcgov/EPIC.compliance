@@ -121,15 +121,19 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
     """Add text with inline formatting (bold, italic) to a container, creating new paragraphs for <br> tags."""
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else container.add_paragraph()
+    at_para_start = True
 
     def process_node(node, inherited_bold=False, inherited_italic=False):
         """Recursively process nodes, tracking inherited formatting."""
-        nonlocal para
+        nonlocal para, at_para_start
 
         if isinstance(node, str):
             # Replace 2+ spaces with single space
             text = re.sub(r' {2,}', ' ', node)
+            if at_para_start:
+                text = text.lstrip()
             if text:
+                at_para_start = False
                 run = para.add_run(text)
                 if inherited_bold:
                     run.bold = True
@@ -160,6 +164,7 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
                     )
                     if has_more_content:
                         para = container.add_paragraph()
+                        at_para_start = True
                 except ValueError:
                     pass
         elif hasattr(node, 'children'):
