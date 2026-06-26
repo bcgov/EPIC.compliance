@@ -320,11 +320,23 @@ class CaseFileLink(BaseModelVersioned):
 
     @classmethod
     @with_session
-    def delete_link(cls, source_id, taget_id, session=None):
+    def delete_link(cls, source_id, target_id, session=None):
         """Delete the case file link."""
         links = cls.query.filter(
             cls.source_case_id == source_id,
-            cls.target_case_id == taget_id,
+            cls.target_case_id == target_id,
+            cls.is_deleted.is_(False),
+        ).all()
+        for link in links:
+            link.update(DELETE_DIC_PARAMS, commit=False)
+        session.flush()
+
+    @classmethod
+    @with_session
+    def delete_all_links(cls, case_file_id, session=None):
+        """Delete all links associated with the given case file."""
+        links = cls.query.filter(
+            (cls.source_case_id == case_file_id) | (cls.target_case_id == case_file_id),
             cls.is_deleted.is_(False),
         ).all()
         for link in links:

@@ -458,10 +458,20 @@ class CaseFileService:
             source_id=case_file_id, target_id=unlink_case_file_id
         )
         if not existing_link:
-            raise UnprocessableEntityError("Case file links doesn't exist")
+            raise UnprocessableEntityError("Case file link doesn't exist")
         with session_scope() as session:
             _unlink(source=case_file, target=unlink_case_file, session=session)
             _unlink(source=unlink_case_file, target=case_file, session=session)
+
+    @classmethod
+    def unlink_all(cls, case_file, session=None):
+        """Unlink all case files associated with the given case file."""
+        _access_check_for_update(case_file)
+        if session is not None:
+            CaseFileLinkModel.delete_all_links(case_file.id, session)
+        else:
+            with session_scope() as new_session:
+                CaseFileLinkModel.delete_all_links(case_file.id, new_session)
 
     @classmethod
     def get_open_enforcement_actions(cls, case_file_id: int) -> dict:
@@ -871,7 +881,7 @@ def _apply_case_file_pagination(query, args):
 def _unlink(source, target, session):
     """Unlink the case file."""
     CaseFileLinkModel.delete_link(
-        source_id=source.id, taget_id=target.id, session=session
+        source_id=source.id, target_id=target.id, session=session
     )
 
 

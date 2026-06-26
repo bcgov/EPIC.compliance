@@ -16,6 +16,7 @@ class CaseFileAggregateService:
         if not case_file:
             return None
         with session_scope() as session:
+            case_file = session.merge(case_file)
             CaseFileService.update(
                 case_file_id,
                 {"is_deleted": True, "is_active": False, "officer_ids": []},
@@ -25,4 +26,5 @@ class CaseFileAggregateService:
             ContinuationReportService.delete_by_case_file(case_file_id, session)
             InspectionService.delete_by_case_file(case_file_id, session)
             ComplaintService.delete_by_case_file(case_file_id, session)
+            CaseFileService.unlink_all(case_file, session)
         return case_file
