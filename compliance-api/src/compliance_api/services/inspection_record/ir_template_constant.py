@@ -99,7 +99,7 @@ ENFORCEMENT_SUMMARY = {
     {{ eac }} was referred to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
     information.</p>""",
     "DEFAULT": """<p class="editor-paragraph" dir="ltr">The EAO CEB may inspect to determine if
-    {{ project_name }} has been brought into compliance with these requirements. Continued non-compliance
+    the {{ project_name }} Project has been brought into compliance with these requirements. Continued non-compliance
     with these requirements may result in additional enforcement under the <i>{{ act }}</i> ({{ act_year }}).</p>""",
 }
 
