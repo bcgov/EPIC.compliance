@@ -98,9 +98,9 @@ export function Inspections() {
   const [columnFilters, setColumnFilters] = useState<
     MRT_TableState<Inspection>["columnFilters"]
   >([]);
-  
+
   const [globalFilter, setGlobalFilter] = useState<string>("");
-  
+
   const [externalFilters, setExternalFilters] = useState<
     Record<string, string[] | string>
   >({});
@@ -116,6 +116,19 @@ export function Inspections() {
   const cachedExternalFilters = getExternalFilters(inspectionsColumnFiltersCacheKey);
   const cachedSorting = getSorting(inspectionsColumnFiltersCacheKey);
 
+
+  const isOnlyCurrentStaff = useCallback(
+    (officerValue: unknown): boolean => {
+      if (!currentStaff) return false;
+      const staffId = currentStaff.id.toString();
+      return (
+        Array.isArray(officerValue) &&
+        officerValue.length === 1 &&
+        String(officerValue[0]) === staffId
+      );
+    },
+    [currentStaff]
+  );
 
   // Initialization effect
   useEffect(() => {
@@ -146,42 +159,15 @@ export function Inspections() {
         setGlobalFilter(restored.globalFilter as string);
       }
 
-      // The toggle is the source of truth for the "my inspections" filter.
-      let restoredMyChecked: boolean;
-      if (restored.myInspectionsChecked !== undefined) {
-        restoredMyChecked = Boolean(restored.myInspectionsChecked);
-      } else {
-        // Derive from the cached primary_officer filter (legacy cache)
-        const primaryOfficer = restored.primary_officer_ids;
-        restoredMyChecked =
-          Array.isArray(primaryOfficer) &&
-          primaryOfficer.some((id) => Boolean(id));
-      }
-      setMyInspectionsChecked(restoredMyChecked);
+      setColumnFilters(cachedColumnFilters);
+      setExternalFilters(restored);
 
-      // Reconcile the cached filters with the toggle so they can never disagree.
-      const staffId = currentStaff.id.toString();
-      const baseColumnFilters = cachedColumnFilters.filter(
-        (f) => f.id !== "primary_officer"
+      // Derive the toggle from the filters: it is on if and only if the
+      // primary officer filter holds exactly the current user.
+      const officerFilter = cachedColumnFilters.find(
+        (f) => f.id === "primary_officer"
       );
-      const baseExternalFilters: Record<string, string[] | string> = {
-        ...restored,
-      };
-      delete baseExternalFilters.primary_officer_ids;
-
-      if (restoredMyChecked) {
-        setColumnFilters([
-          ...baseColumnFilters,
-          { id: "primary_officer", value: [staffId] },
-        ]);
-        setExternalFilters({
-          ...baseExternalFilters,
-          primary_officer_ids: [staffId],
-        });
-      } else {
-        setColumnFilters(baseColumnFilters);
-        setExternalFilters(baseExternalFilters);
-      }
+      setMyInspectionsChecked(isOnlyCurrentStaff(officerFilter?.value));
 
       if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0) {
         if (cachedSorting[0]?.id) {
@@ -195,7 +181,7 @@ export function Inspections() {
         STAFF_USER_POSITION.SENIOR_OFFICER,
       ];
 
-      const defaultChecked = Boolean(currentStaff.position_id && 
+      const defaultChecked = Boolean(currentStaff.position_id &&
         officerPositions.includes(currentStaff.position_id));
       const defaults = createDefaultFilters(currentStaff.id.toString(), defaultChecked);
       setExternalFilters(defaults.externalFilters);
@@ -204,11 +190,11 @@ export function Inspections() {
     }
 
     setIsRestored(true);
-  }, [authLoading, currentStaffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated]);
+  }, [authLoading, currentStaffLoading, currentStaff, cachedColumnFilters, cachedExternalFilters, cachedSorting, hasHydrated, isOnlyCurrentStaff]);
 
   // Debounced cache persistence - only after initialization
   const cacheTimeoutRef = useRef<NodeJS.Timeout>();
-  
+
   useEffect(() => {
     // Only cache after filters are initialized
     if (!filtersInitialized.current || !isRestored) return;
@@ -226,7 +212,6 @@ export function Inspections() {
         {
           ...externalFilters,
           globalFilter,
-          myInspectionsChecked,
         },
         sorting
       );
@@ -237,7 +222,7 @@ export function Inspections() {
         clearTimeout(cacheTimeoutRef.current);
       }
     };
-  }, [columnFilters, externalFilters, globalFilter, sorting, myInspectionsChecked, isRestored]);
+  }, [columnFilters, externalFilters, globalFilter, sorting, isRestored]);
 
   // Call custom hooks at top level
   const convertFiltersToQueryParams = useConvertFiltersToQueryParams(externalFilters);
@@ -264,7 +249,7 @@ export function Inspections() {
 
   // Fetch data
   const { data, isLoading } = useInspectionsData(queryParams);
-  
+
   const inspectionsList = useMemo(() => data?.items ?? [], [data?.items]);
 
   // Use the custom hook for table handlers
@@ -285,28 +270,30 @@ export function Inspections() {
   // Column filter handler that enforces "My Inspections" toggle
   const handleColumnFiltersChange = useCallback(
     (updater: MRT_Updater<MRT_ColumnFiltersState>) => {
-      setColumnFilters((prevFilters) => {
-        const newFilters = typeof updater === 'function' ? updater(prevFilters) : updater;
-        
-        // If "My Inspections" is checked, ensure primary_officer filter is present
-        if (myInspectionsChecked && currentStaff) {
-          const hasPrimaryOfficerFilter = newFilters.some(
-            (filter) => filter.id === "primary_officer"
-          );
-          
-          if (!hasPrimaryOfficerFilter) {
-            const primaryOfficerFilter = {
-              id: "primary_officer",
-              value: [currentStaff.id.toString()],
-            };
-            return [...newFilters, primaryOfficerFilter];
-          }
+      const newFilters =
+        typeof updater === "function" ? updater(columnFilters) : updater;
+      setColumnFilters(newFilters);
+
+      // The filters are the source of truth: keep the toggle on only while the
+      // primary officer filter holds exactly the current user.
+      const officerFilter = newFilters.find(
+        (filter) => filter.id === "primary_officer"
+      );
+      setMyInspectionsChecked(isOnlyCurrentStaff(officerFilter?.value));
+
+      // Mirror the officer column filter into the external filter so a stale
+      // external value can't override it when building the query params.
+      setExternalFilters((prev) => {
+        const next = { ...prev };
+        if (Array.isArray(officerFilter?.value) && officerFilter.value.length > 0) {
+          next.primary_officer_ids = officerFilter.value as string[];
+        } else {
+          delete next.primary_officer_ids;
         }
-        
-        return newFilters;
+        return next;
       });
     },
-    [currentStaff, myInspectionsChecked]
+    [columnFilters, isOnlyCurrentStaff]
   );
 
   // Optimize My Inspections switch handler

@@ -35,6 +35,7 @@ import type {
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import { AppConfig } from "@/utils/config";
+import { STAFF_USER_POSITION } from "@/utils/constants";
 import { MQ } from "@/styles/responsive";
 
 export const Route = createFileRoute(
@@ -54,7 +55,7 @@ function Requirements() {
   const { isLoading: authLoading } = useAuth();
   const { currentStaff, isLoading: currentStaffLoading } = useCurrentStaffUser();
   const isMdToLg = useMediaQuery(MQ.mdToLg);
-    
+
   // State for "My Requirements" switch - default to true for first-time users
   const [myRequirementsChecked, setMyRequirementsChecked] = useState(true);
   const [sorting, setSorting] = useState<MRT_SortingState>([
@@ -85,6 +86,18 @@ function Requirements() {
   const cachedExternalFilters = getExternalFilters(requirementsColumnFiltersCacheKey);
   const cachedSorting = getSorting(requirementsColumnFiltersCacheKey);
 
+  const isOnlyCurrentStaff = useCallback(
+    (officerValue: string[] | string | undefined): boolean => {
+      if (!currentStaff) return false;
+      const staffId = currentStaff.id.toString();
+      return (
+        Array.isArray(officerValue) &&
+        officerValue.length === 1 &&
+        String(officerValue[0]) === staffId
+      );
+    },
+    [currentStaff]
+  );
 
   // Initialize filters only once when all data is ready
   useEffect(() => {
@@ -107,56 +120,45 @@ function Requirements() {
 
     if (hasCachedFilters) {
       // Restore from cache
-      if (cachedColumnFilters.length > 0) {
-        setColumnFilters(cachedColumnFilters);
-      }
-      
-      if (cachedExternalFilters) {
-        const restoredExternalFilters = cachedExternalFilters as Record<
-          string,
-          string[] | string
-        >;
-        
-        // Restore external filters
-        setExternalFilters(restoredExternalFilters);
+      const restoredExternalFilters = (cachedExternalFilters ?? {}) as Record<
+        string,
+        string[] | string
+      >;
 
-        // Restore switch state
-        if (restoredExternalFilters.myRequirementsChecked !== undefined) {
-          setMyRequirementsChecked(Boolean(restoredExternalFilters.myRequirementsChecked));
-        } else {
-          // Derive from primary_officer filter
-          const primaryOfficer = restoredExternalFilters.primary_officer_ids;
-          const derivedState =
-            Array.isArray(primaryOfficer) &&
-            primaryOfficer.some((id) => Boolean(id));
-          setMyRequirementsChecked(derivedState);
-        }
-
-        // Restore global filter
-        if (restoredExternalFilters.globalFilter) {
-          setGlobalFilter(restoredExternalFilters.globalFilter as string);
-        }
+      if (restoredExternalFilters.globalFilter) {
+        setGlobalFilter(restoredExternalFilters.globalFilter as string);
       }
+
+      setColumnFilters(cachedColumnFilters);
+      setExternalFilters(restoredExternalFilters);
+
+      setMyRequirementsChecked(
+        isOnlyCurrentStaff(restoredExternalFilters.primary_officer_id)
+      );
 
       // Restore sorting
       if (cachedSorting && Array.isArray(cachedSorting) && cachedSorting.length > 0 && cachedSorting[0]?.id) {
         setSorting(cachedSorting);
       }
     } else {
-      // No cached filters - apply default "My Requirements" filter
-      const defaultExternalFilters = {
-        primary_officer_ids: [currentStaff.id.toString()],
-      };
-      const defaultColumnFilters = [
-        {
-          id: "primary_officer",
-          value: [currentStaff.id.toString()],
-        },
+      // filter is on by default only for officer positions.
+      const officerPositions = [
+        STAFF_USER_POSITION.OFFICER,
+        STAFF_USER_POSITION.SENIOR_OFFICER,
       ];
+      const defaultChecked = Boolean(
+        currentStaff.position_id &&
+          officerPositions.includes(currentStaff.position_id)
+      );
+      const staffId = currentStaff.id.toString();
 
-      setExternalFilters(defaultExternalFilters);
-      setColumnFilters(defaultColumnFilters);
-      setMyRequirementsChecked(true);
+      setExternalFilters(
+        defaultChecked ? { primary_officer_id: [staffId] } : {}
+      );
+      setColumnFilters(
+        defaultChecked ? [{ id: "primary_officer", value: [staffId] }] : []
+      );
+      setMyRequirementsChecked(defaultChecked);
     }
 
     setIsRestored(true);
@@ -168,6 +170,7 @@ function Requirements() {
     cachedExternalFilters,
     cachedSorting,
     hasHydrated,
+    isOnlyCurrentStaff,
   ]);
 
   // Cache filters when they change
@@ -188,7 +191,6 @@ function Requirements() {
         columnFilters,
         {
           ...externalFilters,
-          myRequirementsChecked,
           globalFilter,
         },
         sorting
@@ -200,7 +202,7 @@ function Requirements() {
         clearTimeout(cacheTimeoutRef.current);
       }
     };
-  }, [columnFilters, externalFilters, myRequirementsChecked, globalFilter, sorting, isRestored]);
+  }, [columnFilters, externalFilters, globalFilter, sorting, isRestored]);
 
   const convertFiltersToQueryParams = useConvertFiltersToQueryParams(externalFilters);
 
@@ -242,37 +244,32 @@ function Requirements() {
     setPagination,
   });
 
-// Column filter handler that enforces "My Requirements" toggle
+  // Column filter handler that keeps the "My Requirements" toggle in sync
   const handleColumnFiltersChange = useCallback(
     (updater: MRT_Updater<MRT_ColumnFiltersState>) => {
-      setColumnFilters((prevFilters) => {
-        const newFilters = typeof updater === 'function' ? updater(prevFilters) : updater;
-        
-        // If "My Requirements" is checked, ensure primary_officer filter is present
-        if (myRequirementsChecked && currentStaff) {
-          const hasPrimaryOfficerFilter = newFilters.some(
-            (filter) => filter.id === "primary_officer"
-          );
-          
-          // If user removed the primary_officer filter, re-add it
-          if (!hasPrimaryOfficerFilter) {
-            const primaryOfficerFilter = {
-              id: "primary_officer",
-              value: [currentStaff.id.toString()],
-            };
-            // Update external filters to keep them in sync
-            setExternalFilters((prev) => ({
-              ...prev,
-              primary_officer_id: [currentStaff.id.toString()],
-            }));
-            return [...newFilters, primaryOfficerFilter];
-          }
+      const newFilters =
+        typeof updater === "function" ? updater(columnFilters) : updater;
+      setColumnFilters(newFilters);
+
+      const officerFilter = newFilters.find(
+        (filter) => filter.id === "primary_officer"
+      );
+      setMyRequirementsChecked(isOnlyCurrentStaff(officerFilter?.value));
+
+      // The query is built from the external primary_officer_id filter, so
+      // mirror the officer column filter into it; otherwise changing the
+      // column filter would have no effect on the rows returned.
+      setExternalFilters((prev) => {
+        const next = { ...prev };
+        if (Array.isArray(officerFilter?.value) && officerFilter.value.length > 0) {
+          next.primary_officer_id = officerFilter.value as string[];
+        } else {
+          delete next.primary_officer_id;
         }
-        
-        return newFilters;
+        return next;
       });
     },
-    [myRequirementsChecked, currentStaff]
+    [columnFilters, isOnlyCurrentStaff]
   );
 
   const handleExternalFilterChange = useCallback(
@@ -282,8 +279,11 @@ function Requirements() {
         [filterId]: value,
       }));
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+      if (filterId === "primary_officer_id") {
+        setMyRequirementsChecked(isOnlyCurrentStaff(value));
+      }
     },
-    []
+    [isOnlyCurrentStaff]
   );
 
   const handleClearAllFilters = useCallback(() => {
