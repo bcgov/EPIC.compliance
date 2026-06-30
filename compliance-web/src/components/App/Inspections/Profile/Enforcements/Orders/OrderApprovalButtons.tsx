@@ -166,8 +166,19 @@ const OrderApprovalButtons = ({
     });
   }, [setOpen, staffData, onSendForApprovalSubmitHandler, isPending]);
 
+  const onStatusUpdateSuccess = useCallback(
+    (data: InspectionOrder) => {
+      const message =
+        data?.order_status?.id === OrderStatusEnum.CLOSED
+          ? "Order closed"
+          : "Order reopened";
+      refetchDataAndClose(message);
+    },
+    [refetchDataAndClose]
+  );
+
   const { mutate: updateOrderStatus } =
-    useUpdateOrderStatus(refetchDataAndClose);
+    useUpdateOrderStatus(onStatusUpdateSuccess);
 
   const isInDeputyReview = useMemo(
     () => latestOrder.order_progress?.id === OrderProgressEnum.DEPUTY_REVIEW,
