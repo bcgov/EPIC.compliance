@@ -2,7 +2,7 @@ import { useStaffUsersData } from "@/hooks/useStaff";
 import { SendRounded } from "@mui/icons-material";
 import { Box, Button } from "@mui/material";
 import { SendForApprovalFormType } from "@/components/App/Inspections/Profile/SendForApprovalModal";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import SendForApprovalModal from "@/components/App/Inspections/Profile/SendForApprovalModal";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
@@ -166,16 +166,15 @@ const OrderApprovalButtons = ({
     });
   }, [setOpen, staffData, onSendForApprovalSubmitHandler, isPending]);
 
-  const onStatusUpdateSuccess = useCallback(
-    (data: InspectionOrder) => {
-      const message =
-        data?.order_status?.id === OrderStatusEnum.CLOSED
-          ? "Order closed"
-          : "Order reopened";
-      refetchDataAndClose(message);
-    },
-    [refetchDataAndClose]
-  );
+  const pendingStatusRef = useRef<OrderStatusEnum>();
+
+  const onStatusUpdateSuccess = useCallback(() => {
+    const message =
+      pendingStatusRef.current === OrderStatusEnum.CLOSED
+        ? "Order closed"
+        : "Order reopened";
+    refetchDataAndClose(message);
+  }, [refetchDataAndClose]);
 
   const { mutate: updateOrderStatus } =
     useUpdateOrderStatus(onStatusUpdateSuccess);
@@ -316,6 +315,7 @@ const OrderApprovalButtons = ({
             description={description ?? ""}
             confirmButtonText={confirmButtonText}
             onConfirm={() => {
+              pendingStatusRef.current = status;
               updateOrderStatus({
                 inspectionOrderId: latestOrder.id ?? 0,
                 statusPayload: {
