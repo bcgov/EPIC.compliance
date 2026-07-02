@@ -11,6 +11,10 @@ const fetchStaffUsers = (): Promise<StaffUser[]> => {
   return request({ url: "/staff-users/active" });
 };
 
+const fetchStaffUsersFull = (): Promise<StaffUser[]> => {
+  return request({ url: "/staff-users" });
+};
+
 /** FETCH users from AUTH API */
 const fetchAuthUsers = (): Promise<AuthUser[]> => {
   return requestAuthAPI({ url: "/users" });
@@ -59,6 +63,29 @@ export const useStaffUsersData = (filters: {
   });
 };
 
+export const useStaffUsersFullData = (filters: {
+  isActive?: boolean; // filter out inactive users
+  otherPositions?: boolean; // filter out other positions
+} = {
+  isActive: true,
+  otherPositions: true,
+}) => {
+  return useQuery({
+    queryKey: ["staff-users-full", filters],
+    queryFn: async () => {
+      let staffUsers = await fetchStaffUsersFull();
+      staffUsers = staffUsers.sort((a, b) => a.name.localeCompare(b.name));
+      return staffUsers.filter(
+        (p) =>
+          (filters?.isActive ? p.is_active === filters.isActive : true) &&
+          (filters?.otherPositions
+            ? p.position_id !== STAFF_USER_POSITION.OTHER
+            : true)
+      );
+    },
+  });
+};
+
 export const useAuthUsersData = () => {
   return useStaticQuery({
     queryKey: ["auth-users"],
@@ -88,7 +115,9 @@ export const useAddStaff = (onSuccess?: OnSuccessType) => {
     onSuccess: async (data) => {
       // Invalidate all staff-users queries
       await queryClient.invalidateQueries({ 
-        queryKey: ["staff-users"],
+        predicate: (query) =>
+          query.queryKey[0] === "staff-users" ||
+          query.queryKey[0] === "staff-users-full",
         refetchType: 'active'
       });
 
@@ -108,7 +137,9 @@ export const useUpdateStaff = (onSuccess?: OnSuccessType) => {
     onSuccess: async (data) => {
       // Invalidate all staff-users queries
       await queryClient.invalidateQueries({ 
-        queryKey: ["staff-users"],
+        predicate: (query) =>
+          query.queryKey[0] === "staff-users" ||
+          query.queryKey[0] === "staff-users-full",
         refetchType: 'active'
       });
             
@@ -128,7 +159,9 @@ export const useDeleteStaff = (onSuccess?: OnSuccessType) => {
     onSuccess: async (data, ) => {
       // Invalidate all staff-users queries
       await queryClient.invalidateQueries({ 
-        queryKey: ["staff-users"],
+        predicate: (query) =>
+          query.queryKey[0] === "staff-users" ||
+          query.queryKey[0] === "staff-users-full",
         refetchType: 'active'
       });
       
