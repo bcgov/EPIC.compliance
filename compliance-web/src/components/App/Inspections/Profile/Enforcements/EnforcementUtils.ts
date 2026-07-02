@@ -99,8 +99,7 @@ export const hasCreatedEnforcementAction = (
   });
 };
 
-// Pick the delete confirmation message for a requirement: the longer warning when an
-// enforcement action record has actually been created for it, otherwise the default.
+// Determine which warning message to display to user
 export const getRequirementDeleteWarning = (
   requirement: InspectionRequirement | undefined,
   enforcementsByType: {

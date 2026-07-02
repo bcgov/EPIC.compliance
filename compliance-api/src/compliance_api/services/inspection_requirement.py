@@ -220,6 +220,7 @@ class InspectionRequirementService:
         requirement = _requirement_check(requirement_id)
         ServiceUtils.access_check_update_for_inspection(inspection)
         _check_orders_and_warning_letters(requirement)
+        _check_administrative_penalties(requirement)
         with session_scope() as session:
             InspectionRequirementModel.delete_requirement(requirement_id, session)
             InspectionReqSourceDetailModel.delete_by_requirement_id(
@@ -2194,7 +2195,7 @@ def _check_orders_and_warning_letters(requirement):
         if order_map and (
             order_map.order.order_progress
             in [OrderProgressEnum.DEPUTY_REVIEW, OrderProgressEnum.APPROVED]
-            or order_map.order.order_status == OrderStatusEnum.OPEN
+            or order_map.order.order_status in [OrderStatusEnum.OPEN, OrderStatusEnum.CLOSED]
         ):
             raise UnprocessableEntityError("Active order found")
     if EnforcementActionOptionEnum.WARNING_LETTER.value in enforcement_action_ids:
@@ -2209,6 +2210,23 @@ def _check_orders_and_warning_letters(requirement):
             WarningLetterProgressEnum.DEPUTY_REVIEW,
         ]:
             raise UnprocessableEntityError("Active warning letter found")
+
+
+def _check_administrative_penalties(requirement):
+    enforcement_actions = requirement.enforcement_actions
+    enforcement_action_ids = [
+        action.enforcement_action_id for action in enforcement_actions
+    ]
+    if EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value in enforcement_action_ids:
+        administrative_penalty_map = AdministrativePenaltyInspectionRequirementMapModel.get_by_requirement_id(
+            requirement.id
+        )
+        if administrative_penalty_map and (
+            administrative_penalty_map.administrative_penalty.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING
+            or (administrative_penalty_map.administrative_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_DM
+                and administrative_penalty_map.administrative_penalty.decision is not None)
+        ):
+            raise UnprocessableEntityError("Active administrative penalty found")
 
 
 def _cleanup_linked_draft_enforcement_actions(requirement, session):

@@ -66,6 +66,13 @@ class AdministrativePenaltyInspectionRequirementMap(BaseModelVersioned):
     )
 
     @classmethod
+    def get_by_requirement_id(cls, requirement_id):
+        """Get inspection requirements by requirement id."""
+        return cls.query.filter_by(
+            inspection_requirement_id=requirement_id, is_deleted=False, is_active=True
+        ).first()
+
+    @classmethod
     def get_by_administrative_penalty_id(cls, administrative_penalty_id):
         """Get inspection requirements by administrative penalty id."""
         return cls.query.filter_by(

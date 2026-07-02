@@ -35,7 +35,14 @@ import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { useReportStore } from "../Reports/reportStore";
-import { DRAWER_WIDTHS, EnforcementActionEnum, InspectionStatusEnum } from "@/utils/constants";
+import {
+  AdministrativePenaltyStatus,
+  DRAWER_WIDTHS,
+  EnforcementActionEnum,
+  InspectionStatusEnum,
+  OrderProgressEnum,
+  WarningLetterProgressEnum,
+} from "@/utils/constants";
 import { useInspectionOrdersData } from "@/hooks/useInspectionOrders";
 import { useInspectionWarningLettersData } from "@/hooks/useInspectionWarningLetters";
 import { useAdministrativePenaltiesData } from "@/hooks/useAdministrativePenalties";
@@ -145,28 +152,42 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
       getRequirementDeleteWarning(requirement, [
         {
           enforcementActionType: EnforcementActionEnum.ORDER,
-          reqIds: inspectionOrdersData?.map((order) =>
-            order.order_requirement_maps?.map(
-              (map) => map.inspection_requirement_id
+          reqIds: inspectionOrdersData
+            ?.filter(
+              (order) => order.order_progress?.id === OrderProgressEnum.DRAFTING
             )
-          ),
+            .map((order) =>
+              order.order_requirement_maps?.map(
+                (map) => map.inspection_requirement_id
+              )
+            ),
         },
         {
           enforcementActionType: EnforcementActionEnum.WARNING_LETTER,
-          reqIds: inspectionWarningLettersData?.map((warningLetter) =>
-            warningLetter.warning_letter_requirement_maps?.map(
-              (map) => map.inspection_requirement_id
+          reqIds: inspectionWarningLettersData
+            ?.filter(
+              (warningLetter) =>
+                warningLetter.progress?.id === WarningLetterProgressEnum.DRAFTING
             )
-          ),
+            .map((warningLetter) =>
+              warningLetter.warning_letter_requirement_maps?.map(
+                (map) => map.inspection_requirement_id
+              )
+            ),
         },
         {
           enforcementActionType: EnforcementActionEnum.AP_RECOMMENDATION,
-          reqIds: inspectionAdministrativePenaltiesData?.map(
-            (administrativePenalty) =>
+          reqIds: inspectionAdministrativePenaltiesData
+            ?.filter(
+              (administrativePenalty) =>
+                administrativePenalty.referral_status?.id ===
+                AdministrativePenaltyStatus.DRAFTING
+            )
+            .map((administrativePenalty) =>
               administrativePenalty.administrative_penalty_requirement_maps?.map(
                 (map) => map.inspection_requirement_id
               )
-          ),
+            ),
         },
       ]),
     [
