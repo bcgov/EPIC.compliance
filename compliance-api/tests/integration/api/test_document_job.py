@@ -22,6 +22,7 @@ import pytest
 from faker import Faker
 
 from compliance_api.config import get_named_config
+from compliance_api.models import db
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
 from compliance_api.models.inspection_record import InspectionRecord
 from compliance_api.services.document_job import DocumentJobService
@@ -461,6 +462,155 @@ def test_last_generated_no_jobs_returns_null(
     response_data = result.json
     assert "last_generated_time" in response_data
     assert response_data["last_generated_time"] is None
+
+
+def test_recent_document_job_scoped_by_output_format(client,
+                                                     created_staff,
+                                                     jwt,
+                                                     inspection_record,
+                                                     mock_track_service,
+                                                     mock_auth_service
+                                                     ):
+    """A pdf job and a docx job for the same user/IR should not collide."""
+    staff_user = created_staff
+
+    pdf_job_data = {
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.COMPLETED.value,
+        "output_format": "pdf",
+        "download_name": "report.pdf",
+        "relative_url": "documents/report.pdf",
+        "started_at": datetime.now(timezone.utc) - timedelta(minutes=5),
+        "completed_at": datetime.now(timezone.utc) - timedelta(minutes=5),
+    }
+    pdf_job = DocumentJobService.create(pdf_job_data)
+
+    docx_job_data = {
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+        "output_format": "docx",
+        "started_at": datetime.now(timezone.utc),
+    }
+    docx_job = DocumentJobService.create(docx_job_data)
+
+    config = get_named_config("testing")
+    header_claims = make_header_claims(staff_user, config)
+    auth_header = factory_auth_header(jwt=jwt, claims=header_claims)
+
+    docx_url = urljoin(
+        API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/recent?output_format=docx"
+    )
+    docx_result = client.get(docx_url, headers=auth_header)
+    assert docx_result.status_code == HTTPStatus.OK
+    assert docx_result.json["id"] == docx_job.id
+    assert docx_result.json["status"] == DocumentJobStatusEnum.IN_PROGRESS.value
+
+    pdf_url = urljoin(
+        API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/recent?output_format=pdf"
+    )
+    pdf_result = client.get(pdf_url, headers=auth_header)
+    assert pdf_result.status_code == HTTPStatus.OK
+    assert pdf_result.json["id"] == pdf_job.id
+    assert pdf_result.json["status"] == DocumentJobStatusEnum.COMPLETED.value
+
+
+def test_last_generated_scoped_by_output_format(client,
+                                                created_staff,
+                                                jwt,
+                                                inspection_record,
+                                                mock_track_service,
+                                                mock_auth_service
+                                                ):
+    """last-generated should only consider jobs matching the requested output_format."""
+    staff_user = created_staff
+    pdf_completed_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    docx_completed_at = datetime.now(timezone.utc)
+
+    DocumentJobService.create({
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.COMPLETED.value,
+        "output_format": "pdf",
+        "download_name": "report.pdf",
+        "relative_url": "documents/report.pdf",
+        "started_at": pdf_completed_at,
+        "completed_at": pdf_completed_at,
+    })
+    DocumentJobService.create({
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.COMPLETED.value,
+        "output_format": "docx",
+        "download_name": "report.docx",
+        "relative_url": "documents/report.docx",
+        "started_at": docx_completed_at,
+        "completed_at": docx_completed_at,
+    })
+
+    config = get_named_config("testing")
+    header_claims = make_header_claims(staff_user, config)
+    auth_header = factory_auth_header(jwt=jwt, claims=header_claims)
+
+    docx_url = urljoin(
+        API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated?output_format=docx"
+    )
+    docx_result = client.get(docx_url, headers=auth_header)
+    assert docx_result.status_code == HTTPStatus.OK
+    assert docx_result.json["last_generated_time"] == docx_completed_at.isoformat()
+
+    pdf_url = urljoin(
+        API_BASE_URL, f"document-jobs/inspections/{inspection_record.id}/last-generated?output_format=pdf"
+    )
+    pdf_result = client.get(pdf_url, headers=auth_header)
+    assert pdf_result.status_code == HTTPStatus.OK
+    assert pdf_result.json["last_generated_time"] == pdf_completed_at.isoformat()
+
+
+def test_handle_background_job_docx_success(app, mocker, created_staff, inspection_record):
+    """DOCX jobs should upload the rendered BytesIO stream and complete with a .docx name."""
+    from io import BytesIO
+
+    staff_user = created_staff
+    job = DocumentJobService.create({
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+        "output_format": "docx",
+        "started_at": datetime.now(timezone.utc),
+    })
+
+    mock_inspection = mocker.MagicMock(ir_number="IR-0001")
+    mocker.patch(
+        "compliance_api.services.document_job.InspectionRecordService.render",
+        return_value=(BytesIO(b"docx bytes"), mock_inspection),
+    )
+    mocker.patch(
+        "compliance_api.services.document_job.DocService.get_presigned_url",
+        return_value={
+            "presigned_url": "https://example.com/presigned-url",
+            "relative_url": "inspection_records/mock-uuid.docx",
+        },
+    )
+    mock_put = mocker.patch("requests.put")
+    mock_put.return_value.status_code = 200
+
+    DocumentJobService.handle_background_job(
+        app, job.id, "test-token", {}, inspection_record.inspection_id,
+        inspection_record.id, staff_user.id, "docx",
+    )
+
+    # handle_background_job runs its updates in a separate app-context session
+    # (mirroring the real background thread); expire the outer session's
+    # identity-mapped copy so the committed changes are visible here.
+    db.session.expire_all()
+    updated_job = DocumentJob.find_by_id(job.id)
+    assert updated_job.status == DocumentJobStatusEnum.COMPLETED.value
+    assert updated_job.download_name == "IR-0001.docx"
+    assert updated_job.relative_url.endswith(".docx")
+    mock_put.assert_called_once()
+    assert mock_put.call_args.kwargs["data"].read() == b"docx bytes"
 
 
 def test_last_generated_other_user_job_returns_null(

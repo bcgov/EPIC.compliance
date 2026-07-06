@@ -160,7 +160,6 @@ const inspectionRecordRender = ({
     method: "POST",
     url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/render`,
     data: { output_format: outputFormat },
-    responseType: outputFormat === "docx" ? "blob" : "json",
   });
 };
 

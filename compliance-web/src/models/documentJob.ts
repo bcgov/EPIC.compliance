@@ -10,6 +10,7 @@ export interface DocumentJob {
   user_id: number;
   inspection_report_id?: number;
   status: DocumentJobStatus;
+  output_format: "pdf" | "docx";
   download_name?: string;
   relative_url?: string;
   started_at: string;

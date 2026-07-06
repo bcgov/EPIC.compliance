@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 import requests
+from flask import current_app
 
 from compliance_api.exceptions import BusinessError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
@@ -21,20 +22,22 @@ class DocumentJobService:
         return document_job.save()
 
     @staticmethod
-    def get_most_recent_document_job_for_user(user_id, inspection_record_id):
-        """Get the most recently generated PDF for a user."""
+    def get_most_recent_document_job_for_user(user_id, inspection_record_id, output_format):
+        """Get the most recently generated document for a user."""
         jobs = DocumentJob.get_by_params({
             "user_id": user_id,
             "inspection_record_id": inspection_record_id,
+            "output_format": output_format,
         })
         return jobs[-1] if jobs else None
 
     @staticmethod
-    def get_last_generated_time_for_user(user_id, inspection_record_id):
+    def get_last_generated_time_for_user(user_id, inspection_record_id, output_format):
         """Get the last time a document was generated for a user."""
         jobs = DocumentJob.query.filter_by(
             user_id=user_id,
             inspection_record_id=inspection_record_id,
+            output_format=output_format,
         ).filter(DocumentJob.completed_at.isnot(None)).order_by(DocumentJob.completed_at.desc()).all()
         document_job = jobs[0] if jobs else None
         return document_job.completed_at.isoformat() if document_job else None
@@ -76,9 +79,13 @@ class DocumentJobService:
         return document_job
 
     @staticmethod
-    def invalidate_all_previous_documents_for_user(staff_user_id, inspection_record_id):
+    def invalidate_all_previous_documents_for_user(staff_user_id, inspection_record_id, output_format):
         """Mark previous document jobs for a user as deleted and inactive."""
-        jobs = DocumentJob.get_by_params({"user_id": staff_user_id, "inspection_record_id": inspection_record_id})
+        jobs = DocumentJob.get_by_params({
+            "user_id": staff_user_id,
+            "inspection_record_id": inspection_record_id,
+            "output_format": output_format,
+        })
         for job in jobs:
             job.update({
                 "is_active": False,
@@ -94,6 +101,7 @@ class DocumentJobService:
         inspection_id,
         inspection_record_id,
         staff_user_id,
+        output_format,
     ):
         """Handle background job process for rendering and storing a document in EPIC.document."""
         with app.app_context():
@@ -102,10 +110,10 @@ class DocumentJobService:
             g.jwt_oidc_token_info = jwt_oidc_token_info
             try:
                 response, inspection = InspectionRecordService.render(
-                    inspection_id, inspection_record_id, "pdf"
+                    inspection_id, inspection_record_id, output_format
                 )
 
-                relative_url = f"inspection_records/{uuid.uuid4().hex}.pdf"
+                relative_url = f"inspection_records/{uuid.uuid4().hex}.{output_format}"
                 payload = {
                     "action": "PUT",
                     "relative_url": relative_url
@@ -115,9 +123,14 @@ class DocumentJobService:
                 }
                 presigned_put_request = DocService.get_presigned_url(payload, params)
 
+                # PDF rendering returns a requests-style response with `.content`;
+                # DOCX rendering returns an already fully-built BytesIO stream that
+                # requests can upload directly without an extra in-memory copy.
+                upload_data = response.content if output_format == "pdf" else response
+
                 put_request = requests.put(
                     presigned_put_request["presigned_url"],
-                    data=response.content,
+                    data=upload_data,
                     headers={
                         "Content-Type": "application/octet-stream",
                         "x-amz-acl": "public-read",
@@ -130,7 +143,7 @@ class DocumentJobService:
 
                 DocumentJobService.update(job_id, staff_user_id, {
                     "status": DocumentJobStatusEnum.COMPLETED.value,
-                    "download_name": f"{inspection.ir_number}.pdf",
+                    "download_name": f"{inspection.ir_number}.{output_format}",
                     "relative_url": presigned_put_request["relative_url"],
                     "completed_at": datetime.now(timezone.utc),
                 })
@@ -143,6 +156,13 @@ class DocumentJobService:
                     "status": DocumentJobStatusEnum.FAILED.value,
                 })
             except ValueError:
+                DocumentJobService.update(job_id, staff_user_id, {
+                    "status": DocumentJobStatusEnum.FAILED.value,
+                })
+            except Exception:  # noqa: B902  pylint: disable=broad-except
+                current_app.logger.exception(
+                    f"Unexpected error generating {output_format} document for job {job_id}"
+                )
                 DocumentJobService.update(job_id, staff_user_id, {
                     "status": DocumentJobStatusEnum.FAILED.value,
                 })

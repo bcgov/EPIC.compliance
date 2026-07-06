@@ -45,6 +45,12 @@ class DocumentJob(BaseModelVersioned):
         comment="The status of the document job",
         default=DocumentJobStatusEnum.IN_PROGRESS,
     )
+    output_format = Column(
+        String,
+        nullable=False,
+        default="pdf",
+        comment="The output format of the document job (pdf or docx)",
+    )
     download_name = Column(
         String,
         nullable=True,

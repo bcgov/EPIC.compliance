@@ -48,9 +48,10 @@ class DocumentJobRecent(Resource):
     def get(inspection_record_id):
         """Fetch most recent document job for user and inspection."""
         auth_user_guid = g.token_info.get("preferred_username")
+        output_format = request.args.get("output_format", "pdf")
         current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         document_job = DocumentJobService.get_most_recent_document_job_for_user(
-            current_staff_user.id, inspection_record_id
+            current_staff_user.id, inspection_record_id, output_format
         )
         schema = DocumentJobSchema(many=False)
         return schema.dump(document_job), HTTPStatus.OK
@@ -70,9 +71,10 @@ class DocumentJobLastGenerated(Resource):
     def get(inspection_record_id):
         """Fetch the last time a document was generated for user and inspection."""
         auth_user_guid = g.token_info.get("preferred_username")
+        output_format = request.args.get("output_format", "pdf")
         current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         last_generated_time = DocumentJobService.get_last_generated_time_for_user(
-            current_staff_user.id, inspection_record_id
+            current_staff_user.id, inspection_record_id, output_format
         )
         return {"last_generated_time": last_generated_time}, HTTPStatus.OK
 

@@ -10,6 +10,8 @@ import {
   Grow,
   Paper,
   Popper,
+  Typography,
+  Link,
   Box,
   CircularProgress,
 } from "@mui/material";
@@ -27,24 +29,32 @@ import { useIsRolesAllowed } from "@/hooks/useAuthorization";
 import { InspectionStatusEnum } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
-import { DocumentJob } from "@/models/documentJob";
+import {
+  useDeleteDocumentJobs,
+  useLastGeneratedTimeForUser,
+  useMostRecentDocumentJobForUser,
+} from "@/hooks/useDocumentJobs";
+import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
+import dateUtils from "@/utils/dateUtils";
+import { useFetchPresignedGetURL } from "@/hooks/useImageUpload";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PreviewDownloadButton = () => {
   const { setOpen: setModalOpen } = useModal();
   const { inspectionData, inspectionReportsData } = useReportStore();
-  // Comp-788
-  // const { data: documentJob } = useMostRecentDocumentJobForUser(
-  //   inspectionReportsData?.id ?? 0
-  // );
 
-  // const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
-  //   inspectionReportsData?.id ?? 0
-  // );
-  // const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
+  const { data: documentJob } = useMostRecentDocumentJobForUser(
+    inspectionReportsData?.id ?? 0,
+    "docx"
+  );
+
+  const { data: lastGeneratedTimeObj } = useLastGeneratedTimeForUser(
+    inspectionReportsData?.id ?? 0,
+    "docx"
+  );
+  const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
 
   const [previewClicked, setPreviewClicked] = useState(false);
-  const [generatingDocx, setGeneratingDocx] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentLoggedInUser();
@@ -80,7 +90,7 @@ const PreviewDownloadButton = () => {
 
   const onError = (error: AxiosError) => {
     notify.error(
-      (error.response?.data as { message?: string })?.message ?? 
+      (error.response?.data as { message?: string })?.message ??
       "Error processing report"
     );
     setPreviewClicked(false);
@@ -91,14 +101,13 @@ const PreviewDownloadButton = () => {
     onError
   );
 
-  // Comp-788
-  // const isGenerating = useMemo(() => {
-  //   return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
-  // }, [documentJob]);
+  const isGenerating = useMemo(() => {
+    return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
+  }, [documentJob]);
 
-  // const isCompleted = useMemo(() => {
-  //   return documentJob?.status === DocumentJobStatus.COMPLETED;
-  // }, [documentJob]);
+  const isCompleted = useMemo(() => {
+    return documentJob?.status === DocumentJobStatus.COMPLETED;
+  }, [documentJob]);
 
   const handlePreviewClick = async () => {
     setPreviewClicked(true);
@@ -110,51 +119,25 @@ const PreviewDownloadButton = () => {
   };
 
   const queryClient = useQueryClient();
-  // const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
+  const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
 
-  const handleDownloadClick = async (
-    event: MouseEvent,
-    outputFormat: "html" | "pdf" | "docx" = "pdf"
-  ) => {
-    // DOCX is handled differently - direct download, no job tracking
-    if (outputFormat === "docx") {
-      handleDownloadDocx(event);
-      return;
-    }
-
-    // Comp-788
-    // PDF generation - async job
-    // if (documentJob?.id) {
-    //   // Generating a new report invalidates the previous one
-    //   mutateDeleteDocumentJob(documentJob.id, {
-    //     onSuccess: () => {
-    //       queryClient.invalidateQueries({
-    //         queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
-    //       });
-    //     },
-    //   });
-    // }
-    setPreviewClicked(true);
+  const handleGenerateDocx = async (event: MouseEvent) => {
     handleClose(event);
-    mutateIrPreviewData(
-      {
-        inspectionId: inspectionData?.id ?? 0,
-        inspectionRecordId: inspectionReportsData?.id ?? 0,
-        outputFormat: outputFormat,
-      },
-      {
+
+    // Generating a new report invalidates the previous one
+    if (documentJob?.id) {
+      mutateDeleteDocumentJob(documentJob.id, {
         onSuccess: () => {
           queryClient.invalidateQueries({
-            queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
+            queryKey: [
+              "mostRecentDocumentJob",
+              inspectionReportsData?.id,
+              "docx",
+            ],
           });
         },
-      }
-    );
-  };
-
-  const handleDownloadDocx = async (event: MouseEvent) => {
-    setGeneratingDocx(true);
-    handleClose(event);
+      });
+    }
 
     mutateIrPreviewData(
       {
@@ -163,23 +146,14 @@ const PreviewDownloadButton = () => {
         outputFormat: "docx",
       },
       {
-        onSuccess: (blob: Blob) => {
-          // Create download link from blob
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${inspectionData?.ir_number || inspectionReportsData?.id || "report"}.docx`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          window.URL.revokeObjectURL(url);
-
-          notify.success("DOCX report downloaded successfully");
-          setGeneratingDocx(false);
-        },
-        onError: () => {
-          notify.error("Failed to download DOCX report");
-          setGeneratingDocx(false);
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: [
+              "mostRecentDocumentJob",
+              inspectionReportsData?.id,
+              "docx",
+            ],
+          });
         },
       }
     );
@@ -200,45 +174,38 @@ const PreviewDownloadButton = () => {
     setOpen(false);
   };
 
-  // Comp-788
-  // const onPresignedUrlSuccess = async (data: { presigned_url: string }) => {
-  //   try {
-  //     const response = await fetch(data.presigned_url);
-  //     const blob = await response.blob();
-  //     const filename =
-  //       documentJob?.download_name || inspectionData?.ir_number || "report.pdf";
-  //     const url = window.URL.createObjectURL(blob);
-  //     const a = document.createElement("a");
-  //     a.href = url;
-  //     a.download = filename;
-  //     document.body.appendChild(a);
-  //     a.click();
-  //     a.remove();
-  //     window.URL.revokeObjectURL(url);
-  //     if (documentJob?.id) {
-  //       mutateDeleteDocumentJob(documentJob.id, {
-  //         onSuccess: () => {
-  //           queryClient.invalidateQueries({
-  //             queryKey: ["mostRecentDocumentJob", inspectionReportsData?.id],
-  //           });
-  //         },
-  //       });
-  //     }
-  //   } catch (error) {
-  //     notify.error("Failed to download PDF");
-  //   }
-  //   setOpen(false);
-  // };
+  const onPresignedUrlSuccess = async (data: { presigned_url: string }) => {
+    try {
+      const response = await fetch(data.presigned_url);
+      const blob = await response.blob();
+      const filename =
+        documentJob?.download_name ||
+        `${inspectionData?.ir_number || inspectionReportsData?.id || "report"}.docx`;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      // Keep the completed job around so the Download link stays enabled for
+      // repeat downloads - it's only replaced when the user generates a new one.
+    } catch (error) {
+      notify.error("Failed to download DOCX report");
+    }
+    setOpen(false);
+  };
 
-  // const { mutate: mutateFetchPresignedGetURL } = useFetchPresignedGetURL(
-  //   onPresignedUrlSuccess
-  // );
+  const { mutate: mutateFetchPresignedGetURL } = useFetchPresignedGetURL(
+    onPresignedUrlSuccess
+  );
 
-  // const handleDownloadReportFromURL = () => {
-  //   if (documentJob?.relative_url) {
-  //     mutateFetchPresignedGetURL(documentJob.relative_url);
-  //   }
-  // };
+  const handleDownloadReportFromURL = () => {
+    if (documentJob?.relative_url) {
+      mutateFetchPresignedGetURL(documentJob.relative_url);
+    }
+  };
 
   return (
     <>
@@ -311,20 +278,19 @@ const PreviewDownloadButton = () => {
                     gap: 1,
                   }}
                 >
-                  {/* Comp-788
-                   <Button
+                  <Button
                     variant="text"
                     onClick={(e) =>
-                      handleDownloadClick(e as unknown as MouseEvent, "pdf")
+                      handleGenerateDocx(e as unknown as MouseEvent)
                     }
                     disabled={isGenerating}
                     fullWidth
                     sx={{ justifyContent: "flex-start" }}
                   >
-                    <AutoAwesomeRounded sx={{ mr: 1, fontSize: 20 }} />
+                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
                     {isGenerating
-                      ? "Generating PDF..."
-                      : "Generate Report as PDF"}
+                      ? "Generating DOCX..."
+                      : "Generate Report as DOCX"}
                     {isGenerating && (
                       <CircularProgress
                         size={20}
@@ -332,29 +298,7 @@ const PreviewDownloadButton = () => {
                         sx={{ ml: 1 }}
                       />
                     )}
-                  </Button> */}
-                  <Button
-                    variant="text"
-                    onClick={(e) =>
-                      handleDownloadClick(e as unknown as MouseEvent, "docx")
-                    }
-                    disabled={generatingDocx}
-                    fullWidth
-                    sx={{ justifyContent: "flex-start" }}
-                  >
-                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
-                    {generatingDocx
-                      ? "Downloading DOCX..."
-                      : "Download Report as DOCX"}
-                    {generatingDocx && (
-                      <CircularProgress
-                        size={20}
-                        color="primary"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
                   </Button>
-                  {/* Comp-788
                   <Box
                     sx={{
                       display: "flex",
@@ -378,7 +322,7 @@ const PreviewDownloadButton = () => {
                             variant="caption"
                             color={BCDesignTokens.typographyColorPlaceholder}
                           >
-                            Last PDF Generated:
+                            Last DOCX Generated:
                           </Typography>
                           <Typography
                             variant="caption"
@@ -417,8 +361,8 @@ const PreviewDownloadButton = () => {
                     >
                       <DownloadRounded sx={{ fontSize: 16 }} />
                       Download
-                   </Link>
-                  </Box>*/}
+                    </Link>
+                  </Box>
                 </Box>
               </ClickAwayListener>
             </Paper>

@@ -3,18 +3,22 @@ import { request } from "@/utils/axiosUtils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 
 const fetchMostRecentDocumentJobForUser = (
-  inspectionReportID: number
+  inspectionReportID: number,
+  outputFormat: "pdf" | "docx"
 ): Promise<DocumentJob> => {
   return request({
     url: `/document-jobs/inspections/${inspectionReportID}/recent`,
+    params: { output_format: outputFormat },
   });
 };
 
 const fetchLastGeneratedTimeForUser = (
-  inspectionReportID: number
+  inspectionReportID: number,
+  outputFormat: "pdf" | "docx"
 ): Promise<{ last_generated_time: string }> => {
   return request({
     url: `/document-jobs/inspections/${inspectionReportID}/last-generated`,
+    params: { output_format: outputFormat },
   });
 };
 
@@ -36,10 +40,14 @@ const deleteDocumentJob = (jobId: string): Promise<void> => {
   });
 };
 
-export const useMostRecentDocumentJobForUser = (inspectionReportID: number) => {
+export const useMostRecentDocumentJobForUser = (
+  inspectionReportID: number,
+  outputFormat: "pdf" | "docx" = "pdf"
+) => {
   return useQuery<DocumentJob, Error>({
-    queryKey: ["mostRecentDocumentJob", inspectionReportID],
-    queryFn: () => fetchMostRecentDocumentJobForUser(inspectionReportID ?? 0),
+    queryKey: ["mostRecentDocumentJob", inspectionReportID, outputFormat],
+    queryFn: () =>
+      fetchMostRecentDocumentJobForUser(inspectionReportID ?? 0, outputFormat),
     refetchInterval: (query) => {
       const isInProgress =
         query.state.data &&
@@ -67,10 +75,14 @@ export const useMostRecentDocumentJobForUser = (inspectionReportID: number) => {
   });
 };
 
-export const useLastGeneratedTimeForUser = (inspectionReportID: number) => {
+export const useLastGeneratedTimeForUser = (
+  inspectionReportID: number,
+  outputFormat: "pdf" | "docx" = "pdf"
+) => {
   return useQuery<{ last_generated_time: string }, Error>({
-    queryKey: ["lastGeneratedTime", inspectionReportID],
-    queryFn: () => fetchLastGeneratedTimeForUser(inspectionReportID ?? 0),
+    queryKey: ["lastGeneratedTime", inspectionReportID, outputFormat],
+    queryFn: () =>
+      fetchLastGeneratedTimeForUser(inspectionReportID ?? 0, outputFormat),
     refetchInterval: 30000,
     enabled: !!inspectionReportID,
   });

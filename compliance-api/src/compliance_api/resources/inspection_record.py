@@ -4,7 +4,7 @@ import threading
 from datetime import datetime, timezone
 from http import HTTPStatus
 
-from flask import current_app, g, send_file
+from flask import current_app, g
 from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
@@ -300,16 +300,17 @@ class InspectionRecordPreview(Resource):
         if not staff_user_id:
             raise ResourceNotFoundError("Staff user not found for the current user")
 
-        if output_format == "pdf":
+        if output_format in ("pdf", "docx"):
             inspection = ServiceUtils.inspection_exist_check(inspection_id)
             ServiceUtils.access_check_update_for_inspection(inspection)
             DocumentJobService.invalidate_all_previous_documents_for_user(
-                staff_user_id, inspection_record_id
+                staff_user_id, inspection_record_id, output_format
             )
             document_job = DocumentJobService.create({
                 "user_id": staff_user_id,
                 "inspection_record_id": inspection_record_id,
                 "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+                "output_format": output_format,
                 "started_at": datetime.now(timezone.utc),
             })
             access_token = getattr(g, "access_token", None)
@@ -324,25 +325,11 @@ class InspectionRecordPreview(Resource):
                     inspection_id,
                     inspection_record_id,
                     staff_user_id,
+                    output_format,
                 ),
             )
             thread.start()
             return DocumentJobSchema().dump(document_job), HTTPStatus.ACCEPTED
-
-        # Handle docx
-        if output_format == "docx":
-            response, inspection = InspectionRecordService.render(
-                inspection_id,
-                inspection_record_id,
-                output_format,
-            )
-            # response is a BytesIO stream for DOCX
-            return send_file(
-                response,
-                as_attachment=True,
-                download_name=f'{inspection.ir_number or inspection_record_id}.docx',
-                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            )
 
         # Handle HTML format (default)
         response, _ = InspectionRecordService.render(
