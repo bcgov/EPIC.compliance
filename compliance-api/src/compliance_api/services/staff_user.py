@@ -139,9 +139,10 @@ class StaffUserService:
                 except (AttributeError, RuntimeError) as e:
                     logging.error("Failed to update user group in auth service: %s", e)
 
-            # Return the latest user object
-            final_auth_guid = new_auth_guid if new_auth_guid else existing_user.auth_user_guid
-            return StaffUserService.get_user_by_auth_guid(final_auth_guid)
+            # Return the latest user object. Fetch by id rather than auth guid:
+            # get_by_auth_guid filters out inactive users, which would make
+            # deactivation updates look like the user was not found.
+            return StaffUserService.get_user_by_id(user_id)
 
         return updated_user
 

@@ -3,7 +3,7 @@ import MasterDataTable from "@/components/Shared/MasterDataTable/MasterDataTable
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import Unauthorized from "@/components/Shared/Unauthorized";
 import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
-import { useDeleteStaff, useStaffUsersData } from "@/hooks/useStaff";
+import { useAllStaffUsersData, useDeleteStaff } from "@/hooks/useStaff";
 import { StaffUser } from "@/models/Staff";
 import { useModal } from "@/store/modalStore";
 import { notify } from "@/store/snackbarStore";
@@ -35,7 +35,7 @@ const STAFF_MODAL_WIDTH = "520px";
 
 export function Staff() {
   const { setOpen, setClose } = useModal();
-  const { data: staffUsersList, isLoading } = useStaffUsersData({
+  const { data: staffUsersList, isLoading } = useAllStaffUsersData({
     isActive: false,
     otherPositions: false,
   });

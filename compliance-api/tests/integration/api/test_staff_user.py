@@ -218,6 +218,26 @@ def test_update_staff(mock_auth_service, client, auth_header_super_user, mocker)
     assert result.json["supervisor_id"] == update_payload["supervisor_id"]
 
 
+def test_update_staff_to_inactive(mock_auth_service, client, auth_header_super_user):
+    """Deactivating a staff user should succeed, not return 404."""
+    staff_data = StaffScenario.default_data.value
+    staff_data["auth_user_guid"] = str(datetime.utcnow().timestamp() * 1000)
+    created_user = StaffScenario.create(staff_data)
+    url = urljoin(API_BASE_URL, f"staff-users/{created_user.id}")
+    update_payload = {
+        "position_id": 2,
+        "permission": "VIEWER",
+        "is_active": False,
+    }
+
+    result = client.patch(
+        url, data=json.dumps(update_payload), headers=auth_header_super_user
+    )
+
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["is_active"] is False
+
+
 def test_update_staff_with_non_super_user(mock_auth_service, client, auth_header):
     """Update staff user."""
     url = urljoin(API_BASE_URL, "staff-users/1")

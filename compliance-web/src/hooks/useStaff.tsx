@@ -11,6 +11,12 @@ const fetchStaffUsers = (): Promise<StaffUser[]> => {
   return request({ url: "/staff-users/active" });
 };
 
+/** FETCH all staff users including inactive ones, with permission,
+ * supervisor and deputy director data. Restricted to SUPERUSER/ADMIN/USER roles. */
+const fetchAllStaffUsers = (): Promise<StaffUser[]> => {
+  return request({ url: "/staff-users" });
+};
+
 /** FETCH users from AUTH API */
 const fetchAuthUsers = (): Promise<AuthUser[]> => {
   return requestAuthAPI({ url: "/users" });
@@ -36,26 +42,46 @@ const deleteStaff = (id: number) => {
   return request({ url: `/staff-users/${id}`, method: "delete" });
 };
 
-export const useStaffUsersData = (filters: {
+type StaffUsersFilters = {
   isActive?: boolean; // filter out inactive users
   otherPositions?: boolean; // filter out other positions
-} = {
+};
+
+const sortAndFilterStaffUsers = (
+  staffUsers: StaffUser[],
+  filters?: StaffUsersFilters
+): StaffUser[] => {
+  return staffUsers
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .filter(
+      (p) =>
+        (filters?.isActive ? p.is_active === filters.isActive : true) &&
+        (filters?.otherPositions
+          ? p.position_id !== STAFF_USER_POSITION.OTHER
+          : true)
+    );
+};
+
+export const useStaffUsersData = (filters: StaffUsersFilters = {
   isActive: true,
   otherPositions: true,
 }) => {
   return useQuery({
     queryKey: ["staff-users", filters],
-    queryFn: async () => {
-      let staffUsers = await fetchStaffUsers();
-      staffUsers = staffUsers.sort((a, b) => a.name.localeCompare(b.name));
-      return staffUsers.filter(
-        (p) =>
-          (filters?.isActive ? p.is_active === filters.isActive : true) &&
-          (filters?.otherPositions
-            ? p.position_id !== STAFF_USER_POSITION.OTHER
-            : true)
-      );
-    },
+    queryFn: async () =>
+      sortAndFilterStaffUsers(await fetchStaffUsers(), filters),
+  });
+};
+
+// Full staff data (incl. inactive, permission, supervisor, deputy director)
+export const useAllStaffUsersData = (filters: StaffUsersFilters = {
+  isActive: false,
+  otherPositions: false,
+}) => {
+  return useQuery({
+    queryKey: ["staff-users", "all", filters],
+    queryFn: async () =>
+      sortAndFilterStaffUsers(await fetchAllStaffUsers(), filters),
   });
 };
 

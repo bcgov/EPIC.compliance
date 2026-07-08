@@ -2,10 +2,10 @@ import ModalActions from "@/components/Shared/Modals/ModalActions";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import {
   useAddStaff,
+  useAllStaffUsersData,
   useAuthUsersData,
   usePermissionsData,
   usePositionsData,
-  useStaffUsersData,
   useUpdateStaff,
 } from "@/hooks/useStaff";
 import { AuthUser } from "@/models/AuthUser";
@@ -52,7 +52,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ onSubmit, staff }) => {
   const { data: usersList } = useAuthUsersData();
   const { data: positionsList } = usePositionsData();
   const { data: permissionsList } = usePermissionsData();
-  const { data: staffUsersList } = useStaffUsersData({
+  const { data: staffUsersList } = useAllStaffUsersData({
     isActive: false,
     otherPositions: false,
   });
