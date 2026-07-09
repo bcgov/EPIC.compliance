@@ -15,6 +15,15 @@ from docx.shared import Inches, Pt
 from .docx_utils import set_cell_border
 
 
+def _collapse_whitespace(text):
+    """Collapse runs of HTML whitespace (spaces, tabs, newlines) to a single space.
+
+    Newlines must not reach add_run: python-docx converts them to <w:br/>,
+    which shows up as extra blank lines in the document.
+    """
+    return re.sub(r'[ \t\r\n\f]+', ' ', text)
+
+
 def init_list_numbering(document):
     """Initialize list numbering definitions once for a document.
 
@@ -122,17 +131,25 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else container.add_paragraph()
     at_para_start = True
+    pending_space = False
 
     def process_node(node, inherited_bold=False, inherited_italic=False):
         """Recursively process nodes, tracking inherited formatting."""
-        nonlocal para, at_para_start
+        nonlocal para, at_para_start, pending_space
 
         if isinstance(node, str):
-            # Replace 2+ spaces with single space
-            text = re.sub(r' {2,}', ' ', node)
+            text = _collapse_whitespace(node)
             if at_para_start:
                 text = text.lstrip()
             if text:
+                if not text.strip():
+                    # Whitespace-only node: emit only if more content follows
+                    pending_space = True
+                    return
+                if pending_space:
+                    pending_space = False
+                    if not text.startswith(' '):
+                        text = ' ' + text
                 at_para_start = False
                 run = para.add_run(text)
                 if inherited_bold:
@@ -165,6 +182,7 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
                     if has_more_content:
                         para = container.add_paragraph()
                         at_para_start = True
+                        pending_space = False
                 except ValueError:
                     pass
         elif hasattr(node, 'children'):
@@ -341,30 +359,44 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else cell.add_paragraph()
 
+    at_para_start = True
+    pending_space = False
+
+    def add_text_run(text, bold=False, italic=False):
+        nonlocal at_para_start, pending_space
+        text = _collapse_whitespace(text)
+        if at_para_start:
+            text = text.lstrip()
+        if not text:
+            return
+        if not text.strip():
+            # Whitespace-only node: emit only if more content follows
+            pending_space = True
+            return
+        if pending_space:
+            pending_space = False
+            if not text.startswith(' '):
+                text = ' ' + text
+        at_para_start = False
+        run = para.add_run(text)
+        if bold:
+            run.bold = True
+        if italic:
+            run.italic = True
+        run.font.size = Pt(11)
+
     # Convert to list to check for remaining siblings
     children = list(p_element.children)
 
     for idx, child in enumerate(children):
         if isinstance(child, str):
-            text = re.sub(r' {2,}', ' ', child)
-            if text:
-                run = para.add_run(text)
-                run.font.size = Pt(11)
+            add_text_run(child)
         elif child.name in ['strong', 'b']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.bold = True
-            run.font.size = Pt(11)
+            add_text_run(child.get_text(), bold=True)
         elif child.name in ['em', 'i']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.italic = True
-            run.font.size = Pt(11)
+            add_text_run(child.get_text(), italic=True)
         elif child.name == 'span':
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            if text:
-                run = para.add_run(text)
-                run.font.size = Pt(11)
+            add_text_run(child.get_text())
         elif child.name == 'br':
             # Only create a new paragraph if there's more content after this <br>
             remaining = children[idx + 1:]
@@ -375,6 +407,8 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
             )
             if has_more_content:
                 para = cell.add_paragraph()
+                at_para_start = True
+                pending_space = False
 
 
 def _get_max_num_id(numbering):
@@ -727,45 +761,52 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
 
 def _add_formatted_list_item_text(para, li_element, font_size):
     """Add formatted text from a list item to a paragraph, skipping nested lists."""
+    at_line_start = True
+    pending_space = False
+
+    def add_text_run(text, bold=False, italic=False):
+        nonlocal at_line_start, pending_space
+        text = _collapse_whitespace(text)
+        if at_line_start:
+            text = text.lstrip()
+        if not text:
+            return
+        if not text.strip():
+            # Whitespace-only node: emit only if more content follows
+            pending_space = True
+            return
+        if pending_space:
+            pending_space = False
+            if not text.startswith(' '):
+                text = ' ' + text
+        at_line_start = False
+        run = para.add_run(text)
+        if bold:
+            run.bold = True
+        if italic:
+            run.italic = True
+        if font_size:
+            run.font.size = font_size
+
     for child in li_element.children:
         # Skip nested lists - they're handled separately
         if hasattr(child, 'name') and child.name in ['ul', 'ol']:
             continue
 
         if isinstance(child, str):
-            text = re.sub(r' {2,}', ' ', child)
-            if text:
-                run = para.add_run(text)
-                if font_size:
-                    run.font.size = font_size
+            add_text_run(child)
         elif child.name in ['strong', 'b']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.bold = True
-            if font_size:
-                run.font.size = font_size
+            add_text_run(child.get_text(), bold=True)
         elif child.name in ['em', 'i']:
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            run = para.add_run(text)
-            run.italic = True
-            if font_size:
-                run.font.size = font_size
-        elif child.name == 'span':
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            if text:
-                run = para.add_run(text)
-                if font_size:
-                    run.font.size = font_size
+            add_text_run(child.get_text(), italic=True)
         elif child.name == 'br':
             # Line break within list item - just add newline
             para.add_run('\n')
+            at_line_start = True
+            pending_space = False
         else:
-            # For any other element, get its text
-            text = re.sub(r' {2,}', ' ', child.get_text())
-            if text:
-                run = para.add_run(text)
-                if font_size:
-                    run.font.size = font_size
+            # For span or any other element, get its text
+            add_text_run(child.get_text())
 
 
 def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, number_num_id=None, numbering_ids=None):

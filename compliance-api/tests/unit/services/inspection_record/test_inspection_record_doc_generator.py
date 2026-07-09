@@ -5,8 +5,8 @@ from docx import Document
 from docx.shared import Pt
 
 from compliance_api.services.inspection_record.html_to_docx import (
-    _add_formatted_text_to_container, _add_formatted_text_to_table_cell, _add_html_paragraphs_to_cell,
-    _add_html_to_container, _add_paragraph)
+    _add_formatted_list_item_text, _add_formatted_text_to_container, _add_formatted_text_to_table_cell,
+    _add_html_paragraphs_to_cell, _add_html_to_container, _add_paragraph)
 
 
 class TestAddFormattedTextToContainer:
@@ -167,6 +167,65 @@ class TestAddFormattedTextToContainer:
         # The space between Bold and italic must be preserved
         assert para.text == "Bold italic"
         assert " " in para.text
+
+
+class TestAddFormattedListItemText:
+    """Tests for _add_formatted_list_item_text function."""
+
+    def _create_document_with_paragraph(self):
+        """Create a document with a paragraph for testing."""
+        doc = Document()
+        para = doc.add_paragraph()
+        return doc, para
+
+    def _line_break_count(self, para):
+        """Count <w:br/> elements in a paragraph."""
+        return len(para._element.findall(
+            './/{http://schemas.openxmlformats.org/wordprocessingml/2006/main}br'))
+
+    def test_indented_list_item_has_no_line_breaks(self):
+        """Test that template whitespace around a list item's span adds no <w:br/> (COMP-896)."""
+        _, para = self._create_document_with_paragraph()
+
+        # Same shape as the INSPECTION_SCOPE template: newlines/indentation around the span
+        html = """<ol>
+            <li class="editor-listitem" style="margin-bottom: 4px;">
+                <span>Condition 1 - Documentation.</span>
+            </li>
+        </ol>"""
+        soup = BeautifulSoup(html, "html.parser")
+        li_element = soup.find("li")
+
+        _add_formatted_list_item_text(para, li_element, Pt(11))
+
+        assert para.text == "Condition 1 - Documentation."
+        assert self._line_break_count(para) == 0
+
+    def test_space_preserved_between_inline_elements(self):
+        """Test that spaces between inline elements in a list item are preserved."""
+        _, para = self._create_document_with_paragraph()
+
+        html = "<li>Before <strong>bold</strong> after</li>"
+        soup = BeautifulSoup(html, "html.parser")
+        li_element = soup.find("li")
+
+        _add_formatted_list_item_text(para, li_element, Pt(11))
+
+        assert para.text == "Before bold after"
+
+    def test_br_still_creates_line_break(self):
+        """Test that an explicit <br> in a list item still produces a line break."""
+        _, para = self._create_document_with_paragraph()
+
+        html = "<li><span>First line</span><br><span>Second line</span></li>"
+        soup = BeautifulSoup(html, "html.parser")
+        li_element = soup.find("li")
+
+        _add_formatted_list_item_text(para, li_element, Pt(11))
+
+        assert self._line_break_count(para) == 1
+        assert "First line" in para.text
+        assert "Second line" in para.text
 
 
 class TestAddFormattedTextToTableCell:
