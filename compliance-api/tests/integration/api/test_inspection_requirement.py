@@ -5,11 +5,14 @@ import json
 from http import HTTPStatus
 from urllib.parse import urljoin
 
+import pytest
+
 from compliance_api.models import InspectionReqSourceDetail as InspectionReqSourceDetailModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
 from compliance_api.models import InspectionStatusEnum, RequirementSourceEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import AdministrativePenaltyInspectionRequirementMap
+from compliance_api.models.administrative_penalty import DecisionEnum, ReferralStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
@@ -571,6 +574,51 @@ def test_delete_requirement_keeps_merged_draft_administrative_penalty(
         not in remaining_requirement_ids
     )
     assert second_requirement.id in remaining_requirement_ids
+
+
+@pytest.mark.parametrize(
+    "referral_status,decision",
+    [
+        (ReferralStatusEnum.REFERRED_TO_AMP_UNIT, None),
+        (ReferralStatusEnum.DEPUTY_REVIEW, None),
+        (ReferralStatusEnum.CEB_NOT_PROCEEDING, None),
+        (ReferralStatusEnum.REFERRED_TO_DM, None),
+        (ReferralStatusEnum.REFERRED_TO_DM, DecisionEnum.AP_ISSUED),
+    ],
+)
+def test_delete_requirement_blocked_when_administrative_penalty_beyond_drafting(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    referral_status,
+    decision,
+):
+    """Deletion is blocked once the linked AP has progressed beyond Drafting."""
+    created_administrative_penalty.referral_status = referral_status
+    created_administrative_penalty.decision = decision
+    created_administrative_penalty.save()
+
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_administrative_penalty_inspection_requirement.id}",
+    )
+    result = client.delete(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    # Both the requirement and the administrative penalty remain untouched.
+    assert (
+        InspectionRequirementModel.find_by_id(
+            created_administrative_penalty_inspection_requirement.id
+        )
+        is not None
+    )
+    assert (
+        AdministrativePenaltyModel.find_by_id(created_administrative_penalty.id)
+        is not None
+    )
 
 
 def test_create_requirement_with_invalid_inspection(

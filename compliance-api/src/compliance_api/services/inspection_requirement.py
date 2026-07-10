@@ -2213,6 +2213,13 @@ def _check_orders_and_warning_letters(requirement):
 
 
 def _check_administrative_penalties(requirement):
+    """Prevent deletion when a linked administrative penalty has progressed beyond Drafting.
+
+    Only APs in Drafting can be updated or deleted alongside the requirement;
+    any later status (Referred to AMP Unit, Deputy Review, CEB Not Proceeding,
+    Referred to DM) blocks the deletion regardless of whether the AP is
+    considered closed.
+    """
     enforcement_actions = requirement.enforcement_actions
     enforcement_action_ids = [
         action.enforcement_action_id for action in enforcement_actions
@@ -2221,10 +2228,10 @@ def _check_administrative_penalties(requirement):
         administrative_penalty_map = AdministrativePenaltyInspectionRequirementMapModel.get_by_requirement_id(
             requirement.id
         )
-        if administrative_penalty_map and (
-            administrative_penalty_map.administrative_penalty.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING
-            or (administrative_penalty_map.administrative_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_DM
-                and administrative_penalty_map.administrative_penalty.decision is not None)
+        if (
+            administrative_penalty_map
+            and administrative_penalty_map.administrative_penalty.referral_status
+            != ReferralStatusEnum.DRAFTING
         ):
             raise UnprocessableEntityError("Active administrative penalty found")
 
