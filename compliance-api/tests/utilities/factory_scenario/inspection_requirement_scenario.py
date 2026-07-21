@@ -22,7 +22,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "sort_order": 1,
                 "caption": "caption 1",
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename1.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename1.jpg",
             },
             {
                 "original_file_name": "filename2.jpg",
@@ -30,7 +30,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "sort_order": 2,
                 "caption": "caption 2",
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename2.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename2.jpg",
             },
         ],
         "figures": [
@@ -40,7 +40,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "caption": "caption 1",
                 "sort_order": 1,
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename3.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename3.jpg",
             },
             {
                 "original_file_name": "filename4.jpg",
@@ -48,7 +48,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "caption": "caption 2",
                 "sort_order": 2,
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename4.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename4.jpg",
             },
         ],
         "requirement_source_details": [
@@ -71,11 +71,11 @@ class InspectionRequirementScenario(Enum):
                 "images": [
                     {
                         "original_file_name": "source_detail_image1.jpg",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/source_detail_image1.jpg",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/source_detail_image1.jpg",
                     },
                     {
                         "original_file_name": "source_detail_image2.png",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/source_detail_image2.png",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/source_detail_image2.png",
                     },
                 ],
             }
@@ -115,7 +115,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "sort_order": 1,
                 "caption": "caption 1",
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename1.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename1.jpg",
             }
         ],
         "figures": [
@@ -125,7 +125,7 @@ class InspectionRequirementScenario(Enum):
                 "taken_by_id": 1,
                 "sort_order": 1,
                 "caption": "caption 1",
-                "relative_url": "/compliance/1/inspection/1/requirement_images/filename1.jpg",
+                "relative_url": "compliance/1/inspection/1/requirement_images/filename1.jpg",
             }
         ],
     }
@@ -157,15 +157,15 @@ class InspectionRequirementScenario(Enum):
                 "images": [
                     {
                         "original_file_name": "detail_evidence1.jpg",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence1.jpg",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/detail_evidence1.jpg",
                     },
                     {
                         "original_file_name": "detail_evidence2.png",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence2.png",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/detail_evidence2.png",
                     },
                     {
                         "original_file_name": "detail_evidence3.pdf",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/detail_evidence3.pdf",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/detail_evidence3.pdf",
                     },
                 ],
             },
@@ -184,7 +184,7 @@ class InspectionRequirementScenario(Enum):
                 "images": [
                     {
                         "original_file_name": "regulation_image.jpg",
-                        "relative_url": "/compliance/1/inspection/1/req_detail_images/regulation_image.jpg",
+                        "relative_url": "compliance/1/inspection/1/req_detail_images/regulation_image.jpg",
                     }
                 ],
             },

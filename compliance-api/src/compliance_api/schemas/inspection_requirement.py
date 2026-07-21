@@ -22,11 +22,18 @@ from compliance_api.models.inspection.inspection_req_detail_doc_image import Ins
 from compliance_api.models.inspection.inspection_req_detail_image import InspectionRequirementDetailImage
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
+from compliance_api.utils.storage_key import is_valid_relative_url
 
 from .appendix import AppendixSchema
 from .base_schema import AutoSchemaBase, BaseSchema
 from .common import KeyValueSchema
 from .staff_user import StaffUserSchema
+
+
+def _validate_relative_url(value):
+    """Validate that relative_url is a safe, expected storage key."""
+    if not is_valid_relative_url(value):
+        raise ValidationError("Invalid storage key for relative_url")
 
 
 class InspectionReqImageCreateSchema(BaseSchema):
@@ -71,6 +78,7 @@ class InspectionReqImageCreateSchema(BaseSchema):
     relative_url = fields.Str(
         metadata={"description": "The relative url of the final uploaded image"},
         required=True,
+        validate=_validate_relative_url,
     )
 
 
@@ -95,6 +103,7 @@ class InspectionReqDetailImageCreateSchema(BaseSchema):
     relative_url = fields.Str(
         metadata={"description": "The actual url of the final uploaded image"},
         required=True,
+        validate=_validate_relative_url,
     )
 
 
@@ -118,6 +127,7 @@ class InspectionReqDetailDocImageCreateSchema(BaseSchema):
     relative_url = fields.Str(
         metadata={"description": "The actual url of the final uploaded image"},
         required=True,
+        validate=_validate_relative_url,
     )
 
 

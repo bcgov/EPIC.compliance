@@ -6,6 +6,7 @@ from tenacity import RetryError, retry, retry_if_exception_type, stop_after_atte
 
 from compliance_api.exceptions import BadRequestError, PermissionDeniedError, ServiceUnavailableError
 from compliance_api.utils.enum import HttpMethod
+from compliance_api.utils.storage_key import is_valid_relative_url
 
 from .constant import API_REQUEST_TIMEOUT
 
@@ -16,6 +17,8 @@ class DocService:
     @staticmethod
     def get_presigned_url(payload: dict, params: dict = None) -> dict:
         """Get presigned url for the given action on the given file."""
+        if not is_valid_relative_url(payload.get("relative_url")):
+            raise BadRequestError("Invalid storage key for relative_url")
         try:
             response = _request_doc_service(
                 "storage-operations/presigned-urls", HttpMethod.POST, payload, params
