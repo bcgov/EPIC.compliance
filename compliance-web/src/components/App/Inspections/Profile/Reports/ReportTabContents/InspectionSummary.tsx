@@ -10,6 +10,7 @@ import { InspectionRecord } from "@/models/InspectionRecord";
 import { notify } from "@/store/snackbarStore";
 import { IR_STATUS } from "@/utils/constants";
 import { AxiosError } from "axios";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 const InspectionSummary = () => {
   const {
@@ -126,7 +127,7 @@ const InspectionSummary = () => {
           variant="body1"
           component={"div"}
           className="editor-content"
-          dangerouslySetInnerHTML={{ __html: inspectionScope || "" }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(inspectionScope || "") }}
         />
       </IRBoxContainer>
       {isFinalReport && preliminaryReviewDetails && (
@@ -154,7 +155,7 @@ const InspectionSummary = () => {
             variant="body1"
             component={"div"}
             className="editor-content"
-            dangerouslySetInnerHTML={{ __html: preliminaryReviewDetails || "" }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(preliminaryReviewDetails || "") }}
           />
         </IRBoxContainer>
       )}
@@ -179,7 +180,7 @@ const InspectionSummary = () => {
           variant="body1"
           component={"div"}
           className="editor-content"
-          dangerouslySetInnerHTML={{ __html: findingsStatement || "" }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(findingsStatement || "") }}
         />
       </IRBoxContainer>
     </>

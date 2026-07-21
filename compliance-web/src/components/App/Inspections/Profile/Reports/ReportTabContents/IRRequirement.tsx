@@ -14,6 +14,7 @@ import { useRequirementStore } from "@/components/App/Inspections/Profile/Requir
 import IRImageSection from "./IRImageSection";
 import { useRequirementDocumentImages, useRequirementSourceImages } from "@/hooks/useInspectionRequirements";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 const DetailSection = ({
   title,
@@ -43,7 +44,7 @@ const DetailSection = ({
       component={"div"}
       className="editor-content"
       mb={1.5}
-      dangerouslySetInnerHTML={{ __html: content || "" }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(content || "") }}
     />
     {detailSectionImages && detailSectionImages.length > 0 && (
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>

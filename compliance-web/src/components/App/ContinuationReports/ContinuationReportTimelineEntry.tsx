@@ -1,6 +1,7 @@
 import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
 import { CRKeys } from "@/models/ContinuationReport";
 import { CR_CONTEXT_LINK, CR_CONTEXT_TYPE } from "@/utils/constants";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import TimelineContent from "@mui/lab/TimelineContent";
 import { Typography } from "@mui/material";
 import { BCDesignTokens } from "epic.theme";
@@ -34,11 +35,11 @@ export default function ContinuationReportTimelineEntry({
   };
   const getFormattedText = () => {
     renderText = applyNavigationLinks();
-    if (!searchText) return renderText;
+    if (!searchText) return sanitizeHtml(renderText);
 
     // Create a temporary DOM element to parse the HTML
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = renderText;
+    tempDiv.innerHTML = sanitizeHtml(renderText);
 
     // Function to highlight text in a text node
     const highlightTextNode = (node: Text) => {
@@ -85,7 +86,7 @@ export default function ContinuationReportTimelineEntry({
     };
 
     traverse(tempDiv);
-    return tempDiv.innerHTML;
+    return sanitizeHtml(tempDiv.innerHTML);
   };
 
   return (

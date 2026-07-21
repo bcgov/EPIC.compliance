@@ -24,6 +24,7 @@ import {
 import ParagraphWithReadMore from "@/components/Shared/ParagraphWithReadMore";
 import { generateHtmlWithEmbeddedImages } from "../RequirementUtils";
 import { RequirementImage } from "@/models/Image";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 interface RequirementRelatedDocumentCardProps {
   relatedDocument: RequirementRelatedDocumentData;
@@ -206,12 +207,12 @@ const RequirementRelatedDocumentCard: FC<
                       color: BCDesignTokens.typographyColorPrimary,
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: generateHtmlWithEmbeddedImages(
+                      __html: sanitizeHtml(generateHtmlWithEmbeddedImages(
                         section.description?.html ?? "",
                         relatedDocumentImages?.filter(
                           (image) => image.req_detail_doc_id === section.id
                         ) ?? []
-                      ),
+                      )),
                     }}
                   />
                 }

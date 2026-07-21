@@ -11,6 +11,7 @@ import dateUtils from "@/utils/dateUtils";
 import { MentionData } from "@/components/Shared/LexicalEditor/LexicalUtils";
 import { BCDesignTokens } from "epic.theme";
 import { mergeMapsWithArrayConcat } from "@/utils/appUtils";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 export const REQUIREMENT_TYPE_ID = "REQ";
 export const REGULATORY_CONSIDERATION_TYPE_ID = "REG";
@@ -361,7 +362,7 @@ export const formatRequirementImagesInFindings = (
 
     // Create a temporary DOM element to parse the HTML
     const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = findings;
+    tempDiv.innerHTML = sanitizeHtml(findings);
 
     // Find all spans with data-lexical-mention attribute
     const mentionSpans = tempDiv.querySelectorAll(
@@ -387,7 +388,7 @@ export const formatRequirementImagesInFindings = (
     });
 
     // Get the updated HTML
-    const updatedFindings = tempDiv.innerHTML;
+    const updatedFindings = sanitizeHtml(tempDiv.innerHTML);
 
     return {
       ...requirement,

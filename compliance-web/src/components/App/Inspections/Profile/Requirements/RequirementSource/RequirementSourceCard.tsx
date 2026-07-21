@@ -32,6 +32,7 @@ import {
   generateHtmlWithEmbeddedImages,
 } from "../RequirementUtils";
 import { RequirementImage } from "@/models/Image";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 type RequirementSourceCardProps = {
   data: RequirementSourceFormData[];
@@ -291,12 +292,12 @@ const RequirementSourceCard: FC<RequirementSourceCardProps> = memo(
                             color: BCDesignTokens.typographyColorPrimary,
                           }}
                           dangerouslySetInnerHTML={{
-                            __html: generateHtmlWithEmbeddedImages(
+                            __html: sanitizeHtml(generateHtmlWithEmbeddedImages(
                               item.description?.html ?? "",
                               requirementSourceImages?.filter(
                                 (image) => image.req_detail_id === item.id
                               ) ?? []
-                            ),
+                            )),
                           }}
                         />
                       }

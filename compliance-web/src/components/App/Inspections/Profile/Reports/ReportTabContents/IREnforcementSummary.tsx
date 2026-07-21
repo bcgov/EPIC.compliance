@@ -7,6 +7,7 @@ import { useResetInspectionRecord, useUpdateInspectionRecord } from "@/hooks/use
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { DEFAULT_REPORT_TAB_CONTENT } from "@/utils/constants";
 import { AxiosError } from "axios";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 const IREnforcementSummary = () => {
   const {
@@ -85,7 +86,7 @@ const IREnforcementSummary = () => {
         variant="body1"
         component={"div"}
         className="editor-content"
-        dangerouslySetInnerHTML={{ __html: enforcementSummary || DEFAULT_REPORT_TAB_CONTENT }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(enforcementSummary || DEFAULT_REPORT_TAB_CONTENT) }}
       />
     </IRBoxContainer>
   );

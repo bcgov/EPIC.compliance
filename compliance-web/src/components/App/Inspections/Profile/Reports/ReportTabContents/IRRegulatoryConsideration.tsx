@@ -13,6 +13,7 @@ import { InspectionRequirement } from "@/models/InspectionRequirement";
 import { REGULATORY_CONSIDERATION_TYPE_ID } from "@/components/App/Inspections/Profile/Requirements/RequirementUtils";
 import { RequirementImage } from "@/models/Image";
 import IRImageSection from "./IRImageSection";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 import useResponsiveDrawerWidth from "@/hooks/useResponsiveDrawerWidth";
 
 const IRRegulatoryConsideration = () => {
@@ -98,7 +99,7 @@ const IRRegulatoryConsideration = () => {
             className="editor-content"
             mb={1.5}
             dangerouslySetInnerHTML={{
-              __html: inspectionRegulatoryConsideration?.findings || "",
+              __html: sanitizeHtml(inspectionRegulatoryConsideration?.findings || ""),
             }}
           />
 

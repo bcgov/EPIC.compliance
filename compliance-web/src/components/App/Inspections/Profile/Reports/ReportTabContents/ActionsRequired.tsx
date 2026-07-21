@@ -6,6 +6,7 @@ import { notify } from "@/store/snackbarStore";
 import { useUpdateInspectionRecord } from "@/hooks/useInspectionReports";
 import { InspectionRecord } from "@/models/InspectionRecord";
 import { DEFAULT_REPORT_TAB_CONTENT } from "@/utils/constants";
+import { sanitizeHtml } from "@/utils/sanitizeHtml";
 
 const ActionsRequired = () => {
   const {
@@ -53,7 +54,7 @@ const ActionsRequired = () => {
         component={"div"}
         className="editor-content"
         dangerouslySetInnerHTML={{
-          __html: actionsRequired || DEFAULT_REPORT_TAB_CONTENT,
+          __html: sanitizeHtml(actionsRequired || DEFAULT_REPORT_TAB_CONTENT),
         }}
       />
     </IRBoxContainer>
