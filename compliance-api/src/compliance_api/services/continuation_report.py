@@ -1,6 +1,7 @@
 """ContinuationReport Service."""
 
 from io import BytesIO
+from zoneinfo import ZoneInfo
 
 from flask import g
 
@@ -210,8 +211,12 @@ def _get_report_data(case_file):
         ),
         "continuation_report_entries": [
             {
-                "date": entry.date_created.strftime("%Y-%m-%d"),
-                "time": entry.date_created.strftime("%H:%M"),
+                "date": entry.date_created.astimezone(
+                    ZoneInfo("America/Los_Angeles")
+                ).strftime("%Y-%m-%d"),
+                "time": entry.date_created.astimezone(
+                    ZoneInfo("America/Los_Angeles")
+                ).strftime("%H:%M"),
                 "action": _build_action_text(entry),
             }
             for entry in continuation_report
