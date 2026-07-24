@@ -27,3 +27,20 @@ export const sanitizeHtml = (html: string): string => {
     ALLOW_DATA_ATTR: true,
   });
 };
+
+/**
+ * Sanitizes a full HTML *document* (doctype/html/head/body, <style>,
+ * <colgroup>/<col>) as returned by epic.document for the report preview.
+ * Unlike sanitizeHtml(), this keeps the document's own layout/print CSS
+ * intact instead of applying the formatting-tag allow-list meant for
+ * small editor-authored fragments. DOMPurify still unconditionally strips
+ * <script>, event handler attributes, and javascript: URIs; the extra
+ * FORBID_TAGS remove other executable/navigable elements the default
+ * profile would otherwise keep (iframe, object, embed, form, etc.).
+ */
+export const sanitizeReportHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    WHOLE_DOCUMENT: true,
+    FORBID_TAGS: ["iframe", "object", "embed", "form", "base", "link", "meta"],
+  });
+};
