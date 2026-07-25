@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 import requests
 from flask import current_app
+from sqlalchemy.exc import IntegrityError
 
 from compliance_api.exceptions import BusinessError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
@@ -22,14 +23,39 @@ class DocumentJobService:
         return document_job.save()
 
     @staticmethod
+    def start_job(staff_user_id, inspection_record_id, output_format, document_job_data):
+        """Invalidate any previous job and create a new one.
+
+        Returns ``(document_job, created)``. A DB-level partial unique index
+        allows at most one active IN_PROGRESS job per (user, inspection_record,
+        output_format), so two near-simultaneous requests (e.g. a double-click
+        before the UI disables the generate button) can't both create a job:
+        the second one loses the race with an IntegrityError, and this returns
+        the job the first request already created instead, with ``created``
+        false so the caller knows not to spawn a second background render for
+        the same job.
+        """
+        DocumentJobService.invalidate_all_previous_documents_for_user(
+            staff_user_id, inspection_record_id, output_format
+        )
+        try:
+            return DocumentJobService.create(document_job_data), True
+        except IntegrityError:
+            existing = DocumentJobService.get_most_recent_document_job_for_user(
+                staff_user_id, inspection_record_id, output_format
+            )
+            return existing, False
+
+    @staticmethod
     def get_most_recent_document_job_for_user(user_id, inspection_record_id, output_format):
         """Get the most recently generated document for a user."""
-        jobs = DocumentJob.get_by_params({
-            "user_id": user_id,
-            "inspection_record_id": inspection_record_id,
-            "output_format": output_format,
-        })
-        return jobs[-1] if jobs else None
+        return DocumentJob.query.filter_by(
+            user_id=user_id,
+            inspection_record_id=inspection_record_id,
+            output_format=output_format,
+            is_active=True,
+            is_deleted=False,
+        ).order_by(DocumentJob.id.desc()).first()
 
     @staticmethod
     def get_last_generated_time_for_user(user_id, inspection_record_id, output_format):
@@ -44,33 +70,58 @@ class DocumentJobService:
 
     @staticmethod
     def update(document_job_id, user_id, update_data):
-        """Update a document job by its ID."""
-        document_job = DocumentJob.get_by_params({
-            "id": document_job_id,
-            "user_id": user_id,
-        })
-        document_job = document_job[0] if document_job else None
+        """Update a document job by its ID.
+
+        Idempotent: a job already invalidated (e.g. by
+        ``invalidate_all_previous_documents_for_user`` racing with this call)
+        is treated as a no-op success rather than a 404. Also refuses to
+        downgrade an already-COMPLETED job to FAILED, which guards against
+        the frontend's "stuck job" watchdog racing the background thread's
+        own completion update.
+        """
+        document_job = DocumentJob.query.filter_by(
+            id=document_job_id,
+            user_id=user_id,
+        ).first()
+
         if not document_job:
             raise ResourceNotFoundError(
                 f"Document Job with id: {document_job_id} not found"
             )
+
+        if document_job.is_deleted:
+            return document_job
+
+        if (
+            update_data.get("status") == DocumentJobStatusEnum.FAILED.value
+            and document_job.status == DocumentJobStatusEnum.COMPLETED.value
+        ):
+            return document_job
+
         document_job.update(update_data)
         return document_job
 
     @staticmethod
     def delete(document_job_id, user_id):
-        """Delete a document job by its ID."""
-        document_job = DocumentJob.get_by_params({
-            "id": document_job_id,
-            "user_id": user_id
-        })
+        """Delete a document job by its ID.
+
+        Idempotent: a job already deleted (e.g. by
+        ``invalidate_all_previous_documents_for_user`` racing with this call)
+        is treated as a no-op success rather than a 404, since the desired
+        end state - the job being deleted - already holds.
+        """
+        document_job = DocumentJob.query.filter_by(
+            id=document_job_id,
+            user_id=user_id,
+        ).first()
 
         if not document_job:
             raise ResourceNotFoundError(
                 f"Document Job with id: {document_job_id} not found"
             )
 
-        document_job = document_job[0]
+        if document_job.is_deleted:
+            return document_job
 
         document_job.update({
             "is_active": False,

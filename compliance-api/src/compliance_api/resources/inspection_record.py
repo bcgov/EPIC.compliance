@@ -303,32 +303,37 @@ class InspectionRecordPreview(Resource):
         if output_format in ("pdf", "docx"):
             inspection = ServiceUtils.inspection_exist_check(inspection_id)
             ServiceUtils.access_check_update_for_inspection(inspection)
-            DocumentJobService.invalidate_all_previous_documents_for_user(
-                staff_user_id, inspection_record_id, output_format
+            document_job, created = DocumentJobService.start_job(
+                staff_user_id,
+                inspection_record_id,
+                output_format,
+                {
+                    "user_id": staff_user_id,
+                    "inspection_record_id": inspection_record_id,
+                    "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+                    "output_format": output_format,
+                    "started_at": datetime.now(timezone.utc),
+                },
             )
-            document_job = DocumentJobService.create({
-                "user_id": staff_user_id,
-                "inspection_record_id": inspection_record_id,
-                "status": DocumentJobStatusEnum.IN_PROGRESS.value,
-                "output_format": output_format,
-                "started_at": datetime.now(timezone.utc),
-            })
-            access_token = getattr(g, "access_token", None)
-            jwt_oidc_token_info = getattr(g, "jwt_oidc_token_info", None)
-            thread = threading.Thread(
-                target=DocumentJobService.handle_background_job,
-                args=(
-                    current_app._get_current_object(),  # pylint: disable=protected-access
-                    document_job.id,
-                    access_token,
-                    jwt_oidc_token_info,
-                    inspection_id,
-                    inspection_record_id,
-                    staff_user_id,
-                    output_format,
-                ),
-            )
-            thread.start()
+            # A concurrent request already created and is rendering this job -
+            # don't start a second background render for the same job id.
+            if created:
+                access_token = getattr(g, "access_token", None)
+                jwt_oidc_token_info = getattr(g, "jwt_oidc_token_info", None)
+                thread = threading.Thread(
+                    target=DocumentJobService.handle_background_job,
+                    args=(
+                        current_app._get_current_object(),  # pylint: disable=protected-access
+                        document_job.id,
+                        access_token,
+                        jwt_oidc_token_info,
+                        inspection_id,
+                        inspection_record_id,
+                        staff_user_id,
+                        output_format,
+                    ),
+                )
+                thread.start()
             return DocumentJobSchema().dump(document_job), HTTPStatus.ACCEPTED
 
         # Handle HTML format (default)
