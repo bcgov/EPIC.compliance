@@ -10,12 +10,12 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
+from compliance_api.utils.limiter import limiter
 
 from ..schemas import (
     CreateOrderApprovalSchema, OrderApprovalSchema, OrderCreateSchema, OrderIssueSchema, OrderLinkCreateSchema,
     OrderLinksResponseSchema, OrderReplaceSchema, OrderSchema, OrderStatusSchema, OrderUpdateSchema,
     RenderRequestSchema, ResetOrderFieldSchema, UpdateOrderApprovalStatusSchema)
-from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
 
@@ -67,8 +67,7 @@ order_links_response_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Orders(Resource):
     """Resource for managing orders."""
 
@@ -105,8 +104,7 @@ class Orders(Resource):
         return OrderSchema().dump(created_order), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/projectwise", methods=["GET", "OPTIONS"])
+@API.route("/projectwise", methods=["GET"])
 class ProjectwiseOrders(Resource):
     """Resource for managing projectwise orders."""
 
@@ -131,8 +129,7 @@ class ProjectwiseOrders(Resource):
         return order_list_schema.dump(orders), HTTPStatus.OK
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/<int:order_id>", methods=["OPTIONS", "GET", "PATCH", "DELETE"])
+@API.route("/<int:order_id>", methods=["GET", "PATCH", "DELETE"])
 @API.doc(params={"order_id": "The unique identifier for the order"})
 class Order(Resource):
     """Resource for managing a single Order."""
@@ -173,8 +170,7 @@ class Order(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/order-numbers/<string:order_number>", methods=["GET", "OPTIONS"])
+@API.route("/order-numbers/<string:order_number>", methods=["GET"])
 @API.doc(params={"order_number": "The unique identifier for the order"})
 class OrderByOrderNumber(Resource):
     """Resource for managing a single Order."""
@@ -192,8 +188,7 @@ class OrderByOrderNumber(Resource):
         return OrderSchema().dump(order), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:order_id>/status", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:order_id>/status", methods=["PATCH"])
 @API.doc(params={"order_id": "The unique identifier for the order"})
 class OrderStatus(Resource):
     """Update the inspection status."""
@@ -212,8 +207,7 @@ class OrderStatus(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:order_id>/issue", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:order_id>/issue", methods=["PATCH"])
 @API.doc(params={"order_id": "The unique identifier for the order"})
 class OrderIssue(Resource):
     """Update the inspection status."""
@@ -232,8 +226,7 @@ class OrderIssue(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:order_id>/reset", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:order_id>/reset", methods=["PATCH"])
 @API.doc(params={"order_id": "The unique identifier for the order"})
 class OrderFieldReset(Resource):
     """Reset specific fields in an order."""
@@ -253,10 +246,11 @@ class OrderFieldReset(Resource):
         return OrderSchema().dump(updated_order), HTTPStatus.OK
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/<int:order_id>/render", methods=["POST", "OPTIONS"])
+@API.route("/<int:order_id>/render", methods=["POST"])
 class OrderPreview(Resource):
     """Resource for managing order preview and pdf."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @API.response(code=200, description="Success")
@@ -279,8 +273,7 @@ class OrderPreview(Resource):
         return response.json(), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST, PATCH")
-@API.route("/<int:order_id>/approvals", methods=["POST", "GET", "OPTIONS"])
+@API.route("/<int:order_id>/approvals", methods=["POST", "GET"])
 class OrderApprovals(Resource):
     """Resource for managing order approvals."""
 
@@ -315,8 +308,7 @@ class OrderApprovals(Resource):
         )
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/<int:order_id>/replace", methods=["POST", "OPTIONS"])
+@API.route("/<int:order_id>/replace", methods=["POST"])
 @API.doc(params={"order_id": "The unique identifier for the order to replace"})
 class OrderReplace(Resource):
     """Resource for replacing an order."""
@@ -339,10 +331,9 @@ class OrderReplace(Resource):
         return OrderSchema().dump(replacement_order), HTTPStatus.CREATED
 
 
-@cors_preflight("OPTIONS, PATCH, GET")
 @API.route(
     "/<int:order_id>/approvals/<int:approval_id>/status",
-    methods=["PATCH", "OPTIONS"],
+    methods=["PATCH"],
 )
 class OrderApprovalStatus(Resource):
     """Resource for managing order approval status."""
@@ -365,8 +356,7 @@ class OrderApprovalStatus(Resource):
         return OrderApprovalSchema().dump(updated_approval), HTTPStatus.OK
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/links", methods=["POST", "OPTIONS"])
+@API.route("/links", methods=["POST"])
 class OrderLinks(Resource):
     """Link inspection orders."""
 

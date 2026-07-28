@@ -28,13 +28,27 @@ from dotenv import find_dotenv, load_dotenv
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
 
+# Environment names that are treated as production-grade (strict config, no debug,
+# no leaked stack traces). Kept as a single source of truth for get_named_config
+# and for anything else (e.g. the top-level error handler) that needs the same check.
+PRODUCTION_LIKE_ENVIRONMENTS = ("production", "staging", "default")
+
+
+def _redact_db_uri(uri: str) -> str:
+    """Mask the password in a SQLAlchemy URI so it's safe to log."""
+    scheme_sep = "://"
+    scheme, _, rest = uri.partition(scheme_sep)
+    creds, _, host_part = rest.partition("@")
+    user, _, _password = creds.partition(":")
+    return f"{scheme}{scheme_sep}{user}:***@{host_part}"
+
 
 def get_named_config(config_name: str = "development"):
     """Return the configuration object based on the name.
 
     :raise: KeyError: if an unknown configuration is requested
     """
-    if config_name in ["production", "staging", "default"]:
+    if config_name in PRODUCTION_LIKE_ENVIRONMENTS:
         config = ProdConfig()
     elif config_name == "testing":
         config = TestConfig()
@@ -52,7 +66,10 @@ class _Config:  # pylint: disable=too-few-public-methods
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
-    SECRET_KEY = "a secret"
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        SECRET_KEY = os.urandom(24)
+        print("WARNING: SECRET_KEY not set via environment; using an ephemeral random value.", file=sys.stderr)
 
     TESTING = False
     DEBUG = False
@@ -106,7 +123,7 @@ class _Config:  # pylint: disable=too-few-public-methods
     JWT_OIDC_ALGORITHMS = os.getenv("JWT_OIDC_ALGORITHMS", "RS256")
     JWT_OIDC_JWKS_URI = os.getenv("JWT_OIDC_JWKS_URI")
     JWT_OIDC_ISSUER = os.getenv("JWT_OIDC_ISSUER")
-    JWT_OIDC_AUDIENCE = os.getenv("JWT_OIDC_AUDIENCE", "account")
+    JWT_OIDC_AUDIENCE = os.getenv("JWT_OIDC_AUDIENCE")
     JWT_OIDC_CACHING_ENABLED = os.getenv("JWT_OIDC_CACHING_ENABLED", "True")
     JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
     DB_ECRPT_KEY = os.getenv("DB_ECRPT_KEY")
@@ -118,7 +135,7 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = True
-    print(f"SQLAlchemy URL (DevConfig): {_Config.SQLALCHEMY_DATABASE_URI}")
+    print(f"SQLAlchemy URL (DevConfig): {_redact_db_uri(_Config.SQLALCHEMY_DATABASE_URI)}")
 
     # # Development-specific database pooling (more lenient for debugging)
     # SQLALCHEMY_ENGINE_OPTIONS = {
@@ -243,17 +260,11 @@ class DockerConfig(_Config):  # pylint: disable=too-few-public-methods
         f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}"
     )
 
-    print(f"SQLAlchemy URL (Docker): {SQLALCHEMY_DATABASE_URI}")
+    print(f"SQLAlchemy URL (Docker): {_redact_db_uri(SQLALCHEMY_DATABASE_URI)}")
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production Config."""
-
-    SECRET_KEY = os.getenv("SECRET_KEY", None)
-
-    if not SECRET_KEY:
-        SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
 
     TESTING = False
     DEBUG = False

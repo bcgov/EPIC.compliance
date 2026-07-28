@@ -17,7 +17,7 @@ from compliance_api.schemas import (
 from compliance_api.services import (
     DocumentJobService, InspectionRecordApprovalService, InspectionRecordService, StaffUserService)
 from compliance_api.services.service_utils import ServiceUtils
-from compliance_api.utils.util import cors_preflight
+from compliance_api.utils.limiter import limiter
 
 from .apihelper import Api as ApiHelper
 
@@ -53,8 +53,7 @@ ir_render_request_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST, PATCH")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class InspectionRecords(Resource):
     """Resource for managing inspection records."""
 
@@ -85,8 +84,7 @@ class InspectionRecords(Resource):
         return InspectionRecordSchema().dump(created_ir), HTTPStatus.CREATED
 
 
-@cors_preflight("PATCH,GET,DELETE, OPTIONS")
-@API.route("/<int:inspection_record_id>", methods=["PATCH", "GET", "DELETE", "OPTIONS"])
+@API.route("/<int:inspection_record_id>", methods=["PATCH", "GET", "DELETE"])
 class InspectionRecord(Resource):
     """InspectionRecord resource."""
 
@@ -137,8 +135,7 @@ class InspectionRecord(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:inspection_record_id>/switch-to-final", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:inspection_record_id>/switch-to-final", methods=["PATCH"])
 class InspectionRecordFinal(Resource):
     """Resource to handle InspectionRecord."""
 
@@ -155,8 +152,7 @@ class InspectionRecordFinal(Resource):
         return InspectionRecordSchema().dump(final_ir), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST, PATCH")
-@API.route("/<int:inspection_record_id>/approvals", methods=["POST", "GET", "OPTIONS"])
+@API.route("/<int:inspection_record_id>/approvals", methods=["POST", "GET"])
 class InspectionRecordApprovals(Resource):
     """Resource for managing inspection records."""
 
@@ -198,10 +194,9 @@ class InspectionRecordApprovals(Resource):
         )
 
 
-@cors_preflight("OPTIONS, PATCH, GET")
 @API.route(
     "/<int:inspection_record_id>/approvals/<int:approval_id>",
-    methods=["PATCH", "GET", "OPTIONS"],
+    methods=["PATCH", "GET"],
 )
 class InspectionRecordApproval(Resource):
     """Resource for managing inspection record approval."""
@@ -224,10 +219,9 @@ class InspectionRecordApproval(Resource):
         return InspectionRecordApprovalSchema().dump(updated_approval), HTTPStatus.OK
 
 
-@cors_preflight("OPTIONS, PATCH, GET")
 @API.route(
     "/<int:inspection_record_id>/approvals/<int:approval_id>/status",
-    methods=["PATCH", "OPTIONS"],
+    methods=["PATCH"],
 )
 class InspectionRecordApprovalStatus(Resource):
     """Resource for managing inspection record approval status."""
@@ -252,8 +246,7 @@ class InspectionRecordApprovalStatus(Resource):
         return InspectionRecordApprovalSchema().dump(updated_approval), HTTPStatus.OK
 
 
-@cors_preflight("OPTIONS, PATCH")
-@API.route("/<int:inspection_record_id>/reset", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:inspection_record_id>/reset", methods=["PATCH"])
 class InspectionRecordReset(Resource):
     """Resource for resetting inspection record fields."""
 
@@ -277,10 +270,11 @@ class InspectionRecordReset(Resource):
         return InspectionRecordSchema().dump(updated_ir), HTTPStatus.OK
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/<int:inspection_record_id>/render", methods=["POST", "OPTIONS"])
+@API.route("/<int:inspection_record_id>/render", methods=["POST"])
 class InspectionRecordPreview(Resource):
     """Resource for managing inspection records."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @API.response(code=200, description="Success")

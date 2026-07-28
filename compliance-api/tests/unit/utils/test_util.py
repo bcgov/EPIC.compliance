@@ -14,90 +14,12 @@
 
 """Tests to assure the CORS utilities.
 
-Test-Suite to ensure that the CORS decorator is working as expected.
+Test-Suite to ensure that the CORS utilities are working as expected.
 """
 import os
 from unittest.mock import patch
 
-from compliance_api.utils.util import Singleton, allowedorigins, cors_preflight
-
-
-class TestCorsPreflight:
-    """Test cors_preflight decorator."""
-
-    def test_cors_preflight_decorator_adds_options_method(self):
-        """Test that cors_preflight decorator adds options method to class."""
-        # Arrange
-        @cors_preflight("GET, POST, PUT, DELETE")
-        class TestResource:
-            """Test resource with cors_preflight decorator."""
-
-            def get(self):
-                return "get method"
-
-        # Act
-        resource = TestResource()
-
-        # Assert
-        assert hasattr(resource, "options")
-        assert callable(getattr(resource, "options"))
-
-    def test_cors_preflight_options_method_returns_correct_headers(self):
-        """Test that options method returns correct CORS headers."""
-        # Arrange
-        methods = "GET, POST, PUT, DELETE"
-
-        @cors_preflight(methods)
-        class TestResource:
-            def get(self):
-                return "get method"
-
-        resource = TestResource()
-
-        # Act
-        response, status_code, headers = resource.options()
-
-        # Assert
-        assert status_code == 200
-        assert response == {"Allow": "GET, DELETE, PUT, POST"}
-        assert headers["Access-Control-Allow-Origin"] == "*"
-        assert headers["Access-Control-Allow-Methods"] == methods
-        assert "Authorization" in headers["Access-Control-Allow-Headers"]
-        assert "Content-Type" in headers["Access-Control-Allow-Headers"]
-
-    def test_cors_preflight_with_different_methods(self):
-        """Test cors_preflight with different HTTP methods."""
-        # Arrange
-        methods = "GET, POST"
-
-        @cors_preflight(methods)
-        class TestResource:
-            def get(self):
-                return "get method"
-
-        resource = TestResource()
-
-        # Act
-        response, status_code, headers = resource.options()
-
-        # Assert
-        assert headers["Access-Control-Allow-Methods"] == methods
-
-    def test_cors_preflight_preserves_original_class(self):
-        """Test that cors_preflight preserves original class functionality."""
-        # Arrange
-        @cors_preflight("GET, POST")
-        class TestResource:
-            """Test resource with cors_preflight decorator."""
-
-            def get(self):
-                return "original get method"
-
-        resource = TestResource()
-
-        # Act & Assert
-        assert resource.get() == "original get method"
-        assert hasattr(resource, "options")
+from compliance_api.utils.util import Singleton, allowedorigins
 
 
 class TestAllowedOrigins:

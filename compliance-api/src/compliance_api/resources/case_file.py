@@ -29,7 +29,7 @@ from compliance_api.schemas import (
 from compliance_api.services import CaseFileService
 from compliance_api.services.case_file_aggregate import CaseFileAggregateService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
+from compliance_api.utils.limiter import limiter
 
 from .apihelper import Api as ApiHelper
 
@@ -77,8 +77,7 @@ case_file_open_items_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/initiation-options", methods=["POST", "GET", "OPTIONS"])
+@API.route("/initiation-options", methods=["POST", "GET"])
 class CaseFileInitiation(Resource):
     """Resource for managing initiation options."""
 
@@ -95,8 +94,7 @@ class CaseFileInitiation(Resource):
         return key_val_schema.dump(initiation_options), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class CaseFiles(Resource):
     """Resource for managing CaseFiles."""
 
@@ -192,8 +190,7 @@ class CaseFiles(Resource):
         return CaseFileSchema().dump(created_case_file), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<int:case_file_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.route("/<int:case_file_id>", methods=["PATCH", "GET", "DELETE"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFile(Resource):
     """Resource for managing a single CaseFile."""
@@ -240,8 +237,7 @@ class CaseFile(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/case-file-numbers/<string:case_file_number>", methods=["GET", "OPTIONS"])
+@API.route("/case-file-numbers/<string:case_file_number>", methods=["GET"])
 @API.doc(params={"case_file_number": "The unique file number for the case file"})
 class CaseFileNumber(Resource):
     """Resource for managing a single CaseFile."""
@@ -261,8 +257,7 @@ class CaseFileNumber(Resource):
         return CaseFileSchema().dump(case_file), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:case_file_id>/open-items", methods=["GET", "OPTIONS"])
+@API.route("/<int:case_file_id>/open-items", methods=["GET"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFileOpenItems(Resource):
     """Resource for fetching open enforcement items for a case file."""
@@ -280,8 +275,7 @@ class CaseFileOpenItems(Resource):
         return CaseFileOpenItemsSchema().dump(open_items), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:case_file_id>/officers", methods=["GET", "OPTIONS"])
+@API.route("/<int:case_file_id>/officers", methods=["GET"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFileOtherOfficers(Resource):
     """Other officers resource for a case file."""
@@ -298,8 +292,7 @@ class CaseFileOtherOfficers(Resource):
         return StaffUserSchema().dump(officers, many=True), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:case_file_id>/status", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:case_file_id>/status", methods=["PATCH"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFileStatus(Resource):
     """Update the case file status."""
@@ -318,8 +311,7 @@ class CaseFileStatus(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("POST, GET, OPTIONS")
-@API.route("/<int:case_file_id>/links", methods=["POST", "GET", "OPTIONS"])
+@API.route("/<int:case_file_id>/links", methods=["POST", "GET"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFileLinks(Resource):
     """Link the case file."""
@@ -351,8 +343,7 @@ class CaseFileLinks(Resource):
         return case_file_list_schema.dump(case_files), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:case_file_id>/unlink", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:case_file_id>/unlink", methods=["PATCH"])
 @API.doc(params={"case_file_id": "The unique identifier for the case file"})
 class CaseFileUnlink(Resource):
     """Unlink the case file."""
@@ -374,10 +365,11 @@ class CaseFileUnlink(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/export", methods=["POST", "OPTIONS"])
+@API.route("/export", methods=["POST"])
 class CaseFilesExport(Resource):
     """Export all case files as Excel."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @ApiHelper.swagger_decorators(

@@ -21,7 +21,11 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 
+import os
+
 from flask import Blueprint
+
+from compliance_api.config import PRODUCTION_LIKE_ENVIRONMENTS
 
 from .administrative_penalty import API as ADMINISTRATIVE_PENALTY_API
 from .agency import API as AGENCY_API
@@ -83,13 +87,29 @@ authorizations = {
     }
 }
 
+# Swagger UI and swagger.json expose the full endpoint/model map unauthenticated;
+# keep them out of production and staging.
+# NOTE: doc=False only drops the UI route - flask-restx keeps registering
+# /swagger.json unless add_specs is also turned off, so both are needed to stop
+# the spec being served.
+DOCS_ENABLED = os.getenv("FLASK_ENV", "development") not in PRODUCTION_LIKE_ENVIRONMENTS
+
+# Paths the docs occupy when they are enabled, so the auth gate can let them
+# through. Inert in production/staging, where neither route is registered.
+DOC_PATHS = frozenset({URL_PREFIX.rstrip("/"), f"{URL_PREFIX}swagger.json"})
+
 API = Api(
-    API_BLUEPRINT,
     title="COMPLIANCE API",
     version="1.0",
     description="The Core API for COMPLIANCE",
     authorizations=authorizations,
+    doc="/" if DOCS_ENABLED else False,
 )
+# The blueprint is bound via init_app rather than the Api constructor because
+# Api.__init__ calls init_app(app) without forwarding **kwargs, and init_app
+# resets add_specs to its True default - so passing add_specs to the constructor
+# is silently discarded.
+API.init_app(API_BLUEPRINT, add_specs=DOCS_ENABLED)
 
 API.add_namespace(USER_API)
 API.add_namespace(POSITION_API)

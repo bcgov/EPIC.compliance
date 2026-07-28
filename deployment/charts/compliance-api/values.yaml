@@ -1,4 +1,5 @@
 replicaCount: 1
+flaskEnv: production
 cors_origin: https://compliance-web-c8b80a-dev.apps.gold.devops.gov.bc.ca,http://localhost:5173,https://dev.compliance.eao.gov.bc.ca
 
 image:

@@ -12,35 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""CORS pre-flight decorator.
-
-A simple decorator to add the options method to a Request Class.
-"""
+"""Utility helpers shared across the API."""
 
 import os
 import re
-
-
-def cors_preflight(methods):
-    """Render an option method on the class."""
-
-    def wrapper(f):
-        def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            return (
-                {"Allow": "GET, DELETE, PUT, POST"},
-                200,
-                {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": methods,
-                    "Access-Control-Allow-Headers": "Authorization, Content-Type, registries-trace-id, "
-                    "invitation_token",
-                },
-            )
-
-        setattr(f, "options", options)
-        return f
-
-    return wrapper
 
 
 def allowedorigins():

@@ -20,7 +20,6 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.schemas import KeyValueSchema
 from compliance_api.services import ProjectStatusService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -35,8 +34,7 @@ keyvalue_list_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["GET", "OPTIONS"])
+@API.route("", methods=["GET"])
 class ProjectStatusOptions(Resource):
     """Resource for managing project status options."""
 

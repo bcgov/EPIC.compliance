@@ -16,8 +16,8 @@ from compliance_api.schemas.warning_letter_approval import (
     CreateWarningLetterApprovalSchema, UpdateWarningLetterApprovalStatusSchema, WarningLetterApprovalSchema)
 from compliance_api.services.warning_letter.warning_letter import WarningLetterService
 from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
+from compliance_api.utils.limiter import limiter
 
-from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
 
@@ -60,8 +60,7 @@ warning_letter_approval_status_update_model = (
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class WarningLetters(Resource):
     """Resource for managing warning letters."""
 
@@ -102,8 +101,7 @@ class WarningLetters(Resource):
         return WarningLetterSchema().dump(created_warning_letter), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/<int:warning_letter_id>", methods=["OPTIONS", "GET", "PATCH", "DELETE"])
+@API.route("/<int:warning_letter_id>", methods=["GET", "PATCH", "DELETE"])
 @API.doc(params={"warning_letter_id": "The unique identifier for the warning letter"})
 class WarningLetter(Resource):
     """Resource for managing a single Warning Letter."""
@@ -152,9 +150,8 @@ class WarningLetter(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
 @API.route(
-    "/warning-letter-numbers/<string:warning_letter_number>", methods=["GET", "OPTIONS"]
+    "/warning-letter-numbers/<string:warning_letter_number>", methods=["GET"]
 )
 @API.doc(
     params={"warning_letter_number": "The unique identifier for the warning letter"}
@@ -183,8 +180,7 @@ class WarningLetterByWarningLetterNumber(Resource):
         return WarningLetterSchema().dump(warning_letter), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:warning_letter_id>/reset", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:warning_letter_id>/reset", methods=["PATCH"])
 @API.doc(params={"warning_letter_id": "The unique identifier for the warning letter"})
 class WarningLetterReset(Resource):
     """Reset specific fields in a warning letter."""
@@ -207,8 +203,7 @@ class WarningLetterReset(Resource):
         return WarningLetterSchema().dump(updated_warning_letter), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:warning_letter_id>/issue", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:warning_letter_id>/issue", methods=["PATCH"])
 @API.doc(params={"warning_letter_id": "The unique identifier for the warning letter"})
 class WarningLetterIssue(Resource):
     """Update the inspection status."""
@@ -227,10 +222,11 @@ class WarningLetterIssue(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/<int:warning_letter_id>/render", methods=["POST", "OPTIONS"])
+@API.route("/<int:warning_letter_id>/render", methods=["POST"])
 class WarningLetterPreview(Resource):
     """Resource for managing warning letter preview and pdf."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @API.response(code=200, description="Success")
@@ -255,8 +251,7 @@ class WarningLetterPreview(Resource):
         return response.json(), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST, PATCH")
-@API.route("/<int:warning_letter_id>/approvals", methods=["POST", "GET", "OPTIONS"])
+@API.route("/<int:warning_letter_id>/approvals", methods=["POST", "GET"])
 class WarningLetterApprovals(Resource):
     """Resource for managing warning letter approvals."""
 
@@ -301,10 +296,9 @@ class WarningLetterApprovals(Resource):
         )
 
 
-@cors_preflight("OPTIONS, PATCH, GET")
 @API.route(
     "/<int:warning_letter_id>/approvals/<int:approval_id>/status",
-    methods=["PATCH", "OPTIONS"],
+    methods=["PATCH"],
 )
 class WarningLetterApprovalStatus(Resource):
     """Resource for managing warning letter approval status."""

@@ -26,7 +26,6 @@ from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.services.cached_staff_user import CachedStaffUserService
 from compliance_api.services import StaffUserService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -50,8 +49,7 @@ key_value_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class StaffUsers(Resource):
     """Resource for managing users."""
 
@@ -80,8 +78,7 @@ class StaffUsers(Resource):
         return StaffUserSchema().dump(created_user), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/active", methods=["GET", "OPTIONS"])
+@API.route("/active", methods=["GET"])
 class StaffUsersActive(Resource):
     """Read-only staff list accessible to all authenticated roles.
 
@@ -99,8 +96,7 @@ class StaffUsersActive(Resource):
         return StaffUserSlimSchema(many=True).dump(users), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<int:user_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.route("/<int:user_id>", methods=["PATCH", "GET", "DELETE"])
 @API.doc(params={"user_id": "The user identifier"})
 class StaffUser(Resource):
     """Resource for managing a single user."""
@@ -148,7 +144,6 @@ class StaffUser(Resource):
         return StaffUserSchema().dump(deleted_user), HTTPStatus.OK
 
 
-@cors_preflight("GET")
 @API.route("/by-auth-user-guid/<string:auth_user_guid>", methods=["GET"])
 @API.doc(params={"auth_user_guid": "The auth user GUID"})
 class StaffUserByAuthGuid(Resource):
@@ -171,7 +166,6 @@ class StaffUserByAuthGuid(Resource):
         return StaffUserSchema().dump(user), HTTPStatus.OK
 
 
-@cors_preflight("GET")
 @API.route("/permissions", methods=["GET"])
 class StaffUserPermissions(Resource):
     """Resources to manage permission level of staff user."""

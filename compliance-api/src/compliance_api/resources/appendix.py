@@ -22,7 +22,6 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import AppendixCreateSchema, AppendixSchema
 from compliance_api.services import AppendixService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -37,8 +36,7 @@ appendix_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Appendices(Resource):
     """Resource for managing appendices."""
 
@@ -78,8 +76,7 @@ class Appendices(Resource):
         return AppendixSchema().dump(created_appendix), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<int:appendix_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.route("/<int:appendix_id>", methods=["PATCH", "GET", "DELETE"])
 @API.doc(params={"appendix_id": "The unique identifier of appendix"})
 class Appendix(Resource):
     """Resource for managing a single Appendix."""

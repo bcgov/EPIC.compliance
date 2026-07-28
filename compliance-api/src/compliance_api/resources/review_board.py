@@ -9,7 +9,6 @@ from compliance_api.schemas.review_board import (
     ReviewBoardAdministrativePenaltySchema, ReviewBoardInspectionRecordSchema, ReviewBoardOrderSchema,
     ReviewBoardWarningLetterSchema)
 from compliance_api.services.review_board import ReviewBoardService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -31,8 +30,7 @@ administrative_penalty_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/inspection-records", methods=["GET", "OPTIONS"])
+@API.route("/inspection-records", methods=["GET"])
 class ReviewBoardInspectionRecords(Resource):
     """Resource for managing inspection records in review board."""
 
@@ -52,8 +50,7 @@ class ReviewBoardInspectionRecords(Resource):
         return schema.dump(inspection_records), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/warning-letters", methods=["GET", "OPTIONS"])
+@API.route("/warning-letters", methods=["GET"])
 class ReviewBoardWarningLetters(Resource):
     """Resource for managing warning letters in review board."""
 
@@ -71,8 +68,7 @@ class ReviewBoardWarningLetters(Resource):
         return schema.dump(warning_letters), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/orders", methods=["GET", "OPTIONS"])
+@API.route("/orders", methods=["GET"])
 class ReviewBoardOrders(Resource):
     """Resource for managing orders in review board."""
 
@@ -90,8 +86,7 @@ class ReviewBoardOrders(Resource):
         return schema.dump(orders), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/administrative-penalties", methods=["GET", "OPTIONS"])
+@API.route("/administrative-penalties", methods=["GET"])
 class ReviewBoardAdministrativePenalties(Resource):
     """Resource for managing administrative penalties in review board."""
 

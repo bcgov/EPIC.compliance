@@ -23,7 +23,6 @@ from compliance_api.models.document_job import DocumentJob
 from compliance_api.schemas.document_job import DocumentJobSchema, DocumentJobUpdateSchema
 from compliance_api.services.document_job import DocumentJobService
 from compliance_api.services.staff_user import StaffUserService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -34,8 +33,7 @@ API = Namespace(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/inspections/<int:inspection_record_id>/recent", methods=["GET", "OPTIONS"])
+@API.route("/inspections/<int:inspection_record_id>/recent", methods=["GET"])
 class DocumentJobRecent(Resource):
     """Resource for managing document jobs per inspection."""
 
@@ -57,8 +55,7 @@ class DocumentJobRecent(Resource):
         return schema.dump(document_job), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/inspections/<int:inspection_record_id>/last-generated", methods=["GET", "OPTIONS"])
+@API.route("/inspections/<int:inspection_record_id>/last-generated", methods=["GET"])
 class DocumentJobLastGenerated(Resource):
     """Resource for managing document jobs per inspection."""
 
@@ -79,8 +76,7 @@ class DocumentJobLastGenerated(Resource):
         return {"last_generated_time": last_generated_time}, HTTPStatus.OK
 
 
-@cors_preflight("OPTIONS, DELETE, PUT")
-@API.route("/<int:job_id>", methods=["OPTIONS", "DELETE", "PUT"])
+@API.route("/<int:job_id>", methods=["DELETE", "PUT"])
 class DocumentJobById(Resource):
     """Resource for getting a specific document job by inspection."""
 

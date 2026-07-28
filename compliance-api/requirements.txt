@@ -7,12 +7,14 @@ cachelib==0.13.0
 certifi==2026.2.25
 charset-normalizer==3.4.5
 click==8.3.1
+deprecated==1.3.1
 ecdsa==0.19.1
 et_xmlfile==2.0.0
 Flask==3.1.3
 Flask-Caching==2.3.1
 flask-cors==6.0.2
 flask-jwt-oidc==0.7.0
+flask-limiter==4.1.1
 Flask-Mail==0.10.0
 flask-marshmallow==1.2.1
 Flask-Migrate==4.1.0
@@ -27,6 +29,7 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
+limits==5.8.0
 lxml==5.1.0
 Mako==1.3.10
 MarkupSafe==3.0.3
@@ -35,6 +38,7 @@ marshmallow-enum==1.5.1
 marshmallow-sqlalchemy==1.0.0
 numpy==2.4.2
 openpyxl==3.1.5
+ordered-set==4.1.0
 packaging==26.0
 pandas==2.3.1
 Pillow==11.2.1
@@ -61,3 +65,4 @@ typing_extensions==4.15.0
 tzdata==2025.3
 urllib3==2.6.3
 Werkzeug==3.1.6
+wrapt==2.2.2

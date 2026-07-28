@@ -22,7 +22,6 @@ from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import ProjectDetailSchema, ProjectSchema
 from compliance_api.services import ProjectService
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -33,8 +32,7 @@ project_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Projects(Resource):
     """Resource for managing projects."""
 
@@ -49,8 +47,7 @@ class Projects(Resource):
         return project_list_schema.dump(projects), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:project_id>", methods=["GET", "OPTIONS"])
+@API.route("/<int:project_id>", methods=["GET"])
 @API.doc(params={"project_id": "The unique identifier of project"})
 class Project(Resource):
     """Resource for managing a single project."""
@@ -75,8 +72,7 @@ class Project(Resource):
         return ProjectDetailSchema().dump(project), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:project_id>/abbreviation", methods=["GET", "OPTIONS"])
+@API.route("/<int:project_id>/abbreviation", methods=["GET"])
 @API.doc(params={"project_id": "The unique identifier of project"})
 class ProjectAbbreviation(Resource):
     """Resource for fetching a project's abbreviation by id."""

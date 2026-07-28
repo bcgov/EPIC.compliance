@@ -22,7 +22,6 @@ from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import TopicCreateSchema, TopicSchema
 from compliance_api.services import TopicService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -37,8 +36,7 @@ topic_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Topics(Resource):
     """Resource for managing topics."""
 
@@ -66,8 +64,7 @@ class Topics(Resource):
         return TopicSchema().dump(created_topic), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<int:topic_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.route("/<int:topic_id>", methods=["PATCH", "GET", "DELETE"])
 @API.doc(params={"topic_id": "The unique identifier of topic"})
 class Topic(Resource):
     """Resource for managing a single topic."""

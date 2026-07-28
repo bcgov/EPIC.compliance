@@ -26,8 +26,8 @@ from compliance_api.schemas import (
     InspectionStatusSchema, InspectionUpdateSchema, KeyValueSchema, PendingItemSchema, StaffUserSchema)
 from compliance_api.services import InspectionRequirementService, InspectionService
 from compliance_api.utils.enum import PermissionEnum
+from compliance_api.utils.limiter import limiter
 from compliance_api.utils.schema_utils import get_pagination_schema
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -73,8 +73,7 @@ pending_item_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/attendance-options", methods=["GET", "OPTIONS"])
+@API.route("/attendance-options", methods=["GET"])
 class AttendanceOptions(Resource):
     """Resource for managing attendance options."""
 
@@ -91,8 +90,7 @@ class AttendanceOptions(Resource):
         return attendance_options_schema.dump(attendance_options), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/type-options", methods=["GET", "OPTIONS"])
+@API.route("/type-options", methods=["GET"])
 class IRTypeOptions(Resource):
     """Resource for managing IRType options."""
 
@@ -109,8 +107,7 @@ class IRTypeOptions(Resource):
         return ir_type_options_schema.dump(ir_type_options), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/initiation-options", methods=["GET", "OPTIONS"])
+@API.route("/initiation-options", methods=["GET"])
 class InitiationOptions(Resource):
     """Resource for managing initiation options."""
 
@@ -127,8 +124,7 @@ class InitiationOptions(Resource):
         return initiation_options_schema.dump(initiation_options), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/ir-status-options", methods=["GET", "OPTIONS"])
+@API.route("/ir-status-options", methods=["GET"])
 class IRStatusOptions(Resource):
     """Resource for managing IRStatus options."""
 
@@ -145,8 +141,7 @@ class IRStatusOptions(Resource):
         return ir_status_options_schema.dump(ir_status_options), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Inspections(Resource):
     """Resource for managing inspections."""
 
@@ -234,10 +229,11 @@ class Inspections(Resource):
         return InspectionSchema().dump(created_inspection), HTTPStatus.CREATED
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/export", methods=["POST", "OPTIONS"])
+@API.route("/export", methods=["POST"])
 class InspectionExport(Resource):
     """Resource for exporting inspections to Excel."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @API.expect(inspection_filter_model)
@@ -259,8 +255,7 @@ class InspectionExport(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/more-details", methods=["POST", "GET", "OPTIONS"])
+@API.route("/more-details", methods=["POST", "GET"])
 class InspectionDetails(Resource):
     """Resource for managing inspections."""
 
@@ -287,9 +282,8 @@ class InspectionDetails(Resource):
         return inspection_more_details_schema.dump(inspections), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST")
 @API.route(
-    "/<int:inspection_id>/attendance-options", methods=["POST", "GET", "OPTIONS"]
+    "/<int:inspection_id>/attendance-options", methods=["POST", "GET"]
 )
 class InspectionAttendances(Resource):
     """Resource for managing inspections."""
@@ -305,8 +299,7 @@ class InspectionAttendances(Resource):
         return inspection_attendance_schema.dump(attendances), HTTPStatus.OK
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/<int:inspection_id>", methods=["GET", "PATCH", "OPTIONS", "DELETE"])
+@API.route("/<int:inspection_id>", methods=["GET", "PATCH", "DELETE"])
 class Inspection(Resource):
     """Inspection resource."""
 
@@ -351,8 +344,7 @@ class Inspection(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/ir-numbers/<string:ir_number>", methods=["GET", "OPTIONS"])
+@API.route("/ir-numbers/<string:ir_number>", methods=["GET"])
 class InspectionByIRNumber(Resource):
     """Inspection resource."""
 
@@ -367,8 +359,7 @@ class InspectionByIRNumber(Resource):
         return inspection_list_schema.dump(inspection), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:inspection_id>/status", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:inspection_id>/status", methods=["PATCH"])
 @API.doc(params={"inspection_id": "The unique identifier for the inspection"})
 class InspectionStatus(Resource):
     """Update the inspection status."""
@@ -387,8 +378,7 @@ class InspectionStatus(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:inspection_id>/images", methods=["GET", "OPTIONS"])
+@API.route("/<int:inspection_id>/images", methods=["GET"])
 class InspectionImages(Resource):
     """Resource for fetching images resource per inspection."""
 
@@ -407,8 +397,7 @@ class InspectionImages(Resource):
         return image_schema.dump(images), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:inspection_id>/pending-items", methods=["GET", "OPTIONS"])
+@API.route("/<int:inspection_id>/pending-items", methods=["GET"])
 class InspectionPendingItems(Resource):
     """Resource for fetching pending items for an inspection."""
 
@@ -433,8 +422,7 @@ class InspectionPendingItems(Resource):
         return pending_item_schema.dump(pending_items), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:inspection_id>/requirements", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:inspection_id>/requirements", methods=["PATCH"])
 class InspectionRequirements(Resource):
     """Resource for updating inspection requirements."""
 

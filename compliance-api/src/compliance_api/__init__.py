@@ -13,14 +13,15 @@ import secure
 from flask import Flask, current_app, g, jsonify, request
 from flask_cors import CORS
 from jose import jwt as jose_jwt
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, Unauthorized
 
 from compliance_api.auth import jwt
-from compliance_api.config import get_named_config
+from compliance_api.config import PRODUCTION_LIKE_ENVIRONMENTS, get_named_config
 from compliance_api.exceptions import PermissionDeniedError
 from compliance_api.models import db, ma, migrate
 from compliance_api.services.cached_staff_user import CachedStaffUserService
 from compliance_api.utils.cache import cache
+from compliance_api.utils.limiter import limiter
 from compliance_api.utils.util import allowedorigins
 
 
@@ -28,7 +29,7 @@ from compliance_api.utils.util import allowedorigins
 secure_headers = secure.Secure(
     csp=secure.ContentSecurityPolicy()
     .default_src("'self'")
-    .script_src("'self'", "'unsafe-inline'")
+    .script_src("'self'")
     .style_src("'self'", "'unsafe-inline'")
     .img_src("'self'", "data:")
     .object_src("'self'")
@@ -46,7 +47,8 @@ secure_headers = secure.Secure(
 def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     """Create flask app."""
     # pylint: disable=import-outside-toplevel
-    from compliance_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
+    from compliance_api.resources import (
+        API_BLUEPRINT, DOC_PATHS, DOCS_ENABLED, OPS_BLUEPRINT, URL_PREFIX)
 
     # Flask app initialize
     app = Flask(__name__)
@@ -77,35 +79,61 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     @app.before_request
     def set_origin():
         g.origin_url = request.environ.get("HTTP_ORIGIN", "localhost")
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = jwt.get_token_auth_header()
-            token_info = jose_jwt.get_unverified_claims(token)
-            is_compliance_in_groups = any(
-                "COMPLIANCE" in group for group in token_info.get("groups", [])
-            )
-            if not is_compliance_in_groups:
-                raise PermissionDeniedError("Access Denied")
 
-            # Get the auth_user_id from token (preferred_username field)
-            auth_user_id = token_info.get("preferred_username")
-            if auth_user_id:
-                # Validate that there's an active staff user for this auth_user_id using cache
-                staff_exists = CachedStaffUserService.exists_staff_by_auth_guid(
-                    auth_user_id
-                )
-                if not staff_exists:
-                    raise PermissionDeniedError(
-                        "No valid staff user found for this account"
-                    )
-            else:
-                raise PermissionDeniedError("Invalid token: missing preferred_username")
-
-            # Attempt to validate and decode the token here
-            g.access_token = auth_header.split(" ")[1]
-            g.token_info = token_info
-        else:
+        # CORS preflight requests never carry an Authorization header; let flask-cors
+        # answer them. Only the main API blueprint requires authentication.
+        # (strict_slashes is off, so the bare "/api" request - no trailing slash -
+        # must be normalized before comparing against URL_PREFIX, or it would slip
+        # through this check unauthenticated.)
+        if request.method == "OPTIONS" or not (request.path + "/").startswith(URL_PREFIX):
             g.access_token = None
+            return
+
+        # Swagger UI/spec are only registered outside production-like environments;
+        # where they exist, let them be reached without a token. Inert in
+        # production/staging, where neither route is registered at all.
+        if DOCS_ENABLED and request.path.rstrip("/") in DOC_PATHS:
+            g.access_token = None
+            return
+
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise Unauthorized("Authorization header is required")
+
+        token = jwt.get_token_auth_header()
+        token_info = jose_jwt.get_unverified_claims(token)
+        is_compliance_in_groups = any(
+            "COMPLIANCE" in group for group in token_info.get("groups", [])
+        )
+        if not is_compliance_in_groups:
+            raise PermissionDeniedError("Access Denied")
+
+        # Get the auth_user_id from token (preferred_username field)
+        auth_user_id = token_info.get("preferred_username")
+        if auth_user_id:
+            # Validate that there's an active staff user for this auth_user_id using cache
+            staff_exists = CachedStaffUserService.exists_staff_by_auth_guid(
+                auth_user_id
+            )
+            if not staff_exists:
+                raise PermissionDeniedError(
+                    "No valid staff user found for this account"
+                )
+        else:
+            raise PermissionDeniedError("Invalid token: missing preferred_username")
+
+        # Attempt to validate and decode the token here
+        g.access_token = auth_header.split(" ")[1]
+        g.token_info = token_info
+
+    # A shared in-memory limiter has no business gating the test suite, which can
+    # throw hundreds of requests at a handful of fixture users/IPs well within a
+    # minute; only rate-limit real (non-test) traffic.
+    app.config.setdefault("RATELIMIT_ENABLED", not app.config.get("TESTING", False))
+
+    # Registered after set_origin so g.token_info is already populated when the
+    # limiter's key function runs.
+    limiter.init_app(app)
 
     build_cache(app)
 
@@ -115,8 +143,8 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
         # if random.random() < 0.1:  # Only run GC 10% of the time
         #     gc.collect()
         secure_headers.set_headers(response)
-        response.headers.add("Cross-Origin-Resource-Policy", "*")
-        response.headers["Cross-Origin-Opener-Policy"] = "*"
+        response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         response.headers["Cross-Origin-Embedder-Policy"] = "unsafe-none"
         return response
 
@@ -137,8 +165,9 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
     @app.errorhandler(Exception)
     def handle_error(err):
         """Handle all other non-HTTP exceptions."""
-        if run_mode != "production":
-            # In development, re-raise to see full stacktrace
+        if run_mode not in PRODUCTION_LIKE_ENVIRONMENTS:
+            # Non-production-like environments (development, testing, docker):
+            # re-raise to see the full stacktrace.
             raise err
 
         current_app.logger.error(f"Unhandled exception: {str(err)}", exc_info=True)

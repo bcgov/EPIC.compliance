@@ -11,7 +11,7 @@ from compliance_api.schemas import (
     ContinuationReportCreateSchema, ContinuationReportSchema, ContinuationReportUpdateSchema, CRGetQueryParamSchema)
 from compliance_api.schemas.continuation_report import CRExport
 from compliance_api.services import ContinuationReportService
-from compliance_api.utils.util import cors_preflight
+from compliance_api.utils.limiter import limiter
 
 from .apihelper import Api as ApiHelper
 
@@ -29,8 +29,7 @@ cr_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class ContinuationReports(Resource):
     """Resource for managing continuation report."""
 
@@ -94,8 +93,7 @@ class ContinuationReports(Resource):
         return ContinuationReportSchema().dump(created_entry), HTTPStatus.CREATED
 
 
-@cors_preflight("OPTIONS, DELETE, PATCH")
-@API.route("/<int:entry_id>", methods=["PATCH", "DELETE", "OPTIONS"])
+@API.route("/<int:entry_id>", methods=["PATCH", "DELETE"])
 @API.doc(params={"entry_id": "The unique identifier of continuation report entry"})
 class ContinuationReport(Resource):
     """Resource for managing a single continuation report entry."""
@@ -136,10 +134,11 @@ class ContinuationReport(Resource):
         return ContinuationReportSchema().dump(deleted_cr), HTTPStatus.OK
 
 
-@cors_preflight("OPTIONS, POST")
-@API.route("/render", methods=["POST", "OPTIONS"])
+@API.route("/render", methods=["POST"])
 class ContinuationReportExport(Resource):
     """Resource for exporting continuation report."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @auth.require

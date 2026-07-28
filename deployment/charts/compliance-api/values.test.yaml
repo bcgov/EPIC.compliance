@@ -1,4 +1,8 @@
 replicaCount: 2
+# NOTE: this is the OpenShift "test" (pre-prod) environment, not compliance_api's
+# pytest-only "testing" config (which enables JWT_OIDC_TEST_MODE and bypasses real
+# JWKS validation). "staging" gets ProdConfig - see compliance_api/config.py.
+flaskEnv: staging
 cors_origin: https://compliance-web-c8b80a-test.apps.gold.devops.gov.bc.ca,http://localhost:5173,https://test.compliance.eao.gov.bc.ca
 
 image:

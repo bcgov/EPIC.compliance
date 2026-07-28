@@ -10,6 +10,7 @@ services:
       - POSTGRES_PASSWORD=compliance
       - POSTGRES_DB=compliance-db
       - POSTGRES_HOST_AUTH_METHOD=trust
+      - PGDATA=/var/lib/postgresql/data2
     ports:
       - 44332:5432/tcp
     restart: unless-stopped
@@ -17,12 +18,13 @@ services:
   compliance-api-db-test:
     image: postgres
     volumes:
-      - db-data:/var/lib/postgresql/data3
+      - db-test-data:/var/lib/postgresql/data3
     environment:
       - POSTGRES_USER=compliance
       - POSTGRES_PASSWORD=compliance
       - POSTGRES_DB=compliance
       - POSTGRES_HOST_AUTH_METHOD=trust
+      - PGDATA=/var/lib/postgresql/data3
     ports:
       - 54333:5432/tcp
     restart: unless-stopped
@@ -52,4 +54,5 @@ services:
 volumes:
   db-data:
     driver: local
-  
+  db-test-data:
+    driver: local

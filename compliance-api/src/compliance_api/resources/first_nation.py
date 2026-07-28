@@ -19,7 +19,6 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.auth import auth
 from compliance_api.services.epic_track_service.track_service import TrackService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -30,8 +29,7 @@ API = Namespace(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["GET", "OPTIONS"])
+@API.route("", methods=["GET"])
 class FirstNations(Resource):
     """Resource for fetching First Nations."""
 
@@ -47,8 +45,7 @@ class FirstNations(Resource):
         return first_nations, HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:first_nation_id>", methods=["GET", "OPTIONS"])
+@API.route("/<int:first_nation_id>", methods=["GET"])
 class FirstNation(Resource):
     """Resource for fetching a single First Nation."""
 

@@ -10,7 +10,6 @@ from compliance_api.exceptions import BadRequestError
 from compliance_api.schemas.restorative_justice import (
     RestorativeJusticeCreateSchema, RestorativeJusticeSchema, RestorativeJusticeUpdateSchema)
 from compliance_api.services.restorative_justice import RestorativeJusticeService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -33,8 +32,7 @@ restorative_justice_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class RestorativeJustices(Resource):
     """Resource for managing restorative justices."""
 
@@ -93,9 +91,8 @@ class RestorativeJustices(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route(
-    "/<int:restorative_justice_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"]
+    "/<int:restorative_justice_id>", methods=["GET", "PATCH", "DELETE"]
 )
 class RestorativeJusticeById(Resource):
     """Resource for managing a single restorative justice."""
@@ -150,8 +147,7 @@ class RestorativeJusticeById(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/by-number/<string:restorative_justice_number>", methods=["GET", "OPTIONS"])
+@API.route("/by-number/<string:restorative_justice_number>", methods=["GET"])
 class RestorativeJusticeByNumber(Resource):
     """Resource for managing a single restorative justice by number."""
 

@@ -11,7 +11,6 @@ from compliance_api.schemas.administrative_penalty import (
     AdministrativePenaltyCreateSchema, AdministrativePenaltyLinkCreateSchema, AdministrativePenaltyLinksResponseSchema,
     AdministrativePenaltySchema, AdministrativePenaltyUpdateSchema)
 from compliance_api.services.administrative_penalty import AdministrativePenaltyService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -46,8 +45,7 @@ administrative_penalty_links_response_model = (
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class AdministrativePenalties(Resource):
     """Resource for managing administrative penalties."""
 
@@ -111,8 +109,7 @@ class AdministrativePenalties(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/projectwise", methods=["GET", "OPTIONS"])
+@API.route("/projectwise", methods=["GET"])
 class ProjectwiseAdministrativePenalties(Resource):
     """Resource for managing projectwise administrative penalties."""
 
@@ -156,9 +153,8 @@ class ProjectwiseAdministrativePenalties(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route(
-    "/<int:administrative_penalty_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"]
+    "/<int:administrative_penalty_id>", methods=["GET", "PATCH", "DELETE"]
 )
 class AdministrativePenaltyById(Resource):
     """Resource for managing a single administrative penalty."""
@@ -233,9 +229,8 @@ class AdministrativePenaltyById(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
 @API.route(
-    "/by-number/<string:administrative_penalty_number>", methods=["GET", "OPTIONS"]
+    "/by-number/<string:administrative_penalty_number>", methods=["GET"]
 )
 class AdministrativePenaltyByNumber(Resource):
     """Resource for managing a single administrative penalty by number."""
@@ -256,8 +251,7 @@ class AdministrativePenaltyByNumber(Resource):
         return AdministrativePenaltySchema().dump(administrative_penalty), HTTPStatus.OK
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/links", methods=["POST", "OPTIONS"])
+@API.route("/links", methods=["POST"])
 class AdministrativePenaltyLinks(Resource):
     """Link the administrative penalty."""
 
@@ -283,8 +277,7 @@ class AdministrativePenaltyLinks(Resource):
         return AdministrativePenaltySchema().dump(created_link), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:administrative_penalty_id>/links", methods=["GET", "OPTIONS"])
+@API.route("/<int:administrative_penalty_id>/links", methods=["GET"])
 class AdministrativePenaltyLinksById(Resource):
     """Get inspection and requirements linked to an administrative penalty."""
 

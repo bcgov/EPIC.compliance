@@ -10,7 +10,6 @@ from compliance_api.exceptions import BadRequestError
 from compliance_api.schemas.charge_recommendation import (
     ChargeRecommendationCreateSchema, ChargeRecommendationSchema, ChargeRecommendationUpdateSchema)
 from compliance_api.services.charge_recommendation import ChargeRecommendationService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -33,8 +32,7 @@ charge_recommendation_update_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class ChargeRecommendations(Resource):
     """Resource for managing charge recommendations."""
 
@@ -98,9 +96,8 @@ class ChargeRecommendations(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
 @API.route(
-    "/<int:charge_recommendation_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"]
+    "/<int:charge_recommendation_id>", methods=["GET", "PATCH", "DELETE"]
 )
 class ChargeRecommendationById(Resource):
     """Resource for managing a single charge recommendation."""
@@ -161,9 +158,8 @@ class ChargeRecommendationById(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
 @API.route(
-    "/by-number/<string:charge_recommendation_number>", methods=["GET", "OPTIONS"]
+    "/by-number/<string:charge_recommendation_number>", methods=["GET"]
 )
 class ChargeRecommendationByNumber(Resource):
     """Resource for managing a single charge recommendation by number."""

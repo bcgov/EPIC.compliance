@@ -64,6 +64,11 @@ spec:
             value: {{ .Values.database.service.name }}
           - name: DATABASE_PORT
             value: "{{ .Values.database.service.port }}"
+          - name: FLASK_ENV
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Chart.Name }}
+                key: FLASK_ENV
         imagePullPolicy: {{ .Values.image.pullPolicy }}
       containers:
       - name: {{ .Chart.Name }}
@@ -115,6 +120,11 @@ spec:
             value: {{ .Values.cors_origin }}
           - name: DATABASE_PORT
             value: "{{ .Values.database.service.port }}"
+          - name: FLASK_ENV
+            valueFrom:
+              configMapKeyRef:
+                name: {{ .Chart.Name }}
+                key: FLASK_ENV
           - name: JWT_OIDC_ALGORITHMS
             valueFrom:
               configMapKeyRef:

@@ -22,7 +22,6 @@ from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import AgencyCreateSchema, AgencySchema
 from compliance_api.services import AgencyService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -37,8 +36,7 @@ agency_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Agencies(Resource):
     """Resource for managing agencies."""
 
@@ -66,8 +64,7 @@ class Agencies(Resource):
         return AgencySchema().dump(created_agency), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, OPTIONS, PATCH, DELETE")
-@API.route("/<int:agency_id>", methods=["PATCH", "GET", "OPTIONS", "DELETE"])
+@API.route("/<int:agency_id>", methods=["PATCH", "GET", "DELETE"])
 @API.doc(params={"agency_id": "The unique identifier of agency"})
 class Agency(Resource):
     """Resource for managing a single agency."""

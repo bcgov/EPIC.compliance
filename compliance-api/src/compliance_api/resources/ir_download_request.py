@@ -9,7 +9,6 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.schemas import CreateIRDownloadRequestSchema, IRDownloadRequestSchema
 from compliance_api.services import IRDownloadRequestService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -24,8 +23,7 @@ ir_download_request_create_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/<int:inspection_record_id>/download-requests", methods=["POST", "OPTIONS"])
+@API.route("/<int:inspection_record_id>/download-requests", methods=["POST"])
 class IRDownloadRequests(Resource):
     """Resource for creating IR download requests."""
 
@@ -55,10 +53,9 @@ class IRDownloadRequests(Resource):
         )
 
 
-@cors_preflight("GET, OPTIONS")
 @API.route(
     "/<int:inspection_record_id>/download-requests/latest",
-    methods=["GET", "OPTIONS"],
+    methods=["GET"],
 )
 class IRDownloadRequestLatest(Resource):
     """Resource for fetching the latest IR download request."""

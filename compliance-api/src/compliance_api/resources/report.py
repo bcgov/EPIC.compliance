@@ -21,8 +21,8 @@ from flask_restx import Namespace, Resource
 
 from compliance_api.services.report.report import ReportService
 from compliance_api.auth import auth
-from compliance_api.utils.util import cors_preflight
 from compliance_api.schemas.report import ReportGenerationSchema
+from compliance_api.utils.limiter import limiter
 
 
 from .apihelper import Api as ApiHelper
@@ -38,10 +38,11 @@ report_generation_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/export", methods=["POST", "OPTIONS"])
+@API.route("/export", methods=["POST"])
 class Reports(Resource):
     """Resource for managing reports."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @ApiHelper.swagger_decorators(API, endpoint_description="Fetch report")

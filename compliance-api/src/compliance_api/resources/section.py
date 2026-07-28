@@ -8,7 +8,6 @@ from compliance_api.auth import auth
 
 from ..schemas import SectionSchema
 from ..services.section import SectionService
-from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
 
@@ -19,8 +18,7 @@ section_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["GET", "OPTIONS"])
+@API.route("", methods=["GET"])
 class Sections(Resource):
     """Resource for managing sections."""
 

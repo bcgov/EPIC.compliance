@@ -20,7 +20,6 @@ from flask_restx import Namespace, Resource
 from compliance_api.auth import auth
 from compliance_api.schemas import RequirementSourceSchema
 from compliance_api.services import RequirementSourceService
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -35,8 +34,7 @@ requirement_source_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["GET", "OPTIONS"])
+@API.route("", methods=["GET"])
 class RequirementSource(Resource):
     """Resource for managing requirement source."""
 

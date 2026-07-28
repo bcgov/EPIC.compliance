@@ -14,7 +14,6 @@ from compliance_api.schemas.inspection_requirement import (
     InspectionSortOrderSchema)
 from compliance_api.services import InspectionRequirementService
 from compliance_api.utils.enum import PermissionEnum
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -40,8 +39,7 @@ inspesction_req_image_schema = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class InspectionRequirements(Resource):
     """InspectionRequirements."""
 
@@ -80,8 +78,7 @@ class InspectionRequirements(Resource):
         )
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/<int:requirement_id>", methods=["GET", "PATCH", "OPTIONS", "DELETE"])
+@API.route("/<int:requirement_id>", methods=["GET", "PATCH", "DELETE"])
 class InspectionRequirement(Resource):
     """InspectionRequirement resource."""
 
@@ -134,8 +131,7 @@ class InspectionRequirement(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:requirement_id>/sort-order", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:requirement_id>/sort-order", methods=["PATCH"])
 class InspectionRequirementOrder(Resource):
     """Update the sort order of the inspection requirements."""
 
@@ -157,8 +153,7 @@ class InspectionRequirementOrder(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS, DELETE")
-@API.route("/<int:requirement_id>/photos", methods=["OPTIONS", "GET", "DELETE"])
+@API.route("/<int:requirement_id>/photos", methods=["GET", "DELETE"])
 class InspectionReqPhotos(Resource):
     """Manage the photos uploaded as part of inspection requirements."""
 
@@ -195,8 +190,7 @@ class InspectionReqPhotos(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS, DELETE")
-@API.route("/<int:requirement_id>/figures", methods=["OPTIONS", "GET", "DELETE"])
+@API.route("/<int:requirement_id>/figures", methods=["GET", "DELETE"])
 class InspectionReqFigures(Resource):
     """Manage the figures uploaded as part of inspection requirements."""
 
@@ -214,10 +208,9 @@ class InspectionReqFigures(Resource):
         return InspectionReqImageSchema(many=True).dump(figures), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
 @API.route(
     "/<int:requirement_id>/requirement-source-images",
-    methods=["OPTIONS", "GET"],
+    methods=["GET"],
 )
 class InspectionReqSourceImages(Resource):
     """Manage the images uploaded as part of inspection requirement source details."""
@@ -238,10 +231,9 @@ class InspectionReqSourceImages(Resource):
         return InspectionReqDetailImageSchema(many=True).dump(images), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
 @API.route(
     "/<int:requirement_id>/requirement-document-images",
-    methods=["OPTIONS", "GET"],
+    methods=["GET"],
 )
 class InspectionReqSourceDocImages(Resource):
     """Manage the images uploaded as part of inspection requirement detail documents."""

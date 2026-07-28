@@ -10,7 +10,6 @@ from compliance_api.services.violation_ticket import ViolationTicketService
 
 from ..schemas import (
     ViolationTicketCreateSchema, ViolationTicketSchema, ViolationTicketStatusSchema, ViolationTicketUpdateSchema)
-from ..utils.util import cors_preflight
 from .apihelper import Api as ApiHelper
 
 
@@ -31,8 +30,7 @@ violation_ticket_status_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET,POST,OPTIONS")
-@API.route("", methods=["GET", "POST", "OPTIONS"])
+@API.route("", methods=["GET", "POST"])
 class ViolationTickets(Resource):
     """Resource for managing violation tickets."""
 
@@ -66,8 +64,7 @@ class ViolationTickets(Resource):
         return ViolationTicketSchema().dump(violation_ticket), HTTPStatus.CREATED
 
 
-@cors_preflight("GET,PATCH,DELETE,OPTIONS")
-@API.route("/<int:violation_ticket_id>", methods=["GET", "PATCH", "DELETE", "OPTIONS"])
+@API.route("/<int:violation_ticket_id>", methods=["GET", "PATCH", "DELETE"])
 class ViolationTicket(Resource):
     """Resource for managing a single ViolationTicket."""
 
@@ -119,8 +116,7 @@ class ViolationTicket(Resource):
         return "", HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET,OPTIONS")
-@API.route("/vt-number/<string:vt_number>", methods=["GET", "OPTIONS"])
+@API.route("/vt-number/<string:vt_number>", methods=["GET"])
 class ViolationTicketByVtNumber(Resource):
     """Resource for managing a single ViolationTicket by VT number."""
 

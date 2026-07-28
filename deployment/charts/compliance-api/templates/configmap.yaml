@@ -5,6 +5,7 @@ metadata:
     name: {{ .Chart.Name }}
   name: {{ .Chart.Name }}
 data:
+  FLASK_ENV: {{ .Values.flaskEnv }}
   JWT_OIDC_ALGORITHMS: {{ .Values.auth.jwt.alg }}
   JWT_OIDC_AUDIENCE: {{ .Values.auth.jwt.aud }}
   JWT_OIDC_CACHING_ENABLED: "{{ .Values.auth.jwt.cacheEnabled }}"

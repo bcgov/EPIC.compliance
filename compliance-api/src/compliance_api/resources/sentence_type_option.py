@@ -21,7 +21,6 @@ from compliance_api.auth import auth
 from compliance_api.schemas.sentence_type_option import SentenceTypeOptionSchema
 from compliance_api.services.sentence_type_option import SentenceTypeOptionService
 from compliance_api.utils.cache import cache
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -36,8 +35,7 @@ sentence_type_option_list_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("", methods=["GET", "OPTIONS"])
+@API.route("", methods=["GET"])
 class SentenceTypeOptions(Resource):
     """Resource for managing sentence type options."""
 

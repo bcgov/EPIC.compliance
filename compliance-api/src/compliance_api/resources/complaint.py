@@ -12,8 +12,8 @@ from compliance_api.schemas import (
     ComplaintUpdateSchema, KeyValueSchema, RequirementSourceDetailSchema)
 from compliance_api.services import ComplaintService
 from compliance_api.utils.enum import PermissionEnum
+from compliance_api.utils.limiter import limiter
 from compliance_api.utils.schema_utils import get_pagination_schema
-from compliance_api.utils.util import cors_preflight
 
 from .apihelper import Api as ApiHelper
 
@@ -50,8 +50,7 @@ complaint_filter_model = ApiHelper.convert_ma_schema_to_restx_model(
 )
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/sources", methods=["GET", "OPTIONS"])
+@API.route("/sources", methods=["GET"])
 class ComplaintSources(Resource):
     """Resource for complaint sources."""
 
@@ -68,8 +67,7 @@ class ComplaintSources(Resource):
         return complaint_sources_schema.dump(complaint_sources), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/resolutions", methods=["GET", "OPTIONS"])
+@API.route("/resolutions", methods=["GET"])
 class ComplaintResolutions(Resource):
     """Resource for complaint resolutions."""
 
@@ -86,8 +84,7 @@ class ComplaintResolutions(Resource):
         return complaint_resolutions_schema.dump(complaint_resolutions), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS, POST")
-@API.route("", methods=["POST", "GET", "OPTIONS"])
+@API.route("", methods=["POST", "GET"])
 class Complaints(Resource):
     """Resource for managing complaints."""
 
@@ -177,8 +174,7 @@ class Complaints(Resource):
         return ComplaintSchema().dump(created_complaint), HTTPStatus.CREATED
 
 
-@cors_preflight("GET, PATCH, DELETE, OPTIONS")
-@API.route("/<int:complaint_id>", methods=["OPTIONS", "GET", "PATCH", "DELETE"])
+@API.route("/<int:complaint_id>", methods=["GET", "PATCH", "DELETE"])
 @API.doc(params={"complaint_id": "The unique identifier for the complaint"})
 class Complaint(Resource):
     """Resource for managing a single Complaint."""
@@ -222,8 +218,7 @@ class Complaint(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:complaint_id>/requirement-details", methods=["OPTIONS", "GET"])
+@API.route("/<int:complaint_id>/requirement-details", methods=["GET"])
 @API.doc(params={"complaint_id": "The unique identifier for the complaint"})
 class ComplaintRequirementDetails(Resource):
     """Resource for managing a Complaint requirement details.."""
@@ -240,8 +235,7 @@ class ComplaintRequirementDetails(Resource):
         return RequirementSourceDetailSchema().dump(requirements), HTTPStatus.OK
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/<int:complaint_id>/source-contacts", methods=["OPTIONS", "GET"])
+@API.route("/<int:complaint_id>/source-contacts", methods=["GET"])
 @API.doc(params={"complaint_id": "The unique identifier for the complaint"})
 class ComplaintContact(Resource):
     """Resource for managing a Complaint Contact."""
@@ -261,10 +255,11 @@ class ComplaintContact(Resource):
         return ComplaintSourceContactSchema().dump(contact), HTTPStatus.OK
 
 
-@cors_preflight("POST, OPTIONS")
-@API.route("/export", methods=["POST", "OPTIONS"])
+@API.route("/export", methods=["POST"])
 class ComplaintExport(Resource):
     """Resource for exporting complaints to Excel."""
+
+    decorators = [limiter.limit("10 per minute")]
 
     @staticmethod
     @API.expect(complaint_filter_model)
@@ -292,8 +287,7 @@ class ComplaintExport(Resource):
         return response
 
 
-@cors_preflight("GET, OPTIONS")
-@API.route("/complaint-numbers/<string:complaint_number>", methods=["GET", "OPTIONS"])
+@API.route("/complaint-numbers/<string:complaint_number>", methods=["GET"])
 class ComplaintByNumber(Resource):
     """Complaint resource."""
 
@@ -310,8 +304,7 @@ class ComplaintByNumber(Resource):
         return complaint_list_schema.dump(complaint), HTTPStatus.OK
 
 
-@cors_preflight("PATCH, OPTIONS")
-@API.route("/<int:complaint_id>/status", methods=["PATCH", "OPTIONS"])
+@API.route("/<int:complaint_id>/status", methods=["PATCH"])
 @API.doc(params={"complaint_id": "The unique identifier for the complaint"})
 class ComplaintStatus(Resource):
     """Update the complaint status."""
