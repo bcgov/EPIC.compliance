@@ -6,7 +6,7 @@ import PreliminaryReview from "./PreliminaryReview";
 import RegPartyResponse from "./RegPartyResponse";
 import IRVersionSelect from "./IRVersionSelect";
 import {
-  useUpdateInspectionRecord,
+  useContinuePreliminaryReview,
   useUpdateIRApproval,
   useUpdateIRReportToFinal,
 } from "@/hooks/useInspectionReports";
@@ -81,8 +81,8 @@ export default function OfficerStepper() {
   const { mutate: updateIRReportToFinal, isPending: isReportFinalPending } =
     useUpdateIRReportToFinal(onSuccessIRReport);
 
-  const { mutate: updateInspectionRecord, isPending: isInspectionRecordPending } =
-    useUpdateInspectionRecord(onSuccessIRReport);
+  const { mutate: continuePreliminaryReview, isPending: isInspectionRecordPending } =
+    useContinuePreliminaryReview(onSuccessIRReport);
 
   const onUpdateIRApprovalStep = async (
     approvalPayloads: InspectionRecordApprovalPayload[]
@@ -106,13 +106,9 @@ export default function OfficerStepper() {
         inspectionRecordId: inspectionReportsData?.id ?? 0,
       });
     } else {
-      updateInspectionRecord({
+      continuePreliminaryReview({
         inspectionId: inspectionData?.id ?? 0,
         inspectionRecordId: inspectionReportsData?.id ?? 0,
-        updateRecord: {
-          field_name: "ir_progress",
-          value: IRProgressEnum.PRELIMINARY_DRAFTING,
-        },
       });
     }
   };

@@ -134,6 +134,34 @@ const updateIRApprovalStatus = ({
   });
 };
 
+const continuePreliminaryReview = ({
+  inspectionId,
+  inspectionRecordId,
+}: {
+  inspectionId: number;
+  inspectionRecordId: number;
+}) => {
+  return request({
+    url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/continue-preliminary-review`,
+    method: "patch",
+  });
+};
+
+const reopenIRApproval = ({
+  inspectionId,
+  inspectionRecordId,
+  approvalId,
+}: {
+  inspectionId: number;
+  inspectionRecordId: number;
+  approvalId: number;
+}) => {
+  return request({
+    url: `/inspections/${inspectionId}/inspection-records/${inspectionRecordId}/approvals/${approvalId}/reopen`,
+    method: "patch",
+  });
+};
+
 const updateIRReportToFinal = ({
   inspectionId,
   inspectionRecordId,
@@ -237,6 +265,20 @@ export const useUpdateIRApproval = (onSuccess: OnSuccessType) => {
 export const useUpdateIRApprovalStatus = (onSuccess: OnSuccessType) => {
   return useMutation({
     mutationFn: updateIRApprovalStatus,
+    onSuccess,
+  });
+};
+
+export const useContinuePreliminaryReview = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: continuePreliminaryReview,
+    onSuccess,
+  });
+};
+
+export const useReopenIRApproval = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: reopenIRApproval,
     onSuccess,
   });
 };

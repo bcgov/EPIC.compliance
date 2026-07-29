@@ -151,9 +151,16 @@ class InspectionRecordApprovalService:
                 ir_update_data["action_required_by_rp"] = ir_data.get(
                     "action_required_by_rp"
                 )
-            if field_name != "is_active":
+            # Recording the approval dates is what moves a freshly approved preliminary
+            # IR into holder review. Any later edit to those dates must not drag the
+            # record back from a stage it has already advanced past, so only apply the
+            # transition when the record is actually sitting at PRELIMINARY_APPROVED.
+            if (
+                field_name != "is_active"
+                and inspection_record.ir_progress == IRProgressEnum.PRELIMINARY_APPROVED
+            ):
                 ir_update_data["ir_progress"] = IRProgressEnum.HOLDER_PRELIMINARY_REVIEW
-                # Update ir_progress to HOLDER_PRELIMINARY_REVIEW
+            if ir_update_data:
                 InspectionRecordModel.update_inspection_record(
                     inspection_record_id=inspection_record_id,
                     ir_update_data=ir_update_data,
@@ -161,6 +168,45 @@ class InspectionRecordApprovalService:
                 )
 
         return updated_approval
+
+    @classmethod
+    def reopen(cls, inspection_id, inspection_record_id, approval_id):
+        """Reopen an issued/approved IR: clear date_issued, revert ir_progress and deactivate the approval.
+
+        Performed atomically so ir_progress can never regress without the
+        corresponding approval being deactivated (or vice versa).
+        """
+        inspection = ServiceUtils.inspection_exist_check(inspection_id)
+        inspection_record = ServiceUtils.inspection_record_exist_check(
+            inspection_record_id
+        )
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        latest_approval = InspectionRecordApprovalModel.get_latest_approval_by_ir(
+            inspection_record_id
+        )
+        if not latest_approval or latest_approval.id != approval_id:
+            raise UnprocessableEntityError(
+                "Given approval id does not match the latest approval request"
+            )
+        if latest_approval.approval_status != IRApprovalStatusEnum.APPROVED:
+            raise UnprocessableEntityError("Only an approved IR can be reopened")
+        ir_progress = (
+            IRProgressEnum.PRELIMINARY_DRAFTING
+            if inspection_record.ir_status_id == IRStatusEnum.PRELIMINARY.value
+            else IRProgressEnum.FINALIZING_RECORD
+        )
+        with session_scope() as session:
+            updated_ir = InspectionRecordModel.update_inspection_record(
+                inspection_record_id=inspection_record_id,
+                ir_update_data={"ir_progress": ir_progress, "date_issued": None},
+                session=session,
+            )
+            InspectionRecordApprovalModel.update_approval(
+                approval_id=approval_id,
+                approval_update_data={"is_active": False},
+                session=session,
+            )
+        return updated_ir
 
     @classmethod
     def update_approval_status(

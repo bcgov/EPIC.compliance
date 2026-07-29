@@ -155,6 +155,30 @@ class InspectionRecordFinal(Resource):
         return InspectionRecordSchema().dump(final_ir), HTTPStatus.OK
 
 
+@cors_preflight("PATCH, OPTIONS")
+@API.route(
+    "/<int:inspection_record_id>/continue-preliminary-review",
+    methods=["PATCH", "OPTIONS"],
+)
+class InspectionRecordContinuePreliminaryReview(Resource):
+    """Resource to send an IR back to preliminary drafting for another review round."""
+
+    @staticmethod
+    @API.response(code=200, description="Sucess", model=ir_list_model)
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Continue another round of preliminary review"
+    )
+    @API.response(404, "Not Found")
+    @API.response(422, "Unprocessable Entity")
+    @auth.require
+    def patch(inspection_id, inspection_record_id):
+        """Send IR back to PRELIMINARY_DRAFTING."""
+        updated_ir = InspectionRecordService.continue_preliminary_review(
+            inspection_id, inspection_record_id
+        )
+        return InspectionRecordSchema().dump(updated_ir), HTTPStatus.OK
+
+
 @cors_preflight("GET, OPTIONS, POST, PATCH")
 @API.route("/<int:inspection_record_id>/approvals", methods=["POST", "GET", "OPTIONS"])
 class InspectionRecordApprovals(Resource):
@@ -222,6 +246,30 @@ class InspectionRecordApproval(Resource):
             inspection_id, inspection_record_id, approval_id, approval_update_data
         )
         return InspectionRecordApprovalSchema().dump(updated_approval), HTTPStatus.OK
+
+
+@cors_preflight("OPTIONS, PATCH")
+@API.route(
+    "/<int:inspection_record_id>/approvals/<int:approval_id>/reopen",
+    methods=["PATCH", "OPTIONS"],
+)
+class InspectionRecordApprovalReopen(Resource):
+    """Resource to atomically reopen an approved inspection record."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=ir_list_model)
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Reopen an approved inspection record"
+    )
+    @API.response(404, "Not Found")
+    @API.response(422, "Unprocessable Entity")
+    @auth.require
+    def patch(inspection_id, inspection_record_id, approval_id):
+        """Reopen an approved inspection record."""
+        reopened_ir = InspectionRecordApprovalService.reopen(
+            inspection_id, inspection_record_id, approval_id
+        )
+        return InspectionRecordSchema().dump(reopened_ir), HTTPStatus.OK
 
 
 @cors_preflight("OPTIONS, PATCH, GET")

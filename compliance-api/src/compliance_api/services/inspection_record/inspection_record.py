@@ -221,6 +221,31 @@ class InspectionRecordService:
         return updated_ir
 
     @classmethod
+    def continue_preliminary_review(cls, inspection_id, inspection_record_id):
+        """Send an IR back to PRELIMINARY_DRAFTING for another round of preliminary review."""
+        inspection = ServiceUtils.inspection_exist_check(inspection_id)
+        inspection_record = ServiceUtils.inspection_record_exist_check(
+            inspection_record_id
+        )
+        ServiceUtils.access_check_update_for_inspection(inspection)
+        ServiceUtils.inspection_status_check(inspection)
+        # The stepper only advances ir_progress to HOLDER_PRELIMINARY_REVIEW when the
+        # approval dates are actually edited, so an officer revisiting the stepper with
+        # dates already saved can reach this step while still PRELIMINARY_APPROVED.
+        if inspection_record.ir_progress not in {
+            IRProgressEnum.PRELIMINARY_APPROVED,
+            IRProgressEnum.HOLDER_PRELIMINARY_REVIEW,
+        }:
+            raise UnprocessableEntityError(
+                "IR can only continue preliminary review from an approved preliminary record"
+            )
+        updated_ir = InspectionRecordModel.update_inspection_record(
+            inspection_record_id=inspection_record_id,
+            ir_update_data={"ir_progress": IRProgressEnum.PRELIMINARY_DRAFTING},
+        )
+        return updated_ir
+
+    @classmethod
     def reset_field(
         cls, inspection_id: int, inspection_record_id: int, field_name: str
     ):
