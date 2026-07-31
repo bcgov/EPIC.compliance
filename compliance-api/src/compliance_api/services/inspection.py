@@ -513,17 +513,34 @@ class InspectionService:
             pending_items.append(pending_inspection_record)
 
         # OPTIMIZATION: Single query with all outer joins to fetch everything at once
-        # Aliases for clarity
+        # Aliases for clarity. The enforcement action maps are pulled in through
+        # subqueries so that both the map row and the enforcement record it points to
+        # are filtered on is_active/is_deleted. Without the check on the record itself,
+        # a deleted enforcement action (eg. a deleted warning letter) is still reported
+        # as pending and blocks the closure of the inspection.
         req = aliased(InspectionRequirementModel)
         enf_map = aliased(InspectionReqEnforcementMapModel)
         enf_action = aliased(EnforcementActionOptionModel)
-        order_map = aliased(OrderInspectionRequirementMapModel)
-        order = aliased(OrderModel)
-        wl_map = aliased(WarningLetterInspectionRequirementMapModel)
-        warning_letter = aliased(WarningLetterModel)
-        ap_map = aliased(AdministrativePenaltyInspectionRequirementMapModel)
-        vt_map = aliased(ViolationTicketInspectionRequirementMapModel)
-        cr_map = aliased(ChargeRecommendationInspectionRequirementMapModel)
+        order_map = _get_live_order_map_sub_query()
+        wl_map = _get_live_warning_letter_map_sub_query()
+        ap_map = _get_live_requirement_map_sub_query(
+            AdministrativePenaltyInspectionRequirementMapModel,
+            AdministrativePenaltyModel,
+            "administrative_penalty_id",
+            "live_administrative_penalty_map",
+        )
+        vt_map = _get_live_requirement_map_sub_query(
+            ViolationTicketInspectionRequirementMapModel,
+            ViolationTicketModel,
+            "violation_ticket_id",
+            "live_violation_ticket_map",
+        )
+        cr_map = _get_live_requirement_map_sub_query(
+            ChargeRecommendationInspectionRequirementMapModel,
+            ChargeRecommendationModel,
+            "charge_recommendation_id",
+            "live_charge_recommendation_map",
+        )
 
         # Build the comprehensive query
         results = (
@@ -532,15 +549,15 @@ class InspectionService:
                 req.summary.label("requirement_summary"),
                 enf_action.id.label("enforcement_action_id"),
                 enf_action.name.label("enforcement_action_name"),
-                order.order_number.label("order_number"),
-                order.order_status.label("order_status"),
-                warning_letter.warning_letter_number.label("warning_letter_number"),
-                warning_letter.status.label("warning_letter_status"),
-                order_map.id.label("order_map_id"),
-                wl_map.id.label("wl_map_id"),
-                ap_map.id.label("ap_map_id"),
-                vt_map.id.label("vt_map_id"),
-                cr_map.id.label("cr_map_id"),
+                order_map.c.order_number.label("order_number"),
+                order_map.c.order_status.label("order_status"),
+                wl_map.c.warning_letter_number.label("warning_letter_number"),
+                wl_map.c.warning_letter_status.label("warning_letter_status"),
+                order_map.c.map_id.label("order_map_id"),
+                wl_map.c.map_id.label("wl_map_id"),
+                ap_map.c.map_id.label("ap_map_id"),
+                vt_map.c.map_id.label("vt_map_id"),
+                cr_map.c.map_id.label("cr_map_id"),
             )
             .select_from(req)
             .join(
@@ -555,53 +572,41 @@ class InspectionService:
             .outerjoin(
                 order_map,
                 and_(
-                    order_map.inspection_requirement_id == req.id,
+                    order_map.c.requirement_id == req.id,
                     enf_map.enforcement_action_id
                     == EnforcementActionOptionEnum.ORDER.value,
-                    order_map.is_active.is_(True),
-                    order_map.is_deleted.is_(False),
                 ),
             )
-            .outerjoin(order, order.id == order_map.order_id)
             .outerjoin(
                 wl_map,
                 and_(
-                    wl_map.inspection_requirement_id == req.id,
+                    wl_map.c.requirement_id == req.id,
                     enf_map.enforcement_action_id
                     == EnforcementActionOptionEnum.WARNING_LETTER.value,
-                    wl_map.is_active.is_(True),
-                    wl_map.is_deleted.is_(False),
                 ),
             )
-            .outerjoin(warning_letter, warning_letter.id == wl_map.warning_letter_id)
             .outerjoin(
                 ap_map,
                 and_(
-                    ap_map.inspection_requirement_id == req.id,
+                    ap_map.c.requirement_id == req.id,
                     enf_map.enforcement_action_id
                     == EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value,
-                    ap_map.is_active.is_(True),
-                    ap_map.is_deleted.is_(False),
                 ),
             )
             .outerjoin(
                 vt_map,
                 and_(
-                    vt_map.inspection_requirement_id == req.id,
+                    vt_map.c.requirement_id == req.id,
                     enf_map.enforcement_action_id
                     == EnforcementActionOptionEnum.VIOLATION_TICKET.value,
-                    vt_map.is_active.is_(True),
-                    vt_map.is_deleted.is_(False),
                 ),
             )
             .outerjoin(
                 cr_map,
                 and_(
-                    cr_map.inspection_requirement_id == req.id,
+                    cr_map.c.requirement_id == req.id,
                     enf_map.enforcement_action_id
                     == EnforcementActionOptionEnum.CHARGE_RECOMMENDATION.value,
-                    cr_map.is_active.is_(True),
-                    cr_map.is_deleted.is_(False),
                 ),
             )
             .filter(
@@ -656,6 +661,87 @@ class InspectionService:
                     seen_item_numbers.add(item_number)
 
         return pending_items
+
+
+def _get_live_requirement_map_sub_query(
+    map_model, enforcement_model, enforcement_id_column: str, name: str
+):
+    """Get the requirement mappings whose map row and enforcement record are both live.
+
+    Args:
+        map_model: The enforcement action <-> inspection requirement map model
+        enforcement_model: The enforcement action model the map points to
+        enforcement_id_column (str): Foreign key column on the map model
+        name (str): Name of the resulting subquery
+
+    Returns:
+        A subquery with the map id and the inspection requirement id
+    """
+    return (
+        db.session.query(
+            map_model.id.label("map_id"),
+            map_model.inspection_requirement_id.label("requirement_id"),
+        )
+        .join(
+            enforcement_model,
+            enforcement_model.id == getattr(map_model, enforcement_id_column),
+        )
+        .filter(
+            map_model.is_active.is_(True),
+            map_model.is_deleted.is_(False),
+            enforcement_model.is_active.is_(True),
+            enforcement_model.is_deleted.is_(False),
+        )
+        .subquery(name)
+    )
+
+
+def _get_live_order_map_sub_query():
+    """Get the order mappings whose map row and order are both live."""
+    return (
+        db.session.query(
+            OrderInspectionRequirementMapModel.id.label("map_id"),
+            OrderInspectionRequirementMapModel.inspection_requirement_id.label(
+                "requirement_id"
+            ),
+            OrderModel.order_number.label("order_number"),
+            OrderModel.order_status.label("order_status"),
+        )
+        .join(OrderModel, OrderModel.id == OrderInspectionRequirementMapModel.order_id)
+        .filter(
+            OrderInspectionRequirementMapModel.is_active.is_(True),
+            OrderInspectionRequirementMapModel.is_deleted.is_(False),
+            OrderModel.is_active.is_(True),
+            OrderModel.is_deleted.is_(False),
+        )
+        .subquery("live_order_map")
+    )
+
+
+def _get_live_warning_letter_map_sub_query():
+    """Get the warning letter mappings whose map row and warning letter are both live."""
+    return (
+        db.session.query(
+            WarningLetterInspectionRequirementMapModel.id.label("map_id"),
+            WarningLetterInspectionRequirementMapModel.inspection_requirement_id.label(
+                "requirement_id"
+            ),
+            WarningLetterModel.warning_letter_number.label("warning_letter_number"),
+            WarningLetterModel.status.label("warning_letter_status"),
+        )
+        .join(
+            WarningLetterModel,
+            WarningLetterModel.id
+            == WarningLetterInspectionRequirementMapModel.warning_letter_id,
+        )
+        .filter(
+            WarningLetterInspectionRequirementMapModel.is_active.is_(True),
+            WarningLetterInspectionRequirementMapModel.is_deleted.is_(False),
+            WarningLetterModel.is_active.is_(True),
+            WarningLetterModel.is_deleted.is_(False),
+        )
+        .subquery("live_warning_letter_map")
+    )
 
 
 def _validate_inspection_can_be_closed(pending_items: list):

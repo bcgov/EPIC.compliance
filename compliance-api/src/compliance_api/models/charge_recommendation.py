@@ -106,10 +106,14 @@ class ChargeRecommendationInspectionRequirementMap(BaseModelVersioned):
     @with_session
     def delete_by_charge_recommendation_id(cls, charge_recommendation_id, session=None):
         """Delete all charge recommendation requirement maps by charge recommendation id."""
-        session.query(cls).filter(
-            cls.charge_recommendation_id == charge_recommendation_id
-        ).update(DELETE_DIC_PARAMS)
-        session.commit()
+        maps = session.query(cls).filter(
+            cls.charge_recommendation_id == charge_recommendation_id,
+            cls.is_active.is_(True),
+            cls.is_deleted.is_(False),
+        )
+        for map_item in maps:
+            map_item.update(DELETE_DIC_PARAMS, commit=False)
+        session.flush()
 
     @classmethod
     @with_session

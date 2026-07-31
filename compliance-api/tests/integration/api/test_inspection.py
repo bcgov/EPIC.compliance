@@ -19,6 +19,8 @@ from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionAttendanceOptionEnum, InspectionStatusEnum
+from compliance_api.models.warning_letter import (
+    WarningLetter, WarningLetterInspectionRequirementMap, WarningLetterStatusEnum)
 from compliance_api.services import InspectionService
 from tests.utilities.factory_scenario import AgencyScenario, InspectionScenario, StaffScenario, TokenJWTClaims
 from tests.utilities.factory_utils import factory_auth_header
@@ -602,6 +604,88 @@ def test_inspection_close_as_note(
         req2_enf_maps[0].enforcement_action_id
         == EnforcementActionOptionEnum.ORDER.value
     )
+
+
+def test_pending_items_excludes_deleted_warning_letters(
+    client,
+    jwt,
+    created_staff,
+    mocker,
+    created_case_file,
+    mock_track_service,
+):
+    """A deleted warning letter should not be reported as a pending item."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    mocker.patch(
+        "compliance_api.services.service_utils.ServiceUtils.access_check_update_for_inspection",
+        return_value=None,
+    )
+    inspection_data = copy.copy(InspectionScenario.default_value.value)
+    inspection_data.update(
+        {
+            "case_file_id": created_case_file.id,
+            "primary_officer_id": created_staff.id,
+            "initiation_id": 1,
+            "start_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
+    )
+    created_inspection = InspectionService.create(inspection_data)
+
+    with session_scope() as session:
+        requirement = InspectionRequirementModel(
+            inspection_id=created_inspection.id,
+            summary="Requirement with two warning letters",
+            topic_id=1,
+            sort_order=1,
+            compliance_finding_id=ComplianceFindingOptionEnum.OUT.value,
+        )
+        session.add(requirement)
+        session.flush()
+        session.add(
+            InspectionReqEnforcementMap(
+                requirement_id=requirement.id,
+                enforcement_action_id=EnforcementActionOptionEnum.WARNING_LETTER.value,
+            )
+        )
+        issued_warning_letter = WarningLetter(
+            inspection_id=created_inspection.id,
+            warning_letter_number="WN-TEST-001",
+            issuing_officer_id=created_staff.id,
+            status=WarningLetterStatusEnum.ISSUED,
+        )
+        # Deleted warning letter whose requirement mapping is still around
+        deleted_warning_letter = WarningLetter(
+            inspection_id=created_inspection.id,
+            warning_letter_number="WN-TEST-002",
+            issuing_officer_id=created_staff.id,
+            status=WarningLetterStatusEnum.CREATED,
+            is_active=False,
+            is_deleted=True,
+        )
+        session.add(issued_warning_letter)
+        session.add(deleted_warning_letter)
+        session.flush()
+        session.add(
+            WarningLetterInspectionRequirementMap(
+                warning_letter_id=issued_warning_letter.id,
+                inspection_requirement_id=requirement.id,
+            )
+        )
+        session.add(
+            WarningLetterInspectionRequirementMap(
+                warning_letter_id=deleted_warning_letter.id,
+                inspection_requirement_id=requirement.id,
+            )
+        )
+
+    pending_items = InspectionService.get_pending_items(created_inspection.id)
+    warning_letter_items = [
+        item
+        for item in pending_items
+        if item["item"]["id"] == EnforcementActionOptionEnum.WARNING_LETTER.value
+    ]
+    assert warning_letter_items == []
 
 
 def test_inspection_delete(

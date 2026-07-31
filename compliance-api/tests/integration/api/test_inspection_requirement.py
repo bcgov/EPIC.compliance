@@ -300,6 +300,45 @@ def test_delete_inspection_requirement(
     assert deleted_req is None
 
 
+def test_change_enforcement_action_deletes_warning_letter_requirement_maps(
+    client,
+    auth_header_super_user,
+    db,
+    created_inspection,
+    created_warning_letter,
+    created_warning_letter_inspection_requirement,
+):
+    """Changing the enforcement action deletes the warning letter and its requirement maps."""
+    update_data = copy.copy(InspectionRequirementScenario.default_value.value)
+    update_data["summary"] = "Requirement no longer needs a warning letter"
+    # Drop WARNING_LETTER (4) from the requirement
+    update_data["enforcement_action_ids"] = [2]
+    url = urljoin(
+        API_BASE_URL,
+        f"{created_inspection.id}/requirements/"
+        f"{created_warning_letter_inspection_requirement.id}",
+    )
+    result = client.patch(
+        url,
+        data=json.dumps(update_data),
+        headers=auth_header_super_user,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert WarningLetterModel.find_by_id(created_warning_letter.id) is None
+    # The requirement mappings must be soft deleted along with the warning letter,
+    # otherwise the orphaned maps keep the warning letter reported as a pending item.
+    requirement_maps = (
+        db.session.query(WarningLetterInspectionRequirementMap)
+        .filter_by(warning_letter_id=created_warning_letter.id)
+        .all()
+    )
+    assert requirement_maps
+    assert all(
+        requirement_map.is_deleted and not requirement_map.is_active
+        for requirement_map in requirement_maps
+    )
+
+
 def test_delete_requirement_deletes_sole_linked_draft_order(
     client,
     auth_header_super_user,
