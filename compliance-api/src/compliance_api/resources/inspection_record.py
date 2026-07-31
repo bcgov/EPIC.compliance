@@ -152,6 +152,29 @@ class InspectionRecordFinal(Resource):
         return InspectionRecordSchema().dump(final_ir), HTTPStatus.OK
 
 
+@API.route(
+    "/<int:inspection_record_id>/continue-preliminary-review",
+    methods=["PATCH"],
+)
+class InspectionRecordContinuePreliminaryReview(Resource):
+    """Resource to send an IR back to preliminary drafting for another review round."""
+
+    @staticmethod
+    @API.response(code=200, description="Sucess", model=ir_list_model)
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Continue another round of preliminary review"
+    )
+    @API.response(404, "Not Found")
+    @API.response(422, "Unprocessable Entity")
+    @auth.require
+    def patch(inspection_id, inspection_record_id):
+        """Send IR back to PRELIMINARY_DRAFTING."""
+        updated_ir = InspectionRecordService.continue_preliminary_review(
+            inspection_id, inspection_record_id
+        )
+        return InspectionRecordSchema().dump(updated_ir), HTTPStatus.OK
+
+
 @API.route("/<int:inspection_record_id>/approvals", methods=["POST", "GET"])
 class InspectionRecordApprovals(Resource):
     """Resource for managing inspection records."""
@@ -217,6 +240,29 @@ class InspectionRecordApproval(Resource):
             inspection_id, inspection_record_id, approval_id, approval_update_data
         )
         return InspectionRecordApprovalSchema().dump(updated_approval), HTTPStatus.OK
+
+
+@API.route(
+    "/<int:inspection_record_id>/approvals/<int:approval_id>/reopen",
+    methods=["PATCH"],
+)
+class InspectionRecordApprovalReopen(Resource):
+    """Resource to atomically reopen an approved inspection record."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=ir_list_model)
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Reopen an approved inspection record"
+    )
+    @API.response(404, "Not Found")
+    @API.response(422, "Unprocessable Entity")
+    @auth.require
+    def patch(inspection_id, inspection_record_id, approval_id):
+        """Reopen an approved inspection record."""
+        reopened_ir = InspectionRecordApprovalService.reopen(
+            inspection_id, inspection_record_id, approval_id
+        )
+        return InspectionRecordSchema().dump(reopened_ir), HTTPStatus.OK
 
 
 @API.route(
@@ -297,32 +343,37 @@ class InspectionRecordPreview(Resource):
         if output_format in ("pdf", "docx"):
             inspection = ServiceUtils.inspection_exist_check(inspection_id)
             ServiceUtils.access_check_update_for_inspection(inspection)
-            DocumentJobService.invalidate_all_previous_documents_for_user(
-                staff_user_id, inspection_record_id, output_format
+            document_job, created = DocumentJobService.start_job(
+                staff_user_id,
+                inspection_record_id,
+                output_format,
+                {
+                    "user_id": staff_user_id,
+                    "inspection_record_id": inspection_record_id,
+                    "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+                    "output_format": output_format,
+                    "started_at": datetime.now(timezone.utc),
+                },
             )
-            document_job = DocumentJobService.create({
-                "user_id": staff_user_id,
-                "inspection_record_id": inspection_record_id,
-                "status": DocumentJobStatusEnum.IN_PROGRESS.value,
-                "output_format": output_format,
-                "started_at": datetime.now(timezone.utc),
-            })
-            access_token = getattr(g, "access_token", None)
-            jwt_oidc_token_info = getattr(g, "jwt_oidc_token_info", None)
-            thread = threading.Thread(
-                target=DocumentJobService.handle_background_job,
-                args=(
-                    current_app._get_current_object(),  # pylint: disable=protected-access
-                    document_job.id,
-                    access_token,
-                    jwt_oidc_token_info,
-                    inspection_id,
-                    inspection_record_id,
-                    staff_user_id,
-                    output_format,
-                ),
-            )
-            thread.start()
+            # A concurrent request already created and is rendering this job -
+            # don't start a second background render for the same job id.
+            if created:
+                access_token = getattr(g, "access_token", None)
+                jwt_oidc_token_info = getattr(g, "jwt_oidc_token_info", None)
+                thread = threading.Thread(
+                    target=DocumentJobService.handle_background_job,
+                    args=(
+                        current_app._get_current_object(),  # pylint: disable=protected-access
+                        document_job.id,
+                        access_token,
+                        jwt_oidc_token_info,
+                        inspection_id,
+                        inspection_record_id,
+                        staff_user_id,
+                        output_format,
+                    ),
+                )
+                thread.start()
             return DocumentJobSchema().dump(document_job), HTTPStatus.ACCEPTED
 
         # Handle HTML format (default)

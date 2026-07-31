@@ -30,7 +30,6 @@ import { InspectionStatusEnum } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
-  useDeleteDocumentJobs,
   useLastGeneratedTimeForUser,
   useMostRecentDocumentJobForUser,
 } from "@/hooks/useDocumentJobs";
@@ -55,6 +54,7 @@ const PreviewDownloadButton = () => {
   const lastGeneratedTime = lastGeneratedTimeObj?.last_generated_time;
 
   const [previewClicked, setPreviewClicked] = useState(false);
+  const [docxSubmitting, setDocxSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const currentUser = useCurrentLoggedInUser();
@@ -102,8 +102,8 @@ const PreviewDownloadButton = () => {
   );
 
   const isGenerating = useMemo(() => {
-    return documentJob?.status === DocumentJobStatus.IN_PROGRESS;
-  }, [documentJob]);
+    return docxSubmitting || documentJob?.status === DocumentJobStatus.IN_PROGRESS;
+  }, [docxSubmitting, documentJob]);
 
   const isCompleted = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.COMPLETED;
@@ -119,26 +119,17 @@ const PreviewDownloadButton = () => {
   };
 
   const queryClient = useQueryClient();
-  const { mutate: mutateDeleteDocumentJob } = useDeleteDocumentJobs();
 
   const handleGenerateDocx = async (event: MouseEvent) => {
     handleClose(event);
 
-    // Generating a new report invalidates the previous one
-    if (documentJob?.id) {
-      mutateDeleteDocumentJob(documentJob.id, {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: [
-              "mostRecentDocumentJob",
-              inspectionReportsData?.id,
-              "docx",
-            ],
-          });
-        },
-      });
+    if (docxSubmitting) {
+      return;
     }
+    setDocxSubmitting(true);
 
+    // The backend invalidates the previous job for this user/inspection/format
+    // as part of creating the new one.
     mutateIrPreviewData(
       {
         inspectionId: inspectionData?.id ?? 0,
@@ -147,6 +138,7 @@ const PreviewDownloadButton = () => {
       },
       {
         onSuccess: () => {
+          setDocxSubmitting(false);
           queryClient.invalidateQueries({
             queryKey: [
               "mostRecentDocumentJob",
@@ -154,6 +146,9 @@ const PreviewDownloadButton = () => {
               "docx",
             ],
           });
+        },
+        onError: () => {
+          setDocxSubmitting(false);
         },
       }
     );

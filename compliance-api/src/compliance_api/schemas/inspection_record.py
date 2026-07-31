@@ -4,7 +4,7 @@ from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, 
 from marshmallow_enum import EnumField
 
 from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
-from compliance_api.models.inspection_record import IRProgressEnum, IRStatusEnum
+from compliance_api.models.inspection_record import IRStatusEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from .base_schema import AutoSchemaBase, BaseSchema
@@ -75,7 +75,6 @@ class UpdateInspectionRecordSchema(BaseSchema):
             "action_required_by_rp": fields.Str(),
             "record_prepared_by_id": fields.Int(),
             "record_prepared_by_position_id": fields.Int(),
-            "ir_progress": EnumField(IRProgressEnum, by_value=False),
             "date_issued": fields.DateTime(
                 format=INPUT_DATE_TIME_FORMAT,
                 metadata={

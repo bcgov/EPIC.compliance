@@ -1,6 +1,7 @@
 import { DocumentJob, DocumentJobStatus } from "@/models/documentJob";
-import { request } from "@/utils/axiosUtils";
+import { request, requestSilent } from "@/utils/axiosUtils";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useRef } from "react";
 
 const fetchMostRecentDocumentJobForUser = (
   inspectionReportID: number,
@@ -22,14 +23,14 @@ const fetchLastGeneratedTimeForUser = (
   });
 };
 
-const updateDocumentJob = (
-  jobId: string,
-  data: Partial<DocumentJob>
-): Promise<DocumentJob> => {
-  return request({
+// Used only by the background "stuck job" watchdog below - silent because
+// the user never triggered this call directly, so a failure shouldn't
+// surface as an error toast.
+const markDocumentJobFailedSilently = (jobId: string): Promise<DocumentJob> => {
+  return requestSilent({
     url: `/document-jobs/${jobId}`,
     method: "PUT",
-    data,
+    data: { status: DocumentJobStatus.FAILED },
   });
 };
 
@@ -44,6 +45,8 @@ export const useMostRecentDocumentJobForUser = (
   inspectionReportID: number,
   outputFormat: "pdf" | "docx" = "pdf"
 ) => {
+  const watchdogFiredRef = useRef(new Set<string>());
+
   return useQuery<DocumentJob, Error>({
     queryKey: ["mostRecentDocumentJob", inspectionReportID, outputFormat],
     queryFn: () =>
@@ -60,12 +63,16 @@ export const useMostRecentDocumentJobForUser = (
         const now = new Date().getTime();
         const elapsed = now - startedAt;
         const allowedWaitTime = 10 * 60 * 1000; // 10 minutes
-        // If the job has been in progress for more than 10 minutes, mark it as failed and stop polling
-        if (elapsed > allowedWaitTime && query.state.data?.id) {
-          updateDocumentJob(query.state.data.id, {
-            status: DocumentJobStatus.FAILED,
-          }).then(() => {
-            return false;
+        // If the job has been in progress for more than 10 minutes, mark it as failed.
+        // Only fire once per stale job, and re-check the status right before writing
+        if (
+          elapsed > allowedWaitTime &&
+          query.state.data?.id &&
+          !watchdogFiredRef.current.has(query.state.data.id)
+        ) {
+          watchdogFiredRef.current.add(query.state.data.id);
+          markDocumentJobFailedSilently(query.state.data.id).catch(() => {
+            // A failure here isn't user-actionable, so make it silent.
           });
         }
       }

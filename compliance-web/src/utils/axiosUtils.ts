@@ -93,6 +93,11 @@ export const requestDocumentAPI = ({ ...options }) => {
   return documentAPIClient(options).then(onSuccess).catch(onError);
 };
 
+// Skips the global error toast - for background/housekeeping calls the user didn't trigger
+export const requestSilent = ({ ...options }) => {
+  return apiClient(options).then(onSuccess);
+};
+
 export const requestAxios = ({ ...options }) => {
   const client = axios.create(options);
   return client(options).then(onSuccess).catch(onError);

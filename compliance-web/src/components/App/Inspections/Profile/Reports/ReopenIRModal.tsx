@@ -2,15 +2,9 @@ import { DialogContent, Typography } from "@mui/material";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
 import ModalActions from "@/components/Shared/Modals/ModalActions";
 import { FC } from "react";
-import {
-  useResetInspectionRecord,
-  useUpdateInspectionRecord,
-  useUpdateIRApproval,
-} from "@/hooks/useInspectionReports";
+import { useReopenIRApproval } from "@/hooks/useInspectionReports";
 import { useReportStore } from "./reportStore";
 import { InspectionRecord } from "@/models/InspectionRecord";
-import { IRProgressEnum } from "@/utils/constants";
-import { notify } from "@/store/snackbarStore";
 
 type ReopenIRModalProps = {
   onSubmit: (message: string) => void;
@@ -21,50 +15,20 @@ const ReopenIRModal: FC<ReopenIRModalProps> = ({ onSubmit, previousApprovalId })
   const { inspectionData, inspectionReportsData, setInspectionReportsData } =
     useReportStore();
 
-  const handleOnUpdateSuccess = (data: InspectionRecord) => {
+  const handleOnReopenSuccess = (data: InspectionRecord) => {
     setInspectionReportsData(data);
     onSubmit("Inspection Record Reopened");
   };
 
-  const handleOnResetSuccess = (data: InspectionRecord) => {
-    setInspectionReportsData(data);
-    notify.success("Enforcement summary updated");
-  };
-
-  const { mutate: updateInspectionRecord, isPending } =
-    useUpdateInspectionRecord(handleOnUpdateSuccess);
-
-  const { mutate: updateIRApproval } =
-    useUpdateIRApproval(handleOnUpdateSuccess);
-
-  const { mutate: resetInspectionRecord } =
-    useResetInspectionRecord(handleOnResetSuccess);
+  const { mutate: reopenIRApproval, isPending } =
+    useReopenIRApproval(handleOnReopenSuccess);
 
   const onSubmitHandler = () => {
-    resetInspectionRecord({
+    reopenIRApproval({
       inspectionId: inspectionData?.id ?? 0,
       inspectionRecordId: inspectionReportsData?.id ?? 0,
-      resetPayload: {
-        field_name: "date_issued",
-      },
+      approvalId: previousApprovalId ?? 0,
     });
-    updateInspectionRecord({
-      inspectionId: inspectionData?.id ?? 0,
-      inspectionRecordId: inspectionReportsData?.id ?? 0,
-      updateRecord: {
-        field_name: "ir_progress",
-        value: IRProgressEnum.FINALIZING_RECORD,
-      },
-    });
-    updateIRApproval({
-       inspectionId: inspectionData?.id ?? 0,
-        inspectionRecordId: inspectionReportsData?.id ?? 0,
-        approvalId: previousApprovalId ?? 0,
-        approvalPayload: {
-          field_name: "is_active",
-          value: "false",
-        },
-    })
   };
 
   return (

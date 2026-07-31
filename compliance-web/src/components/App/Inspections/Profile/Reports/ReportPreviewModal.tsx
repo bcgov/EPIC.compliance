@@ -1,7 +1,7 @@
 import { Box, DialogContent } from "@mui/material";
 import { FC } from "react";
 import ModalTitleBar from "@/components/Shared/Modals/ModalTitleBar";
-import { sanitizeHtml } from "@/utils/sanitizeHtml";
+import { sanitizeReportHtml } from "@/utils/sanitizeHtml";
 
 type ReportPreviewModalProps = {
   previewHtml: string;
@@ -19,7 +19,7 @@ const ReportPreviewModal: FC<ReportPreviewModalProps> = ({ previewHtml }) => {
               overflow: "auto",
               "& img": { maxWidth: "100%" },
             }}
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewHtml) }}
+            dangerouslySetInnerHTML={{ __html: sanitizeReportHtml(previewHtml) }}
           />
         ) : (
           <Box
