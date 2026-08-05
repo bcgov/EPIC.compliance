@@ -17,7 +17,7 @@ from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
 from compliance_api.services.warning_letter.warning_letter_template_constant import WARNING_LETTER_CONTENT
-from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME
+from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, WARNING_LETTER_SIGNATURE_BRANCH
 from compliance_api.utils.datetime import convert_to_full_month_format
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
@@ -286,6 +286,7 @@ def _create_warning_letter_data(warning_letter):
             "website": department_details.website,
             "office_name": OFFICE_NAME,
             "office_branch": OFFICE_BRANCH,
+            "signature_branch": WARNING_LETTER_SIGNATURE_BRANCH,
         },
     }
 

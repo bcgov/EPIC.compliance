@@ -54,7 +54,7 @@ WARNING_LETTER_CONTENT = """<p class='editor-paragraph' dir='ltr'>
 </p>
 <p class="editor-paragraph" style="text-align: left;"><br></p>
 <p class="editor-paragraph" dir="ltr">
-    The Environmental Assessment Office Compliance and Enforcement Branch will continue to monitor this issue and may
+    Environmental Assessment Compliance &amp; Enforcement will continue to monitor this issue and may
     follow-up with further inspections as required. Future or continuing non-compliance may result in additional
     enforcement action as warranted.
 </p>

@@ -8,8 +8,9 @@ INPUT_DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 UNAPPROVED_PROJECT_NAME = "Unapproved Project"
 UNAPPROVED_PROJECT_CODE = "UNPRVD"
 DELETE_DIC_PARAMS = {"is_active": False, "is_deleted": True}
-OFFICE_NAME = "Environmental Assessment Office"
-OFFICE_BRANCH = "Compliance and Enforcement Branch"
+OFFICE_NAME = "Ministry of Environment and Parks"
+OFFICE_BRANCH = "Compliance and Environmental Enforcement Branch"
+WARNING_LETTER_SIGNATURE_BRANCH = "Environmental Assessment Compliance & Enforcement"
 GROUP_MAP = {
     PermissionEnum.SUPERUSER: "super_user",
     PermissionEnum.VIEWER: "viewer",

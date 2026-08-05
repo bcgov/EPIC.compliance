@@ -307,10 +307,21 @@
       }
 
       .footer-first-page td {
-        padding-right: 0.5em;
-        padding-left: 0.5em;
+        padding-right: 1em;
+        padding-left: 0;
         vertical-align: top;
-        width: 25%;
+      }
+      .footer-first-page td:nth-child(1) {
+        width: 28%;
+      }
+      .footer-first-page td:nth-child(2) {
+        width: 44%;
+      }
+      .footer-first-page td:nth-child(3) {
+        width: 28%;
+      }
+      .footer-first-page td:last-child {
+        padding-right: 0;
       }
       .first-page-continuation {
         position: absolute;
@@ -371,11 +382,6 @@
           {{ department_details.address_line1 }}<br />
           {{ department_details.address_line2 }}
         </td>
-        <td>
-          Location:<br />
-          2nd Fl – 836 Yates St<br />
-          Victoria BC V8W 1L8
-        </td>
       </tr>
     </table>
   </div>
@@ -407,8 +413,8 @@
     <p><br></p>
     <p>{{officer_details.officer_name}}<br>
     {{officer_details.officer_position}}<br>
-    Environmental Assessment Office</p>
-    <p><strong>cc:</strong> EAO Compliance</p>
+    {{ department_details.signature_branch }}<br>
+    {{ department_details.office_name }}</p>
   </div>
 </body>
 
