@@ -37,8 +37,8 @@ C. {% else %}A. {% endif %}On
  {{inspection_details.start_date}}
 {% else %}
  {{inspection_details.start_date}} and {{inspection_details.end_date}}
-{% endif %}, the Environmental Assessment
- Office Compliance and Enforcement Branch (EAO CEB) conducted a {{inspection_details.inspection_type | lower }}
+{% endif %}, Environmental Assessment
+ Compliance &amp; Enforcement (EAC&amp;E) conducted a {{inspection_details.inspection_type | lower }}
  inspection of the Project. The inspection found that the {{project_details.proponent_label}} was not compliant
  with {{requirement_details.requirement_numbers}} with respect to {{requirement_details.requirement_summaries}}.
  The inspection findings are documented in Inspection Record {{inspection_details.ir_number}}.</span></p>
@@ -71,6 +71,6 @@ Pursuant to Section {{order_details.section}} of the Act, I order that the {{pro
     <li value="2" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="3" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="4" class="editor-listitem"><span style="white-space: pre-wrap;">Complete the measures in clauses 1, 2
- and 3 above to the satisfaction of, and unless otherwise authorized by, the CEB.
+ and 3 above to the satisfaction of, and unless otherwise authorized by, EAC&amp;E.
  </span></li>
 </ol>"""

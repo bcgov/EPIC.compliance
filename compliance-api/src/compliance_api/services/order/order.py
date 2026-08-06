@@ -16,7 +16,7 @@ from compliance_api.models.section import Section as SectionModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.order.order_approval import OrderApprovalService
 from compliance_api.services.service_utils import ServiceUtils
-from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME
+from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
 from compliance_api.utils.datetime import convert_to_full_month_format
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
@@ -487,6 +487,7 @@ def _create_order_data(inspection, order):
             "website": department_details.website,
             "office_name": OFFICE_NAME,
             "office_branch": OFFICE_BRANCH,
+            "signature_branch": SIGNATURE_BRANCH,
         },
     }
 
