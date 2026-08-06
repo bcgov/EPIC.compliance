@@ -10,8 +10,8 @@ from docx.shared import Inches, Pt, RGBColor
 from flask import current_app
 
 from .docx_utils import (
-    _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode, _set_cell_background,
-    _set_empty_paragraph_spacing)
+    _add_hyperlink, _add_page_number, _remove_cell_margins, _remove_compatibility_mode, _remove_picture_spacing,
+    _set_cell_background, _set_empty_paragraph_spacing)
 from .html_to_docx import _add_html_paragraphs_to_cell, _add_html_to_container, init_list_numbering
 from .image_utils import ImageDownloadError, ImageProcessingError, ImageTooLargeError, download_and_optimize_image
 
@@ -334,10 +334,13 @@ def generate_inspection_report_docx(preview_data):
     logo_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
     logo_para.paragraph_format.space_before = Pt(0)
     logo_para.paragraph_format.space_after = Inches(0.18)
+    # Offsets the logo's transparent border (0.19 x its height) so it lines up with the page margin
+    logo_para.paragraph_format.left_indent = Inches(-0.19)
 
     logo_run = logo_para.add_run()
-    logo_path = Path(__file__).parent / "assets" / "EAO_Logo.png"
-    logo_run.add_picture(str(logo_path), width=Inches(4))
+    logo_path = Path(__file__).parent / "assets" / "BCID_V_RGB_pos.png"
+    logo_run.add_picture(str(logo_path), height=Inches(1))
+    _remove_picture_spacing(logo_run)
 
     # Add footer with page numbers
     footer = doc.sections[0].footer
@@ -624,7 +627,7 @@ def generate_inspection_report_docx(preview_data):
     # Department details
     row = summary_table.add_row()
     cell = row.cells[0].merge(row.cells[1])
-    cell.text = "Environmental Assessment Office - Compliance & Enforcement Branch"
+    cell.text = "Environmental Assessment Compliance & Enforcement"
     cell.paragraphs[0].runs[0].font.bold = True
     _set_cell_background(cell, 'BFBFBF')
 

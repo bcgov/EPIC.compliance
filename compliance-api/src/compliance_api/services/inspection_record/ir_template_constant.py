@@ -35,8 +35,8 @@ FINDING_STATEMENT = """<p class="editor-paragraph" dir="ltr">
     <span>
         The compliance findings in this report reflect the analysis based on the information obtained
         during the inspection commenced on the date noted above. These findings can change at any time
-        upon information gathered through future inspections or if new information is obtained by the
-        EAO Compliance and Enforcement Branch (CEB).
+        upon information gathered through future inspections or if new information is obtained by
+        EAC&amp;E.
     </span>
 </p>
 """
@@ -48,13 +48,13 @@ PRELIMINARY_REVIEW_DETAILS = """<div>
             inspection record to the {{ proponent_label }}.
         AND</span><br><span>On {{ date_response }}, the {{ proponent_label }}
             provided comments pertaining to the preliminary inspection record. These comments were reviewed, and edits
-            were made to the record by the EAO Compliance and Enforcement Branch (CEB) to correct identified errors of
-            fact or omission prior to finalizing. </span>
+            were made to the record by Environmental Assessment Compliance &amp; Enforcement (EAC&amp;E) to correct
+            identified errors of fact or omission prior to finalizing.</span>
     </p>
     <p class="editor-paragraph" dir="ltr"><span>OR</span></p>
     <p class="editor-paragraph" dir="ltr"><span>On {{ date_response }}, the {{ proponent_label }} provided comments
-            pertaining to the preliminary inspection record. These comments were reviewed by the EAO Compliance and
-            Enforcement Branch (CEB). No errors of fact or omission were identified.</span></p>
+            pertaining to the preliminary inspection record. These comments were reviewed by Environmental Assessment
+            Compliance &amp; Enforcement (EAC&amp;E). No errors of fact or omission were identified.</span></p>
     <p class="editor-paragraph" dir="ltr"><span>OR</span></p>
     <p class="editor-paragraph" dir="ltr"><span>No comments were received from the {{ proponent_label }} prior to
             finalizing the record.</span></p>
@@ -98,7 +98,7 @@ ENFORCEMENT_SUMMARY = {
     "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of
     {{ eac }} was referred to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
     information.</p>""",
-    "DEFAULT": """<p class="editor-paragraph" dir="ltr">The EAO CEB may inspect to determine if
+    "DEFAULT": """<p class="editor-paragraph" dir="ltr">EAC&amp;E may inspect to determine if
     the {{ project_name }} Project has been brought into compliance with these requirements. Continued non-compliance
     with these requirements may result in additional enforcement under the <i>{{ act }}</i> ({{ act_year }}).</p>""",
 }

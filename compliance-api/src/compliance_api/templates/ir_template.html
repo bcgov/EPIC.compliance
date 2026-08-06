@@ -65,6 +65,8 @@
         .com-ir-header-logo {
             height: 60px;
             width: auto;
+            /* Offsets the logo's transparent border (0.19 x its height) so it lines up with the margin */
+            margin-left: -11.5px;
         }
 
         .com-ir-header-title {
@@ -457,6 +459,7 @@
 
             .com-ir-header-logo {
                 height: 0.6in;
+                margin-left: -0.115in;
             }
 
             .com-ir-footer {
@@ -491,8 +494,8 @@
 <body>
     <!-- <div class="header"> -->
     <div class="com-ir-header-container">
-        <img src="https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/images/EAO_Compliance_IR_Report_Logo.png"
-            class="com-ir-header-logo" alt="EAO Logo">
+        <img src="https://nrs.objectstore.gov.bc.ca/epic-static-assets/compliance-assets/images/BCID_V_RGB_pos.png"
+            class="com-ir-header-logo" alt="BC Government Logo">
         <div class="com-ir-header-title">INSPECTION RECORD</div>
     </div>
     <!-- </div> -->
@@ -792,9 +795,8 @@
                 {% endif %}
 
                 <tr>
-                    <th colspan="2" class="com-ir-header-background">Environmental Assessment Office - Compliance &
-                        Enforcement
-                        Branch</th>
+                    <th colspan="2" class="com-ir-header-background">Environmental Assessment Compliance &amp;
+                        Enforcement</th>
                 </tr>
                 <tr class="com-ir-mailing-address-container">
                     <td>

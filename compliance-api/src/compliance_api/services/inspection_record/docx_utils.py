@@ -103,6 +103,17 @@ def _remove_cell_margins(cell):
     table_cell_pr.append(tc_margin)
 
 
+def _remove_picture_spacing(run):
+    """Set the wrap spacing around every inline picture in a run to zero.
+
+    python-docx leaves the dist* attributes off <wp:inline>. Word reads the missing values as 0,
+    but LibreOffice substitutes a 0.13" default that shows up as a gap beside the image.
+    """
+    for inline in run._r.findall('.//' + qn('wp:inline')):
+        for side in ('distT', 'distB', 'distL', 'distR'):
+            inline.set(side, '0')
+
+
 def _set_empty_paragraph_spacing(doc):
     """Set line spacing to 0.5 for all empty paragraph blocks."""
     # Iterate through all paragraphs in the doc body
