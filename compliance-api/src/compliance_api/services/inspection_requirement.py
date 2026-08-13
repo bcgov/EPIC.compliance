@@ -172,11 +172,13 @@ class InspectionRequirementService:
         ServiceUtils.access_check_update_for_inspection(inspection)
         requirement_obj = _create_requirement_obj(inspection_id, requirement_data)
         with session_scope() as session:
-            _check_enforcement_action_existennce(
-                requirement_data.get("enforcement_action_ids", []),
-                requirement_id,
-                inspection_id,
-                session,
+            order_ids_to_reset, warning_letter_ids_to_reset = (
+                _check_enforcement_action_existennce(
+                    requirement_data.get("enforcement_action_ids", []),
+                    requirement_id,
+                    inspection_id,
+                    session,
+                )
             )
             updated_requirement = InspectionRequirementModel.update_requirement(
                 requirement_id, requirement_obj, session
@@ -210,6 +212,7 @@ class InspectionRequirementService:
                 requirement=updated_requirement,
                 session=session,
             )
+        _reset_enforcement_summaries(order_ids_to_reset, warning_letter_ids_to_reset)
         return updated_requirement
 
     @classmethod
@@ -1558,10 +1561,13 @@ def _validate_and_delete_enforcement_action(
     Validate and delete a specific enforcement action type.
 
     @param enforcement_action_config: Configuration dict containing model, status_field,
-                                    allowed_status, map_field, update_method, and error_message
+                                    allowed_status, map_field, map_model, update_method,
+                                    approval_getter and error_message
     @param requirement_id: Requirement id
     @param inspection_id: Inspection id
     @param session: Database session
+    @return: Ids of the enforcement actions that were kept and only unlinked from the
+             requirement because they are still linked to other live requirements
     """
     model = enforcement_action_config["model"]
     status_field = enforcement_action_config["status_field"]
@@ -1572,7 +1578,9 @@ def _validate_and_delete_enforcement_action(
         else (allowed_status,)
     )
     map_field = enforcement_action_config["map_field"]
+    map_model = enforcement_action_config["map_model"]
     update_method = enforcement_action_config["update_method"]
+    approval_getter = enforcement_action_config.get("approval_getter")
     error_message = enforcement_action_config["error_message"]
 
     # Get all enforcement actions of this type for the inspection
@@ -1594,8 +1602,23 @@ def _validate_and_delete_enforcement_action(
         raise UnprocessableEntityError(error_message)
 
     # Delete all enforcement actions of this type for this requirement
+    unlinked_action_ids = []
     for action in requirement_enforcement_actions:
+        action_maps = list(getattr(action, map_field))
+        if _has_other_linked_requirements(action_maps, requirement_id):
+            map_model.bulk_delete(action.id, [requirement_id], session)
+            unlinked_action_ids.append(action.id)
+            continue
+        if approval_getter:
+            for approval in approval_getter(action.id):
+                approval.update({"is_active": False, "is_deleted": True}, commit=False)
+        map_model.bulk_delete(
+            action.id,
+            [action_map.inspection_requirement_id for action_map in action_maps],
+            session,
+        )
         update_method(action.id, {"is_deleted": True, "is_active": False}, session)
+    return unlinked_action_ids
 
 
 def _check_enforcement_action_existennce(
@@ -1609,6 +1632,8 @@ def _check_enforcement_action_existennce(
     @param requirement_id: Requirement id
     @param inspection_id: Inspection id
     @param session: Database session
+    @return: Tuple of order ids and warning letter ids whose summaries need to be
+             regenerated because the requirement was unlinked from a merged document
     """
     existing_enforcement_maps = (
         InspectionReqEnforcementMapModel.get_all_by_requirement_id(requirement_id)
@@ -1620,8 +1645,10 @@ def _check_enforcement_action_existennce(
         set(new_enforcement_ids)
     )
 
+    order_ids_to_reset = []
+    warning_letter_ids_to_reset = []
     if not removed_action_ids:
-        return
+        return order_ids_to_reset, warning_letter_ids_to_reset
 
     # Configuration for each enforcement action type
     enforcement_configs = {
@@ -1630,7 +1657,9 @@ def _check_enforcement_action_existennce(
             "status_field": "order_progress",
             "allowed_status": OrderProgressEnum.DRAFTING,
             "map_field": "order_requirement_maps",
+            "map_model": OrderInspectionRequirementMapModel,
             "update_method": OrderModel.update_order,
+            "approval_getter": OrderApprovalModel.get_approvals_by_order,
             "error_message": "You cannot change enforcement action as order exists and is not in DRAFTING status.",
         },
         EnforcementActionOptionEnum.WARNING_LETTER.value: {
@@ -1638,7 +1667,9 @@ def _check_enforcement_action_existennce(
             "status_field": "progress",
             "allowed_status": WarningLetterProgressEnum.DRAFTING,
             "map_field": "warning_letter_requirement_maps",
+            "map_model": WarningLetterInspectionRequirementMapModel,
             "update_method": WarningLetterModel.update_warning_letter,
+            "approval_getter": WarningLetterApprovalModel.get_approvals_by_warning_letter,
             "error_message": (
                 "You cannot change enforcement action as warning letter exists and is not in DRAFTING status."
             ),
@@ -1652,6 +1683,7 @@ def _check_enforcement_action_existennce(
                 ReferralStatusEnum.REFERRED_TO_AMP_UNIT,
             ),
             "map_field": "administrative_penalty_requirement_maps",
+            "map_model": AdministrativePenaltyInspectionRequirementMapModel,
             "update_method": AdministrativePenaltyModel.update_administrative_penalty,
             "error_message": (
                 "You cannot change enforcement action as administrative penalty exists and is not in DRAFTING status."
@@ -1662,6 +1694,7 @@ def _check_enforcement_action_existennce(
             "status_field": "status",
             "allowed_status": ViolationTicketStatusEnum.ISSUED,
             "map_field": "violation_ticket_requirement_maps",
+            "map_model": ViolationTicketInspectionRequirementMapModel,
             "update_method": ViolationTicketModel.update_violation_ticket,
             "error_message": (
                 "You cannot change enforcement action as violation ticket exists and is not in ISSUED status."
@@ -1672,6 +1705,7 @@ def _check_enforcement_action_existennce(
             "status_field": "status",
             "allowed_status": ChargeRecommendationStatusEnum.DRAFTING,
             "map_field": "charge_recommendation_requirement_maps",
+            "map_model": ChargeRecommendationInspectionRequirementMapModel,
             "update_method": ChargeRecommendationModel.update_charge_recommendation,
             "error_message": (
                 "You cannot change enforcement action as charge recommendation exists and is not in DRAFTING status."
@@ -1682,9 +1716,14 @@ def _check_enforcement_action_existennce(
     # Process each removed enforcement action
     for action_id in removed_action_ids:
         if action_id in enforcement_configs:
-            _validate_and_delete_enforcement_action(
+            unlinked_action_ids = _validate_and_delete_enforcement_action(
                 enforcement_configs[action_id], requirement_id, inspection_id, session
             )
+            if action_id == EnforcementActionOptionEnum.ORDER.value:
+                order_ids_to_reset.extend(unlinked_action_ids)
+            elif action_id == EnforcementActionOptionEnum.WARNING_LETTER.value:
+                warning_letter_ids_to_reset.extend(unlinked_action_ids)
+    return order_ids_to_reset, warning_letter_ids_to_reset
 
 
 def _update_the_findigs_by_images(

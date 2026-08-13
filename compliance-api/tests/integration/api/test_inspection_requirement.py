@@ -9,7 +9,7 @@ import pytest
 
 from compliance_api.models import InspectionReqSourceDetail as InspectionReqSourceDetailModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
-from compliance_api.models import InspectionStatusEnum, RequirementSourceEnum
+from compliance_api.models import EnforcementActionOptionEnum, InspectionStatusEnum, RequirementSourceEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import AdministrativePenaltyInspectionRequirementMap
 from compliance_api.models.administrative_penalty import DecisionEnum, ReferralStatusEnum
@@ -618,6 +618,145 @@ def test_delete_requirement_blocked_when_administrative_penalty_beyond_drafting(
     assert (
         AdministrativePenaltyModel.find_by_id(created_administrative_penalty.id)
         is not None
+    )
+
+
+def _change_enforcement_action_to_be_determined(
+    client, auth_header, inspection_id, requirement_id
+):
+    """Patch a requirement so its enforcement action becomes To Be Determined."""
+    update_data = copy.copy(InspectionRequirementScenario.default_value.value)
+    update_data["enforcement_action_ids"] = [
+        EnforcementActionOptionEnum.TO_BE_DETERMINED.value
+    ]
+    url = urljoin(API_BASE_URL, f"{inspection_id}/requirements/{requirement_id}")
+    return client.patch(url, data=json.dumps(update_data), headers=auth_header)
+
+
+def test_change_enforcement_action_removes_sole_linked_draft_order(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_inspection_requirement,
+    created_order,
+    created_order_requirement_map,
+):
+    """Changing the enforcement action to TBD removes the draft order and its mapping."""
+    result = _change_enforcement_action_to_be_determined(
+        client,
+        auth_header_super_user,
+        created_inspection.id,
+        created_inspection_requirement.id,
+    )
+    assert result.status_code == HTTPStatus.OK
+    # The draft order is removed along with the association to the requirement, so no
+    # ghost order can resurface later in the case file profile.
+    assert OrderModel.find_by_id(created_order.id) is None
+    assert (
+        OrderInspectionRequirementMap.get_by_requirement_id(
+            created_inspection_requirement.id
+        )
+        is None
+    )
+
+
+def test_change_enforcement_action_keeps_merged_draft_order(
+    client,
+    auth_header_super_user,
+    db,
+    created_inspection,
+    created_inspection_requirement,
+    created_order,
+    created_order_requirement_map,
+):
+    """Changing the enforcement action only unlinks a draft order shared with others."""
+    second_requirement = InspectionRequirementModel(
+        inspection_id=created_inspection.id,
+        summary="Second requirement merged into the same order",
+        topic_id=created_inspection_requirement.topic_id,
+        compliance_finding_id=created_inspection_requirement.compliance_finding_id,
+        req_type=created_inspection_requirement.req_type,
+        sort_order=2,
+        is_active=True,
+        is_deleted=False,
+    )
+    db.session.add(second_requirement)
+    db.session.flush()
+    db.session.add(
+        OrderInspectionRequirementMap(
+            order_id=created_order.id,
+            inspection_requirement_id=second_requirement.id,
+            is_active=True,
+            is_deleted=False,
+        )
+    )
+    db.session.commit()
+
+    result = _change_enforcement_action_to_be_determined(
+        client,
+        auth_header_super_user,
+        created_inspection.id,
+        created_inspection_requirement.id,
+    )
+    assert result.status_code == HTTPStatus.OK
+
+    # The merged order remains, with only the updated requirement unlinked.
+    assert OrderModel.find_by_id(created_order.id) is not None
+    remaining_requirement_ids = {
+        order_map.inspection_requirement_id
+        for order_map in OrderInspectionRequirementMap.get_by_order_id(created_order.id)
+    }
+    assert created_inspection_requirement.id not in remaining_requirement_ids
+    assert second_requirement.id in remaining_requirement_ids
+
+
+def test_change_enforcement_action_removes_sole_linked_draft_warning_letter(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_warning_letter,
+    created_warning_letter_inspection_requirement,
+):
+    """Changing the enforcement action removes the draft warning letter and mapping."""
+    result = _change_enforcement_action_to_be_determined(
+        client,
+        auth_header_super_user,
+        created_inspection.id,
+        created_warning_letter_inspection_requirement.id,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert WarningLetterModel.find_by_id(created_warning_letter.id) is None
+    assert (
+        WarningLetterInspectionRequirementMap.get_by_requirement_id(
+            created_warning_letter_inspection_requirement.id
+        )
+        is None
+    )
+
+
+def test_change_enforcement_action_removes_sole_linked_draft_admin_penalty(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Changing the enforcement action removes the draft AP and its mapping."""
+    result = _change_enforcement_action_to_be_determined(
+        client,
+        auth_header_super_user,
+        created_inspection.id,
+        created_administrative_penalty_inspection_requirement.id,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert (
+        AdministrativePenaltyModel.find_by_id(created_administrative_penalty.id) is None
+    )
+    assert (
+        AdministrativePenaltyInspectionRequirementMap.get_by_requirement_id(
+            created_administrative_penalty_inspection_requirement.id
+        )
+        is None
     )
 
 
