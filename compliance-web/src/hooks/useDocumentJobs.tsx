@@ -34,6 +34,13 @@ const markDocumentJobFailedSilently = (jobId: string): Promise<DocumentJob> => {
   });
 };
 
+const cancelDocumentJob = (jobId: string): Promise<DocumentJob> => {
+  return request({
+    url: `/document-jobs/${jobId}/cancel`,
+    method: "POST",
+  });
+};
+
 const deleteDocumentJob = (jobId: string): Promise<void> => {
   return request({
     url: `/document-jobs/${jobId}`,
@@ -92,6 +99,12 @@ export const useLastGeneratedTimeForUser = (
       fetchLastGeneratedTimeForUser(inspectionReportID ?? 0, outputFormat),
     refetchInterval: 30000,
     enabled: !!inspectionReportID,
+  });
+};
+
+export const useCancelDocumentJob = () => {
+  return useMutation<DocumentJob, Error, string>({
+    mutationFn: (jobId: string) => cancelDocumentJob(jobId),
   });
 };
 

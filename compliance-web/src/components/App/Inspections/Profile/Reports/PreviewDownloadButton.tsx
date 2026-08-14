@@ -1,5 +1,6 @@
 import {
   ArrowDropDownRounded,
+  DownloadForOfflineRounded,
   DownloadRounded,
   PictureAsPdfRounded,
 } from "@mui/icons-material";
@@ -30,6 +31,7 @@ import { InspectionStatusEnum } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
+  useCancelDocumentJob,
   useLastGeneratedTimeForUser,
   useMostRecentDocumentJobForUser,
 } from "@/hooks/useDocumentJobs";
@@ -55,8 +57,15 @@ const PreviewDownloadButton = () => {
 
   const [previewClicked, setPreviewClicked] = useState(false);
   const [docxSubmitting, setDocxSubmitting] = useState(false);
+  // Captured from the render response so Cancel works right away
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
+  // Each generation gets a sequence number; cancelling one that hasn't reported its id yet
+  // records the number here
+  const generationSeqRef = useRef(0);
+  const cancelledSeqRef = useRef<number | null>(null);
   const currentUser = useCurrentLoggedInUser();
 
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
@@ -101,13 +110,36 @@ const PreviewDownloadButton = () => {
     onError
   );
 
+  // True once the render call has handed back a job id but the polled job is
+  // still the previous one.
+  const isAwaitingNewJob = useMemo(() => {
+    if (!pendingJobId) {
+      return false;
+    }
+    return String(documentJob?.id ?? "") !== pendingJobId;
+  }, [documentJob, pendingJobId]);
+
   const isGenerating = useMemo(() => {
-    return docxSubmitting || documentJob?.status === DocumentJobStatus.IN_PROGRESS;
-  }, [docxSubmitting, documentJob]);
+    return (
+      docxSubmitting ||
+      isAwaitingNewJob ||
+      documentJob?.status === DocumentJobStatus.IN_PROGRESS
+    );
+  }, [docxSubmitting, isAwaitingNewJob, documentJob]);
 
   const isCompleted = useMemo(() => {
     return documentJob?.status === DocumentJobStatus.COMPLETED;
   }, [documentJob]);
+
+  // The job Cancel acts on
+  const activeJobId = useMemo(() => {
+    if (documentJob?.status === DocumentJobStatus.IN_PROGRESS) {
+      return String(documentJob.id);
+    }
+    return pendingJobId;
+  }, [documentJob, pendingJobId]);
+
+  const isCancelAllowed = !cancelling;
 
   const handlePreviewClick = async () => {
     setPreviewClicked(true);
@@ -120,13 +152,31 @@ const PreviewDownloadButton = () => {
 
   const queryClient = useQueryClient();
 
-  const handleGenerateDocx = async (event: MouseEvent) => {
-    handleClose(event);
+  const docxJobQueryKey = useMemo(
+    () => ["mostRecentDocumentJob", inspectionReportsData?.id, "docx"],
+    [inspectionReportsData?.id]
+  );
 
+  const lastGeneratedQueryKey = useMemo(
+    () => ["lastGeneratedTime", inspectionReportsData?.id, "docx"],
+    [inspectionReportsData?.id]
+  );
+
+  const refreshDocxJobQueries = () => {
+    queryClient.invalidateQueries({ queryKey: docxJobQueryKey });
+    queryClient.invalidateQueries({ queryKey: lastGeneratedQueryKey });
+  };
+
+  const { mutate: mutateCancelDocumentJob } = useCancelDocumentJob();
+
+  const handleGenerateDocx = async () => {
     if (docxSubmitting) {
       return;
     }
+    const seq = generationSeqRef.current + 1;
+    generationSeqRef.current = seq;
     setDocxSubmitting(true);
+    setPendingJobId(null);
 
     // The backend invalidates the previous job for this user/inspection/format
     // as part of creating the new one.
@@ -137,21 +187,79 @@ const PreviewDownloadButton = () => {
         outputFormat: "docx",
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          const jobId = data && "id" in data ? String(data.id) : null;
+
+          // Now that the job has an id, cancel it server-side
+          if (cancelledSeqRef.current === seq) {
+            if (jobId) {
+              mutateCancelDocumentJob(jobId, {
+                onSuccess: refreshDocxJobQueries,
+              });
+            }
+            return;
+          }
+
+          // A newer generation superseded this one
+          if (seq !== generationSeqRef.current) {
+            return;
+          }
+
           setDocxSubmitting(false);
-          queryClient.invalidateQueries({
-            queryKey: [
-              "mostRecentDocumentJob",
-              inspectionReportsData?.id,
-              "docx",
-            ],
-          });
+          setPendingJobId(jobId);
+          queryClient.invalidateQueries({ queryKey: docxJobQueryKey });
         },
         onError: () => {
-          setDocxSubmitting(false);
+          if (seq === generationSeqRef.current) {
+            setDocxSubmitting(false);
+          }
         },
       }
     );
+  };
+
+  const handleCancelGeneration = () => {
+    if (cancelling) {
+      return;
+    }
+
+    // Clear the cached job and last-generated time everything resets
+    const resetGenerationUi = () => {
+      setPendingJobId(null);
+      setDocxSubmitting(false);
+      queryClient.setQueryData(docxJobQueryKey, null);
+      queryClient.setQueryData(lastGeneratedQueryKey, null);
+    };
+
+    if (!activeJobId) {
+      // If no id, reset the UI and let the render response fire
+      // the cancel as soon as it tells us what the job is.
+      cancelledSeqRef.current = generationSeqRef.current;
+      resetGenerationUi();
+      return;
+    }
+
+    setCancelling(true);
+    mutateCancelDocumentJob(activeJobId, {
+      onSuccess: (job) => {
+        // The render can win the race against the click, in which case the
+        // backend leaves the finished job alone and it stays downloadable.
+        if (job?.status === DocumentJobStatus.COMPLETED) {
+          notify.info(
+            "The report finished generating before it could be cancelled, and is ready to download."
+          );
+          setPendingJobId(null);
+          setDocxSubmitting(false);
+        } else {
+          resetGenerationUi();
+        }
+        setCancelling(false);
+        refreshDocxJobQueries();
+      },
+      onError: () => {
+        setCancelling(false);
+      },
+    });
   };
 
   const handleToggle = () => {
@@ -261,7 +369,7 @@ const PreviewDownloadButton = () => {
                 placement === "bottom" ? "center top" : "center bottom",
             }}
           >
-            <Paper elevation={3} sx={{ pt: 1, pb: 1 }}>
+            <Paper elevation={3} sx={{ pt: 1, pb: 1, minWidth: "300px" }}>
               <ClickAwayListener
                 onClickAway={(e) => handleClose(e as MouseEvent)}
               >
@@ -275,24 +383,29 @@ const PreviewDownloadButton = () => {
                 >
                   <Button
                     variant="text"
-                    onClick={(e) =>
-                      handleGenerateDocx(e as unknown as MouseEvent)
-                    }
+                    onClick={handleGenerateDocx}
                     disabled={isGenerating}
                     fullWidth
-                    sx={{ justifyContent: "flex-start" }}
+                    sx={{ justifyContent: "flex-start", whiteSpace: "nowrap" }}
                   >
-                    <DownloadRounded sx={{ mr: 1, fontSize: 20 }} />
-                    {isGenerating
-                      ? "Generating DOCX..."
-                      : "Generate Report as DOCX"}
-                    {isGenerating && (
-                      <CircularProgress
-                        size={20}
-                        color="primary"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
+                    <DownloadForOfflineRounded
+                      sx={{ mr: 1, fontSize: 20, flexShrink: 0 }}
+                    />
+                    Generate Report as DOCX
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        width: 20,
+                        height: 20,
+                        ml: 1,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isGenerating && (
+                        <CircularProgress size={20} color="primary" />
+                      )}
+                    </Box>
                   </Button>
                   <Box
                     sx={{
@@ -317,7 +430,7 @@ const PreviewDownloadButton = () => {
                             variant="caption"
                             color={BCDesignTokens.typographyColorPlaceholder}
                           >
-                            Last DOCX Generated:
+                            Last Generated:
                           </Typography>
                           <Typography
                             variant="caption"
@@ -340,23 +453,42 @@ const PreviewDownloadButton = () => {
                         </Typography>
                       )}
                     </Box>
-                    <Link
-                      onClick={
-                        isCompleted ? handleDownloadReportFromURL : () => {}
-                      }
-                      sx={{
-                        display: "flex",
-                        alignItems: "flex-end",
-                        pr: 2,
-                        fontSize: 14,
-                        color: isCompleted ? "primary" : "text.disabled",
-                        pointerEvents: isCompleted ? "auto" : "none",
-                        cursor: isCompleted ? "pointer" : "not-allowed",
-                      }}
-                    >
-                      <DownloadRounded sx={{ fontSize: 16 }} />
-                      Download
-                    </Link>
+                    {isGenerating ? (
+                      // While generating, Cancel takes the Download slot.
+                      <Link
+                        onClick={handleCancelGeneration}
+                        aria-label="cancel report generation"
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          pr: 2,
+                          fontSize: 14,
+                          color: isCancelAllowed ? "primary" : "text.disabled",
+                          pointerEvents: isCancelAllowed ? "auto" : "none",
+                          cursor: isCancelAllowed ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        Cancel
+                      </Link>
+                    ) : (
+                      <Link
+                        onClick={
+                          isCompleted ? handleDownloadReportFromURL : () => {}
+                        }
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          pr: 2,
+                          fontSize: 14,
+                          color: isCompleted ? "primary" : "text.disabled",
+                          pointerEvents: isCompleted ? "auto" : "none",
+                          cursor: isCompleted ? "pointer" : "not-allowed",
+                        }}
+                      >
+                        <DownloadRounded sx={{ fontSize: 16 }} />
+                        Download
+                      </Link>
+                    )}
                   </Box>
                 </Box>
               </ClickAwayListener>

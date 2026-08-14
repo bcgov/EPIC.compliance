@@ -8,6 +8,7 @@ from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
 from compliance_api.exceptions import BusinessError, ResourceNotFoundError, UnprocessableEntityError
+from compliance_api.models.db import db
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.inspection_record.inspection_record import InspectionRecordService
@@ -26,14 +27,10 @@ class DocumentJobService:
     def start_job(staff_user_id, inspection_record_id, output_format, document_job_data):
         """Invalidate any previous job and create a new one.
 
-        Returns ``(document_job, created)``. A DB-level partial unique index
-        allows at most one active IN_PROGRESS job per (user, inspection_record,
-        output_format), so two near-simultaneous requests (e.g. a double-click
-        before the UI disables the generate button) can't both create a job:
-        the second one loses the race with an IntegrityError, and this returns
-        the job the first request already created instead, with ``created``
-        false so the caller knows not to spawn a second background render for
-        the same job.
+        Returns ``(document_job, created)``. A partial unique index allows only
+        one active IN_PROGRESS job per (user, inspection_record, output_format),
+        so a request that loses that race gets the existing job back with
+        ``created`` false and must not spawn a second background render.
         """
         DocumentJobService.invalidate_all_previous_documents_for_user(
             staff_user_id, inspection_record_id, output_format
@@ -59,11 +56,17 @@ class DocumentJobService:
 
     @staticmethod
     def get_last_generated_time_for_user(user_id, inspection_record_id, output_format):
-        """Get the last time a document was generated for a user."""
+        """Get the last time a document was generated for a user.
+
+        Scoped to active jobs, so a cancelled or failed run leaves no stale
+        timestamp advertising a document that is no longer downloadable.
+        """
         jobs = DocumentJob.query.filter_by(
             user_id=user_id,
             inspection_record_id=inspection_record_id,
             output_format=output_format,
+            is_active=True,
+            is_deleted=False,
         ).filter(DocumentJob.completed_at.isnot(None)).order_by(DocumentJob.completed_at.desc()).all()
         document_job = jobs[0] if jobs else None
         return document_job.completed_at.isoformat() if document_job else None
@@ -72,12 +75,9 @@ class DocumentJobService:
     def update(document_job_id, user_id, update_data):
         """Update a document job by its ID.
 
-        Idempotent: a job already invalidated (e.g. by
-        ``invalidate_all_previous_documents_for_user`` racing with this call)
-        is treated as a no-op success rather than a 404. Also refuses to
-        downgrade an already-COMPLETED job to FAILED, which guards against
-        the frontend's "stuck job" watchdog racing the background thread's
-        own completion update.
+        Idempotent: an already invalidated job is a no-op success rather than a
+        404. Won't downgrade a COMPLETED job to FAILED, which guards against the
+        frontend's "stuck job" watchdog racing the worker's own completion.
         """
         document_job = DocumentJob.query.filter_by(
             id=document_job_id,
@@ -105,10 +105,8 @@ class DocumentJobService:
     def delete(document_job_id, user_id):
         """Delete a document job by its ID.
 
-        Idempotent: a job already deleted (e.g. by
-        ``invalidate_all_previous_documents_for_user`` racing with this call)
-        is treated as a no-op success rather than a 404, since the desired
-        end state - the job being deleted - already holds.
+        Idempotent: an already deleted job is a no-op success rather than a 404,
+        since the desired end state already holds.
         """
         document_job = DocumentJob.query.filter_by(
             id=document_job_id,
@@ -128,6 +126,61 @@ class DocumentJobService:
             "is_deleted": True
         })
         return document_job
+
+    @staticmethod
+    def cancel(document_job_id, user_id):
+        """Cancel an in-progress document job.
+
+        Marked CANCELLED and soft deleted, so it drops out of the active job
+        lookups, frees the partial unique index for an immediate re-generate,
+        and can never be flipped to COMPLETED by the worker thread.
+
+        An already COMPLETED job is returned untouched - the render beat the
+        click, and the caller surfaces it for download.
+        """
+        document_job = DocumentJob.query.filter_by(
+            id=document_job_id,
+            user_id=user_id,
+        ).first()
+
+        if not document_job:
+            raise ResourceNotFoundError(
+                f"Document Job with id: {document_job_id} not found"
+            )
+
+        if document_job.status == DocumentJobStatusEnum.COMPLETED.value:
+            return document_job
+
+        if document_job.is_deleted:
+            return document_job
+
+        document_job.update({
+            "status": DocumentJobStatusEnum.CANCELLED.value,
+            "is_active": False,
+            "is_deleted": True,
+        })
+        return document_job
+
+    @staticmethod
+    def is_cancelled(document_job_id, user_id):
+        """Check whether a job has been cancelled out from under the worker thread.
+
+        ``expire_all`` discards the worker session's stale copy, without which
+        it would never see the cancellation committed by the request thread.
+        """
+        db.session.expire_all()
+        document_job = DocumentJob.query.filter_by(
+            id=document_job_id,
+            user_id=user_id,
+        ).first()
+
+        if not document_job:
+            return True
+
+        return (
+            document_job.is_deleted
+            or document_job.status == DocumentJobStatusEnum.CANCELLED.value
+        )
 
     @staticmethod
     def invalidate_all_previous_documents_for_user(staff_user_id, inspection_record_id, output_format):
@@ -154,15 +207,36 @@ class DocumentJobService:
         staff_user_id,
         output_format,
     ):
-        """Handle background job process for rendering and storing a document in EPIC.document."""
+        """Handle background job process for rendering and storing a document in EPIC.document.
+
+        Cancellation is cooperative: the render can't be interrupted mid-call,
+        so the status is re-checked at each step boundary. Bailing out before
+        the upload is what avoids orphaning a document in EPIC.document.
+        """
         with app.app_context():
             from flask import g  # pylint: disable=import-outside-toplevel
             g.access_token = access_token
             g.jwt_oidc_token_info = jwt_oidc_token_info
+
+            def abandon_if_cancelled(stage):
+                """Return True when the job was cancelled, logging where we stopped."""
+                if not DocumentJobService.is_cancelled(job_id, staff_user_id):
+                    return False
+                current_app.logger.info(
+                    f"Document job {job_id} cancelled - abandoning {output_format} generation at: {stage}"
+                )
+                return True
+
             try:
+                if abandon_if_cancelled("before render"):
+                    return
+
                 response, inspection = InspectionRecordService.render(
                     inspection_id, inspection_record_id, output_format
                 )
+
+                if abandon_if_cancelled("after render"):
+                    return
 
                 relative_url = f"inspection_records/{uuid.uuid4().hex}.{output_format}"
                 payload = {
@@ -174,9 +248,11 @@ class DocumentJobService:
                 }
                 presigned_put_request = DocService.get_presigned_url(payload, params)
 
-                # PDF rendering returns a requests-style response with `.content`;
-                # DOCX rendering returns an already fully-built BytesIO stream that
-                # requests can upload directly without an extra in-memory copy.
+                if abandon_if_cancelled("before upload"):
+                    return
+
+                # PDF renders to a requests-style response; DOCX renders to a
+                # BytesIO stream requests can upload directly.
                 upload_data = response.content if output_format == "pdf" else response
 
                 put_request = requests.put(
@@ -191,6 +267,9 @@ class DocumentJobService:
 
                 if put_request.status_code != 200:
                     raise BusinessError("Failed to upload document to storage service", 500)
+
+                if abandon_if_cancelled("after upload"):
+                    return
 
                 DocumentJobService.update(job_id, staff_user_id, {
                     "status": DocumentJobStatusEnum.COMPLETED.value,

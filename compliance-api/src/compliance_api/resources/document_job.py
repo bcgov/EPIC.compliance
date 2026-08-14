@@ -108,3 +108,27 @@ class DocumentJobById(Resource):
         current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
         job = DocumentJobService.update(job_id, current_staff_user.id, data)
         return DocumentJobSchema().dump(job), HTTPStatus.OK
+
+
+@API.route("/<int:job_id>/cancel", methods=["POST"])
+class DocumentJobCancel(Resource):
+    """Resource for cancelling an in-progress document job."""
+
+    @staticmethod
+    @API.response(code=200, description="Success", model=DocumentJob)
+    @API.response(code=404, description="Not Found")
+    @ApiHelper.swagger_decorators(
+        API, endpoint_description="Cancel an in-progress document job"
+    )
+    @auth.require
+    def post(job_id: int):
+        """Cancel an in-progress document job.
+
+        Returns the resulting job so the caller can tell a genuine cancellation
+        from a job that finished generating before the request landed - the
+        latter comes back COMPLETED and stays downloadable.
+        """
+        auth_user_guid = g.token_info.get("preferred_username")
+        current_staff_user = StaffUserService.get_user_by_auth_guid(auth_user_guid)
+        job = DocumentJobService.cancel(job_id, current_staff_user.id)
+        return DocumentJobSchema().dump(job), HTTPStatus.OK

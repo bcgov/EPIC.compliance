@@ -13,6 +13,7 @@ class DocumentJobStatusEnum(Enum):
     IN_PROGRESS = "In Progress"
     COMPLETED = "Completed"
     FAILED = "Failed"
+    CANCELLED = "Cancelled"
 
 
 class DocumentJob(BaseModelVersioned):
