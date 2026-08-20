@@ -202,7 +202,7 @@ class ReviewBoardService:
         """Get all administrative penalties that are not closed.
 
         An AP is considered closed if it meets any of the following conditions:
-        - AP referral status is 'CEB Not Proceeding'
+        - AP referral status is 'AP Not Proceeding'
         - AP referral status is 'Referred to DM' AND a decision was made.
         """
         return (

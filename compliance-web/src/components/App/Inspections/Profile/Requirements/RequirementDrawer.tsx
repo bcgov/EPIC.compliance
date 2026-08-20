@@ -181,7 +181,7 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
             ?.filter(
               (administrativePenalty) =>
                 administrativePenalty.referral_status?.id ===
-                AdministrativePenaltyStatus.DRAFTING
+                AdministrativePenaltyStatus.PREPARING_REFERRAL_FOR_AEO
             )
             .map((administrativePenalty) =>
               administrativePenalty.administrative_penalty_requirement_maps?.map(

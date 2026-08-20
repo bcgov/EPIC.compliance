@@ -473,8 +473,8 @@ class ReviewBoardAdministrativePenaltySchema(Schema):
         return UNAPPROVED_PROJECT_NAME
 
     def get_primary_officer(self, obj):
-        """Get primary officer from pre-fetched data."""
-        officer = getattr(obj, "_primary_officer", None)
+        """Get primary officer from inspection."""
+        officer = obj.inspection.primary_officer if obj.inspection else None
         if officer:
             return {
                 "id": officer.id,

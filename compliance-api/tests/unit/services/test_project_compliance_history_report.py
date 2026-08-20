@@ -366,7 +366,7 @@ class TestProjectComplianceReportGenerator:
         ap = AdministrativePenalty(
             administrative_penalty_number=fake.pystr(min_chars=10, max_chars=15),
             inspection_id=inspection_id,
-            referral_status=ReferralStatusEnum.DRAFTING,
+            referral_status=ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
             decision=decision,
             penalty_amount=penalty_amount
         )

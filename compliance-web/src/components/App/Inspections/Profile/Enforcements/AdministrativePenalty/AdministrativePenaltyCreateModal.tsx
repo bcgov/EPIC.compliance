@@ -21,7 +21,11 @@ import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import AdministrativePenaltyUpdateModal from "./AdministrativePenaltyUpdateModal";
 import AdministrativePenaltyCreationOptions from "./AdministrativePenaltyCreationOptions";
-import { EnforcementActionEnum, MODAL_WIDTHS } from "@/utils/constants";
+import {
+  APReferralStatus,
+  EnforcementActionEnum,
+  MODAL_WIDTHS,
+} from "@/utils/constants";
 
 const administrativePenaltySchema = baseEnforcementSchema.shape({
   apCreationMethod: yup.string().required("Please select a creation method"),
@@ -168,7 +172,7 @@ const AdministrativePenaltyCreateModal: FC<
       const administrativePenaltyData: AdministrativePenaltyAPIData = {
         inspection_id: inspectionData?.id ?? 0,
         inspection_requirement_ids: requirementIds,
-        referral_status: "DRAFTING",
+        referral_status: APReferralStatus.PREPARING_REFERRAL_FOR_AEO.id,
       };
 
       if (formData.apCreationMethod === "manual_entry" && formData.manualAPNumber) {

@@ -579,9 +579,10 @@ def test_delete_requirement_keeps_merged_draft_administrative_penalty(
 @pytest.mark.parametrize(
     "referral_status,decision",
     [
-        (ReferralStatusEnum.REFERRED_TO_AMP_UNIT, None),
+        (ReferralStatusEnum.REFERRED_TO_AEO, None),
         (ReferralStatusEnum.DEPUTY_REVIEW, None),
-        (ReferralStatusEnum.CEB_NOT_PROCEEDING, None),
+        (ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE, None),
+        (ReferralStatusEnum.AP_NOT_PROCEEDING, None),
         (ReferralStatusEnum.REFERRED_TO_DM, None),
         (ReferralStatusEnum.REFERRED_TO_DM, DecisionEnum.AP_ISSUED),
     ],
@@ -595,7 +596,7 @@ def test_delete_requirement_blocked_when_administrative_penalty_beyond_drafting(
     referral_status,
     decision,
 ):
-    """Deletion is blocked once the linked AP has progressed beyond Drafting."""
+    """Deletion is blocked once the linked AP has progressed beyond Preparing Referral for AEO."""
     created_administrative_penalty.referral_status = referral_status
     created_administrative_penalty.decision = decision
     created_administrative_penalty.save()

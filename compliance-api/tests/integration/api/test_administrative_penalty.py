@@ -43,7 +43,7 @@ def test_debug_create_response(
     url = API_BASE_URL
     ap_data = {
         "inspection_id": created_inspection.id,
-        "referral_status": "DRAFTING",
+        "referral_status": "PREPARING_REFERRAL_FOR_AEO",
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
         ],
@@ -156,7 +156,7 @@ def test_create_administrative_penalty_success(
     )
     assert result.status_code == HTTPStatus.CREATED
     assert result.json["inspection_id"] == created_inspection.id
-    assert result.json["referral_status"]["id"] == ReferralStatusEnum.DRAFTING.name
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO.name
 
 
 def test_create_administrative_penalty_with_invalid_inspection_id(
@@ -260,7 +260,7 @@ def test_create_administrative_penalty_missing_required_fields(
     """Test creating administrative penalty with missing required fields."""
     url = API_BASE_URL
     ap_data = {
-        "referral_status": ReferralStatusEnum.DRAFTING.name,
+        "referral_status": ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO.name,
     }
 
     result = client.post(
@@ -298,6 +298,40 @@ def test_update_administrative_penalty_success(
     assert result.status_code == HTTPStatus.OK
     assert result.json["referral_status"]["id"] == ReferralStatusEnum.DEPUTY_REVIEW.name
     assert result.json["penalty_amount"] == "5000.00"
+
+
+def test_update_administrative_penalty_to_deputy_review_complete(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Test moving an administrative penalty to Deputy Review Complete."""
+    url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
+    update_data = {
+        "inspection_id": created_administrative_penalty.inspection_id,
+        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE.name,
+        "inspection_requirement_ids": [
+            created_administrative_penalty_inspection_requirement.id
+        ],
+    }
+
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.patch(
+        url,
+        data=json.dumps(update_data),
+        headers=headers,
+    )
+
+    assert result.status_code == HTTPStatus.OK
+    assert (
+        result.json["referral_status"]["id"]
+        == ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE.name
+    )
+    assert result.json["referral_status"]["name"] == "Deputy Review Complete"
+    # Deputy Review Complete is not a closing status, so the AP stays open and
+    # keeps appearing on the Review Board under Review Status.
+    assert result.json["is_closed"] is False
 
 
 def test_update_administrative_penalty_with_invalid_id(
@@ -563,7 +597,7 @@ def test_update_administrative_penalty_partial_data(
     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
     update_data = {
         "inspection_id": created_administrative_penalty.inspection_id,
-        "referral_status": ReferralStatusEnum.CEB_NOT_PROCEEDING.name,
+        "referral_status": ReferralStatusEnum.AP_NOT_PROCEEDING.name,
         "penalty_amount": 2500.00,
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
@@ -579,9 +613,11 @@ def test_update_administrative_penalty_partial_data(
     assert result.status_code == HTTPStatus.OK
     assert (
         result.json["referral_status"]["id"]
-        == ReferralStatusEnum.CEB_NOT_PROCEEDING.name
+        == ReferralStatusEnum.AP_NOT_PROCEEDING.name
     )
     assert result.json["penalty_amount"] == "2500.00"
+    # Renaming CEB Not Proceeding did not change its closing behaviour.
+    assert result.json["is_closed"] is True
 
 
 def test_update_administrative_penalty_with_ap_not_proceeding_decision(
@@ -778,7 +814,7 @@ def test_update_administrative_penalty_with_duplicate_requirements(
     another_ap = AdministrativePenalty(
         inspection_id=created_administrative_penalty.inspection_id,
         administrative_penalty_number=f"TEST-AP-{random.randint(100000, 999999)}",
-        referral_status=ReferralStatusEnum.DRAFTING,
+        referral_status=ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
         is_active=True,
         is_deleted=False,
     )

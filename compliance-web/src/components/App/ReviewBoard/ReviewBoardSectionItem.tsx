@@ -1,6 +1,9 @@
 import { ReviewBoardItem } from "@/models/ReviewBoard";
 import { ReviewBoardCardTypeEnum } from "@/components/App/ReviewBoard/ReviewBoardUtils";
-import { APPROVAL_STATUS } from "@/utils/constants";
+import {
+  AdministrativePenaltyStatus,
+  APPROVAL_STATUS,
+} from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
 import { CalendarMonthRounded } from "@mui/icons-material";
 import { Box, Chip, Divider, Typography } from "@mui/material";
@@ -25,6 +28,10 @@ const ReviewBoardSectionItem = ({
       return "warning";
     } else if (approvalStatus === APPROVAL_STATUS.NOT_APPROVED) {
       return "error";
+    } else if (
+      approvalStatus === AdministrativePenaltyStatus.DEPUTY_REVIEW_COMPLETE
+    ) {
+      return "success";
     }
     return "default";
   };

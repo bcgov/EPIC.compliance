@@ -96,7 +96,8 @@ const AdministrativePenaltyUpdateModal: FC<
   }, [administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
   const defaultValues = useMemo(() => {
     const currentReferralStatus =
-      administrativePenalty.referral_status?.id || "DRAFTING";
+      administrativePenalty.referral_status?.id ||
+      APReferralStatus.PREPARING_REFERRAL_FOR_AEO.id;
     const selectedReferralOption =
       referralStatusOptions.find(
         (option) => option.id === currentReferralStatus
@@ -150,7 +151,7 @@ const AdministrativePenaltyUpdateModal: FC<
   // Determine if save confirmation is required
   const requireSaveConfirmation = useMemo(() => {
     const isCEBNotProceeding =
-      referralStatus?.id === APReferralStatus.CEB_NOT_PROCEEDING.id;
+      referralStatus?.id === APReferralStatus.AP_NOT_PROCEEDING.id;
     const isReferredToDMWithDecision =
       referralStatus?.id === APReferralStatus.REFERRED_TO_DM.id &&
       decision !== null;

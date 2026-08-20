@@ -412,7 +412,7 @@ def _extract_ap_data(administrative_penalty_data):
     """Extract administrative penalty data."""
     return {
         "referral_status": administrative_penalty_data.get(
-            "referral_status", ReferralStatusEnum.DRAFTING
+            "referral_status", ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO
         ),
         "date_referred": administrative_penalty_data.get("date_referred", None),
         "decision_date": administrative_penalty_data.get("decision_date", None),

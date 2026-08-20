@@ -20,6 +20,7 @@ from compliance_api.models import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import UnapprovedProject as UnapprovedProjectModel
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
+from compliance_api.models.administrative_penalty import ReferralStatusEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
@@ -950,7 +951,9 @@ def _build_enforcement_item(item, item_type):
             {
                 "number": item.administrative_penalty_number,
                 "referral_status": (
-                    item.referral_status.value if item.referral_status else "Drafting"
+                    item.referral_status.value
+                    if item.referral_status
+                    else ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO.value
                 ),
             }
         )

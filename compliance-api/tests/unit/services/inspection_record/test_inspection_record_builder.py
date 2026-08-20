@@ -63,7 +63,7 @@ class TestEnforcementSummaryAPHandling:
         """Create an AdministrativePenalty linked to the given requirement."""
         ap = AdministrativePenalty(
             inspection_id=inspection_id,
-            referral_status=ReferralStatusEnum.DRAFTING,
+            referral_status=ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
         )
         db.session.add(ap)
         db.session.flush()
@@ -253,7 +253,7 @@ class TestRequirementNumberingWithRegulatoryConsideration:
         """Create an AdministrativePenalty linked to the given requirement."""
         ap = AdministrativePenalty(
             inspection_id=inspection_id,
-            referral_status=ReferralStatusEnum.DRAFTING,
+            referral_status=ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
         )
         db.session.add(ap)
         db.session.flush()

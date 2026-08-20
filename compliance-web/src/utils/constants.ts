@@ -183,10 +183,11 @@ export enum ViolationTicketStatus {
 }
 
 export enum AdministrativePenaltyStatus {
-  DRAFTING = "DRAFTING",
-  REFERRED_TO_AMP_UNIT = "REFERRED_TO_AMP_UNIT",
+  PREPARING_REFERRAL_FOR_AEO = "PREPARING_REFERRAL_FOR_AEO",
+  REFERRED_TO_AEO = "REFERRED_TO_AEO",
   DEPUTY_REVIEW = "DEPUTY_REVIEW",
-  CEB_NOT_PROCEEDING = "CEB_NOT_PROCEEDING",
+  DEPUTY_REVIEW_COMPLETE = "DEPUTY_REVIEW_COMPLETE",
+  AP_NOT_PROCEEDING = "AP_NOT_PROCEEDING",
   REFERRED_TO_DM = "REFERRED_TO_DM"
 }
 
@@ -212,10 +213,11 @@ export enum CaseFileStatusEnum {
 } 
 
 export const APReferralStatus = {
-  DRAFTING: { id: "DRAFTING", name: "Drafting" },
-  REFERRED_TO_AMP_UNIT: { id: "REFERRED_TO_AMP_UNIT", name: "Referred to AMP Unit" },
+  PREPARING_REFERRAL_FOR_AEO: { id: "PREPARING_REFERRAL_FOR_AEO", name: "Preparing Referral for AEO" },
+  REFERRED_TO_AEO: { id: "REFERRED_TO_AEO", name: "Referred to AEO" },
   DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
-  CEB_NOT_PROCEEDING: { id: "CEB_NOT_PROCEEDING", name: "CEB Not Proceeding" },
+  DEPUTY_REVIEW_COMPLETE: { id: "DEPUTY_REVIEW_COMPLETE", name: "Deputy Review Complete" },
+  AP_NOT_PROCEEDING: { id: "AP_NOT_PROCEEDING", name: "AP Not Proceeding" },
   REFERRED_TO_DM: { id: "REFERRED_TO_DM", name: "Referred to DM" },
 }
 

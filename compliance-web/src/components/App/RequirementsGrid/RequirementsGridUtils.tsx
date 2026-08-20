@@ -298,16 +298,24 @@ const enforcementStatusOptions = [
   },
   // AP Referral Statuses that are not in OTHER ENFORCEMENT ACTIONS
   {
-    value: APReferralStatus.REFERRED_TO_AMP_UNIT.id,
-    text: "Referred to AMP Unit",
+    value: APReferralStatus.PREPARING_REFERRAL_FOR_AEO.id,
+    text: APReferralStatus.PREPARING_REFERRAL_FOR_AEO.name,
   },
   {
-    value: APReferralStatus.CEB_NOT_PROCEEDING.id,
-    text: "CEB Not Proceeding",
+    value: APReferralStatus.REFERRED_TO_AEO.id,
+    text: APReferralStatus.REFERRED_TO_AEO.name,
+  },
+  {
+    value: APReferralStatus.DEPUTY_REVIEW_COMPLETE.id,
+    text: APReferralStatus.DEPUTY_REVIEW_COMPLETE.name,
+  },
+  {
+    value: APReferralStatus.AP_NOT_PROCEEDING.id,
+    text: APReferralStatus.AP_NOT_PROCEEDING.name,
   },
   {
     value: APReferralStatus.REFERRED_TO_DM.id,
-    text: "Referred to DM",
+    text: APReferralStatus.REFERRED_TO_DM.name,
   },
   // Violation Ticket Statuses that are not in OTHER ENFORCEMENT ACTIONS
   {

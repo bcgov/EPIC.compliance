@@ -20,10 +20,11 @@ from compliance_api.utils.util import get_sorted_numbers_from_generated_code
 class ReferralStatusEnum(Enum):
     """Enum for Administrative Penalty Referral Status."""
 
-    DRAFTING = "Drafting"
-    REFERRED_TO_AMP_UNIT = "Referred to AMP Unit"
+    PREPARING_REFERRAL_FOR_AEO = "Preparing Referral for AEO"
+    REFERRED_TO_AEO = "Referred to AEO"
     DEPUTY_REVIEW = "Deputy Review"
-    CEB_NOT_PROCEEDING = "CEB Not Proceeding"
+    DEPUTY_REVIEW_COMPLETE = "Deputy Review Complete"
+    AP_NOT_PROCEEDING = "AP Not Proceeding"
     REFERRED_TO_DM = "Referred to DM"
 
 
@@ -175,7 +176,7 @@ class AdministrativePenalty(BaseModelVersioned):
         SqlEnum(ReferralStatusEnum),
         nullable=True,
         comment="Referral status of the administrative penalty",
-        default=ReferralStatusEnum.DRAFTING,
+        default=ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
     )
     date_referred = Column(
         DateTime(timezone=True),
@@ -225,13 +226,13 @@ class AdministrativePenalty(BaseModelVersioned):
         Check if the administrative penalty is in a closed state.
 
         An administrative penalty is considered closed if:
-        - Referral status is CEB_NOT_PROCEEDING
+        - Referral status is AP_NOT_PROCEEDING
         - Referral status is REFERRED_TO_DM and a decision has been made
 
         Returns:
             bool: True if the administrative penalty is closed, False otherwise
         """
-        return self.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING or (
+        return self.referral_status == ReferralStatusEnum.AP_NOT_PROCEEDING or (
             self.referral_status == ReferralStatusEnum.REFERRED_TO_DM
             and self.decision is not None
         )
@@ -243,14 +244,14 @@ class AdministrativePenalty(BaseModelVersioned):
         Used for database queries to filter closed administrative penalties.
 
         An administrative penalty is considered closed if:
-        - CEB_NOT_PROCEEDING status
+        - AP_NOT_PROCEEDING status
         - REFERRED_TO_DM status with a decision made
 
         Returns:
             sqlalchemy.sql.elements.BooleanClauseList: OR conditions for closed state
         """
         return or_(
-            cls.referral_status == ReferralStatusEnum.CEB_NOT_PROCEEDING,
+            cls.referral_status == ReferralStatusEnum.AP_NOT_PROCEEDING,
             and_(
                 cls.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
                 cls.decision.isnot(None),

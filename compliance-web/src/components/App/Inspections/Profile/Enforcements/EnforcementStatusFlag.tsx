@@ -101,7 +101,12 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       if (administrativePenaltyStatus?.id === APReferralStatus.DEPUTY_REVIEW.id) {
         status.color = "warning";
       } else if (
-        administrativePenaltyStatus?.id === APReferralStatus.CEB_NOT_PROCEEDING.id
+        administrativePenaltyStatus?.id ===
+        APReferralStatus.DEPUTY_REVIEW_COMPLETE.id
+      ) {
+        status.color = "success";
+      } else if (
+        administrativePenaltyStatus?.id === APReferralStatus.AP_NOT_PROCEEDING.id
       ) {
         status.color = "error";
       } else if (

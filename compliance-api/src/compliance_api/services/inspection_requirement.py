@@ -1677,10 +1677,10 @@ def _check_enforcement_action_existennce(
         EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: {
             "model": AdministrativePenaltyModel,
             "status_field": "referral_status",
-            # Referred to AMP Unit is treated the same as Drafting for workflow purposes
+            # Referred to AEO is treated the same as Preparing Referral for AEO for workflow purposes
             "allowed_status": (
-                ReferralStatusEnum.DRAFTING,
-                ReferralStatusEnum.REFERRED_TO_AMP_UNIT,
+                ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
+                ReferralStatusEnum.REFERRED_TO_AEO,
             ),
             "map_field": "administrative_penalty_requirement_maps",
             "map_model": AdministrativePenaltyInspectionRequirementMapModel,
@@ -2252,12 +2252,12 @@ def _check_orders_and_warning_letters(requirement):
 
 
 def _check_administrative_penalties(requirement):
-    """Prevent deletion when a linked administrative penalty has progressed beyond Drafting.
+    """Prevent deletion when a linked administrative penalty has progressed beyond the first status.
 
-    Only APs in Drafting can be updated or deleted alongside the requirement;
-    any later status (Referred to AMP Unit, Deputy Review, CEB Not Proceeding,
-    Referred to DM) blocks the deletion regardless of whether the AP is
-    considered closed.
+    Only APs in Preparing Referral for AEO can be updated or deleted alongside
+    the requirement; any later status (Referred to AEO, Deputy Review, Deputy
+    Review Complete, AP Not Proceeding, Referred to DM) blocks the deletion
+    regardless of whether the AP is considered closed.
     """
     enforcement_actions = requirement.enforcement_actions
     enforcement_action_ids = [
@@ -2270,7 +2270,7 @@ def _check_administrative_penalties(requirement):
         if (
             administrative_penalty_map
             and administrative_penalty_map.administrative_penalty.referral_status
-            != ReferralStatusEnum.DRAFTING
+            != ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO
         ):
             raise UnprocessableEntityError("Active administrative penalty found")
 
@@ -2377,7 +2377,7 @@ def _cleanup_administrative_penalties(requirement, session):
         if (
             not penalty
             or penalty.is_deleted
-            or penalty.referral_status != ReferralStatusEnum.DRAFTING
+            or penalty.referral_status != ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO
         ):
             continue
         all_penalty_maps = AdministrativePenaltyInspectionRequirementMapModel.get_by_administrative_penalty_id(
