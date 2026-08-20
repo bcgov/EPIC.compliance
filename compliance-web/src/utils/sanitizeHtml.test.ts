@@ -23,6 +23,11 @@ describe("sanitizeHtml", () => {
     const html = '<p style="color: red;"><strong>Bold</strong> and <em>italic</em></p>';
     expect(sanitizeHtml(html)).toBe(html);
   });
+
+  it("preserves highlighted text", () => {
+    const html = '<p><mark class="editor-text-highlight">Highlighted</mark></p>';
+    expect(sanitizeHtml(html)).toBe(html);
+  });
 });
 
 describe("sanitizeReportHtml", () => {

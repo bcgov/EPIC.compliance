@@ -1,3 +1,11 @@
+import {
+  $isTextNode,
+  DOMConversionMap,
+  DOMConversionOutput,
+  HTMLConfig,
+  LexicalNode,
+} from "lexical";
+
 export type MentionData = {
   id: number;
   name: string;
@@ -39,6 +47,7 @@ export const LexicalTheme = {
     bold: "editor-text-bold",
     code: "editor-text-code",
     hashtag: "editor-text-hashtag",
+    highlight: "editor-text-highlight",
     italic: "editor-text-italic",
     overflowed: "editor-text-overflowed",
     strikethrough: "editor-text-strikethrough",
@@ -60,4 +69,28 @@ export const LexicalTheme = {
   tableScrollableWrapper: "editor-tableScrollableWrapper",
   tableSelected: "editor-tableSelected",
   tableSelection: "editor-tableSelection",
+};
+
+/**
+ * Lexical exports the highlight text format as <mark>, but its built-in
+ * TextNode importer has no <mark> handler. This conversion re-applies the
+ * format to every text node inside the <mark>.
+ */
+const convertMarkElement = (): DOMConversionOutput => ({
+  forChild: (lexicalNode: LexicalNode) => {
+    if ($isTextNode(lexicalNode) && !lexicalNode.hasFormat("highlight")) {
+      lexicalNode.toggleFormat("highlight");
+    }
+    return lexicalNode;
+  },
+  node: null,
+});
+
+export const LexicalHtmlConfig: HTMLConfig = {
+  import: {
+    mark: () => ({
+      conversion: convertMarkElement,
+      priority: 0,
+    }),
+  } as DOMConversionMap,
 };

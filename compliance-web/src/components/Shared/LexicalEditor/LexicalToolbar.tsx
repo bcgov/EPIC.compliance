@@ -1,6 +1,7 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { mergeRegister } from "@lexical/utils";
 import {
+  BorderColorRounded,
   FormatBoldRounded,
   FormatItalicRounded,
   FormatStrikethroughRounded,
@@ -82,6 +83,7 @@ export default function ToolbarPlugin({ isAdvanced }: { isAdvanced: boolean }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [isHighlight, setIsHighlight] = useState(false);
 
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -91,6 +93,7 @@ export default function ToolbarPlugin({ isAdvanced }: { isAdvanced: boolean }) {
       setIsItalic(selection.hasFormat("italic"));
       setIsUnderline(selection.hasFormat("underline"));
       setIsStrikethrough(selection.hasFormat("strikethrough"));
+      setIsHighlight(selection.hasFormat("highlight"));
     }
   }, []);
 
@@ -172,6 +175,12 @@ export default function ToolbarPlugin({ isAdvanced }: { isAdvanced: boolean }) {
         isActive={isStrikethrough}
         ariaLabel="Strikethrough"
         icon={FormatStrikethroughRounded}
+      />
+      <ToolbarIconButton
+        onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "highlight")}
+        isActive={isHighlight}
+        ariaLabel="Highlight"
+        icon={BorderColorRounded}
       />
       <Divider />
       <ToolbarIconButton

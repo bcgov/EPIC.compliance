@@ -6,6 +6,13 @@
   text-align: right;
 }
 
+// Highlighted text, in the editor and in read-only views of editor content
+mark,
+.editor-text-highlight {
+  background-color: #ffff00;
+  color: inherit;
+}
+
 .editor-container {
   position: relative;
   border-radius: 4px;
