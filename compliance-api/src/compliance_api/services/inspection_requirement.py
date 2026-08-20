@@ -31,7 +31,7 @@ from compliance_api.models import WarningLetterProgressEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import \
     AdministrativePenaltyInspectionRequirementMap as AdministrativePenaltyInspectionRequirementMapModel
-from compliance_api.models.administrative_penalty import ReferralStatusEnum
+from compliance_api.models.administrative_penalty import DecisionEnum, ReferralStatusEnum
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.charge_recommendation import \
     ChargeRecommendationInspectionRequirementMap as ChargeRecommendationInspectionRequirementMapModel
@@ -714,6 +714,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["warning_letter"].progress.label("warning_letter_progress"),
             models["violation_ticket"].status.label("violation_ticket_status"),
             models["admin_penalty"].referral_status.label("admin_penalty_status"),
+            models["admin_penalty"].decision.label("admin_penalty_decision"),
             models["charge_rec"].status.label("charge_rec_status"),
             models["restorative_justice"].status.label("restorative_justice_status"),
             models["topic"].name.label("topic_name"),
@@ -1001,17 +1002,54 @@ def _get_enforcement_status_filters(enforcement_statuses, **kwargs):
         (RestorativeJusticeStatusEnum, kwargs.get("restorative_justice"), "status"),
     ]
 
-    # Process each enum type
+    # Process each enum type. "Referred to DM" is handled separately below because it shares the
+    # Enf. Status column with the two DM decision outcomes.
     for enum_class, model, attr_name in enum_mappings:
         matching_values = [
             status
             for status in enforcement_statuses
             if any(status == e.name.upper() for e in enum_class)
+            and not (
+                enum_class is ReferralStatusEnum
+                and status == ReferralStatusEnum.REFERRED_TO_DM.name
+            )
         ]
         if matching_values and model:
             or_conditions.append(getattr(model, attr_name).in_(matching_values))
 
+    referred_to_dm_condition = _get_referred_to_dm_filter(
+        enforcement_statuses, kwargs.get("admin_penalty")
+    )
+    if referred_to_dm_condition is not None:
+        or_conditions.append(referred_to_dm_condition)
+
     return or_conditions
+
+
+def _get_referred_to_dm_filter(enforcement_statuses, admin_penalty):
+    """Get the filter condition for the "Referred to DM" Enf. Status values.
+
+    Matches how the grid displays them: "Referred to DM" means referred without a DM decision,
+    while "Referred to DM - AP Issued" / "- AP Not Proceeding" mean referred with that decision.
+    """
+    if admin_penalty is None:
+        return None
+
+    decision_conditions = []
+    if ReferralStatusEnum.REFERRED_TO_DM.name in enforcement_statuses:
+        decision_conditions.append(admin_penalty.decision.is_(None))
+    selected_decisions = [
+        decision.name for decision in DecisionEnum if decision.name in enforcement_statuses
+    ]
+    if selected_decisions:
+        decision_conditions.append(admin_penalty.decision.in_(selected_decisions))
+    if not decision_conditions:
+        return None
+
+    return and_(
+        admin_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
+        or_(*decision_conditions),
+    )
 
 
 def _apply_approval_and_source_filters(query, args, **kwargs):
@@ -1165,6 +1203,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         reference_models["warning_letter"].progress.label("warning_letter_progress"),
         reference_models["violation_ticket"].status.label("violation_ticket_status"),
         reference_models["admin_penalty"].referral_status.label("admin_penalty_status"),
+        reference_models["admin_penalty"].decision.label("admin_penalty_decision"),
         reference_models["charge_rec"].status.label("charge_rec_status"),
         reference_models["restorative_justice"].status.label(
             "restorative_justice_status"
@@ -1229,6 +1268,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         subq.c.warning_letter_progress.label("warning_letter_progress"),
         subq.c.violation_ticket_status.label("violation_ticket_status"),
         subq.c.admin_penalty_status.label("admin_penalty_status"),
+        subq.c.admin_penalty_decision.label("admin_penalty_decision"),
         subq.c.charge_rec_status.label("charge_rec_status"),
         subq.c.restorative_justice_status.label("restorative_justice_status"),
         subq.c.topic_name.label("topic_name"),
@@ -1478,7 +1518,9 @@ def _process_inspection_requirement_query_results(query_results):
 
         # Convert enforcement status to proper object format
         raw_status = ServiceUtils.get_enforcement_status_by_type(result)
-        item["status"] = ServiceUtils.convert_enum_to_object(raw_status) if raw_status else None
+        item["status"] = _get_ap_dm_decision_status(result) or (
+            ServiceUtils.convert_enum_to_object(raw_status) if raw_status else None
+        )
 
         # Convert enforcement progress to proper object format
         raw_progress = _get_enforcement_progress_by_type(result)
@@ -1492,6 +1534,27 @@ def _process_inspection_requirement_query_results(query_results):
 
         processed_requirements.append(item)
     return processed_requirements
+
+
+def _get_ap_dm_decision_status(result):
+    """Return the Enf. Status object for an AP referred to DM with a recorded DM decision.
+
+    Returns None for every other row, so the shared status helper keeps handling them.
+    The decision is only surfaced here; ServiceUtils.get_enforcement_status_by_type is shared
+    with the case file, project compliance and CEB summary reports and must stay untouched.
+    """
+    if (
+        result.enforcement_action_id
+        != EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
+        or result.admin_penalty_status != ReferralStatusEnum.REFERRED_TO_DM
+        or not result.admin_penalty_decision
+    ):
+        return None
+    decision = result.admin_penalty_decision
+    return {
+        "id": decision.name,
+        "name": f"{ReferralStatusEnum.REFERRED_TO_DM.value} - {decision.value}",
+    }
 
 
 def _make_requirement_detail_object(requirements: list):

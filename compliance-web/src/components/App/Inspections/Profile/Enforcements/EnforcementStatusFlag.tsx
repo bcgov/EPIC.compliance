@@ -10,6 +10,7 @@ import {
   VARIANT_COLORS,
   WarningLetterProgressEnum,
   APReferralStatus,
+  APDecisionStatus,
   CRStatus,
   ViolationTicketStatus,
   RestorativeJusticeStatus,
@@ -110,9 +111,14 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       ) {
         status.color = "error";
       } else if (
-        administrativePenaltyStatus?.id === APReferralStatus.REFERRED_TO_DM.id
+        administrativePenaltyStatus?.id === APReferralStatus.REFERRED_TO_DM.id ||
+        administrativePenaltyStatus?.id === APDecisionStatus.AP_ISSUED.id
       ) {
         status.color = "success";
+      } else if (
+        administrativePenaltyStatus?.id === APDecisionStatus.AP_NOT_PROCEEDING.id
+      ) {
+        status.color = "error";
       }
     } else if (
       enforcementActionType === EnforcementActionEnum.CHARGE_RECOMMENDATION

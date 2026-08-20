@@ -2,6 +2,7 @@ import { MRT_ColumnDef, MRT_TableState } from "material-react-table";
 import { useCallback, useMemo } from "react";
 import {
   APPROVAL_STATUS,
+  APDecisionStatus,
   APReferralStatus,
   CRStatus,
   EnforcementActionEnum,
@@ -316,6 +317,14 @@ const enforcementStatusOptions = [
   {
     value: APReferralStatus.REFERRED_TO_DM.id,
     text: APReferralStatus.REFERRED_TO_DM.name,
+  },
+  {
+    value: APDecisionStatus.AP_ISSUED.id,
+    text: "Referred to DM - AP Issued",
+  },
+  {
+    value: APDecisionStatus.AP_NOT_PROCEEDING.id,
+    text: "Referred to DM - AP Not Proceeding",
   },
   // Violation Ticket Statuses that are not in OTHER ENFORCEMENT ACTIONS
   {

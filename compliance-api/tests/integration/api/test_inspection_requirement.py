@@ -1058,3 +1058,102 @@ def test_sort_order_handling(
 #     assert images_result2.status_code == HTTPStatus.OK
 #     assert len(images_result2.json) == 1
 #     assert images_result2.json[0]["original_file_name"] == "regulation_image.jpg"
+
+
+REQUIREMENT_GRID_URL = "/api/inspection-requirements"
+
+
+def _add_requirement_source_detail(requirement):
+    """Give a requirement a source detail so it shows up on the grid."""
+    InspectionReqSourceDetailModel(
+        requirement_id=requirement.id,
+        requirement_source_id=RequirementSourceEnum.ACT_2018.value,
+        section_number="1.1",
+    ).save()
+
+
+def _get_grid_enforcement_statuses(client, auth_header, inspection, **filters):
+    """Return the Enf. Status names shown on the requirement grid for one inspection."""
+    result = client.get(
+        REQUIREMENT_GRID_URL,
+        headers=auth_header,
+        query_string={"ir_no": inspection.ir_number, **filters},
+    )
+    assert result.status_code == HTTPStatus.OK
+    return [item["status"]["name"] for item in result.json["items"] if item["status"]]
+
+
+@pytest.mark.parametrize(
+    "referral_status,decision,expected_status",
+    [
+        (ReferralStatusEnum.DEPUTY_REVIEW, None, "Deputy Review"),
+        (ReferralStatusEnum.REFERRED_TO_DM, None, "Referred to DM"),
+        (
+            ReferralStatusEnum.REFERRED_TO_DM,
+            DecisionEnum.AP_ISSUED,
+            "Referred to DM - AP Issued",
+        ),
+        (
+            ReferralStatusEnum.REFERRED_TO_DM,
+            DecisionEnum.AP_NOT_PROCEEDING,
+            "Referred to DM - AP Not Proceeding",
+        ),
+    ],
+)
+def test_requirement_grid_shows_administrative_penalty_dm_decision(
+    client,
+    auth_header,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    referral_status,
+    decision,
+    expected_status,
+):
+    """The Enf. Status column shows the DM decision once the AP is referred to the DM."""
+    _add_requirement_source_detail(created_administrative_penalty_inspection_requirement)
+    created_administrative_penalty.referral_status = referral_status
+    created_administrative_penalty.decision = decision
+    created_administrative_penalty.save()
+
+    statuses = _get_grid_enforcement_statuses(client, auth_header, created_inspection)
+    assert expected_status in statuses
+
+
+@pytest.mark.parametrize(
+    "decision,matching_filter,non_matching_filter",
+    [
+        (None, "REFERRED_TO_DM", "AP_ISSUED"),
+        (DecisionEnum.AP_ISSUED, "AP_ISSUED", "REFERRED_TO_DM"),
+        (DecisionEnum.AP_NOT_PROCEEDING, "AP_NOT_PROCEEDING", "AP_ISSUED"),
+    ],
+)
+def test_requirement_grid_filters_on_administrative_penalty_dm_decision(
+    client,
+    auth_header,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    decision,
+    matching_filter,
+    non_matching_filter,
+):
+    """Each Referred to DM filter value returns only the APs the grid shows under that value."""
+    _add_requirement_source_detail(created_administrative_penalty_inspection_requirement)
+    created_administrative_penalty.referral_status = ReferralStatusEnum.REFERRED_TO_DM
+    created_administrative_penalty.decision = decision
+    created_administrative_penalty.save()
+
+    assert _get_grid_enforcement_statuses(
+        client, auth_header, created_inspection, enf_stats=matching_filter
+    )
+    assert not _get_grid_enforcement_statuses(
+        client, auth_header, created_inspection, enf_stats=non_matching_filter
+    )
+    # Selecting all three Referred to DM values returns the AP regardless of its decision.
+    assert _get_grid_enforcement_statuses(
+        client,
+        auth_header,
+        created_inspection,
+        enf_stats="REFERRED_TO_DM,AP_ISSUED,AP_NOT_PROCEEDING",
+    )
