@@ -319,3 +319,29 @@ class TestRequirementNumberingWithRegulatoryConsideration:
 
         assert "Requirement 2" in summary
         assert "Requirement 3" not in summary
+
+    def test_reg_only_produces_no_enforcement_summary(
+        self, created_inspection, mocker
+    ):
+        """A Regulatory Consideration with no Enforcement Action must not produce an enforcement summary."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_reg_consideration(created_inspection.id, sort_order=1)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert summary == ""
+
+    def test_reg_is_not_referenced_alongside_enforcement_action(
+        self, created_inspection, mocker
+    ):
+        """The enforcement summary must not reference Regulatory Considerations even when an action exists."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_reg_consideration(created_inspection.id, sort_order=1)
+        req = self._create_ap_requirement(created_inspection.id, sort_order=2)
+        self._create_ap_record(created_inspection.id, req.id)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Regulatory Considerations" not in summary

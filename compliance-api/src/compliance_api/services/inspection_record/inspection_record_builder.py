@@ -478,15 +478,6 @@ class InspectionRecordDataBuilder:
                     )
                     if summary_lines:
                         enforcement_summary_lines.extend(summary_lines)
-            # Add a line for Regulatory Considerations in the requirements
-            if any(
-                req.req_type == InspectionRequirementTypeEnum.REG
-                for req in self.requirements
-            ):
-                enforcement_summary_lines.append(
-                    """<p class="editor-paragraph" dir="ltr">See Regulatory Considerations
-                    Section for additional information.</p>"""
-                )
         if len(enforcement_summary_lines) > 0:
             if not self.data.get("project_details"):
                 self.build_project_details()
