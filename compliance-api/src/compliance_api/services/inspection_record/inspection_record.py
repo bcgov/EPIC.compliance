@@ -1,6 +1,8 @@
 """Service for inspection record."""
 from io import BytesIO
 
+from bs4 import BeautifulSoup
+
 from compliance_api.exceptions import ResourceExistsError, UnprocessableEntityError
 from compliance_api.models import Inspection as InspectionModel
 from compliance_api.models import InspectionRecord as InspectionRecordModel
@@ -336,6 +338,8 @@ class InspectionRecordService:
         )
         preview_data = InspectionRecordPreviewSchema().dump(ir_data)
 
+        _add_gap_before_finding_statement(preview_data)
+
         # Apply style conversion to HTML fields (similar to order.py and warning_letter.py)
         if preview_data.get("inspection_scope"):
             preview_data["inspection_scope"] = convert_inline_styles_for_pdf(
@@ -412,6 +416,37 @@ class InspectionRecordService:
                 "IR_TEMPLATE", preview_data, output_format
             )
             return response, inspection
+
+
+BLANK_PARAGRAPH = '<p class="editor-paragraph"><br></p>'
+
+
+def _get_blocks(html):
+    """Return the top level block elements of an inspection summary block."""
+    soup = BeautifulSoup(html, "html.parser")
+    children = list(soup.children)
+    #  Editor content is sometimes wrapped in a single div
+    if len(children) == 1 and getattr(children[0], "name", None) == "div":
+        children = list(children[0].children)
+    return [child for child in children if getattr(child, "name", None) in ("p", "ol", "ul", "table", "br")]
+
+
+def _add_gap_before_finding_statement(preview_data):
+    """Separate the finding statement from the block above it in the inspection summary."""
+    finding_statement = preview_data.get("finding_statement")
+    preceding_block = preview_data.get("preliminary_review_details") or preview_data.get(
+        "inspection_scope"
+    )
+    if not finding_statement or not preceding_block:
+        return
+    preceding_blocks = _get_blocks(preceding_block)
+    finding_blocks = _get_blocks(finding_statement)
+    #  Nothing to do when either side already provides the gap
+    if preceding_blocks and not preceding_blocks[-1].get_text(strip=True):
+        return
+    if finding_blocks and not finding_blocks[0].get_text(strip=True):
+        return
+    preview_data["finding_statement"] = BLANK_PARAGRAPH + finding_statement
 
 
 def _create_ir_object(ir_data, ir_status, inspection_id):
