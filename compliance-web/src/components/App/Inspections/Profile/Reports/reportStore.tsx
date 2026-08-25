@@ -55,11 +55,15 @@ export const useReportStore = create<ReportStore>((set) => ({
   setInspectionReportsData: (inspectionReportsData: InspectionRecord) => {
     const queryClient = useReportStore.getState().queryClient;
     const inspectionData = useReportStore.getState().inspectionData;
+    const inspectionId =
+      inspectionReportsData?.inspection_id ?? inspectionData?.id;
     set({ inspectionReportsData });
-    queryClient.setQueryData(
-      ["inspection-reports", inspectionData?.id],
-      inspectionReportsData
-    );
+    if (inspectionId) {
+      queryClient.setQueryData(
+        ["inspection-reports", inspectionId],
+        inspectionReportsData
+      );
+    }
   },
   setIRApprovalsData: (irApprovalsData: IRApproval[]) => {
     const queryClient = useReportStore.getState().queryClient;
@@ -101,12 +105,16 @@ export const useReportStore = create<ReportStore>((set) => ({
   reset: () =>
     set({
       inspectionReportsData: undefined,
+      irApprovalsData: undefined,
       inspectionData: undefined,
       caseFileData: undefined,
+      proponentLabel: undefined,
       inspectionScope: undefined,
+      preliminaryReviewDetails: undefined,
       findingsStatement: undefined,
       actionsRequired: undefined,
       enforcementSummary: DEFAULT_REPORT_TAB_CONTENT,
       isReportsReadOnly: false,
+      isHistorical: false,
     }),
 }));

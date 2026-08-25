@@ -34,7 +34,7 @@ import {
 import * as yup from "yup";
 import { useRequirementStore } from "./requirementStore";
 import { useQueryClient } from "@tanstack/react-query";
-import { useReportStore } from "../Reports/reportStore";
+import { useInspectionReportsData } from "@/hooks/useInspectionReports";
 import {
   AdministrativePenaltyStatus,
   DRAWER_WIDTHS,
@@ -94,7 +94,9 @@ const RequirementDrawer: React.FC<RequirementDrawerProps> = ({
     restoreRequirementStoreFromSnapshot,
   } = useRequirementStore();
 
-  const { inspectionReportsData } = useReportStore();
+  const { data: inspectionReportsData } = useInspectionReportsData(
+    inspectionData?.id
+  );
 
   const { data: inspectionRequirementTypesList } =
     useInspectionRequirementTypesData();

@@ -30,9 +30,23 @@ const InspectionReports: React.FC<InspectionReportsProps> = ({
   inspectionData,
 }) => {
   const queryClient = useQueryClient();
-  const { setInspectionReportsData, setQueryClient, setIRApprovalsData } =
+  const { setInspectionReportsData, setQueryClient, setIRApprovalsData, reset } =
     useReportStore();
   const [reportVersion, setReportVersion] = useState<string>("");
+
+  // Drop anything left over from a previously viewed inspection before this record loads.
+  useEffect(() => {
+    const { inspectionReportsData: storedReport, inspectionData: storedInspection } =
+      useReportStore.getState();
+    const storedInspectionId =
+      storedReport?.inspection_id ?? storedInspection?.id;
+    if (
+      storedInspectionId !== undefined &&
+      storedInspectionId !== inspectionData.id
+    ) {
+      reset();
+    }
+  }, [inspectionData.id, reset]);
 
   useEffect(() => {
     if (inspectionData.is_history) {
