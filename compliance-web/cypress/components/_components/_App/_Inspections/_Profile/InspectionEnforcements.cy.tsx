@@ -91,7 +91,6 @@ describe("InspectionEnforcements", () => {
       utm: "10U 123456 6543210",
       initiation_id: 1,
       ir_status_id: 1,
-      project_status_id: 1,
       primary_officer_id: 1,
       start_date: "2023-04-15T12:00:00Z",
       end_date: "2023-04-16T12:00:00Z",
@@ -125,7 +124,7 @@ describe("InspectionEnforcements", () => {
         case_file_status: "Active",
         is_active: true,
       },
-      project_status: { id: "1", name: "In Progress" },
+      project_statuses: [{ id: "1", name: "In Progress" }],
       inspectionAttendances: [],
       is_history: false,
     };

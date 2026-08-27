@@ -95,10 +95,6 @@ class Inspection(BaseModelVersioned):
     )
     is_history = Column(Boolean, nullable=True)
     inspection_status = Column(Enum(InspectionStatusEnum), nullable=True)
-    project_status_id = Column(
-        Integer,
-        nullable=True,
-    )
     area_inspected = Column(String, nullable=True, comment="A brief description of Project Components / Area Inspected")
 
     initiation = relationship(
@@ -126,6 +122,14 @@ class Inspection(BaseModelVersioned):
         primaryjoin="and_(InspectionType.inspection_id == Inspection.id, "
         "InspectionType.is_active == True, "
         "InspectionType.is_deleted == False)",
+    )
+    inspection_project_statuses = relationship(
+        "InspectionProjectStatus",
+        back_populates="inspection",
+        lazy="selectin",
+        primaryjoin="and_(InspectionProjectStatus.inspection_id == Inspection.id, "
+        "InspectionProjectStatus.is_active == True, "
+        "InspectionProjectStatus.is_deleted == False)",
     )
     inspection_requirements = relationship(
         "InspectionRequirement",

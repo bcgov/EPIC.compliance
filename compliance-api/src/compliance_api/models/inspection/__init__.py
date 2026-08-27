@@ -8,6 +8,7 @@ from .inspection_firstnation import InspectionFirstnation
 from .inspection_officer import InspectionOfficer
 from .inspection_option import (
     InspectionAttendanceOption, InspectionInitiationOption, InspectionTypeOption, IRStatusOption)
+from .inspection_project_status import InspectionProjectStatus
 from .inspection_req_detail_doc import InspectionReqDetailDocument
 from .inspection_req_detail_doc_image import InspectionRequirementDetailDocImage
 from .inspection_req_detail_image import InspectionRequirementDetailImage

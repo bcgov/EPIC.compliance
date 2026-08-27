@@ -77,13 +77,13 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
         return inspection_record
 
     @staticmethod
-    def get_project_details(project_id: int, case_file_id: int, project_status_id=None):
+    def get_project_details(project_id: int, case_file_id: int, project_status_ids=None):
         """
         Get project details.
 
         :param project_id: The project id.
         :param case_file_id: The case file id.
-        :param project_status_id: The project status id.
+        :param project_status_ids: The list of project status ids.
         """
         eac_certicate = proponent = name = None
         if not project_id:
@@ -101,24 +101,20 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
                 eac_certicate = project.get("ea_certificate") or "N/A"
                 proponent = project.get("proponent").get("name")
                 name = project.get("name")
-        project_status_name = None
-        if project_status_id:
+        project_status_names = ""
+        if project_status_ids:
             project_statuses = TrackService.get_project_statuses()
-            project_status = next(
-                (
-                    status
-                    for status in project_statuses
-                    if status.get("id") == project_status_id
-                ),
-                None,
+            #  Each project status is rendered on its own line in the inspection record
+            project_status_names = "\n".join(
+                status.get("name")
+                for status in project_statuses
+                if status.get("id") in project_status_ids
             )
-            if project_status:
-                project_status_name = project_status.get("name")
         return {
             "eac_certificate": eac_certicate,
             "proponent": proponent,
             "name": name,
-            "project_state": project_status_name,
+            "project_state": project_status_names,
             "certificate_label": (
                 "Exemption Order #"
                 if re.match(r"^X\d{1,3}-\d{1,3}$", eac_certicate)

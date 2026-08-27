@@ -37,9 +37,9 @@ from .enforcement_action import EnforcementActionOption, EnforcementActionOption
 from .inspection import (
     ImageTypeEnum, Inspection, InspectionAgency, InspectionAttendance, InspectionAttendanceOption,
     InspectionAttendanceOptionEnum, InspectionFirstnation, InspectionInitiationOption, InspectionOfficer,
-    InspectionReqDetailDocument, InspectionReqEnforcementMap, InspectionReqSourceDetail, InspectionRequirement,
-    InspectionRequirementDetailImage, InspectionRequirementImage, InspectionRequirementTypeEnum, InspectionStatusEnum,
-    InspectionType, InspectionTypeOption, IRStatusOption)
+    InspectionProjectStatus, InspectionReqDetailDocument, InspectionReqEnforcementMap, InspectionReqSourceDetail,
+    InspectionRequirement, InspectionRequirementDetailImage, InspectionRequirementImage, InspectionRequirementTypeEnum,
+    InspectionStatusEnum, InspectionType, InspectionTypeOption, IRStatusOption)
 from .inspection_record import InspectionRecord, IRProgressEnum
 from .inspection_record_approval import InspectionRecordApproval, IRApprovalStatusEnum
 from .ir_download_request import DownloadStatusEnum, IRDownloadRequest, IRDownloadRequestErrorLog

@@ -124,9 +124,13 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
     )
-    project_status_id = fields.Int(
-        metadata={"description": "The unique identifier of the project status."},
-        allow_none=True,
+    project_status_ids = fields.List(
+        fields.Int(
+            metadata={
+                "description": "The list of unique identifier of the project statuses"
+            }
+        ),
+        required=False,
     )
     attendance_option_ids = fields.List(
         fields.Int(
@@ -415,7 +419,7 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
     initiation = fields.Nested(KeyValueSchema)
     types = fields.Method("get_inspection_types")
     types_text = fields.Method("get_inspection_type_names")
-    project_status = fields.Nested(KeyValueSchema)
+    project_statuses = fields.Method("get_project_statuses")
     ir_progress = fields.Nested(
         KeyValueSchema,
         metadata={"description": "The progress status of the inspection record"},
@@ -480,6 +484,10 @@ class InspectionSchema(AutoSchemaBase):  # pylint: disable=too-many-ancestors
         if obj.types:
             return ", ".join([o.type.name for o in obj.types])
         return []
+
+    def get_project_statuses(self, obj):  # pylint: disable=unused-argument
+        """Get the project status objects resolved from EPIC.track."""
+        return getattr(obj, "project_statuses", None) or []
 
 
 class InspectionMoreDetailsSchema(

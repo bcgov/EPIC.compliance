@@ -46,7 +46,6 @@ describe("CaseFileInspectionsTable", () => {
       start_date: "2023-04-15T12:00:00Z",
       primary_officer: { id: 1, name: "John Doe", is_active: true },
       ir_status_id: 1,
-      project_status_id: 1,
       primary_officer_id: 1,
       end_date: "2023-04-16T12:00:00Z",
       debrief_date: "2023-04-17T12:00:00Z",
@@ -56,7 +55,7 @@ describe("CaseFileInspectionsTable", () => {
       project: { id: 1, name: "Test Project" },
       ir_status: { id: "1", name: "Active" },
       case_file: mockCaseFile,
-      project_status: { id: "1", name: "Active" },
+      project_statuses: [{ id: "1", name: "Active" }],
       requirement_details: [
         {
           requirement_id: 1,
@@ -108,7 +107,6 @@ describe("CaseFileInspectionsTable", () => {
       start_date: "2023-04-16T12:00:00Z",
       primary_officer: { id: 2, name: "Jane Smith", is_active: true },
       ir_status_id: 1,
-      project_status_id: 1,
       primary_officer_id: 2,
       end_date: "2023-04-17T12:00:00Z",
       debrief_date: "2023-04-18T12:00:00Z",
@@ -118,7 +116,7 @@ describe("CaseFileInspectionsTable", () => {
       project: { id: 1, name: "Test Project" },
       ir_status: { id: "1", name: "Active" },
       case_file: mockCaseFile,
-      project_status: { id: "1", name: "Active" },
+      project_statuses: [{ id: "1", name: "Active" }],
       requirement_details: [
         {
           requirement_id: 3,

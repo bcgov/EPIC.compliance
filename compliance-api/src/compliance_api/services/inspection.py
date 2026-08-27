@@ -20,6 +20,7 @@ from compliance_api.models import InspectionAttendanceOptionEnum
 from compliance_api.models import InspectionFirstnation as InspectionFirstnationModel
 from compliance_api.models import InspectionInitiationOption as InspectionInitiationOptionModel
 from compliance_api.models import InspectionOfficer as InspectionOfficerModel
+from compliance_api.models import InspectionProjectStatus as InspectionProjectStatusModel
 from compliance_api.models import InspectionRecordApproval as InspectionRecordApprovalModel
 from compliance_api.models import InspectionReqEnforcementMap as InspectionReqEnforcementMapModel
 from compliance_api.models import InspectionRequirement as InspectionRequirementModel
@@ -129,7 +130,7 @@ class InspectionService:
         inspection = InspectionModel.find_by_id(inspection_id)
         if not inspection:
             return None
-        return _set_project_status(inspection)
+        return _set_project_statuses(inspection)
 
     @classmethod
     def get_by_ir_number(cls, ir_number):
@@ -139,7 +140,7 @@ class InspectionService:
             raise ResourceNotFoundError(
                 f"No inspection found for the given IR Number : {ir_number}"
             )
-        return _set_project_status(inspection)
+        return _set_project_statuses(inspection)
 
     @classmethod
     def get_other_officers(cls, inspection_id):
@@ -268,6 +269,13 @@ class InspectionService:
                 "type_id",
                 session,
             )
+            _insert_or_update_inspection_relationship(
+                created_inspection.id,
+                inspection_data.get("project_status_ids", []),
+                InspectionProjectStatusModel,
+                "project_status_id",
+                session,
+            )
             if InspectionAttendanceOptionEnum.OTHER.value in attendance_option_ids:
                 other_text = inspection_data.get("attendance_other")
                 if other_text:
@@ -314,6 +322,13 @@ class InspectionService:
                 inspection_data.get("inspection_type_ids", []),
                 InspectionTypeModel,
                 "type_id",
+                session,
+            )
+            _insert_or_update_inspection_relationship(
+                inspection_id,
+                inspection_data.get("project_status_ids", []),
+                InspectionProjectStatusModel,
+                "project_status_id",
                 session,
             )
             attendance_option_ids = inspection_data.get("attendance_option_ids", [])
@@ -400,6 +415,7 @@ class InspectionService:
             InspectionFirstnationModel.delete_by_case_file(case_file_id, session)
             InspectionOfficerModel.delete_by_case_file(case_file_id, session)
             InspectionTypeModel.delete_by_case_file(case_file_id, session)
+            InspectionProjectStatusModel.delete_by_case_file(case_file_id, session)
 
         if ho_session:
             # Use the provided session from outer transaction
@@ -418,6 +434,9 @@ class InspectionService:
         with session_scope() as session:
             InspectionModel.delete_inspection(inspection_id, session)
             InspectionTypeModel.delete_inspection_type(inspection_id, session)
+            InspectionProjectStatusModel.delete_inspection_project_status(
+                inspection_id, session
+            )
             InspectionOfficerModel.delete_inspection_officer(inspection_id, session)
             InspectionFirstnationModel.delete_inspection_firstnation(
                 inspection_id, session
@@ -870,23 +889,26 @@ def _access_check_create(inspection_data: dict):
         )
 
 
-def _set_project_status(inspection):
+def _set_project_statuses(inspection):
     """Set inspection project parameters."""
-    if inspection.project_status_id:
+    selected_status_ids = {
+        status.project_status_id for status in inspection.inspection_project_statuses
+    }
+    if selected_status_ids:
         project_statuses = TrackService.get_project_statuses()
-        status = next(
-            (
-                stat
-                for stat in project_statuses
-                if stat["id"] == inspection.project_status_id
-            ),
-            None,
+        statuses = [
+            {"id": stat["id"], "name": stat["name"]}
+            for stat in project_statuses
+            if stat["id"] in selected_status_ids
+        ]
+        missing_status_ids = selected_status_ids.difference(
+            {status["id"] for status in statuses}
         )
-        if not status:
+        if missing_status_ids:
             raise BusinessError(
-                f"No status found with ID {inspection.project_status_id}", 500
+                f"No status found with ID {sorted(missing_status_ids)}", 500
             )
-        setattr(inspection, "project_status", status)
+        setattr(inspection, "project_statuses", statuses)
     return inspection
 
 
@@ -952,7 +974,6 @@ def _create_inspection_update_obj(inspection_data: dict):
         "end_date": inspection_data.get("end_date"),
         "initiation_id": inspection_data.get("initiation_id"),
         "debrief_date": inspection_data.get("debrief_date", None),
-        "project_status_id": inspection_data.get("project_status_id", None),
         "area_inspected": inspection_data.get("area_inspected", None),
     }
 
@@ -974,7 +995,6 @@ def _create_inspection_object(inspection_data: dict, case_file):
         "end_date": inspection_data.get("end_date"),
         "initiation_id": inspection_data.get("initiation_id"),
         "debrief_date": inspection_data.get("debrief_date", None),
-        "project_status_id": inspection_data.get("project_status_id", None),
         "inspection_status": InspectionStatusEnum.OPEN,
         "area_inspected": inspection_data.get("area_inspected", None),
     }

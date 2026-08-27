@@ -51,7 +51,12 @@ const InspectionGeneralInformation: React.FC<
       name: "Dates",
       value: dateRange,
     },
-    { name: "Project Status", value: inspectionData.project_status?.name },
+    {
+      name: "Project Status",
+      value: inspectionData.project_statuses
+        ?.map((status) => status.name)
+        .join(", "),
+    },
     { name: "In Attendance", value: inAttendance },
   ];
 

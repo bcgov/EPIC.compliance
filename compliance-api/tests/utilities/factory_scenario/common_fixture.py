@@ -63,7 +63,13 @@ def mock_track_service(mocker):
             "name": "Preconstruction",
             "component": "COMPLIANCE",
             "is_active": True,
-        }
+        },
+        {
+            "id": 14,
+            "name": "Construction",
+            "component": "COMPLIANCE",
+            "is_active": True,
+        },
     ]
 
     yield mock_get_project_by_id, mock_get_project_statuses

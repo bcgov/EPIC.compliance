@@ -30,7 +30,6 @@ describe("InspectionFileActions Component", () => {
       utm: "1234567890",
       initiation_id: 0,
       ir_status_id: 0,
-      project_status_id: 0,
       primary_officer_id: 0,
       start_date: "2023-01-01",
       end_date: "2023-01-02",
@@ -43,7 +42,7 @@ describe("InspectionFileActions Component", () => {
       primary_officer: undefined,
       ir_status: undefined,
       case_file: undefined,
-      project_status: undefined,
+      project_statuses: [],
       debrief_date: "2023-01-03",
     };
 

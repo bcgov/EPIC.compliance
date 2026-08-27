@@ -59,7 +59,7 @@ export const InspectionFormSchema = yup.object().shape({
     .object<Initiation>()
     .nullable()
     .required("Initiation is required"),
-  projectStatus: yup.object<ProjectStatus>().nullable(),
+  projectStatuses: yup.array().of(yup.object<ProjectStatus>()).nullable(),
   officers: yup
     .array()
     .of(yup.object<StaffUser>())
@@ -138,7 +138,10 @@ export const formatInspectionAPIData = (
     primary_officer_id: (formData.primaryOfficer as StaffUser)?.id,
     location_description: formData.locationDescription ?? "",
     utm: formData.utm ?? "",
-    project_status_id: (formData.projectStatus as ProjectStatus)?.id,
+    project_status_ids:
+      (formData.projectStatuses as ProjectStatus[])?.map(
+        (status) => status.id
+      ) ?? [],
     attendance_option_ids: inAttendanceOptions,
     area_inspected: formData.areaInspected ?? "",
   };

@@ -265,7 +265,12 @@ class InspectionRecordDataBuilder:
 
         project_id = self.inspection.case_file.project_id
         self.data["project_details"] = ServiceUtils.get_project_details(
-            project_id, self.inspection.case_file.id, self.inspection.project_status_id
+            project_id,
+            self.inspection.case_file.id,
+            [
+                status.project_status_id
+                for status in self.inspection.inspection_project_statuses
+            ],
         )
         return self
 
