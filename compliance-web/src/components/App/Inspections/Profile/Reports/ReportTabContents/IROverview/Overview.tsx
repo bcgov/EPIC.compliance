@@ -95,7 +95,12 @@ const Overview = () => {
           <GridLabelValuePair
             label="Project Status"
             value={inspectionData?.project_statuses?.map((status) => (
-              <span key={status.id}>{status.name}</span>
+              <span
+                key={status.id}
+                style={{ display: "block", textAlign: "left" }}
+              >
+                {status.name}
+              </span>
             ))}
             multiline
             gridProps={{ xs: 6 }}
