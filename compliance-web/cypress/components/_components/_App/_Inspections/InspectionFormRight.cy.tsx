@@ -39,7 +39,7 @@ describe("InspectionFormRight Component", () => {
       const methods = useForm({
         defaultValues: {
           irStatus: null,
-          projectStatus: null,
+          projectStatuses: [],
           inAttendance: [],
           agencies: [],
           firstNations: [],

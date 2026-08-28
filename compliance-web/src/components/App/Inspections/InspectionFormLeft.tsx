@@ -133,12 +133,15 @@ const InspectionFormLeft: FC<InspectionFormLeftProps> = ({
         </Stack>
         <Stack direction={"row"} gap={2}>
           <ControlledAutoComplete
-            name="projectStatus"
+            name="projectStatuses"
             label="Project Status"
             options={projectStatusList}
             getOptionLabel={(option) => option.name}
             getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
+            isOptionEqualToValue={(option, value) =>
+              option.id.toString() === value.id.toString()
+            }
+            multiple
             fullWidth
           />
         </Stack>

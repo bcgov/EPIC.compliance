@@ -245,7 +245,7 @@ class AdministrativePenaltyLinksResponseSchema(BaseSchema):
             "case_file",
             "primary_officer",
             "initiation",
-            "project_status",
+            "project_statuses",
         ),
         metadata={"description": "The inspection linked to the administrative penalty"},
     )

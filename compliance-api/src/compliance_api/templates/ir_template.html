@@ -115,6 +115,10 @@
             vertical-align: top;
         }
 
+        .com-ir-multiline {
+            white-space: pre-line;
+        }
+
         .com-ir-comp-finding-header {
             background-color: #d9d9d9 !important;
             width: 30%;
@@ -528,7 +532,7 @@
             </tr>
             <tr>
                 <th>Project Status</th>
-                <td>{{ project_details.project_state }}</td>
+                <td class="com-ir-multiline">{{ project_details.project_state }}</td>
                 <th>Inspection Start</th>
                 <td>{{ inspection_details.start_date }}</td>
             </tr>

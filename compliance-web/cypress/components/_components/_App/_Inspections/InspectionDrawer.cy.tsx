@@ -41,7 +41,6 @@ describe("InspectionDrawer Component", () => {
     project_id: 1,
     initiation_id: 1,
     ir_status_id: 1,
-    project_status_id: 1,
     primary_officer_id: 1,
     project_description: "Project Description",
     type: "Type",
@@ -49,7 +48,7 @@ describe("InspectionDrawer Component", () => {
     location_description: "Location Description",
     primary_officer: { id: 1, name: "Officer Name", is_active: true },
     ir_status: { id: "1", name: "Status" },
-    project_status: { id: "1", name: "Project Status" },
+    project_statuses: [{ id: "1", name: "Project Status" }],
     debrief_date: dayjs("2023-01-01").toISOString(),
     types: [
       { id: "1", name: "Type1" },
@@ -130,6 +129,40 @@ describe("InspectionDrawer Component", () => {
         />
       </TestWrapper>
     );
+  });
+
+  it("should show the saved project status when reopening an inspection", () => {
+    cy.get('.MuiAutocomplete-root[name="projectStatuses"]').within(() => {
+      cy.get(".MuiAutocomplete-tag").should("have.length", 1);
+      cy.get(".MuiAutocomplete-tag")
+        .eq(0)
+        .should("contain.text", "Project Status");
+    });
+  });
+
+  it("should show every saved project status when more than one applies", () => {
+    mount(
+      <TestWrapper>
+        <InspectionDrawer
+          onSubmit={mockOnSubmit}
+          inspection={{
+            ...mockInspection,
+            project_statuses: [
+              { id: "1", name: "Construction" },
+              { id: "2", name: "Operations" },
+            ],
+          }}
+          caseFile={mockCaseFile}
+        />
+      </TestWrapper>
+    );
+
+    cy.get('.MuiAutocomplete-root[name="projectStatuses"]').within(() => {
+      cy.get('input[name="projectStatuses"]').click();
+      cy.get(".MuiAutocomplete-tag").should("have.length", 2);
+      cy.get(".MuiAutocomplete-tag").eq(0).should("contain.text", "Construction");
+      cy.get(".MuiAutocomplete-tag").eq(1).should("contain.text", "Operations");
+    });
   });
 
   it("should render the component with the correct title", () => {

@@ -49,7 +49,7 @@ const initFormData: InspectionFormData = {
   endDate: undefined,
   initiation: undefined,
   irStatus: undefined,
-  projectStatus: undefined,
+  projectStatuses: [],
   caseFileId: undefined,
   isHistory: false,
   isIndependentEnvMonitor: false,
@@ -99,7 +99,7 @@ const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
         initiation: inspection.initiation,
         irTypes: inspection.types,
         irStatus: inspection.ir_status,
-        projectStatus: inspection.project_status,
+        projectStatuses: inspection.project_statuses ?? [],
         caseFileId: inspection.case_file_id?.toString(),
         isHistory: inspection.is_history ?? false,
         isIndependentEnvMonitor:

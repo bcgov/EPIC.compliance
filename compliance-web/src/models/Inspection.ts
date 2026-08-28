@@ -22,7 +22,6 @@ export interface Inspection {
   utm: string;
   initiation_id: number;
   ir_status_id: number;
-  project_status_id: number;
   primary_officer_id: number;
   start_date: string;
   end_date: string;
@@ -37,7 +36,7 @@ export interface Inspection {
   ir_status: IRStatus;
   case_file: CaseFile;
   officers?: StaffUser[];
-  project_status: ProjectStatus;
+  project_statuses: ProjectStatus[];
   authorization?: string;
   regulated_party?: string;
   type?: string;
@@ -118,7 +117,7 @@ export interface InspectionFormData {
   initiation?: Initiation;
   irTypes?: IRType[];
   irStatus?: IRStatus;
-  projectStatus?: ProjectStatus;
+  projectStatuses?: ProjectStatus[];
   caseFileId?: string;
   isHistory?: boolean;
   isIndependentEnvMonitor?: boolean;
@@ -147,7 +146,7 @@ export interface InspectionAPIData {
   debrief_date?: string;
   initiation_id: string;
   ir_status_id?: string;
-  project_status_id?: string;
+  project_status_ids?: string[];
   attendance_option_ids?: string[];
   agency_attendance_ids?: number[];
   attendance_municipal?: string;

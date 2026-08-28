@@ -295,6 +295,53 @@ def test_get_inspection_by_id(
     assert result.json["inspection_status"] == InspectionStatusEnum.OPEN.value
 
 
+def test_inspection_with_multiple_project_statuses(
+    client,
+    auth_header_super_user,
+    created_staff,
+    created_case_file,
+    mocker,
+    mock_track_service,
+):
+    """Create and update an inspection holding more than one project status."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    inspection_data = copy.copy(InspectionScenario.default_value.value)
+    inspection_data.update(
+        {
+            "case_file_id": created_case_file.id,
+            "primary_officer_id": created_staff.id,
+            "initiation_id": 1,
+            "project_status_ids": [13, 14],
+            "start_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "end_date": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+        }
+    )
+    created_inspection = InspectionService.create(inspection_data)
+
+    url = urljoin(API_BASE_URL, f"inspections/{created_inspection.id}")
+    result = client.get(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.OK
+    assert [status["name"] for status in result.json["project_statuses"]] == [
+        "Preconstruction",
+        "Construction",
+    ]
+
+    #  Removing one of the statuses keeps the remaining one
+    update_data = copy.copy(inspection_data)
+    update_data.pop("case_file_id")
+    update_data["project_status_ids"] = [14]
+    result = client.patch(
+        url, data=json.dumps(update_data), headers=auth_header_super_user
+    )
+    assert result.status_code == HTTPStatus.OK
+
+    result = client.get(url, headers=auth_header_super_user)
+    assert [status["name"] for status in result.json["project_statuses"]] == [
+        "Construction"
+    ]
+
+
 def test_get_inspection_by_ir_number(
     client, auth_header_super_user, created_case_file, mocker, mock_track_service
 ):

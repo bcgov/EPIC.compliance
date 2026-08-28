@@ -41,6 +41,7 @@ describe("InspectionFormLeft Component", () => {
           primaryOfficer: null,
           officers: [],
           irTypes: [],
+          projectStatuses: [],
           dateRange: [null, null],
           initiation: null,
         },
@@ -154,12 +155,46 @@ describe("InspectionFormLeft Component", () => {
     cy.get('input[name="initiation"]').should("have.value", "Initiation Beta");
   });
 
-  it("allows selecting Project Status", () => {
-    cy.get('input[name="projectStatus"]').click();
+  it("allows selecting a single Project Status", () => {
+    cy.get('input[name="projectStatuses"]').click();
     cy.get("li").contains("Project Status Beta").click();
-    cy.get('input[name="projectStatus"]').should(
-      "have.value",
-      "Project Status Beta"
-    );
+
+    cy.get('.MuiAutocomplete-root[name="projectStatuses"]').within(() => {
+      cy.get(".MuiAutocomplete-tag").should("have.length", 1);
+      cy.get(".MuiAutocomplete-tag")
+        .eq(0)
+        .should("contain.text", "Project Status Beta");
+    });
+  });
+
+  it("allows selecting multiple Project Statuses", () => {
+    cy.get('input[name="projectStatuses"]').click();
+    cy.get("li").contains("Project Status Alpha").click();
+    cy.get("li").contains("Project Status Beta").click();
+
+    cy.get('.MuiAutocomplete-root[name="projectStatuses"]').within(() => {
+      cy.get(".MuiAutocomplete-tag").should("have.length", 2);
+      cy.get(".MuiAutocomplete-tag")
+        .eq(0)
+        .should("contain.text", "Project Status Alpha");
+      cy.get(".MuiAutocomplete-tag")
+        .eq(1)
+        .should("contain.text", "Project Status Beta");
+    });
+  });
+
+  it("allows removing a selected Project Status", () => {
+    cy.get('input[name="projectStatuses"]').click();
+    cy.get("li").contains("Project Status Alpha").click();
+    cy.get("li").contains("Project Status Beta").click();
+
+    cy.get('.MuiAutocomplete-root[name="projectStatuses"]').within(() => {
+      cy.get(".MuiAutocomplete-tag").should("have.length", 2);
+      cy.get(".MuiAutocomplete-tag").eq(0).find("svg").click();
+      cy.get(".MuiAutocomplete-tag").should("have.length", 1);
+      cy.get(".MuiAutocomplete-tag")
+        .eq(0)
+        .should("contain.text", "Project Status Beta");
+    });
   });
 });
