@@ -27,7 +27,7 @@ import {
   useCurrentLoggedInUser,
 } from "@/hooks/useAuthorization";
 import { useIsRolesAllowed } from "@/hooks/useAuthorization";
-import { InspectionStatusEnum } from "@/utils/constants";
+import { InspectionStatusEnum, IR_STATUS } from "@/utils/constants";
 import { AxiosError } from "axios";
 import { notify } from "@/store/snackbarStore";
 import {
@@ -281,9 +281,13 @@ const PreviewDownloadButton = () => {
     try {
       const response = await fetch(data.presigned_url);
       const blob = await response.blob();
+      const preliminarySuffix =
+        inspectionReportsData?.ir_status_id === IR_STATUS.PRELIMINARY
+          ? "_PRELIMINARY"
+          : "";
       const filename =
         documentJob?.download_name ||
-        `${inspectionData?.ir_number || inspectionReportsData?.id || "report"}.docx`;
+        `${inspectionData?.ir_number || inspectionReportsData?.id || "report"}${preliminarySuffix}.docx`;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

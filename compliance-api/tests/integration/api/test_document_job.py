@@ -568,6 +568,17 @@ def test_last_generated_scoped_by_output_format(client,
     assert pdf_result.json["last_generated_time"] == pdf_completed_at.isoformat()
 
 
+@pytest.fixture
+def final_inspection_record(created_inspection):
+    """Fixture to create a FINAL inspection record."""
+    return InspectionRecord.create_inspection_record(
+        {
+            "inspection_id": created_inspection.id,
+            "ir_status_id": 2,
+        }
+    )
+
+
 def test_handle_background_job_docx_success(app, mocker, created_staff, inspection_record):
     """DOCX jobs should upload the rendered BytesIO stream and complete with a .docx name."""
     from io import BytesIO
@@ -607,10 +618,90 @@ def test_handle_background_job_docx_success(app, mocker, created_staff, inspecti
     db.session.expire_all()
     updated_job = DocumentJob.find_by_id(job.id)
     assert updated_job.status == DocumentJobStatusEnum.COMPLETED.value
-    assert updated_job.download_name == "IR-0001.docx"
+    #  The fixture record is PRELIMINARY, so the name carries the suffix
+    assert updated_job.download_name == "IR-0001_PRELIMINARY.docx"
     assert updated_job.relative_url.endswith(".docx")
     mock_put.assert_called_once()
     assert mock_put.call_args.kwargs["data"].read() == b"docx bytes"
+
+
+def test_handle_background_job_final_docx_has_no_preliminary_suffix(
+    app, mocker, created_staff, final_inspection_record
+):
+    """FINAL DOCX records should keep the plain IR number as the download name."""
+    from io import BytesIO
+
+    staff_user = created_staff
+    job = DocumentJobService.create({
+        "user_id": staff_user.id,
+        "inspection_record_id": final_inspection_record.id,
+        "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+        "output_format": "docx",
+        "started_at": datetime.now(timezone.utc),
+    })
+
+    mock_inspection = mocker.MagicMock(ir_number="IR-0001")
+    mocker.patch(
+        "compliance_api.services.document_job.InspectionRecordService.render",
+        return_value=(BytesIO(b"docx bytes"), mock_inspection),
+    )
+    mocker.patch(
+        "compliance_api.services.document_job.DocService.get_presigned_url",
+        return_value={
+            "presigned_url": "https://example.com/presigned-url",
+            "relative_url": "inspection_records/mock-uuid.docx",
+        },
+    )
+    mock_put = mocker.patch("requests.put")
+    mock_put.return_value.status_code = 200
+
+    DocumentJobService.handle_background_job(
+        app, job.id, "test-token", {}, final_inspection_record.inspection_id,
+        final_inspection_record.id, staff_user.id, "docx",
+    )
+
+    db.session.expire_all()
+    updated_job = DocumentJob.find_by_id(job.id)
+    assert updated_job.download_name == "IR-0001.docx"
+
+
+def test_handle_background_job_preliminary_pdf_has_no_preliminary_suffix(
+    app, mocker, created_staff, inspection_record
+):
+    """The suffix is a DOCX naming convention, so PDF names are left alone."""
+    staff_user = created_staff
+    job = DocumentJobService.create({
+        "user_id": staff_user.id,
+        "inspection_record_id": inspection_record.id,
+        "status": DocumentJobStatusEnum.IN_PROGRESS.value,
+        "output_format": "pdf",
+        "started_at": datetime.now(timezone.utc),
+    })
+
+    mock_inspection = mocker.MagicMock(ir_number="IR-0001")
+    mock_response = mocker.MagicMock(content=b"pdf bytes")
+    mocker.patch(
+        "compliance_api.services.document_job.InspectionRecordService.render",
+        return_value=(mock_response, mock_inspection),
+    )
+    mocker.patch(
+        "compliance_api.services.document_job.DocService.get_presigned_url",
+        return_value={
+            "presigned_url": "https://example.com/presigned-url",
+            "relative_url": "inspection_records/mock-uuid.pdf",
+        },
+    )
+    mock_put = mocker.patch("requests.put")
+    mock_put.return_value.status_code = 200
+
+    DocumentJobService.handle_background_job(
+        app, job.id, "test-token", {}, inspection_record.inspection_id,
+        inspection_record.id, staff_user.id, "pdf",
+    )
+
+    db.session.expire_all()
+    updated_job = DocumentJob.find_by_id(job.id)
+    assert updated_job.download_name == "IR-0001.pdf"
 
 
 def test_last_generated_other_user_job_returns_null(

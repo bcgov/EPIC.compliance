@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from compliance_api.exceptions import BusinessError, ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.db import db
 from compliance_api.models.document_job import DocumentJob, DocumentJobStatusEnum
+from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
+from compliance_api.models.inspection_record import IRStatusEnum
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.inspection_record.inspection_record import InspectionRecordService
 
@@ -273,7 +275,9 @@ class DocumentJobService:
 
                 DocumentJobService.update(job_id, staff_user_id, {
                     "status": DocumentJobStatusEnum.COMPLETED.value,
-                    "download_name": f"{inspection.ir_number}.{output_format}",
+                    "download_name": _build_download_name(
+                        inspection, inspection_record_id, output_format
+                    ),
                     "relative_url": presigned_put_request["relative_url"],
                     "completed_at": datetime.now(timezone.utc),
                 })
@@ -296,3 +300,20 @@ class DocumentJobService:
                 DocumentJobService.update(job_id, staff_user_id, {
                     "status": DocumentJobStatusEnum.FAILED.value,
                 })
+
+
+def _build_download_name(inspection, inspection_record_id, output_format):
+    """Build the download filename for a generated inspection record document.
+
+    Preliminary DOCX records keep the _PRELIMINARY suffix so they are
+    distinguishable from the final record once downloaded.
+    """
+    base_name = inspection.ir_number
+    if output_format == "docx":
+        inspection_record = InspectionRecordModel.find_by_id(inspection_record_id)
+        if (
+            inspection_record
+            and inspection_record.ir_status_id == IRStatusEnum.PRELIMINARY.value
+        ):
+            base_name = f"{base_name}_PRELIMINARY"
+    return f"{base_name}.{output_format}"
