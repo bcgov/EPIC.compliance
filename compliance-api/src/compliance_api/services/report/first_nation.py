@@ -2,7 +2,6 @@
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -27,6 +26,7 @@ from compliance_api.services.report.utils.utils import (
     get_project_details,
     populate_template_table_sheet,
 )
+from compliance_api.utils.datetime import BC_TIMEZONE
 
 from .base import BaseReportGenerator
 
@@ -181,11 +181,11 @@ class FirstNationReportGenerator(BaseReportGenerator):
                 "ir_progress": row.ir_progress.value if row.ir_progress else None,
                 "project_name": project_name,
                 "project_type": project_type,
-                "start_date": row.start_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "start_date": row.start_date.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.start_date else None,
-                "end_date": row.end_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "end_date": row.end_date.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.end_date and row.start_date != row.end_date else None,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
                 "case_file_number": row.case_file_number,
@@ -219,7 +219,7 @@ class FirstNationReportGenerator(BaseReportGenerator):
                 "project_name": project_name,
                 "project_type": project_type,
                 "topic": row.topic,
-                "date_received": row.date_received.astimezone(ZoneInfo("America/Los_Angeles"))
+                "date_received": row.date_received.astimezone(BC_TIMEZONE)
                 .strftime("%Y-%m-%d") if row.date_received else None,
                 "complaint_source": row.complaint_source,
                 "complaint_source_details": complaint_source_details,

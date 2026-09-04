@@ -1,6 +1,5 @@
 """Case File Management Report Generator Service."""
 from io import BytesIO
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 from flask import current_app
@@ -36,6 +35,7 @@ from compliance_api.services.report.utils.shared_queries import (
     get_requirement_restorative_justice_sub_query, get_requirement_violation_ticket_sub_query,
     get_requirement_warning_letter_sub_query)
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.utils.datetime import BC_TIMEZONE
 
 from .base import BaseReportGenerator
 
@@ -396,7 +396,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 "project_name": project_name,
                 "project_type": project_type,
                 "case_file_initiation_option": row.case_file_initiation_option,
-                "date_created": row.date_created.astimezone(ZoneInfo("America/Los_Angeles"))
+                "date_created": row.date_created.astimezone(BC_TIMEZONE)
                 .strftime("%Y-%m-%d") if row.date_created else None,
                 "status": row.status.value if row.status else None,
             }
@@ -474,7 +474,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 "project_name": project_name,
                 "project_type": project_type,
                 "inspection_start_date": (
-                    row.inspection_start_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                    row.inspection_start_date.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 )
                 if row.inspection_start_date else None,
                 "compliance_finding": row.compliance_finding,
@@ -483,7 +483,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 "enforcement_document_number": ServiceUtils.get_enforcement_number_by_type(row),
                 "condition_number": condition_num_string,
                 "requirement_source": source_string,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "primary_officer": f"{primary_officer.first_name} {primary_officer.last_name}"
                 if primary_officer else None,
@@ -593,7 +593,7 @@ class CaseFileManagementReportGenerator(BaseReportGenerator):
                 "project_name": project_name,
                 "project_type": project_type,
                 "topic": row.topic,
-                "date_received": row.date_received.astimezone(ZoneInfo("America/Los_Angeles"))
+                "date_received": row.date_received.astimezone(BC_TIMEZONE)
                 .strftime("%Y-%m-%d") if row.date_received else None,
                 "complaint_source": row.complaint_source,
                 "complaint_source_details": complaint_source_details,

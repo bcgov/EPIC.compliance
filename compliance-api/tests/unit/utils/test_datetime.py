@@ -16,202 +16,62 @@
 
 Test-Suite to ensure that the datetime utility functions are working as expected.
 """
-from datetime import datetime
-from unittest.mock import patch
+from datetime import datetime, timedelta
 
 import pytest
 import pytz
 
-from compliance_api.utils.datetime import (
-    convert_and_format_to_utc_str, convert_to_full_month_format, local_datetime, utc_datetime)
+from compliance_api.utils.datetime import BC_TIMEZONE, convert_to_full_month_format
 
 
-class TestLocalDatetime:
-    """Test local_datetime function."""
+class TestBritishColumbiaTimezone:
+    """Test that BC local time is used, not a US Pacific stand-in.
 
-    @patch("compliance_api.utils.datetime.datetime")
-    def test_local_datetime_returns_pacific_time(self, mock_datetime):
-        """Test that local_datetime returns Pacific timezone datetime."""
-        # Arrange
-        mock_utc_time = datetime(2024, 6, 15, 20, 30, 45)  # 8:30 PM UTC
-        mock_datetime.utcnow.return_value = mock_utc_time
+    From 2026-11-01 BC stays on UTC-7 year-round while the US Pacific zones keep
+    falling back to UTC-8, so the two are an hour apart from November to March.
+    """
 
-        # Act
-        result = local_datetime()
-
-        # Assert
-        assert result.tzinfo.zone == "US/Pacific"
-        # In June, Pacific time is PDT (UTC-7), so 20:30 UTC = 13:30 PDT
-        assert result.hour == 13
-        assert result.minute == 30
-        assert result.second == 45
-
-    @patch("compliance_api.utils.datetime.datetime")
-    def test_local_datetime_winter_time(self, mock_datetime):
-        """Test that local_datetime handles PST (winter time) correctly."""
-        # Arrange
-        mock_utc_time = datetime(2024, 1, 15, 20, 30, 45)  # 8:30 PM UTC in January
-        mock_datetime.utcnow.return_value = mock_utc_time
-
-        # Act
-        result = local_datetime()
-
-        # Assert
-        assert result.tzinfo.zone == "US/Pacific"
-        # In January, Pacific time is PST (UTC-8), so 20:30 UTC = 12:30 PST
-        assert result.hour == 12
-        assert result.minute == 30
-        assert result.second == 45
-
-    @patch("compliance_api.utils.datetime.datetime")
-    def test_local_datetime_has_timezone_info(self, mock_datetime):
-        """Test that local_datetime returns timezone-aware datetime."""
-        # Arrange
-        mock_utc_time = datetime(2024, 6, 15, 20, 30, 45)
-        mock_datetime.utcnow.return_value = mock_utc_time
-
-        # Act
-        result = local_datetime()
-
-        # Assert
-        assert result.tzinfo is not None
-        assert isinstance(result.tzinfo, pytz.tzinfo.DstTzInfo)
-
-
-class TestUtcDatetime:
-    """Test utc_datetime function."""
-
-    @patch("compliance_api.utils.datetime.datetime")
-    def test_utc_datetime_returns_utc_time(self, mock_datetime):
-        """Test that utc_datetime returns UTC timezone datetime."""
-        # Arrange
-        mock_utc_time = datetime(2024, 6, 15, 20, 30, 45)
-        mock_datetime.utcnow.return_value = mock_utc_time
-
-        # Act
-        result = utc_datetime()
-
-        # Assert
-        assert result.tzinfo.zone == "UTC"
-        assert result.hour == 20
-        assert result.minute == 30
-        assert result.second == 45
-
-    @patch("compliance_api.utils.datetime.datetime")
-    def test_utc_datetime_has_timezone_info(self, mock_datetime):
-        """Test that utc_datetime returns timezone-aware datetime."""
-        # Arrange
-        mock_utc_time = datetime(2024, 6, 15, 20, 30, 45)
-        mock_datetime.utcnow.return_value = mock_utc_time
-
-        # Act
-        result = utc_datetime()
-
-        # Assert
-        assert result.tzinfo is not None
-        assert result.tzinfo == pytz.UTC
-
-
-class TestConvertAndFormatToUtcStr:
-    """Test convert_and_format_to_utc_str function."""
-
-    def test_convert_and_format_to_utc_str_default_format(self, app):
-        """Test conversion with default format."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-            local_time = datetime(2024, 6, 15, 13, 30, 45)  # 1:30 PM PDT
-
-            # Act
-            result = convert_and_format_to_utc_str(local_time)
-
-            # Assert
-            # PDT is UTC-7, so 13:30 PDT = 20:30 UTC
-            assert result == "2024-06-15 20:30:45"
-
-    def test_convert_and_format_to_utc_str_custom_format(self, app):
-        """Test conversion with custom format."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-            local_time = datetime(2024, 6, 15, 13, 30, 45)
-            custom_format = "%Y-%m-%d %H:%M"
-
-            # Act
-            result = convert_and_format_to_utc_str(local_time, custom_format)
-
-            # Assert
-            assert result == "2024-06-15 20:30"
-
-    def test_convert_and_format_to_utc_str_timezone_override(self, app):
-        """Test conversion with timezone override."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-            local_time = datetime(2024, 6, 15, 13, 30, 45)
-            timezone_override = "US/Eastern"
-
-            # Act
-            result = convert_and_format_to_utc_str(
-                local_time, timezone_override=timezone_override
-            )
-
-            # Assert
-            # EDT is UTC-4, so 13:30 EDT = 17:30 UTC
-            assert result == "2024-06-15 17:30:45"
-
-    def test_convert_and_format_to_utc_str_winter_time(self, app):
-        """Test conversion during winter time (PST)."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-            local_time = datetime(2024, 1, 15, 13, 30, 45)  # 1:30 PM PST
-
-            # Act
-            result = convert_and_format_to_utc_str(local_time)
-
-            # Assert
-            # PST is UTC-8, so 13:30 PST = 21:30 UTC
-            assert result == "2024-01-15 21:30:45"
-
-    def test_convert_and_format_to_utc_str_different_timezone(self, app):
-        """Test conversion with different timezone."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Mountain"
-            local_time = datetime(2024, 6, 15, 14, 30, 45)  # 2:30 PM MDT
-
-            # Act
-            result = convert_and_format_to_utc_str(local_time)
-
-            # Assert
-            # MDT is UTC-6, so 14:30 MDT = 20:30 UTC
-            assert result == "2024-06-15 20:30:45"
+    def test_bc_timezone_is_vancouver(self):
+        """Test that the shared constant points at the BC zone."""
+        assert str(BC_TIMEZONE) == "America/Vancouver"
 
     @pytest.mark.parametrize(
-        "input_time,expected_utc",
+        "winter_moment",
         [
-            (datetime(2024, 6, 15, 0, 0, 0), "2024-06-15 07:00:00"),  # Midnight PDT
-            (datetime(2024, 6, 15, 12, 0, 0), "2024-06-15 19:00:00"),  # Noon PDT
-            (
-                datetime(2024, 6, 15, 23, 59, 59),
-                "2024-06-16 06:59:59",
-            ),  # End of day PDT
+            datetime(2026, 12, 15, 12, 0, 0),
+            datetime(2027, 1, 15, 12, 0, 0),
+            datetime(2027, 3, 1, 12, 0, 0),
         ],
     )
-    def test_convert_and_format_to_utc_str_various_times(
-        self, app, input_time, expected_utc
-    ):
-        """Test conversion with various times of day."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
+    def test_bc_stays_on_utc_minus_7_after_permanent_dst(self, winter_moment):
+        """Test that BC winter time is UTC-7 once permanent DST is in effect."""
+        offset = winter_moment.replace(tzinfo=BC_TIMEZONE).utcoffset()
 
-            # Act
-            result = convert_and_format_to_utc_str(input_time)
+        assert offset == timedelta(hours=-7)
 
-            # Assert
-            assert result == expected_utc
+    def test_bc_keeps_dst_rules_before_the_change(self):
+        """Test that pre-2026 winters are still UTC-8."""
+        offset = datetime(2024, 1, 15, 12, 0, 0).replace(tzinfo=BC_TIMEZONE).utcoffset()
+
+        assert offset == timedelta(hours=-8)
+
+    def test_bc_differs_from_us_pacific_in_winter(self):
+        """Test that the tz database in use actually carries the BC rule."""
+        winter_moment = datetime(2026, 12, 15, 12, 0, 0)
+
+        bc_offset = winter_moment.replace(tzinfo=BC_TIMEZONE).utcoffset()
+        us_offset = pytz.timezone("US/Pacific").localize(winter_moment).utcoffset()
+
+        assert bc_offset - us_offset == timedelta(hours=1)
+
+    def test_utc_timestamp_converts_to_bc_local_in_winter(self):
+        """Test the conversion the report generators actually perform."""
+        # 2026-11-16 03:00Z is 2026-11-15 20:00 BC local under permanent DST
+        utc_moment = datetime(2026, 11, 16, 3, 0, 0, tzinfo=pytz.UTC)
+
+        local = utc_moment.astimezone(BC_TIMEZONE)
+
+        assert local.strftime("%Y-%m-%d %H:%M") == "2026-11-15 20:00"
 
 
 class TestConvertToFullMonthFormat:
@@ -312,57 +172,3 @@ class TestConvertToFullMonthFormat:
 
             # Assert
             assert result == "June 15, 2024"
-
-
-class TestDatetimeUtilsIntegration:
-    """Integration tests for datetime utilities."""
-
-    def test_local_and_utc_datetime_consistency(self):
-        """Test that local_datetime and utc_datetime are consistent."""
-        # Act
-        local_time = local_datetime()
-        utc_time = utc_datetime()
-
-        # Assert
-        # Convert both to UTC for comparison
-        local_time_utc = local_time.astimezone(pytz.UTC)
-
-        # They should be within a few seconds of each other
-        time_diff = abs((local_time_utc - utc_time).total_seconds())
-        assert time_diff < 5  # Allow up to 5 seconds difference for execution time
-
-    def test_convert_and_format_round_trip(self, app):
-        """Test that conversion and formatting works correctly in round trip."""
-        # Arrange
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-            original_time = datetime(2024, 6, 15, 13, 30, 45)
-
-            # Act
-            utc_str = convert_and_format_to_utc_str(original_time)
-            # Parse the UTC string back to datetime
-            parsed_utc = datetime.strptime(utc_str, "%Y-%m-%d %H:%M:%S")
-            parsed_utc = pytz.UTC.localize(parsed_utc)
-
-            # Convert back to Pacific time
-            pacific_tz = pytz.timezone("US/Pacific")
-            back_to_pacific = parsed_utc.astimezone(pacific_tz)
-
-            # Assert
-            # The time should match (ignoring timezone info for comparison)
-            assert back_to_pacific.replace(tzinfo=None) == original_time
-
-    def test_all_functions_with_edge_cases(self, app):
-        """Test all functions with edge cases."""
-        with app.app_context():
-            app.config["LEGISLATIVE_TIMEZONE"] = "US/Pacific"
-
-            # Test with leap year date
-            leap_year_date = datetime(2024, 2, 29, 12, 0, 0)
-
-            # All functions should handle leap year correctly
-            utc_str = convert_and_format_to_utc_str(leap_year_date)
-            full_month = convert_to_full_month_format(leap_year_date)
-
-            assert "2024-02-29" in utc_str
-            assert "February 29, 2024" == full_month
