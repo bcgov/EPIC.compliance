@@ -1,7 +1,6 @@
 """ContinuationReport Service."""
 
 from io import BytesIO
-from zoneinfo import ZoneInfo
 
 from flask import g
 
@@ -12,6 +11,7 @@ from compliance_api.models.continuation_report import ContinuationReport as Cont
 from compliance_api.models.continuation_report import ContinuationReportKey as ContinuationReportKeyModel
 from compliance_api.models.db import session_scope
 from compliance_api.services.docgen_service.docgen_service import DocGenService
+from compliance_api.utils.datetime import BC_TIMEZONE
 from compliance_api.utils.enum import PermissionEnum
 
 
@@ -211,12 +211,8 @@ def _get_report_data(case_file):
         ),
         "continuation_report_entries": [
             {
-                "date": entry.date_created.astimezone(
-                    ZoneInfo("America/Los_Angeles")
-                ).strftime("%Y-%m-%d"),
-                "time": entry.date_created.astimezone(
-                    ZoneInfo("America/Los_Angeles")
-                ).strftime("%H:%M"),
+                "date": entry.date_created.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d"),
+                "time": entry.date_created.astimezone(BC_TIMEZONE).strftime("%H:%M"),
                 "action": _build_action_text(entry),
             }
             for entry in continuation_report
