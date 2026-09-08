@@ -13,42 +13,12 @@
 # limitations under the License.
 """Datetime object helper."""
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-import pytz
-from flask import current_app
-
-
-def local_datetime():
-    """Get the local (Pacific Timezone) datetime."""
-    utcmoment = datetime.utcnow().replace(tzinfo=pytz.utc)
-    now = utcmoment.astimezone(pytz.timezone("US/Pacific"))
-    return now
-
-
-def utc_datetime():
-    """Get the UTC datetime."""
-    utcmoment = datetime.utcnow().replace(tzinfo=pytz.utc)
-    now = utcmoment.astimezone(pytz.timezone("UTC"))
-    return now
-
-
-def convert_and_format_to_utc_str(
-    date_val: datetime, dt_format="%Y-%m-%d %H:%M:%S", timezone_override=None
-):
-    """Convert a datetime object to UTC and format it as a string."""
-    tz_name = timezone_override or current_app.config["LEGISLATIVE_TIMEZONE"]
-    tz_local = pytz.timezone(tz_name)
-
-    # Assume the input datetime is in the local time zone
-    date_val = tz_local.localize(date_val)
-
-    # Convert to UTC
-    date_val_utc = date_val.astimezone(pytz.UTC)
-
-    # Format as a string
-    utc_datetime_str = date_val_utc.strftime(dt_format)
-
-    return utc_datetime_str
+# British Columbia local time. BC stays on UTC-7 year-round from 2026-11-01,
+# while the US Pacific zones keep falling back to UTC-8, so US/Pacific and
+# America/Los_Angeles are an hour out from November through March.
+BC_TIMEZONE = ZoneInfo("America/Vancouver")
 
 
 def convert_to_full_month_format(date_val: datetime):

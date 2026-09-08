@@ -2,7 +2,6 @@
 from datetime import datetime, time
 from io import BytesIO
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 from flask import current_app
@@ -30,6 +29,7 @@ from compliance_api.services.report.utils.utils import (
     sort_dataframe_for_pivot_order,
 )
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.utils.datetime import BC_TIMEZONE
 
 
 class CEBSummaryReportGenerator(BaseReportGenerator):
@@ -248,7 +248,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 "ir_progress": row.ir_progress.value if row.ir_progress else None,
                 "project_name": project_name,
                 "project_type": project_type,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "primary_officer": self._format_primary_officer_name(row),
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
@@ -287,7 +287,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 "enforcement_action": row.enforcement_action,
                 "enforcement_document_number": enforcement_document_number,
                 "enforcement_status": raw_enforcement_status.value if raw_enforcement_status else None,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "primary_officer": self._format_primary_officer_name(row),
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
@@ -328,7 +328,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 "enforcement_document_number": ServiceUtils.get_enforcement_number_by_type(row),
                 "condition_number": condition_num_string,
                 "requirement_source": source_string,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "primary_officer": self._format_primary_officer_name(row),
                 "inspection_status": row.inspection_status.value if row.inspection_status else None,
@@ -373,7 +373,7 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
                 "project_type": project_type,
                 "topic": row.topic,
                 "date_received":
-                    row.date_received.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                    row.date_received.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                     if row.date_received else None,
                 "complaint_source": row.complaint_source,
                 "complaint_source_details": complaint_source_details,

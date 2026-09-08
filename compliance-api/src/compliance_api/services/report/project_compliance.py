@@ -1,7 +1,6 @@
 """Project Compliance History Report Generator Service."""
 from datetime import datetime, time
 from io import BytesIO
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -32,6 +31,7 @@ from compliance_api.services.report.utils.shared_queries import (
     get_requirement_restorative_justice_sub_query, get_requirement_violation_ticket_sub_query,
     get_requirement_warning_letter_sub_query)
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.utils.datetime import BC_TIMEZONE
 
 from .base import BaseReportGenerator
 
@@ -291,9 +291,9 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 "ir_number": row.ir_number,
                 "topic_name": row.topic_name,
                 "summary": row.summary,
-                "start_date": row.start_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "start_date": row.start_date.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.start_date else None,
-                "end_date": row.end_date.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "end_date": row.end_date.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.end_date and row.start_date != row.end_date else None,
                 "initiation": row.initiation_name if row.initiation_name else row.initiation,
                 "ir_progress": row.ir_progress.value if row.ir_progress else None,
@@ -307,7 +307,7 @@ class ProjectComplianceReportGenerator(BaseReportGenerator):
                 "enforcement_document_number": ServiceUtils.get_enforcement_number_by_type(row),
                 "condition_number": condition_num_string,
                 "requirement_source": source_string,
-                "ir_issuance_date": row.ir_date_issued.astimezone(ZoneInfo("America/Los_Angeles")).strftime("%Y-%m-%d")
+                "ir_issuance_date": row.ir_date_issued.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
                 if row.ir_date_issued else None,
                 "primary_officer": f"{primary_officer.first_name} {primary_officer.last_name}"
                 if primary_officer else None,
