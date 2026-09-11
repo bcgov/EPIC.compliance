@@ -7,6 +7,9 @@ on:
       - 'release/*'
     paths:
       - "compliance-api/**"
+  push:
+    branches:
+      - develop
 
 defaults:
   run:
@@ -105,6 +108,16 @@ jobs:
         id: test
         run: |
           make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          flags: compliance-api
+          name: codecov-compliance-api
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./compliance-api/coverage.xml
 
   api-build:
     runs-on: ubuntu-24.04

@@ -77,6 +77,16 @@ jobs:
         run: |
           xvfb-run --auto-servernum npx cypress run --component --headed --browser chrome
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          flags: compliance-web
+          name: codecov-compliance-web
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./compliance-web/coverage
+
   build-check:
     needs: setup-job
     runs-on: ubuntu-latest

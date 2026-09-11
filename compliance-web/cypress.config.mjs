@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react-swc";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import istanbul from "vite-plugin-istanbul";
 import tsconfigPaths from "vite-tsconfig-paths";
+import codeCoverageTask from "@cypress/code-coverage/task.js";
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +14,9 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   component: {
+    setupNodeEvents(on, config) {
+      return codeCoverageTask(on, config);
+    },
     devServer: {
       framework: "react",
       bundler: "vite",
