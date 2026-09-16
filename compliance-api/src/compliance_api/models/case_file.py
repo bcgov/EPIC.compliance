@@ -96,7 +96,7 @@ class CaseFile(BaseModelVersioned):
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
 
     primary_officer = relationship(
-        "StaffUser", foreign_keys=[primary_officer_id], lazy="joined"
+        "StaffUser", foreign_keys=[primary_officer_id], lazy="select"
     )
     project = relationship("Project", foreign_keys=[project_id], lazy="joined")
     case_file_officers = relationship(
@@ -105,7 +105,7 @@ class CaseFile(BaseModelVersioned):
         lazy="select",
     )
     initiation = relationship(
-        "CaseFileInitiationOption", foreign_keys=[initiation_id], lazy="joined"
+        "CaseFileInitiationOption", foreign_keys=[initiation_id], lazy="select"
     )
 
     __table_args__ = (

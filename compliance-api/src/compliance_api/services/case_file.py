@@ -8,7 +8,7 @@ from io import BytesIO
 import pandas as pd
 from flask import g
 from sqlalchemy import String, and_, asc, case, cast, desc, func, not_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager
 
 from compliance_api.auth import auth
 from compliance_api.exceptions import (
@@ -36,6 +36,7 @@ from compliance_api.models.violation_ticket import ViolationTicket as ViolationT
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import WarningLetterProgressEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, UNAPPROVED_PROJECT_NAME
+from compliance_api.utils.util import check_export_size, parse_pagination
 from compliance_api.utils.enum import ContextEnum, PermissionEnum
 
 from .epic_track_service.track_service import TrackService
@@ -83,6 +84,7 @@ class CaseFileService:
         query = _apply_case_file_sorting(query, filter_data)
 
         # Get all case files without pagination
+        check_export_size(query.count())
         case_files = query.all()
 
         # Convert to list of dictionaries for pandas
@@ -784,8 +786,12 @@ def _build_base_query():
             CaseFileModel.id == UnapprovedProjectModel.case_file_id,
         )
         .options(
-            joinedload(CaseFileModel.initiation),
-            joinedload(CaseFileModel.primary_officer),
+            # The tables below are already joined above for filtering and
+            # sorting; contains_eager populates the relationships from those
+            # joins instead of joining them a second time.
+            contains_eager(CaseFileModel.initiation),
+            contains_eager(CaseFileModel.primary_officer),
+            contains_eager(CaseFileModel.project),
         )
         .filter(CaseFileModel.is_deleted.is_(False), CaseFileModel.is_active.is_(True))
     )
@@ -873,8 +879,7 @@ def _apply_case_file_sorting(query, args):
 
 def _apply_case_file_pagination(query, args):
     """Apply pagination to the case file query."""
-    page = int(args.get("page_no", 1))
-    per_page = int(args.get("page_size", 15))
+    page, per_page = parse_pagination(args)
 
     return query.offset((page - 1) * per_page).limit(per_page)
 

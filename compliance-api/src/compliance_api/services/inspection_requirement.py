@@ -64,6 +64,7 @@ from compliance_api.schemas.inspection_requirement_grid import InspectionRequire
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.document_service.doc_service_enum import ActionOnFileEnum
 from compliance_api.utils.sql_alchemy_utils import null_if_empty
+from compliance_api.utils.util import check_export_size, parse_pagination
 
 from .service_utils import ServiceUtils
 
@@ -91,10 +92,11 @@ class InspectionRequirementService:
     def generate_inspection_requirements_excel(cls, args):
         """Generate inspection requirements excel."""
         # Get and process query results
-        paginated_query = _build_inspection_requirements_query(
+        query, total_count = _build_inspection_requirements_query(
             args, enable_pagination=False
         )
-        query_results = paginated_query.all()
+        check_export_size(total_count)
+        query_results = query.all()
         processed_requirements = _process_inspection_requirement_query_results(
             query_results
         )
@@ -913,7 +915,31 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
     # Apply pagination if requested
     if enable_pagination:
         return _apply_pagination(base_query, args, subqueries, **models)
-    return base_query
+    return base_query, _distinct_requirement_count(base_query, **models)
+
+
+def _distinct_requirement_count(query, **kwargs):
+    """Count rows the grid will actually return.
+
+    The query fans out over enforcement documents, so a plain count of the base
+    query over-reports. Counting by requirement ID plus each enforcement
+    document ID matches the rows the grid and the export produce.
+    """
+    return (
+        query.with_entities(
+            kwargs["req"].id,
+            kwargs["enf_map"].enforcement_action_id,
+            # Include enforcement mapping IDs to distinguish different documents
+            kwargs["order"].id.label("order_id"),
+            kwargs["warning_letter"].id.label("warning_letter_id"),
+            kwargs["violation_ticket"].id.label("violation_ticket_id"),
+            kwargs["admin_penalty"].id.label("admin_penalty_id"),
+            kwargs["charge_rec"].id.label("charge_rec_id"),
+            kwargs["restorative_justice"].id.label("restorative_justice_id"),
+        )
+        .distinct()
+        .count()
+    )
 
 
 def _apply_requirement_filters(query, args, **kwargs):
@@ -1138,10 +1164,8 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         Tuple of (paginated_query, total_count)
     """
     # Extract pagination parameters
-    pg_params = {
-        "page": int(args.get("page_no", 1)),
-        "per_page": int(args.get("page_size", 15)),
-    }
+    page_no, page_size = parse_pagination(args)
+    pg_params = {"page": page_no, "per_page": page_size}
 
     # Group core model references
     core_models = {
@@ -1168,20 +1192,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         "restorative_justice": kwargs.get("restorative_justice"),
     }
 
-    # Get distinct count by requirement ID and specific enforcement document
-    # Include mapping table IDs to allow same requirement with multiple documents of same type
-    distinct_count_query = query.with_entities(
-        core_models["req"].id,
-        core_models["enf_map"].enforcement_action_id,
-        # Include enforcement mapping IDs to distinguish different documents
-        reference_models["order"].id.label("order_id"),
-        reference_models["warning_letter"].id.label("warning_letter_id"),
-        reference_models["violation_ticket"].id.label("violation_ticket_id"),
-        reference_models["admin_penalty"].id.label("admin_penalty_id"),
-        reference_models["charge_rec"].id.label("charge_rec_id"),
-        reference_models["restorative_justice"].id.label("restorative_justice_id"),
-    ).distinct()
-    total_count = distinct_count_query.count()
+    total_count = _distinct_requirement_count(query, **kwargs)
 
     # Create distinct query with all required columns
     # Use enforcement document IDs to allow same requirement with multiple documents

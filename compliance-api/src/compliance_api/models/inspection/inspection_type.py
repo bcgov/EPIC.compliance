@@ -35,7 +35,7 @@ class InspectionType(BaseModelVersioned):
         comment="The unique identifier of the inspection",
     )
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="select")
-    type = relationship("InspectionTypeOption", foreign_keys=[type_id], lazy="select")
+    type = relationship("InspectionTypeOption", foreign_keys=[type_id], lazy="selectin")
 
     @classmethod
     def get_all_by_inspection(cls, inspection_id: int):
