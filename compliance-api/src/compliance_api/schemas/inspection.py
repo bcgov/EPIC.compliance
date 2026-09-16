@@ -13,13 +13,14 @@
 # limitations under the License.
 """Inspection Schema Schema."""
 from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, pre_dump, pre_load, validates_schema
+from marshmallow.validate import Range
 from marshmallow_enum import EnumField
 
 from compliance_api.models.inspection import (
     Inspection, InspectionAttendance, InspectionAttendanceOptionEnum, InspectionOfficer, InspectionStatusEnum)
 from compliance_api.models.inspection_record import IRProgressEnum
 from compliance_api.models.inspection_record_approval import IRApprovalStatusEnum
-from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
+from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, MAX_PAGE_SIZE
 
 from .base_schema import AutoSchemaBase, BaseSchema
 from .case_file import CaseFileSchema
@@ -559,9 +560,12 @@ class InspectionFilterSchema(BaseSchema):
         load_default=1,
     )
     page_size = fields.Int(
-        metadata={"description": "Number of items per page"},
+        metadata={
+            "description": f"Number of items per page (max {MAX_PAGE_SIZE})"
+        },
         allow_none=True,
         load_default=15,
+        validate=Range(min=1, max=MAX_PAGE_SIZE),
     )
     sort_by = fields.Str(
         metadata={"description": "Field to sort by"},

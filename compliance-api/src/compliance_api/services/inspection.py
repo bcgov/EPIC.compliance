@@ -60,6 +60,7 @@ from compliance_api.models.warning_letter import WarningLetterStatusEnum
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.constant import UNAPPROVED_PROJECT_NAME
+from compliance_api.utils.util import check_export_size, parse_pagination
 from compliance_api.utils.enum import PermissionEnum
 
 from .epic_track_service.track_service import TrackService
@@ -467,6 +468,7 @@ class InspectionService:
         """Generate Excel export for inspections."""
         # Get all matching inspections without pagination
         query = _build_inspections_paginated_query(args)
+        check_export_size(query.count())
 
         # Execute query and process results
         results = _make_inspection_object(query.all())
@@ -913,12 +915,25 @@ def _set_project_statuses(inspection):
 
 
 def _set_first_nation_names(first_nation_list: list):
-    """Set the name of the first nations from epic.track."""
-    result = []
-    for first_nation in first_nation_list:
-        response = TrackService.get_first_nation_by_id(first_nation.firstnation_id)
-        result.append({"id": response.get("id"), "name": response.get("name")})
-    return result
+    """Set the name of the first nations from epic.track.
+
+    Resolves every name from a single EPIC.track request rather than one request
+    per first nation.
+    """
+    if not first_nation_list:
+        return []
+
+    names_by_id = {
+        first_nation.get("id"): first_nation.get("name")
+        for first_nation in TrackService.get_first_nations()
+    }
+    return [
+        {
+            "id": first_nation.firstnation_id,
+            "name": names_by_id.get(first_nation.firstnation_id),
+        }
+        for first_nation in first_nation_list
+    ]
 
 
 # pylint: disable=too-many-arguments
@@ -1213,8 +1228,7 @@ def _apply_inspections_sorting(query, args):
 
 def _apply_inspections_pagination(query, args):
     """Apply pagination to the inspections query."""
-    page = int(args.get("page_no", 1))
-    per_page = int(args.get("page_size", 15))
+    page, per_page = parse_pagination(args)
 
     return query.offset((page - 1) * per_page).limit(per_page)
 

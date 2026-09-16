@@ -13,12 +13,13 @@
 # limitations under the License.
 """Complaint Schema Schema."""
 from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, validates_schema
+from marshmallow.validate import Range
 from marshmallow_enum import EnumField
 
 from compliance_api.models import Complaint, ComplaintSourceContact, ComplaintStatusEnum
 from compliance_api.models.complaint import ComplaintSourceEnum
 from compliance_api.models.requirement_source import RequirementSourceEnum
-from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
+from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, MAX_PAGE_SIZE
 
 from .base_schema import AutoSchemaBase, BaseSchema
 from .case_file import CaseFileSchema
@@ -295,9 +296,12 @@ class ComplaintFilterSchema(BaseSchema):
         missing=1,
     )
     page_size = fields.Int(
-        metadata={"description": "Number of items per page"},
+        metadata={
+            "description": f"Number of items per page (max {MAX_PAGE_SIZE})"
+        },
         required=False,
         missing=15,
+        validate=Range(min=1, max=MAX_PAGE_SIZE),
     )
     sort_by = fields.Str(
         metadata={"description": "Field to sort by"},

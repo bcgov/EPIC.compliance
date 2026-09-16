@@ -22,6 +22,7 @@ from compliance_api.models.staff_user import StaffUser
 from compliance_api.services.case_file import CaseFileService
 from compliance_api.services.epic_track_service.track_service import TrackService
 from compliance_api.utils.constant import UNAPPROVED_PROJECT_NAME
+from compliance_api.utils.util import check_export_size, parse_pagination
 from compliance_api.utils.enum import PermissionEnum
 
 from .service_utils import ServiceUtils
@@ -226,6 +227,7 @@ class ComplaintService:
     def generate_complaints_excel(cls, args):
         """Generate Excel file for complaints with filtering."""
         query = _build_complaints_paginated_query(args)
+        check_export_size(query.count())
 
         # Get all results without pagination for export
         complaints = query.all()
@@ -604,8 +606,7 @@ def _apply_complaints_sorting(query, args):
 
 def _apply_complaints_pagination(query, args):
     """Apply pagination to the complaints query."""
-    page_no = int(args.get("page_no", 1))
-    page_size = int(args.get("page_size", 15))
+    page_no, page_size = parse_pagination(args)
 
     offset = (page_no - 1) * page_size
     query = query.offset(offset).limit(page_size)

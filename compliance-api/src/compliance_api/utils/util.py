@@ -17,6 +17,10 @@
 import os
 import re
 
+from compliance_api.exceptions import UnprocessableEntityError
+
+from compliance_api.utils.constant import DEFAULT_PAGE_SIZE, MAX_EXPORT_ROWS, MAX_PAGE_SIZE
+
 
 def allowedorigins():
     """Return allowed origin."""
@@ -50,3 +54,43 @@ def get_sorted_numbers_from_generated_code(codes: list[str], replace):
         expected += 1
 
     return expected
+
+
+def _parse_positive_int(args, key, default):
+    """Return args[key] as a positive integer, or raise if it is not one."""
+    raw = args.get(key, default)
+    if raw is None or raw == "":
+        return default
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        raise UnprocessableEntityError(  # pylint: disable=raise-missing-from
+            f"{key} must be a number"
+        )
+    if value < 1:
+        raise UnprocessableEntityError(f"{key} must be greater than 0")
+    return value
+
+
+def parse_pagination(args):
+    """Return validated (page_no, page_size) from raw request arguments.
+
+    The list endpoints hand the service ``request.args`` unvalidated, so this is
+    where the bounds are enforced rather than in a schema.
+    """
+    page_no = _parse_positive_int(args, "page_no", 1)
+    page_size = _parse_positive_int(args, "page_size", DEFAULT_PAGE_SIZE)
+    if page_size > MAX_PAGE_SIZE:
+        raise UnprocessableEntityError(
+            f"page_size cannot exceed {MAX_PAGE_SIZE}"
+        )
+    return page_no, page_size
+
+
+def check_export_size(total_count):
+    """Reject an export whose result set is too large to build in memory."""
+    if total_count > MAX_EXPORT_ROWS:
+        raise UnprocessableEntityError(
+            f"The export matches {total_count} rows, which exceeds the limit of "
+            f"{MAX_EXPORT_ROWS}. Narrow the filters and try again."
+        )
