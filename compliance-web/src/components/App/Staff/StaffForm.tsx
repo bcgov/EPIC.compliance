@@ -34,7 +34,13 @@ const StaffForm: React.FC<StaffFormProps> = ({
     const existingAuthUsernames = new Set(
       (staffUsersList ?? []).map((s) => s.auth_user_guid)
     );
-    return (authUsersList ?? []).filter((u) => !existingAuthUsernames.has(u.username));
+    return (authUsersList ?? []).filter(
+      (u) =>
+        u.username?.toLowerCase().endsWith("@idir") &&
+        u.first_name &&
+        u.last_name &&
+        !existingAuthUsernames.has(u.username)
+    );
   }, [authUsersList, staffUsersList, existingStaff]);
 
   return (

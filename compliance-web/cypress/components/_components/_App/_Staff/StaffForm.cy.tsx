@@ -15,14 +15,42 @@ const mockAuthUsers: AuthUser[] = [
     first_name: "John",
     last_name: "Doe",
     email_address: "",
-    username: "",
+    username: "jdoe@idir",
   },
   {
     id: "2",
     first_name: "Jane",
     last_name: "Smith",
     email_address: "",
-    username: "",
+    username: "jsmith@IDIR",
+  },
+  {
+    id: "3",
+    first_name: "John",
+    last_name: "Doe",
+    email_address: "",
+    username: "jdoe@bceidbasic",
+  },
+  {
+    id: "4",
+    first_name: "Azure",
+    last_name: "User",
+    email_address: "",
+    username: "auser@azureidir",
+  },
+  {
+    id: "5",
+    first_name: undefined as unknown as string,
+    last_name: undefined as unknown as string,
+    email_address: "",
+    username: "nameless@idir",
+  },
+  {
+    id: "6",
+    first_name: "Alice",
+    last_name: "Johnson",
+    email_address: "",
+    username: "ajohnson@idir",
   },
 ];
 
@@ -37,7 +65,13 @@ const mockPermissions: Permission[] = [
 ];
 
 const mockStaffUsers: StaffUser[] = [
-  { id: 1, name: "Alice Johnson", is_active: true, position_id: 3 },
+  {
+    id: 1,
+    name: "Alice Johnson",
+    is_active: true,
+    position_id: 3,
+    auth_user_guid: "ajohnson@idir",
+  },
   { id: 2, name: "Bob Brown", is_active: true, position_id: 2 },
 ];
 
@@ -94,6 +128,22 @@ describe("StaffForm Component", () => {
     cy.get('input[name="name"]').click();
     cy.get("li").contains("John Doe").click();
     cy.get('input[name="name"]').should("have.value", "John Doe");
+  });
+
+  it("lists only named IDIR users not already on staff", () => {
+    cy.get('input[name="name"]').click();
+    cy.get('[role="option"]').should("have.length", 2);
+    cy.get('[role="option"]').contains("John Doe").should("exist");
+    cy.get('[role="option"]').contains("Jane Smith").should("exist");
+    cy.get('[role="option"]').contains("Azure User").should("not.exist");
+    cy.get('[role="option"]').contains("undefined").should("not.exist");
+    cy.get('[role="option"]').contains("Alice Johnson").should("not.exist");
+  });
+
+  it("searches and selects an IDIR user", () => {
+    cy.get('input[name="name"]').type("Jane");
+    cy.get('[role="option"]').should("have.length", 1).contains("Jane Smith").click();
+    cy.get('input[name="name"]').should("have.value", "Jane Smith");
   });
 
   it("disables the 'Name' field if existingStaff is provided", () => {
