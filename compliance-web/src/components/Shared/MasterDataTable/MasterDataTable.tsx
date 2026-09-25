@@ -177,7 +177,9 @@ const MasterDataTable = <TData extends MRT_RowData>({
   const muiTableContainerProps = useCallback(
     () => ({
       sx: {
-        maxHeight: "100%",
+        flex: "1 1 auto",
+        minHeight: 0,
+        maxHeight: "none",
         marginTop: "1.5rem",
       },
     }),
@@ -241,6 +243,7 @@ const MasterDataTable = <TData extends MRT_RowData>({
     },
     muiTopToolbarProps: {
       sx: {
+        flexShrink: 0,
         p: 0,
         m: "-0.5rem",
         "& .MuiIconButton-root[aria-label='Show/Hide filters']": {
@@ -250,6 +253,7 @@ const MasterDataTable = <TData extends MRT_RowData>({
     },
     muiBottomToolbarProps: {
       sx: {
+        flexShrink: 0,
         boxShadow: "none",
         ...(isStackedTables && {
           display: "none",
@@ -258,6 +262,8 @@ const MasterDataTable = <TData extends MRT_RowData>({
     },
     muiTablePaperProps: {
       sx: {
+        display: "flex",
+        flexDirection: "column",
         boxShadow: "none",
         pb: "4rem",
         ...(isStackedTables && {
