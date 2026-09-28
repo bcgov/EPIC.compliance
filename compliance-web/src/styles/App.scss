@@ -1,3 +1,24 @@
+@font-face {
+  font-family: "BC Sans";
+  font-style: italic;
+  font-weight: 400;
+  src: url("@/assets/fonts/BCSans-Italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "BC Sans";
+  font-style: italic;
+  font-weight: 700;
+  src: url("@/assets/fonts/BCSans-BoldItalic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "BC Sans";
+  font-style: italic;
+  font-weight: 100;
+  src: url("@/assets/fonts/BCSans-LightItalic.woff2") format("woff2");
+}
+
 :root {
   font-family: "BC Sans";
   font-synthesis: none;
