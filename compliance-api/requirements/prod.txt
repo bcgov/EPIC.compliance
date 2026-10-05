@@ -19,7 +19,7 @@ itsdangerous
 werkzeug
 sqlalchemy-utils
 Flask-Caching
-sqlalchemy
+sqlalchemy==2.0.48
 secure>=1.0.0
 python-dotenv
 requests
