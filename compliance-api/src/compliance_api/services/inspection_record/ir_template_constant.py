@@ -88,13 +88,13 @@ ENFORCEMENT_SUMMARY = {
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Order
     {{ order_no }} has been issued under {{ section_no }} of the <i>{{ act }}</i> ({{ act_year }}).
     See {{ sort_order_line }} for further information.</p>""",
-    "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In Addition, the findings
+    "ADMINISTRATIVE_PENALTY": """<p class="editor-paragraph" dir="ltr">In addition, the findings
     for {{ sort_order_line }} may be referred to a decision maker for consideration of
-    an Administrative Penalty.</p>""",
+    an administrative penalty.</p>""",
     "ADMINISTRATIVE_PENALTY_STANDALONE": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. See {{ sort_order_line }} for
     further information. The findings for {{ sort_order_line }} may be referred to a decision maker
-    for consideration of an Administrative Penalty.</p>""",
+    for consideration of an administrative penalty.</p>""",
     "AGENCY": """<p class="editor-paragraph" dir="ltr">{{ number }} of {{ req_source_name }} of
     {{ eac }} was referred to {{ agency_name }}. See Requirement {{ req_sort_order }} for further
     information.</p>""",

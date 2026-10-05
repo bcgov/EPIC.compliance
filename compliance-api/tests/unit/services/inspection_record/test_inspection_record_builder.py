@@ -122,7 +122,7 @@ class TestEnforcementSummaryAPHandling:
 
         summary = self._build_enforcement_summary(created_inspection)
 
-        assert "In Addition" not in summary
+        assert "In addition" not in summary
 
     def test_standalone_ap_no_record_includes_non_compliance_statement(self, created_inspection, mocker):
         """Standalone AP with no AP record must generate a full non-compliance statement."""
@@ -136,7 +136,7 @@ class TestEnforcementSummaryAPHandling:
         assert "is not" in summary
         assert "compliant with" in summary
         assert "may be referred to a decision maker" in summary
-        assert "Administrative Penalty" in summary
+        assert "administrative penalty" in summary
 
     # -------------------------------------------------------------------------
     # Scenario 1b: Standalone AP — AP record exists
@@ -151,7 +151,7 @@ class TestEnforcementSummaryAPHandling:
 
         summary = self._build_enforcement_summary(created_inspection)
 
-        assert "In Addition" not in summary
+        assert "In addition" not in summary
 
     def test_standalone_ap_with_record_references_requirement_number(self, created_inspection, mocker):
         """Standalone AP summary must reference the correct requirement position number."""
@@ -181,12 +181,40 @@ class TestEnforcementSummaryAPHandling:
 
         assert "Requirement 3" in summary
 
+    def test_standalone_ap_no_record_lists_requirements_ascending(self, created_inspection, mocker):
+        """Requirements created out of order must be referenced in ascending order."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_ap_requirement(created_inspection.id, sort_order=2)
+        self._create_ap_requirement(created_inspection.id, sort_order=1)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Requirement 1, Requirement 2" in summary
+
+    def test_ap_record_lists_requirements_ascending(self, created_inspection, mocker):
+        """Requirements associated with an AP record out of order must be referenced in ascending order."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        later = self._create_ap_requirement(created_inspection.id, sort_order=2)
+        earlier = self._create_ap_requirement(created_inspection.id, sort_order=1)
+        ap = self._create_ap_record(created_inspection.id, later.id)
+        db.session.add(AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap.id,
+            inspection_requirement_id=earlier.id,
+        ))
+        db.session.commit()
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Requirement 1, Requirement 2" in summary
+
     # -------------------------------------------------------------------------
     # Scenario 2: AP alongside another special enforcement action
     # -------------------------------------------------------------------------
 
     def test_ap_with_warning_letter_uses_additive_phrasing(self, created_inspection, mocker):
-        """AP present alongside WARNING_LETTER must retain 'In Addition' phrasing."""
+        """AP present alongside WARNING_LETTER must retain 'In addition' phrasing."""
         mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
 
         ap_requirement = self._create_ap_requirement(created_inspection.id, sort_order=1)
@@ -195,7 +223,7 @@ class TestEnforcementSummaryAPHandling:
 
         summary = self._build_enforcement_summary(created_inspection)
 
-        assert "In Addition" in summary
+        assert "In addition" in summary
 
     def test_ap_linked_across_inspections_only_references_current_requirements(
         self, created_inspection, created_staff, mocker
