@@ -23,7 +23,7 @@ WARNING_LETTER_CONTENT = """<p class='editor-paragraph' dir='ltr'>
     On {{ inspection_details.start_date }}, {{inspection_details.officer_position}}
      {{ inspection_details.primary_officer_name }} conducted a {{inspection_details.inspection_type | lower }}
      inspection (Inspection) of the {{ project_details.name }} (Project) against the requirements of
-      {{ requirement_sources }}.
+      Environmental Assessment Certificate #{{ project_details.eac_certificate }} (Certificate).
       {% if condition_lines %}
       Based on review of information obtained during the Inspection, it was determined
        that the {{project_details.proponent_label}}, {{ project_details.proponent }} (the Holder) is not compliant
