@@ -1,4 +1,7 @@
 """Tests for InspectionRecordDataBuilder enforcement summary generation."""
+import copy
+from datetime import datetime
+
 from compliance_api.models import db
 from compliance_api.models.administrative_penalty import (
     AdministrativePenalty,
@@ -10,7 +13,9 @@ from compliance_api.models.inspection.inspection_req_enforcement_map import Insp
 from compliance_api.models.inspection.inspection_req_source_detail import InspectionReqSourceDetail
 from compliance_api.models.inspection_record import IRStatusEnum
 from compliance_api.models.requirement_source import RequirementSourceEnum
+from compliance_api.services import InspectionService
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
+from tests.utilities.factory_scenario import InspectionScenario
 
 
 class TestEnforcementSummaryAPHandling:
@@ -191,6 +196,47 @@ class TestEnforcementSummaryAPHandling:
         summary = self._build_enforcement_summary(created_inspection)
 
         assert "In Addition" in summary
+
+    def test_ap_linked_across_inspections_only_references_current_requirements(
+        self, created_inspection, created_staff, mocker
+    ):
+        """An AP shared with another inspection must not pull in that inspection's requirements."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        other_data = copy.copy(InspectionScenario.default_value.value)
+        other_data["case_file_id"] = created_inspection.case_file_id
+        other_data["primary_officer_id"] = created_staff.id
+        other_data["initiation_id"] = 1
+        other_data["start_date"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        other_inspection = InspectionService.create(other_data)
+
+        # The other inspection's Requirement 1 owns the AP.
+        other_requirement = self._create_ap_requirement(other_inspection.id, sort_order=1)
+        ap = self._create_ap_record(other_inspection.id, other_requirement.id)
+
+        # This inspection's Requirement 2 is linked to the existing AP.
+        db.session.add(InspectionRequirement(
+            inspection_id=created_inspection.id,
+            summary="Plain requirement",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REQ,
+            compliance_finding_id=1,
+            findings="finding",
+            sort_order=1,
+            is_active=True,
+            is_deleted=False,
+        ))
+        requirement = self._create_ap_requirement(created_inspection.id, sort_order=2)
+        db.session.add(AdministrativePenaltyInspectionRequirementMap(
+            administrative_penalty_id=ap.id,
+            inspection_requirement_id=requirement.id,
+        ))
+        db.session.commit()
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "Requirement 2" in summary
+        assert "Requirement 1" not in summary
 
 
 class TestRequirementNumberingWithRegulatoryConsideration:

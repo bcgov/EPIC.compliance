@@ -1,6 +1,6 @@
 """Inspection Record Data Builder."""
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from compliance_api.exceptions import UnprocessableEntityError
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
@@ -719,19 +719,24 @@ class InspectionRecordDataBuilder:
         map_model = object_map[action]["map_model"]
         foreign_key = object_map[action]["foreign_key"]
 
-        # Query with prefetching
+        # Query with prefetching. Items can be linked to requirements from other
+        # inspections, so only maps for this inspection's requirements are loaded.
         all_requirement_maps = (
             map_model.query
+            .join(map_model.inspection_requirement)
             .filter(
                 getattr(map_model, foreign_key).in_(item_ids),
                 map_model.is_deleted.is_(False),
                 map_model.is_active.is_(True),
+                InspectionRequirementModel.inspection_id == self.inspection.id,
+                InspectionRequirementModel.is_active.is_(True),
+                InspectionRequirementModel.is_deleted.is_(False),
             )
             .options(
-                joinedload(map_model.inspection_requirement)
+                contains_eager(map_model.inspection_requirement)
                 .joinedload(InspectionRequirementModel.requirement_source_details)
                 .joinedload(InspectionReqSourceDetail.requirement_source),
-                joinedload(map_model.inspection_requirement)
+                contains_eager(map_model.inspection_requirement)
                 .joinedload(InspectionRequirementModel.agency)
             )
             .all()
