@@ -392,9 +392,6 @@ def _create_content(inspection, requirement_ids, issuing_officer_id):
             "phone": department_details.phone,
         },
         "requirement_details": requirements,
-        "requirement_sources": ", ".join(
-            [requirement["requirement_source_name"] for requirement in requirements]
-        ),
         "condition_lines": condition_lines,
     }
 
