@@ -597,7 +597,7 @@ class InspectionRecordDataBuilder:
         grouped_requirements = {}
         sort_order_line = []
 
-        for requirement in requirements:
+        for requirement in sorted(requirements, key=lambda r: r.sort_order):
             if len(requirement.requirement_source_details) == 0:
                 raise UnprocessableEntityError(
                     f"Requirement {requirement.sort_order} doesn't have any requirement source details"
@@ -756,7 +756,10 @@ class InspectionRecordDataBuilder:
             if not requirement_maps:
                 continue
 
-            requirements = [req_map.inspection_requirement for req_map in requirement_maps]
+            requirements = sorted(
+                (req_map.inspection_requirement for req_map in requirement_maps),
+                key=lambda r: r.sort_order,
+            )
 
             grouped_requirements = {}
             sort_order_line = []
