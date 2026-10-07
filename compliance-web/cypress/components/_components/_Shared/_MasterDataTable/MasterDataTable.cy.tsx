@@ -190,4 +190,40 @@ describe("MasterDataTable horizontal scrolling", () => {
     });
     assertScrollbarVisible();
   });
+
+  it("lets the grid use the full page height when pagination is off", () => {
+    mountInPageLayout(manyRows);
+    cy.get("td").contains("a0").should("exist");
+    cy.get(".MuiTableContainer-root").then(($container) => {
+      const page = Cypress.$('[data-testid="page"]')[0];
+      // No empty bottom toolbar or padding below the rows.
+      expect(
+        page.getBoundingClientRect().bottom -
+          $container[0].getBoundingClientRect().bottom
+      ).to.be.at.most(1);
+    });
+    // The last record can be scrolled fully into view.
+    cy.get(".MuiTableContainer-root").scrollTo("bottomLeft");
+    cy.get("td").contains("a49").then(($cell) => {
+      const container = Cypress.$(".MuiTableContainer-root")[0];
+      expect($cell[0].getBoundingClientRect().bottom).to.be.at.most(
+        container.getBoundingClientRect().bottom
+      );
+    });
+  });
+
+  it("keeps the bottom pagination visible when pagination is on", () => {
+    mountInPageLayout(manyRows, {
+      enablePagination: true,
+      initialState: { pagination: { pageIndex: 0, pageSize: 25 } },
+    });
+    cy.get("td").contains("a0").should("exist");
+    cy.get(".MuiTablePagination-root").then(($pagination) => {
+      const page = Cypress.$('[data-testid="page"]')[0];
+      expect($pagination[0].getBoundingClientRect().bottom).to.be.at.most(
+        page.getBoundingClientRect().bottom
+      );
+    });
+    assertScrollbarVisible();
+  });
 });
