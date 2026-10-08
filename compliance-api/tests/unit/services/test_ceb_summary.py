@@ -5,6 +5,8 @@ import pytest
 
 from compliance_api.models import db
 from compliance_api.models.case_file import CaseFile
+from compliance_api.models.complaint.complaint import Complaint, ComplaintStatusEnum
+from compliance_api.models.complaint.complaint_option import ComplaintSource, ComplaintSourceEnum
 from compliance_api.models.inspection.inspection_req_enforcement_map import InspectionReqEnforcementMap
 from compliance_api.models.inspection.inspection_attendance import InspectionAttendance
 from compliance_api.models.inspection.inspection_firstnation import InspectionFirstnation
@@ -27,6 +29,7 @@ class TestCEBSummaryReportGenerator:
     def setup(self):
         """Fixture to execute before and after each test."""
         self.insp_req = self._create_test_inspection_requirement()
+        self.complaints = []
         yield
         self._clean_up_database()
 
@@ -61,6 +64,68 @@ class TestCEBSummaryReportGenerator:
         generator = ceb_summary.CEBSummaryReportGenerator({"end_date": datetime.now() - timedelta(days=10)})
         results = generator._build_inspections_tab_query().all()
         assert len(results) == 0
+
+    def test_build_complaints_tab_query_includes_complaint_received_within_date_range(self):
+        """Test complaints tab query includes complaints received within the date range."""
+        complaint = self._create_test_complaint(datetime.now() + timedelta(days=152))
+        generator = ceb_summary.CEBSummaryReportGenerator({
+            "start_date": datetime.now() + timedelta(days=150),
+            "end_date": datetime.now() + timedelta(days=153)
+        })
+        results = generator._build_complaints_tab_query().all()
+        assert complaint.complaint_number in [row.complaint_number for row in results]
+
+    def test_build_complaints_tab_query_excludes_complaint_received_before_start_date(self):
+        """Test complaints tab query excludes complaints received before the start date."""
+        complaint = self._create_test_complaint(datetime.now() + timedelta(days=149))
+        generator = ceb_summary.CEBSummaryReportGenerator({
+            "start_date": datetime.now() + timedelta(days=150),
+            "end_date": datetime.now() + timedelta(days=153)
+        })
+        results = generator._build_complaints_tab_query().all()
+        assert complaint.complaint_number not in [row.complaint_number for row in results]
+
+    def test_build_complaints_tab_query_excludes_complaint_received_after_end_date(self):
+        """Test complaints tab query excludes complaints received after the end date."""
+        complaint = self._create_test_complaint(datetime.now() + timedelta(days=154))
+        generator = ceb_summary.CEBSummaryReportGenerator({
+            "start_date": datetime.now() + timedelta(days=150),
+            "end_date": datetime.now() + timedelta(days=153)
+        })
+        results = generator._build_complaints_tab_query().all()
+        assert complaint.complaint_number not in [row.complaint_number for row in results]
+
+    def _create_test_complaint(self, date_received):
+        """Create a complaint received on the given date."""
+        case_file = CaseFile(
+            date_created=datetime.now(),
+            case_file_number=fake.pystr(min_chars=5, max_chars=10),
+            initiation_id=1
+        )
+        db.session.add(case_file)
+        db.session.flush()
+
+        complaint_source = db.session.query(ComplaintSource).filter(
+            ComplaintSource.name == ComplaintSourceEnum.PUBLIC.value
+        ).first()
+        if not complaint_source:
+            complaint_source = ComplaintSource(name=ComplaintSourceEnum.PUBLIC.value)
+            db.session.add(complaint_source)
+            db.session.flush()
+
+        complaint = Complaint(
+            case_file_id=case_file.id,
+            date_received=date_received,
+            source_type_id=complaint_source.id,
+            concern_description=fake.text(max_nb_chars=200),
+            status=ComplaintStatusEnum.OPEN,
+            complaint_number=fake.pystr(min_chars=5, max_chars=10),
+        )
+        db.session.add(complaint)
+        db.session.commit()
+        self.complaints.append(complaint)
+
+        return complaint
 
     def _create_test_inspection_requirement(self):
         """Create an inspection requirement for testing."""
@@ -146,4 +211,5 @@ class TestCEBSummaryReportGenerator:
             InspectionReqEnforcementMap.requirement_id == self.insp_req.id
         ).delete()
         db.session.query(InspectionRequirement).where(InspectionRequirement.id == self.insp_req.id).delete()
+        db.session.query(Complaint).where(Complaint.id.in_([c.id for c in self.complaints])).delete()
         db.session.commit()
