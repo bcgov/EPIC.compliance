@@ -204,6 +204,10 @@ const MasterDataTable = <TData extends MRT_RowData>({
     enablePinning: true,
     // Enable pagination for remote data
     enablePagination: remoteDataConfig?.enableRemoteData ?? false,
+    enableBottomToolbar:
+      otherProps.enablePagination ??
+      remoteDataConfig?.enableRemoteData ??
+      false,
     positionActionsColumn: "last",
 
     // Remote data configuration
@@ -265,10 +269,6 @@ const MasterDataTable = <TData extends MRT_RowData>({
         display: "flex",
         flexDirection: "column",
         boxShadow: "none",
-        pb: "4rem",
-        ...(isStackedTables && {
-          pb: "0",
-        }),
       },
     },
     muiTableProps: {
