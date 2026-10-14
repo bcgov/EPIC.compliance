@@ -226,6 +226,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             Complaint.is_deleted.is_(False),
             CaseFile.is_active.is_(True),
             CaseFile.is_deleted.is_(False),
+            Complaint.date_received >= self.start_date if self.start_date else True,
+            Complaint.date_received <= self.end_date if self.end_date else True,
         ).order_by(Complaint.id)
 
         return query
