@@ -128,6 +128,17 @@ const issueWarningLetter = ({
   });
 };
 
+const rescindWarningLetter = ({
+  inspectionWarningLetterId,
+}: {
+  inspectionWarningLetterId: number;
+}) => {
+  return request({
+    url: `/warning-letters/${inspectionWarningLetterId}/rescind`,
+    method: "post",
+  });
+};
+
 const deleteInspectionWarningLetter = ({
   inspectionWarningLetterId,
 }: {
@@ -224,6 +235,13 @@ export const useIssueWarningLetter = (onSuccess: OnSuccessType) => {
 export const useDeleteWarningLetter = (onSuccess: OnSuccessType) => {
   return useMutation({
     mutationFn: deleteInspectionWarningLetter,
+    onSuccess,
+  });
+};
+
+export const useRescindWarningLetter = (onSuccess: OnSuccessType) => {
+  return useMutation({
+    mutationFn: rescindWarningLetter,
     onSuccess,
   });
 };

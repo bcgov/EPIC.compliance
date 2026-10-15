@@ -7,8 +7,10 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from urllib.parse import urljoin
 
-from compliance_api.models import db
-from compliance_api.models.warning_letter import WarningLetter, WarningLetterProgressEnum, WarningLetterStatusEnum
+from compliance_api.models import InspectionRequirement, InspectionRequirementTypeEnum, db
+from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum, IRStatusEnum
+from compliance_api.models.warning_letter import (
+    WarningLetter, WarningLetterInspectionRequirementMap, WarningLetterProgressEnum, WarningLetterStatusEnum)
 from tests.utilities.factory_scenario.warning_letter_scenario import WarningLetterScenario
 
 
@@ -380,6 +382,157 @@ def test_delete_warning_letter_with_invalid_id(client, auth_header_super_user):
     url = urljoin(API_BASE_URL, "9999")
     result = client.delete(url, headers=auth_header_super_user)
     assert result.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_rescind_warning_letter_success(
+    client, auth_header_super_user, created_warning_letter_issued
+):
+    """Test rescinding an ISSUED warning letter deletes it and unlinks its requirements."""
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_issued.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    assert WarningLetter.find_by_id(created_warning_letter_issued.id) is None
+    assert not WarningLetterInspectionRequirementMap.get_by_warning_letter_id(
+        created_warning_letter_issued.id
+    )
+
+
+def test_rescind_merged_warning_letter_unlinks_all_requirements(
+    client,
+    auth_header_super_user,
+    created_warning_letter_issued,
+    created_warning_letter_inspection_requirement,
+):
+    """Test rescinding a warning letter linked to several requirements unlinks all of them."""
+    second_requirement = InspectionRequirement(
+        inspection_id=created_warning_letter_issued.inspection_id,
+        summary="Second warning letter requirement",
+        topic_id=1,
+        req_type=InspectionRequirementTypeEnum.REQ,
+        compliance_finding_id=1,
+        sort_order=2,
+    )
+    db.session.add(second_requirement)
+    db.session.flush()
+    db.session.add(
+        WarningLetterInspectionRequirementMap(
+            warning_letter_id=created_warning_letter_issued.id,
+            inspection_requirement_id=second_requirement.id,
+        )
+    )
+    db.session.commit()
+
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_issued.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    for requirement_id in (
+        created_warning_letter_inspection_requirement.id,
+        second_requirement.id,
+    ):
+        assert not WarningLetterInspectionRequirementMap.get_by_requirement_id(
+            requirement_id
+        )
+
+
+def test_rescind_warning_letter_not_issued_restriction(
+    client, auth_header_super_user, created_warning_letter_drafting
+):
+    """Test that only ISSUED warning letters can be rescinded."""
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_drafting.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert not WarningLetter.find_by_id(created_warning_letter_drafting.id).is_deleted
+
+
+def test_rescind_warning_letter_issued_ir_restriction(
+    client, auth_header_super_user, created_warning_letter_issued
+):
+    """Test that a warning letter cannot be rescinded until the issued IR is reopened."""
+    db.session.add(
+        InspectionRecord(
+            inspection_id=created_warning_letter_issued.inspection_id,
+            ir_status_id=IRStatusEnum.FINAL.value,
+            ir_progress=IRProgressEnum.ISSUED,
+            date_issued=datetime.now(timezone.utc),
+        )
+    )
+    db.session.commit()
+
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_issued.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert not WarningLetter.find_by_id(created_warning_letter_issued.id).is_deleted
+
+
+def test_rescind_warning_letter_reopened_ir(
+    client, auth_header_super_user, created_warning_letter_issued
+):
+    """Test that a warning letter can be rescinded once the IR has been reopened."""
+    db.session.add(
+        InspectionRecord(
+            inspection_id=created_warning_letter_issued.inspection_id,
+            ir_status_id=IRStatusEnum.FINAL.value,
+            ir_progress=IRProgressEnum.FINALIZING_RECORD,
+        )
+    )
+    db.session.commit()
+
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_issued.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+    assert WarningLetter.find_by_id(created_warning_letter_issued.id) is None
+
+
+def test_rescind_warning_letter_number_is_reused(
+    client,
+    auth_header_super_user,
+    created_inspection,
+    created_warning_letter_inspection_requirement,
+):
+    """Test that the number of a rescinded warning letter is given to the next warning letter."""
+    wl_data = copy.copy(WarningLetterScenario.auto_number_value.value)
+    wl_data["inspection_id"] = created_inspection.id
+    wl_data["issuing_officer_id"] = created_inspection.primary_officer_id
+    wl_data["inspection_requirement_ids"] = [
+        created_warning_letter_inspection_requirement.id
+    ]
+    created = client.post(
+        API_BASE_URL, data=json.dumps(wl_data), headers=auth_header_super_user
+    )
+    assert created.status_code == HTTPStatus.CREATED
+    warning_letter = WarningLetter.find_by_id(created.json["id"])
+    warning_letter.status = WarningLetterStatusEnum.ISSUED
+    warning_letter.progress = WarningLetterProgressEnum.ISSUED
+    db.session.commit()
+
+    url = urljoin(API_BASE_URL, f"{warning_letter.id}/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NO_CONTENT
+
+    recreated = client.post(
+        API_BASE_URL, data=json.dumps(wl_data), headers=auth_header_super_user
+    )
+    assert recreated.status_code == HTTPStatus.CREATED
+    assert (
+        recreated.json["warning_letter_number"]
+        == created.json["warning_letter_number"]
+    )
+
+
+def test_rescind_warning_letter_with_invalid_id(client, auth_header_super_user):
+    """Test rescinding non-existent warning letter."""
+    url = urljoin(API_BASE_URL, "9999/rescind")
+    result = client.post(url, headers=auth_header_super_user)
+    assert result.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_rescind_warning_letter_unauthorized(client, created_warning_letter_issued):
+    """Test rescinding a warning letter without authorization."""
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_issued.id}/rescind")
+    result = client.post(url)
+    assert result.status_code == HTTPStatus.UNAUTHORIZED
 
 
 def test_issue_warning_letter_success(

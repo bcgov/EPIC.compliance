@@ -5,6 +5,8 @@ import {
   defaultRequirementDeleteWarning,
   EnforcementActionEnum,
   hasLinkedEnforcementDeleteWarning,
+  IRProgressEnum,
+  WarningLetterStatusEnum,
 } from "@/utils/constants";
 import * as yup from "yup";
 import dateUtils from "@/utils/dateUtils";
@@ -321,6 +323,22 @@ export const partitionEnforcementsByOrigin = <T extends { inspection_id: number 
   }
   return createdEnforcements;
 }
+
+export const canRescindWarningLetter = ({
+  warningLetter,
+  isReadonlyMode,
+  irProgressId,
+  isPrimaryOfficerOrSuperUser,
+}: {
+  warningLetter: InspectionWarningLetter;
+  isReadonlyMode?: boolean;
+  irProgressId?: IRProgressEnum;
+  isPrimaryOfficerOrSuperUser: boolean;
+}): boolean =>
+  warningLetter.status?.id === WarningLetterStatusEnum.ISSUED &&
+  !isReadonlyMode &&
+  irProgressId !== IRProgressEnum.ISSUED &&
+  isPrimaryOfficerOrSuperUser;
 
 // Enforcement type constants
 export const ENFORCEMENT_TYPES = {
