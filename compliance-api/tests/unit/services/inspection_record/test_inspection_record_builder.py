@@ -419,3 +419,63 @@ class TestRequirementNumberingWithRegulatoryConsideration:
         summary = self._build_enforcement_summary(created_inspection)
 
         assert "Regulatory Considerations" not in summary
+
+
+class TestInspectionScopeRequirementSource:
+    """Tests for the requirement source cited in build_inspection_scope."""
+
+    def _create_requirement(self, inspection_id, requirement_source_id, source_title):
+        """Create a requirement with a single section-numbered source detail."""
+        requirement = InspectionRequirement(
+            inspection_id=inspection_id,
+            summary="dust control",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REQ,
+            compliance_finding_id=1,
+            findings="finding",
+            sort_order=1,
+            is_active=True,
+            is_deleted=False,
+        )
+        db.session.add(requirement)
+        db.session.flush()
+        db.session.add(InspectionReqSourceDetail(
+            requirement_id=requirement.id,
+            requirement_source_id=requirement_source_id,
+            section_number="12.4",
+            source_title=source_title,
+            description="source description",
+        ))
+        db.session.commit()
+
+    def _build_inspection_scope(self, inspection):
+        """Run build_inspection_scope and return the rendered scope."""
+        builder = InspectionRecordDataBuilder(inspection, IRStatusEnum.PRELIMINARY.value)
+        builder.build_inspection_scope()
+        return builder.data["inspection_scope"]
+
+    def test_other_source_cites_source_title(self, created_inspection, mocker):
+        """When the source is Other, the scope cites the entered Source Title."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(
+            created_inspection.id, RequirementSourceEnum.OTHER.value, "Order in Council 296/2026"
+        )
+
+        scope = self._build_inspection_scope(created_inspection)
+
+        assert "Section 12.4 of Order in Council 296/2026 with respect to dust control" in scope
+        assert "of Other" not in scope
+
+    def test_non_other_source_keeps_source_name(self, created_inspection, mocker):
+        """Sources other than Other keep citing the requirement source name."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(
+            created_inspection.id, RequirementSourceEnum.ACT_2018.value, "Some Title"
+        )
+
+        scope = self._build_inspection_scope(created_inspection)
+
+        assert "Some Title" not in scope
+        assert "with respect to dust control" in scope

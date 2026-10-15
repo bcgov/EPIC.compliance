@@ -21,6 +21,7 @@ from compliance_api.models.inspection_record_approval import InspectionRecordApp
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap as OrderInspectionRequirementMapModel
 from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnum
+from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
@@ -308,8 +309,17 @@ class InspectionRecordDataBuilder:
                         first_rq_detail
                     )
 
+                    #  For "Other", cite the officer-entered source title instead of the label
+                    source_name = first_rq_detail.requirement_source.name
+                    if (
+                        first_rq_detail.requirement_source_id
+                        == RequirementSourceEnum.OTHER.value
+                        and first_rq_detail.source_title
+                    ):
+                        source_name = first_rq_detail.source_title
+
                     requirement_lines.append(
-                        f"{number} of {first_rq_detail.requirement_source.name} with respect to {requirement.summary}"
+                        f"{number} of {source_name} with respect to {requirement.summary}"
                     )
 
         inspection_scope_data["requirements"] = requirement_lines
