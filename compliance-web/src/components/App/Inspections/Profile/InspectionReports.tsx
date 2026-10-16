@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Inspection } from "@/models/Inspection";
 import {
   Box,
@@ -34,8 +34,8 @@ const InspectionReports: React.FC<InspectionReportsProps> = ({
     useReportStore();
   const [reportVersion, setReportVersion] = useState<string>("");
 
-  // Drop anything left over from a previously viewed inspection before this record loads.
-  useEffect(() => {
+  // Layout effect so the previous inspection's data is cleared before child effects store this one's.
+  useLayoutEffect(() => {
     const { inspectionReportsData: storedReport, inspectionData: storedInspection } =
       useReportStore.getState();
     const storedInspectionId =
