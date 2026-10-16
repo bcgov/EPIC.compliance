@@ -174,7 +174,8 @@ class InspectionRecordApprovalService:
         """Reopen an issued/approved IR: clear date_issued, revert ir_progress and deactivate the approval.
 
         Performed atomically so ir_progress can never regress without the
-        corresponding approval being deactivated (or vice versa).
+        corresponding approval being deactivated (or vice versa). Historical
+        inspections keep their approval and return to FINAL_APPROVED.
         """
         inspection = ServiceUtils.inspection_exist_check(inspection_id)
         inspection_record = ServiceUtils.inspection_record_exist_check(
@@ -190,22 +191,27 @@ class InspectionRecordApprovalService:
             )
         if latest_approval.approval_status != IRApprovalStatusEnum.APPROVED:
             raise UnprocessableEntityError("Only an approved IR can be reopened")
-        ir_progress = (
-            IRProgressEnum.PRELIMINARY_DRAFTING
-            if inspection_record.ir_status_id == IRStatusEnum.PRELIMINARY.value
-            else IRProgressEnum.FINALIZING_RECORD
-        )
+        # Historical inspections have no DDO approval workflow, so the existing
+        # approval stays active and the IR goes straight back to FINAL_APPROVED
+        # where it can be issued again.
+        if inspection.is_history:
+            ir_progress = IRProgressEnum.FINAL_APPROVED
+        elif inspection_record.ir_status_id == IRStatusEnum.PRELIMINARY.value:
+            ir_progress = IRProgressEnum.PRELIMINARY_DRAFTING
+        else:
+            ir_progress = IRProgressEnum.FINALIZING_RECORD
         with session_scope() as session:
             updated_ir = InspectionRecordModel.update_inspection_record(
                 inspection_record_id=inspection_record_id,
                 ir_update_data={"ir_progress": ir_progress, "date_issued": None},
                 session=session,
             )
-            InspectionRecordApprovalModel.update_approval(
-                approval_id=approval_id,
-                approval_update_data={"is_active": False},
-                session=session,
-            )
+            if not inspection.is_history:
+                InspectionRecordApprovalModel.update_approval(
+                    approval_id=approval_id,
+                    approval_update_data={"is_active": False},
+                    session=session,
+                )
         return updated_ir
 
     @classmethod
