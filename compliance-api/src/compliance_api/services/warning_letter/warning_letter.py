@@ -2,20 +2,24 @@
 
 from typing import List
 
+from flask import current_app
+
 from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
 from compliance_api.models.db import session_scope
 from compliance_api.models.department_detail import DepartmentDetail as DepartmentDetailModel
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
+from compliance_api.models.inspection_record import InspectionRecord as InspectionRecordModel
+from compliance_api.models.inspection_record import IRProgressEnum
 from compliance_api.models.staff_user import StaffUser as StaffUserModel
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
 from compliance_api.models.warning_letter import \
     WarningLetterInspectionRequirementMap as WarningLetterInspectionRequirementMapModel
 from compliance_api.models.warning_letter import WarningLetterProgressEnum, WarningLetterStatusEnum
+from compliance_api.models.warning_letter_approval import WarningLetterApproval as WarningLetterApprovalModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.service_utils import ServiceUtils
-from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
 from compliance_api.services.warning_letter.warning_letter_template_constant import WARNING_LETTER_CONTENT
 from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
 from compliance_api.utils.datetime import convert_to_full_month_format
@@ -121,19 +125,46 @@ class WarningLetterService:
         if warning_letter.status == WarningLetterStatusEnum.ISSUED:
             raise UnprocessableEntityError("Warning letter is in ISSUED status.")
         with session_scope() as session:
-            approvals = WarningLetterApprovalService.get_all_approvals(
-                warning_letter_id
+            cls.soft_delete(warning_letter_id, session)
+
+    @classmethod
+    def rescind_warning_letter(cls, warning_letter_id: int) -> None:
+        """Rescind an issued warning letter."""
+        warning_letter = ServiceUtils.warning_letter_exist_check(warning_letter_id)
+        ServiceUtils.access_check_update_for_inspection(warning_letter.inspection)
+        ServiceUtils.inspection_status_check(warning_letter.inspection)
+        if warning_letter.status != WarningLetterStatusEnum.ISSUED:
+            raise UnprocessableEntityError(
+                "Only an issued warning letter can be rescinded."
             )
-            for approval in approvals:
-                approval.update({"is_active": False, "is_deleted": True}, session)
-            WarningLetterInspectionRequirementMapModel.delete_by_warning_letter(
-                warning_letter_id, session
+        inspection_record = InspectionRecordModel.get_by_inspection_id(
+            warning_letter.inspection_id
+        )
+        if inspection_record and inspection_record.ir_progress == IRProgressEnum.ISSUED:
+            raise UnprocessableEntityError(
+                "Reopen the inspection record before rescinding the warning letter."
             )
-            WarningLetterModel.update_warning_letter(
-                warning_letter_id,
-                {"is_active": False, "is_deleted": True},
-                session,
-            )
+        with session_scope() as session:
+            cls.soft_delete(warning_letter_id, session)
+        current_app.logger.info(
+            f"Warning letter {warning_letter.warning_letter_number} (id {warning_letter_id}) rescinded"
+        )
+
+    @classmethod
+    def soft_delete(cls, warning_letter_id: int, session) -> None:
+        """Soft delete a warning letter with its approvals and requirement links."""
+        for approval in WarningLetterApprovalModel.get_approvals_by_warning_letter(
+            warning_letter_id
+        ):
+            approval.update({"is_active": False, "is_deleted": True}, commit=False)
+        WarningLetterInspectionRequirementMapModel.delete_by_warning_letter(
+            warning_letter_id, session
+        )
+        WarningLetterModel.update_warning_letter(
+            warning_letter_id,
+            {"is_active": False, "is_deleted": True},
+            session,
+        )
 
     @classmethod
     def insert_or_update_inspection_requirements(

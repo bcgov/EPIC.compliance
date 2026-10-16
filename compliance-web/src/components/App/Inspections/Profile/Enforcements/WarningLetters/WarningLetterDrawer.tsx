@@ -19,12 +19,14 @@ import {
 } from "@/models/InspectionWarningLetter";
 import {
   useDeleteWarningLetter,
+  useRescindWarningLetter,
   useResetWarningLetterTemplate,
   useUpdateWarningLetter,
 } from "@/hooks/useInspectionWarningLetters";
 import EnforcementDownloadPDFButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadPDFButton";
 import {
   EnforcementActionEnum,
+  IRProgressEnum,
   WarningLetterProgressEnum,
   WarningLetterStatusEnum,
 } from "@/utils/constants";
@@ -34,6 +36,14 @@ import { RestartAltRounded } from "@mui/icons-material";
 import ConfirmationModal from "@/components/Shared/Popups/ConfirmationModal";
 import { useModal } from "@/store/modalStore";
 import { useQueryClient } from "@tanstack/react-query";
+import { canRescindWarningLetter } from "@/components/App/Inspections/Profile/Enforcements/EnforcementUtils";
+import { useInspectionReportsData } from "@/hooks/useInspectionReports";
+import { useStaffUsersData } from "@/hooks/useStaff";
+import {
+  KC_USER_GROUPS,
+  useCurrentLoggedInUser,
+  useIsRolesAllowed,
+} from "@/hooks/useAuthorization";
 
 type WarningLetterDrawerProps = {
   onSubmit: (submitMsg: string, isCloseDrawer?: boolean) => void;
@@ -175,6 +185,76 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
     });
   }, [deleteWarningLetter, warningLetter.id]);
 
+  const { data: staffData } = useStaffUsersData();
+  const currentUser = useCurrentLoggedInUser();
+  const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
+  const { data: inspectionReportsData } = useInspectionReportsData(
+    inspection.id
+  );
+
+  const isPrimaryOfficerOrSuperUser = useMemo(() => {
+    const currentUserStaffId = staffData?.find(
+      (staff) => staff.auth_user_guid === currentUser?.preferred_username
+    )?.id;
+    return (
+      isSuperUser ||
+      (!!currentUserStaffId &&
+        inspection.primary_officer_id === currentUserStaffId)
+    );
+  }, [staffData, currentUser, isSuperUser, inspection.primary_officer_id]);
+
+  const isShowRescindButton = useMemo(
+    () =>
+      canRescindWarningLetter({
+        warningLetter,
+        isReadonlyMode,
+        irProgressId: inspectionReportsData?.ir_progress?.id as
+          | IRProgressEnum
+          | undefined,
+        isPrimaryOfficerOrSuperUser,
+      }),
+    [
+      warningLetter,
+      isReadonlyMode,
+      inspectionReportsData,
+      isPrimaryOfficerOrSuperUser,
+    ]
+  );
+
+  const onRescindSuccess = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: ["inspection-requirements", inspection.id],
+    });
+    onSubmit("Warning letter rescinded", true);
+  }, [onSubmit, queryClient, inspection.id]);
+
+  const { mutate: rescindWarningLetter } =
+    useRescindWarningLetter(onRescindSuccess);
+
+  const onRescindWarningLetter = useCallback(() => {
+    setModalOpen({
+      content: (
+        <ConfirmationModal
+          title="Rescind Warning Letter?"
+          description={`You are about to rescind Warning Letter ${warningLetter.warning_letter_number}. It will be deleted and the enforcement action of its requirements can be changed. Are you sure?`}
+          confirmButtonText="Rescind"
+          onConfirm={() => {
+            rescindWarningLetter({
+              inspectionWarningLetterId: warningLetter.id || 0,
+            });
+            setModalClose();
+          }}
+        />
+      ),
+    });
+  }, [
+    rescindWarningLetter,
+    warningLetter.id,
+    warningLetter.warning_letter_number,
+    setModalOpen,
+    setModalClose,
+  ]);
+
   const { mutate: resetWarningLetterTemplate } =
     useResetWarningLetterTemplate(onSuccess);
 
@@ -241,6 +321,11 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
                 warningLetter={warningLetter}
                 inspectionId={inspection.id}
               />
+            )}
+            {isShowRescindButton && (
+              <Button color="secondary" onClick={onRescindWarningLetter}>
+                Rescind Warning Letter
+              </Button>
             )}
             <EnforcementDownloadPDFButton
               enforcementId={warningLetter.id || 0}

@@ -222,6 +222,22 @@ class WarningLetterIssue(Resource):
         return {}, HTTPStatus.NO_CONTENT
 
 
+@API.route("/<int:warning_letter_id>/rescind", methods=["POST"])
+@API.doc(params={"warning_letter_id": "The unique identifier for the warning letter"})
+class WarningLetterRescind(Resource):
+    """Rescind an issued warning letter."""
+
+    @staticmethod
+    @auth.require
+    @API.response(404, "Not Found")
+    @ApiHelper.swagger_decorators(API, endpoint_description="Rescind warning letter")
+    @API.response(code=204, description="Warning letter rescinded")
+    def post(warning_letter_id):
+        """Rescind Warning Letter."""
+        WarningLetterService.rescind_warning_letter(warning_letter_id)
+        return {}, HTTPStatus.NO_CONTENT
+
+
 @API.route("/<int:warning_letter_id>/render", methods=["POST"])
 class WarningLetterPreview(Resource):
     """Resource for managing warning letter preview and pdf."""

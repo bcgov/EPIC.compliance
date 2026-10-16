@@ -63,6 +63,7 @@ from compliance_api.models.warning_letter import WarningLetterStatusEnum
 from compliance_api.schemas.inspection_requirement_grid import InspectionRequirementGridItemSchema
 from compliance_api.services.document_service.doc_service import DocService
 from compliance_api.services.document_service.doc_service_enum import ActionOnFileEnum
+from compliance_api.services.warning_letter.warning_letter import WarningLetterService
 from compliance_api.utils.sql_alchemy_utils import null_if_empty
 from compliance_api.utils.util import check_export_size, parse_pagination
 
@@ -2424,16 +2425,7 @@ def _cleanup_warning_letters(requirement, session):
             warning_letter_ids_to_reset.append(warning_letter.id)
             continue
         # Only this requirement was linked: delete the warning letter and its approvals.
-        for approval in WarningLetterApprovalModel.get_approvals_by_warning_letter(
-            warning_letter.id
-        ):
-            approval.update({"is_active": False, "is_deleted": True}, commit=False)
-        WarningLetterInspectionRequirementMapModel.delete_by_warning_letter(
-            warning_letter.id, session
-        )
-        WarningLetterModel.update_warning_letter(
-            warning_letter.id, {"is_active": False, "is_deleted": True}, session
-        )
+        WarningLetterService.soft_delete(warning_letter.id, session)
     return warning_letter_ids_to_reset
 
 
@@ -2476,9 +2468,6 @@ def _reset_enforcement_summaries(order_ids, warning_letter_ids):
     """Regenerate the summaries of merged enforcement actions after a requirement is removed."""
     # pylint: disable=import-outside-toplevel
     from compliance_api.services.order.order import OrderService
-    from compliance_api.services.warning_letter.warning_letter import (
-        WarningLetterService,
-    )
 
     for order_id in order_ids:
         OrderService.reset_field(order_id, ["where_as", "now_therefore"])
