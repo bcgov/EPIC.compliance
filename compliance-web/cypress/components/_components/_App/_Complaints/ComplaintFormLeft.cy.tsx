@@ -24,6 +24,8 @@ describe("ComplaintFormLeft Component", () => {
           locationDescription: "",
           primaryOfficer: null,
           dateReceived: null,
+          initialResponseDate: null,
+          finalResponseDate: null,
         },
       });
 
@@ -55,6 +57,13 @@ describe("ComplaintFormLeft Component", () => {
     cy.contains("Location Description").should("exist");
     cy.contains("Primary").should("exist");
     cy.contains("Date Received").should("exist");
+    cy.contains("Initial Response").should("exist");
+    cy.contains("Final Response").should("exist");
+  });
+
+  it("does not mark the response dates as required", () => {
+    cy.contains("label", "Initial Response").should("have.css", "font-weight", "400");
+    cy.contains("label", "Final Response").should("have.css", "font-weight", "400");
   });
 
   it("allows entering a concern description", () => {
@@ -74,8 +83,18 @@ describe("ComplaintFormLeft Component", () => {
   });
 
   it("allows selecting a date received", () => {
-    cy.get('button[aria-label="Choose date"]').click();
+    cy.get('button[aria-label="Choose date"]').first().click();
     cy.get(".MuiPickersDay-root").contains("15").click();
     cy.get('input[name="dateReceived"]').should("contain.value", "15");
+  });
+
+  it("allows selecting initial and final response dates", () => {
+    cy.get('input[name="initialResponseDate"]').parent().find("button").click();
+    cy.get(".MuiPickersDay-root").contains("16").click();
+    cy.get('input[name="initialResponseDate"]').should("contain.value", "16");
+
+    cy.get('input[name="finalResponseDate"]').parent().find("button").click();
+    cy.get(".MuiPickersDay-root").contains("20").click();
+    cy.get('input[name="finalResponseDate"]').should("contain.value", "20");
   });
 });

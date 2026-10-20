@@ -4,6 +4,7 @@ from datetime import datetime
 from http import HTTPStatus
 from urllib.parse import urljoin
 
+import pytest
 from faker import Faker
 from flask import json
 
@@ -292,3 +293,116 @@ def test_complaint_get_source_contact_details(
     assert get_result.json.get("email") == input_source_details.get("email")
     assert get_result.json.get("phone") == input_source_details.get("phone")
     assert get_result.json.get("comment") == input_source_details.get("comment")
+
+
+def _create_complaint_payload(created_staff, created_case_file, **dates):
+    """Return a create complaint payload with the given dates."""
+    complaint_data = dict(ComplaintScenario.complaint_default.value)
+    complaint_data["primary_officer_id"] = created_staff.id
+    complaint_data["case_file_id"] = created_case_file.id
+    complaint_data["date_received"] = "2026-07-14T16:00:00.000Z"
+    complaint_data.update(dates)
+    return complaint_data
+
+
+@pytest.mark.parametrize(
+    "dates, field_name, message",
+    [
+        (
+            {"initial_response_date": "2026-07-13T16:00:00.000Z"},
+            "initial_response_date",
+            "Initial Response cannot be before Date Received",
+        ),
+        (
+            {"final_response_date": "2026-07-13T16:00:00.000Z"},
+            "final_response_date",
+            "Final Response cannot be before Date Received",
+        ),
+        (
+            {
+                "initial_response_date": "2026-07-20T16:00:00.000Z",
+                "final_response_date": "2026-07-18T16:00:00.000Z",
+            },
+            "final_response_date",
+            "Final Response cannot be before Initial Response",
+        ),
+    ],
+)
+def test_create_complaint_with_out_of_order_response_dates_fails(
+    client,
+    auth_header_super_user,
+    created_staff,
+    created_case_file,
+    mocker,
+    mock_track_service,
+    dates,
+    field_name,
+    message,
+):
+    """Create complaint with response dates out of order should fail."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    complaint_data = _create_complaint_payload(created_staff, created_case_file, **dates)
+    result = client.post(
+        urljoin(API_BASE_URL, "complaints"),
+        headers=auth_header_super_user,
+        data=json.dumps(complaint_data),
+    )
+    assert result.status_code == HTTPStatus.BAD_REQUEST
+    assert json.loads(result.json["message"]) == {field_name: [message]}
+
+
+def test_create_complaint_with_same_day_response_dates(
+    client,
+    auth_header_super_user,
+    created_staff,
+    created_case_file,
+    mocker,
+    mock_track_service,
+):
+    """Response dates on the same BC day as Date Received are allowed."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    # Response is earlier in the day than receipt, but same BC date
+    complaint_data = _create_complaint_payload(
+        created_staff,
+        created_case_file,
+        date_received="2026-07-15T06:30:00.000Z",
+        initial_response_date="2026-07-14T14:00:00.000Z",
+        final_response_date="2026-07-14T14:00:00.000Z",
+    )
+    result = client.post(
+        urljoin(API_BASE_URL, "complaints"),
+        headers=auth_header_super_user,
+        data=json.dumps(complaint_data),
+    )
+    assert result.status_code == HTTPStatus.CREATED
+    assert result.json.get("initial_response_date") is not None
+    assert result.json.get("final_response_date") is not None
+
+
+def test_update_complaint_with_out_of_order_response_dates_fails(
+    client,
+    auth_header_super_user,
+    created_staff,
+    created_case_file,
+    mocker,
+    mock_track_service,
+):
+    """Update complaint with Final Response before Initial Response should fail."""
+    contains_role = mocker.patch("compliance_api.auth.jwt.contains_role")
+    contains_role.return_value = True
+    complaint_data = _create_complaint_payload(created_staff, created_case_file)
+    created_complaint = ComplaintService.create(complaint_data)
+    del complaint_data["case_file_id"]
+    complaint_data["initial_response_date"] = "2026-07-20T16:00:00.000Z"
+    complaint_data["final_response_date"] = "2026-07-18T16:00:00.000Z"
+    result = client.patch(
+        urljoin(API_BASE_URL, f"complaints/{created_complaint.id}"),
+        headers=auth_header_super_user,
+        data=json.dumps(complaint_data),
+    )
+    assert result.status_code == HTTPStatus.BAD_REQUEST
+    assert json.loads(result.json["message"]) == {
+        "final_response_date": ["Final Response cannot be before Initial Response"]
+    }

@@ -148,7 +148,78 @@ describe("ComplaintFormUtils", () => {
     });
   });
 
+  describe("ComplaintFormSchema response date validation", () => {
+    const baseData = {
+      concernDescription: "Test concern",
+      primaryOfficer: { id: 1, full_name: "John Doe" },
+      topic: { id: 1, name: "Test Topic" },
+      dateReceived: dayjs("2026-03-10"),
+      complaintSource: { id: "1", name: "Public" },
+    };
+
+    const validationErrors = (data: object) => {
+      try {
+        ComplaintFormSchema.validateSync(data, { abortEarly: false });
+        return [];
+      } catch (err) {
+        return (err as { errors: string[] }).errors;
+      }
+    };
+
+    it("allows both response dates to be empty", () => {
+      expect(validationErrors({ ...baseData, initialResponseDate: null, finalResponseDate: null })).to.be.empty;
+    });
+
+    it("allows response dates on the same day as Date Received", () => {
+      expect(
+        validationErrors({
+          ...baseData,
+          // Earlier in the day than receipt, so only a calendar-day comparison passes
+          dateReceived: dayjs("2026-03-10T15:00"),
+          initialResponseDate: dayjs("2026-03-10T09:00"),
+          finalResponseDate: dayjs("2026-03-10T09:00"),
+        })
+      ).to.be.empty;
+    });
+
+    it("rejects an Initial Response before Date Received", () => {
+      expect(validationErrors({ ...baseData, initialResponseDate: dayjs("2026-03-09") })).to.include(
+        "Initial Response cannot be before Date Received"
+      );
+    });
+
+    it("rejects a Final Response before Date Received", () => {
+      expect(validationErrors({ ...baseData, finalResponseDate: dayjs("2026-03-09") })).to.include(
+        "Final Response cannot be before Date Received"
+      );
+    });
+
+    it("rejects a Final Response before Initial Response", () => {
+      expect(
+        validationErrors({
+          ...baseData,
+          initialResponseDate: dayjs("2026-03-15"),
+          finalResponseDate: dayjs("2026-03-12"),
+        })
+      ).to.include("Final Response cannot be before Initial Response");
+    });
+  });
+
   describe("formatComplaintData function", () => {
+    it("formats response dates as ISO strings when provided", () => {
+      const formattedData = formatComplaintData({
+        concernDescription: "Test concern",
+        primaryOfficer: { id: 1, full_name: "John Doe" },
+        dateReceived: dayjs("2026-03-10"),
+        initialResponseDate: dayjs("2026-03-12"),
+        finalResponseDate: dayjs("2026-03-20"),
+        complaintSource: { id: "1", name: "Public" },
+      });
+
+      expect(formattedData.initial_response_date).to.equal(dayjs("2026-03-12").toISOString());
+      expect(formattedData.final_response_date).to.equal(dayjs("2026-03-20").toISOString());
+    });
+
     it("formats data correctly for API submission with Agency source", () => {
       const formData = {
         concernDescription: "Test concern description",
@@ -173,6 +244,8 @@ describe("ComplaintFormUtils", () => {
         concern_description: "Test concern description",
         topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
+        initial_response_date: null,
+        final_response_date: null,
         source_type_id: ComplaintSourceEnum.AGENCY,
         requirement_source_id: RequirementSourceEnum.SCHEDULE_B,
         complaint_source_contact: {
@@ -215,6 +288,8 @@ describe("ComplaintFormUtils", () => {
         concern_description: "Test concern description",
         topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
+        initial_response_date: null,
+        final_response_date: null,
         source_type_id: ComplaintSourceEnum.FIRST_NATION,
         requirement_source_id: RequirementSourceEnum.EAC,
         complaint_source_contact: {
@@ -257,6 +332,8 @@ describe("ComplaintFormUtils", () => {
         concern_description: "Test concern description",
         topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
+        initial_response_date: null,
+        final_response_date: null,
         source_type_id: ComplaintSourceEnum.OTHER,
         requirement_source_id: RequirementSourceEnum.OTHER,
         complaint_source_contact: {
@@ -299,6 +376,8 @@ describe("ComplaintFormUtils", () => {
         concern_description: "Test concern description",
         topic_id: 3,
         date_received: dayjs("2023-01-01").toISOString(),
+        initial_response_date: null,
+        final_response_date: null,
         source_type_id: ComplaintSourceEnum.AGENCY,
         requirement_source_id: RequirementSourceEnum.ORDER,
         complaint_source_contact: {
@@ -341,6 +420,8 @@ describe("ComplaintFormUtils", () => {
         concern_description: "Test concern description",
         topic_id: undefined,
         date_received: dayjs("2023-01-01").toISOString(),
+        initial_response_date: null,
+        final_response_date: null,
         source_type_id: ComplaintSourceEnum.AGENCY,
         requirement_source_id: undefined,
         complaint_source_contact: {

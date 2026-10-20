@@ -278,8 +278,8 @@ describe("ComplaintDrawer Component", () => {
     cy.get('input[name="primaryOfficer"]').click();
     cy.get("li").contains("John Doe").click();
 
-    // Select date
-    cy.get('button[aria-label="Choose date"]').click();
+    // Select date received
+    cy.get('button[aria-label="Choose date"]').first().click();
     cy.get(".MuiPickersDay-root").contains("15").click();
 
     // Select complaint source

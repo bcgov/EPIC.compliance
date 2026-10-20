@@ -117,6 +117,16 @@ class Complaints(Resource):
                 "type": "string",
                 "required": False,
             },
+            "initial_response_date": {
+                "description": "Filter by initial response date (YYYY-MM-DD)",
+                "type": "string",
+                "required": False,
+            },
+            "final_response_date": {
+                "description": "Filter by final response date (YYYY-MM-DD)",
+                "type": "string",
+                "required": False,
+            },
             "primary_officer_ids": {
                 "description": "Filter by primary officer ID(s). Can be a single value or comma-separated list",
                 "type": "string",

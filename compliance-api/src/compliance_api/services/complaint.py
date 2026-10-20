@@ -248,6 +248,16 @@ class ComplaintService:
                         if complaint.date_received
                         else ""
                     ),
+                    "Initial Response": (
+                        complaint.initial_response_date.strftime("%Y-%m-%d")
+                        if complaint.initial_response_date
+                        else ""
+                    ),
+                    "Final Response": (
+                        complaint.final_response_date.strftime("%Y-%m-%d")
+                        if complaint.final_response_date
+                        else ""
+                    ),
                     "Complaint Source": getattr(complaint_source, "name", "") or "",
                     "Primary": (
                         f"{complaint.primary_officer.first_name} {complaint.primary_officer.last_name}"
@@ -372,6 +382,8 @@ def _create_complaint_update_object(complaint_data: dict):
         "concern_description": complaint_data.get("concern_description", None),
         "primary_officer_id": complaint_data.get("primary_officer_id", None),
         "date_received": complaint_data.get("date_received"),
+        "initial_response_date": complaint_data.get("initial_response_date", None),
+        "final_response_date": complaint_data.get("final_response_date", None),
         "requirement_source_id": complaint_data.get("requirement_source_id", None),
         "requirement_source_description": complaint_data.get(
             "requirement_source_description", None
@@ -472,6 +484,8 @@ def _apply_complaints_filters(query, args):
         ("complaint_number", lambda v: ComplaintModel.complaint_number.ilike(f"%{v}%")),
         ("case_file_id", lambda v: ComplaintModel.case_file_id == int(v)),
         ("date_received", lambda v: func.date(ComplaintModel.date_received) == v),
+        ("initial_response_date", lambda v: func.date(ComplaintModel.initial_response_date) == v),
+        ("final_response_date", lambda v: func.date(ComplaintModel.final_response_date) == v),
         ("case_file_number", lambda v: CaseFileModel.case_file_number.ilike(f"%{v}%")),
     ]
 
@@ -573,6 +587,8 @@ def _apply_complaints_sorting(query, args):
         "complaint_number": ComplaintModel.complaint_number,
         "topic_id": ComplaintModel.topic_id,
         "date_received": ComplaintModel.date_received,
+        "initial_response_date": ComplaintModel.initial_response_date,
+        "final_response_date": ComplaintModel.final_response_date,
         "primary_officer_id": StaffUser.first_name,  # Sort by staff user first name since StaffUser is already joined
         "case_file_number": CaseFileModel.case_file_number,
     }

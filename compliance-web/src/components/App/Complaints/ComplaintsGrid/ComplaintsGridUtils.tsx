@@ -53,6 +53,16 @@ export const useConvertFiltersToQueryParams = (
               }
             }
             break;
+          case "initial_response_date":
+            if (typeof filter.value === "string" && filter.value.trim()) {
+              params.initial_response_date = filter.value.trim();
+            }
+            break;
+          case "final_response_date":
+            if (typeof filter.value === "string" && filter.value.trim()) {
+              params.final_response_date = filter.value.trim();
+            }
+            break;
           case "source_type_id":
             if (Array.isArray(filter.value) && filter.value.length > 0) {
               params.source_type_ids = filter.value.join(",");
@@ -172,6 +182,28 @@ export const useComplaintsGridColumns = (
         row.date_received ? dateUtils.formatDate(row.date_received) : "",
       id: "date_received",
       header: "Date Received",
+      filterVariant: "date",
+      filterFn: "greaterThanOrEqual",
+      size: 120,
+    },
+    {
+      accessorFn: (row) =>
+        row.initial_response_date
+          ? dateUtils.formatDate(row.initial_response_date)
+          : "",
+      id: "initial_response_date",
+      header: "Initial Response",
+      filterVariant: "date",
+      filterFn: "greaterThanOrEqual",
+      size: 120,
+    },
+    {
+      accessorFn: (row) =>
+        row.final_response_date
+          ? dateUtils.formatDate(row.final_response_date)
+          : "",
+      id: "final_response_date",
+      header: "Final Response",
       filterVariant: "date",
       filterFn: "greaterThanOrEqual",
       size: 120,

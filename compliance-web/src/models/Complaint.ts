@@ -22,6 +22,8 @@ export interface Complaint {
   location_description: string;
   primary_officer_id: number;
   date_received: string;
+  initial_response_date?: string;
+  final_response_date?: string;
   topic_id?: number;
   requirement_source_id: number;
   requirement_source_description?: string;
@@ -53,6 +55,8 @@ export interface ComplaintGridQueryParams extends BaseTableQueryParams {
   project_ids?: string;
   topic_ids?: string;
   date_received?: string;
+  initial_response_date?: string;
+  final_response_date?: string;
   source_type_ids?: string;
   primary_officer_ids?: string;
   statuses?: string;
@@ -72,6 +76,8 @@ export interface ComplaintFormData {
   topic?: Topic;
   primaryOfficer?: StaffUser;
   dateReceived?: Dayjs;
+  initialResponseDate?: Dayjs;
+  finalResponseDate?: Dayjs;
   complaintSource?: ComplaintSource;
   contactFullName?: string;
   contactTitle?: string;
@@ -95,6 +101,8 @@ export interface ComplaintAPIData {
   topic_id?: number;
   case_file_id?: number;
   date_received: string;
+  initial_response_date: string | null;
+  final_response_date: string | null;
   source_type_id: string;
   complaint_source_contact?: Contact;
   source_agency_id?: number;

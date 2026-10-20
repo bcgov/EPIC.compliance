@@ -289,6 +289,17 @@ def compact_pivot_tables(workbook, gap_columns=1):
                 )
 
 
+def get_pivot_area_end_column(workbook, worksheet):
+    """Return the last column (1-based) the worksheet's pivots will occupy once rendered, or 0 if none."""
+    end_columns = [
+        _get_pivot_start_col(pivot)
+        + _calculate_pivot_width(pivot, _get_field_value_counts_from_source(workbook, pivot))
+        - 1
+        for pivot in getattr(worksheet, "_pivots", [])
+    ]
+    return max(end_columns, default=0)
+
+
 def _get_field_value_counts_from_source(workbook, pivot):
     """Read actual unique value counts from the pivot's source data table.
 
