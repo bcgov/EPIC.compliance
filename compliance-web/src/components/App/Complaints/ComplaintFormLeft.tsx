@@ -72,23 +72,43 @@ const ComplaintFormLeft: FC<ComplaintFormLeftProps> = ({
           minRows={2}
         />
         <Stack direction={"row"} gap={2}>
-          <ControlledAutoComplete
-            name="primaryOfficer"
-            label="Primary"
-            options={staffUsersList}
-            getOptionLabel={(option) => option.name}
-            getOptionKey={(option) => option.id}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            fullWidth
-            isSortOptions
-            isRequired={true}
-          />
-          <ControlledDateField
-            name="dateReceived"
-            label="Date Received"
-            sx={{ width: "100%" }}
-            isRequired={true}
-          />
+          <Box flex={1} minWidth={0}>
+            <ControlledAutoComplete
+              name="primaryOfficer"
+              label="Primary"
+              options={staffUsersList}
+              getOptionLabel={(option) => option.name}
+              getOptionKey={(option) => option.id}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              fullWidth
+              isSortOptions
+              isRequired={true}
+            />
+          </Box>
+          <Box flex={1} minWidth={0}>
+            <ControlledDateField
+              name="dateReceived"
+              label="Date Received"
+              sx={{ width: "100%" }}
+              isRequired={true}
+            />
+          </Box>
+        </Stack>
+        <Stack direction={"row"} gap={2}>
+          <Box flex={1} minWidth={0}>
+            <ControlledDateField
+              name="initialResponseDate"
+              label="Initial Response"
+              sx={{ width: "100%" }}
+            />
+          </Box>
+          <Box flex={1} minWidth={0}>
+            <ControlledDateField
+              name="finalResponseDate"
+              label="Final Response"
+              sx={{ width: "100%" }}
+            />
+          </Box>
         </Stack>
         <RequirementSourceForm
           requirementSourceList={requirementSourceList ?? []}

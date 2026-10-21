@@ -46,6 +46,8 @@ const initFormData: ComplaintFormData = {
   topic: undefined,
   primaryOfficer: undefined,
   dateReceived: undefined,
+  initialResponseDate: undefined,
+  finalResponseDate: undefined,
   complaintSource: undefined,
   contactFullName: "",
   contactTitle: "",
@@ -98,6 +100,12 @@ const ComplaintDrawer: React.FC<ComplaintDrawerProps> = ({
         topic: complaint.topic,
         dateReceived: complaint.date_received
           ? dayjs(complaint.date_received)
+          : undefined,
+        initialResponseDate: complaint.initial_response_date
+          ? dayjs(complaint.initial_response_date)
+          : undefined,
+        finalResponseDate: complaint.final_response_date
+          ? dayjs(complaint.final_response_date)
           : undefined,
         complaintSource: complaint.source_type,
         contactFullName: complaint.source_contact.full_name ?? "",

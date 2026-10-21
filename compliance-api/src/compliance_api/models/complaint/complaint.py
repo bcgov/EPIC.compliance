@@ -74,6 +74,16 @@ class Complaint(BaseModelVersioned):
         nullable=False,
         comment="The complaint received date",
     )
+    initial_response_date = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="The date of the initial response to the complaint",
+    )
+    final_response_date = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="The date of the final response to the complaint",
+    )
     requirement_source_id = Column(
         Integer,
         ForeignKey(

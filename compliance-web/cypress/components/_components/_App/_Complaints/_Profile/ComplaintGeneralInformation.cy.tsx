@@ -23,6 +23,7 @@ describe("ComplaintGeneralInformation", () => {
     location_description: "Test location description",
     primary_officer_id: 1,
     date_received: "2023-04-15T12:00:00Z",
+    initial_response_date: "2023-04-18T12:00:00Z",
     topic_id: 1,
     requirement_source_id: 1,
     requirement_source_description: "Test requirement source description",
@@ -142,6 +143,12 @@ describe("ComplaintGeneralInformation", () => {
     cy.contains("Test location description").should("be.visible");
     cy.contains("John Doe").should("be.visible");
     cy.contains(dateUtils.formatDate(mockComplaint.date_received)).should("be.visible");
+  });
+
+  it("renders the response dates under general information", () => {
+    cy.contains("Initial Response").should("be.visible");
+    cy.contains(dateUtils.formatDate(mockComplaint.initial_response_date!)).should("be.visible");
+    cy.contains("Final Response").should("be.visible");
   });
 
   it("renders requirement source information when available", () => {

@@ -1,4 +1,5 @@
 """CEB Summary Report Generator Service."""
+from copy import copy
 from datetime import datetime, time
 from io import BytesIO
 from pathlib import Path
@@ -6,11 +7,15 @@ from pathlib import Path
 import pandas as pd
 from flask import current_app
 from openpyxl import load_workbook
+from openpyxl.styles import Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 from sqlalchemy.orm import selectinload
 
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.complaint import Complaint
 from compliance_api.models.complaint.complaint_option import ComplaintSourceEnum
+from compliance_api.models.complaint.complaint_resolution import ComplaintResolutionEnum
 from compliance_api.models.enforcement_action import EnforcementActionOption
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection.inspection_requirement import InspectionRequirement
@@ -23,6 +28,7 @@ from compliance_api.services.report.utils.shared_queries import (
 )
 from compliance_api.services.report.utils.utils import (
     compact_pivot_tables,
+    get_pivot_area_end_column,
     get_project_details,
     populate_template_table_sheet,
     reorder_pivot_column_items,
@@ -30,6 +36,11 @@ from compliance_api.services.report.utils.utils import (
 )
 from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.utils.datetime import BC_TIMEZONE
+
+COMPLAINTS_INSIGHTS_SHEET = "ComplaintsInsights"
+COMPLAINT_TURNAROUND_TITLE = "Complaint Response Turnaround (Calendar Days)"
+COMPLAINT_TURNAROUND_DAY_COLUMNS = {"days_to_initial_response", "days_to_final_response"}
+THIN_SIDE = Side(style="thin")
 
 
 class CEBSummaryReportGenerator(BaseReportGenerator):
@@ -191,6 +202,8 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             headers=complaints_headers,
         )
         compact_pivot_tables(workbook, gap_columns=1)
+        # After compaction, so placement uses final pivot widths
+        self._populate_complaint_turnaround_section(workbook, complaints_data_frame)
 
         output = BytesIO()
         workbook.save(output)
@@ -369,24 +382,118 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             elif row.complaint_source == ComplaintSourceEnum.OTHER.value:
                 complaint_source_details = row.complaint_source_contact_description or ""
 
+            is_referred = row.complaint_resolution_id == ComplaintResolutionEnum.REFERRED_TO_AGENCY.value
+
             item = {
                 "complaint_number": row.complaint_number,
                 "project_name": project_name,
                 "project_type": project_type,
                 "topic": row.topic,
-                "date_received":
-                    row.date_received.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d")
-                    if row.date_received else None,
+                "date_received": self._format_bc_date(row.date_received),
+                "initial_response_date": self._format_bc_date(row.initial_response_date),
+                "final_response_date": self._format_bc_date(row.final_response_date),
                 "complaint_source": row.complaint_source,
                 "complaint_source_details": complaint_source_details,
                 "primary_officer": self._format_primary_officer_name(row),
                 "complaint_status": row.complaint_status.value if row.complaint_status else None,
                 "complaint_resolution": row.complaint_resolution,
+                "referred_agency": row.resolution_agency if is_referred else None,
                 "case_file_number": row.case_file_number,
+                "days_to_initial_response": self._calendar_days_between(
+                    row.date_received, row.initial_response_date
+                ),
+                "days_to_final_response": self._calendar_days_between(
+                    row.date_received, row.final_response_date
+                ),
             }
             result.append(item)
 
         return result
+
+    @staticmethod
+    def _format_bc_date(value):
+        """Format a timezone-aware datetime as a BC local date string."""
+        return value.astimezone(BC_TIMEZONE).strftime("%Y-%m-%d") if value else None
+
+    @staticmethod
+    def _calendar_days_between(start, end):
+        """Return whole calendar days between two BC local dates, or None if either is missing."""
+        if not start or not end:
+            return None
+        return (end.astimezone(BC_TIMEZONE).date() - start.astimezone(BC_TIMEZONE).date()).days
+
+    @staticmethod
+    def _populate_complaint_turnaround_section(workbook, complaints_data_frame):
+        """Write the complaint response turnaround table beside the Complaints Insights pivots."""
+        worksheet = workbook[COMPLAINTS_INSIGHTS_SHEET]
+        headers, columns = CEBSummaryReportGenerator._get_complaint_turnaround_columns_and_headers()
+
+        # Match pivot title/header rows, one-column gap
+        start_col = get_pivot_area_end_column(workbook, worksheet) + 2
+        title_cell = worksheet.cell(row=2, column=start_col, value=COMPLAINT_TURNAROUND_TITLE)
+        pivot_title_cell = worksheet.cell(row=2, column=2)
+        title_cell._style = copy(pivot_title_cell._style)  # pylint: disable=protected-access
+
+        header_row = 4
+        for offset, header in enumerate(headers):
+            worksheet.cell(row=header_row, column=start_col + offset, value=header)
+            worksheet.column_dimensions[get_column_letter(start_col + offset)].width = max(len(header) + 2, 16)
+
+        records = complaints_data_frame.reindex(columns=columns).to_dict("records")
+        for row_offset, record in enumerate(records, start=1):
+            for col_offset, column in enumerate(columns):
+                value = record.get(column)
+                if pd.isna(value):
+                    value = None
+                elif column in COMPLAINT_TURNAROUND_DAY_COLUMNS:
+                    value = int(value)
+                worksheet.cell(row=header_row + row_offset, column=start_col + col_offset, value=value)
+
+        last_row = header_row + max(len(records), 1)
+        last_col = start_col + len(headers) - 1
+        # Outline only: thin side where the cell is on the table edge
+        for row in worksheet.iter_rows(min_row=header_row, max_row=last_row, min_col=start_col, max_col=last_col):
+            for cell in row:
+                cell.border = Border(
+                    left=THIN_SIDE if cell.column == start_col else Side(),
+                    right=THIN_SIDE if cell.column == last_col else Side(),
+                    top=THIN_SIDE if cell.row == header_row else Side(),
+                    bottom=THIN_SIDE if cell.row == last_row else Side(),
+                )
+        table = Table(
+            displayName="ComplaintResponseTurnaround",
+            ref=f"{get_column_letter(start_col)}{header_row}:{get_column_letter(last_col)}{last_row}",
+        )
+        table.tableStyleInfo = TableStyleInfo(name="TableStyleLight16", showRowStripes=True)
+        worksheet.add_table(table)
+        current_app.logger.info(
+            f"Complaint turnaround section written at {table.ref} for {len(records)} complaints"
+        )
+
+    @staticmethod
+    def _get_complaint_turnaround_columns_and_headers():
+        """Get complaint response turnaround columns and headers for the Complaints Insights sheet."""
+        headers = [
+            "Complaint Number",
+            "Project Name",
+            "Date Received",
+            "Initial Response",
+            "Final Response",
+            "Received → Initial Response (Days)",
+            "Received → Final Response (Days)",
+        ]
+
+        columns = [
+            "complaint_number",
+            "project_name",
+            "date_received",
+            "initial_response_date",
+            "final_response_date",
+            "days_to_initial_response",
+            "days_to_final_response",
+        ]
+
+        return headers, columns
 
     @staticmethod
     def _format_primary_officer_name(row):
@@ -509,11 +616,14 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "Project Type",
             "Topic",
             "Date Received",
+            "Initial Response",
+            "Final Response",
             "Complaint Source",
             "Complaint Source Details",
             "Primary Officer",
             "Complaint Status",
             "Complaint Resolution",
+            "Referred Agency",
             "Case File Number",
         ]
 
@@ -523,11 +633,14 @@ class CEBSummaryReportGenerator(BaseReportGenerator):
             "project_type",
             "topic",
             "date_received",
+            "initial_response_date",
+            "final_response_date",
             "complaint_source",
             "complaint_source_details",
             "primary_officer",
             "complaint_status",
             "complaint_resolution",
+            "referred_agency",
             "case_file_number",
         ]
 

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Complaint Schema Schema."""
+from datetime import timezone
+
 from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, validates_schema
 from marshmallow.validate import Range
 from marshmallow_enum import EnumField
@@ -20,6 +22,7 @@ from compliance_api.models import Complaint, ComplaintSourceContact, ComplaintSt
 from compliance_api.models.complaint import ComplaintSourceEnum
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT, MAX_PAGE_SIZE
+from compliance_api.utils.datetime import BC_TIMEZONE
 
 from .base_schema import AutoSchemaBase, BaseSchema
 from .case_file import CaseFileSchema
@@ -127,6 +130,22 @@ class ComplaintUpdateSchema(BaseSchema):
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
     )
+    initial_response_date = fields.DateTime(
+        format=INPUT_DATE_TIME_FORMAT,
+        metadata={"description": "The complaint initial response date in ISO 8601 format."},
+        allow_none=True,
+        error_messages={
+            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
+        },
+    )
+    final_response_date = fields.DateTime(
+        format=INPUT_DATE_TIME_FORMAT,
+        metadata={"description": "The complaint final response date in ISO 8601 format."},
+        allow_none=True,
+        error_messages={
+            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
+        },
+    )
     source_type_id = fields.Int(
         metadata={"description": "The unique identifier of complaint source"},
         required=True,
@@ -151,6 +170,43 @@ class ComplaintUpdateSchema(BaseSchema):
         },
         allow_none=True,
     )
+
+    @validates_schema
+    def validate_response_dates(
+        self, data, **kwargs
+    ):  # pylint: disable=unused-argument
+        """Ensure that the response dates are not before the dates they follow."""
+        date_received = _to_bc_date(data.get("date_received"))
+        initial_response_date = _to_bc_date(data.get("initial_response_date"))
+        final_response_date = _to_bc_date(data.get("final_response_date"))
+        if date_received and initial_response_date and initial_response_date < date_received:
+            raise ValidationError(
+                "Initial Response cannot be before Date Received",
+                field_name="initial_response_date",
+            )
+        if date_received and final_response_date and final_response_date < date_received:
+            raise ValidationError(
+                "Final Response cannot be before Date Received",
+                field_name="final_response_date",
+            )
+        if (
+            initial_response_date
+            and final_response_date
+            and final_response_date < initial_response_date
+        ):
+            raise ValidationError(
+                "Final Response cannot be before Initial Response",
+                field_name="final_response_date",
+            )
+
+
+def _to_bc_date(value):
+    """Return the BC calendar date of a datetime, or None."""
+    if not value:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(BC_TIMEZONE).date()
 
 
 class ComplaintCreateSchema(ComplaintUpdateSchema):
@@ -262,6 +318,14 @@ class ComplaintFilterSchema(BaseSchema):
     )
     date_received = fields.Date(
         metadata={"description": "Filter by date received"},
+        required=False,
+    )
+    initial_response_date = fields.Date(
+        metadata={"description": "Filter by initial response date"},
+        required=False,
+    )
+    final_response_date = fields.Date(
+        metadata={"description": "Filter by final response date"},
         required=False,
     )
     primary_officer_ids = fields.Str(

@@ -36,6 +36,18 @@ const ComplaintGeneralInformation: React.FC<
       name: "Date Received",
       value: dateUtils.formatDate(complaintData.date_received),
     },
+    {
+      name: "Initial Response",
+      value: complaintData.initial_response_date
+        ? dateUtils.formatDate(complaintData.initial_response_date)
+        : "",
+    },
+    {
+      name: "Final Response",
+      value: complaintData.final_response_date
+        ? dateUtils.formatDate(complaintData.final_response_date)
+        : "",
+    },
   ];
 
   if (complaintData.requirement_source) {

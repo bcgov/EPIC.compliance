@@ -12,7 +12,7 @@ import {
   RequirementSourceEnum,
 } from "@/utils/constants";
 import dateUtils from "@/utils/dateUtils";
-import { Dayjs } from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import * as yup from "yup";
 
 export enum ComplaintSourceEnum {
@@ -26,6 +26,10 @@ export enum ComplaintResolutionEnum {
   AGENCY = "2",
 }
 
+// Passes if either date is empty
+const isOnOrAfter = (value?: Dayjs | null, other?: Dayjs | null) =>
+  !value || !other || !dayjs(value).isBefore(dayjs(other), "day");
+
 export const ComplaintFormSchema = yup.object().shape({
   concernDescription: yup
     .string()
@@ -38,6 +42,27 @@ export const ComplaintFormSchema = yup.object().shape({
     .required("Topic is required"),
   primaryOfficer: yup.object<StaffUser>().nullable().required("Primary is required"),
   dateReceived: yup.mixed<Dayjs>().nullable().required("Date Received is required"),
+  initialResponseDate: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .test(
+      "not-before-date-received",
+      "Initial Response cannot be before Date Received",
+      (value, context) => isOnOrAfter(value, context.parent.dateReceived)
+    ),
+  finalResponseDate: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .test(
+      "not-before-date-received",
+      "Final Response cannot be before Date Received",
+      (value, context) => isOnOrAfter(value, context.parent.dateReceived)
+    )
+    .test(
+      "not-before-initial-response",
+      "Final Response cannot be before Initial Response",
+      (value, context) => isOnOrAfter(value, context.parent.initialResponseDate)
+    ),
   complaintSource: yup
     .object<ComplaintSource>()
     .nullable()
@@ -111,6 +136,12 @@ export const formatComplaintData = (
     concern_description: formData.concernDescription ?? "",
     topic_id: (formData.topic as Topic)?.id,
     date_received: dateUtils.dateToISO(formData.dateReceived),
+    initial_response_date: formData.initialResponseDate
+      ? dateUtils.dateToISO(formData.initialResponseDate)
+      : null,
+    final_response_date: formData.finalResponseDate
+      ? dateUtils.dateToISO(formData.finalResponseDate)
+      : null,
     source_type_id: sourceId,
     requirement_source_id: reqSourceId,
   };

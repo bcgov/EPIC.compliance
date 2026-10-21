@@ -188,6 +188,7 @@ def get_inspection_attendance_subquery():
 
 def complaints_tab_query_base():
     """Build base complaints query."""
+    resolution_agency_alias = aliased(Agency)
     query = (
         db.session.query(
             Complaint.complaint_number.label("complaint_number"),
@@ -197,6 +198,8 @@ def complaints_tab_query_base():
             UnapprovedProject.type.label("unapproved_project_type"),
             Topic.name.label("topic"),
             Complaint.date_received.label("date_received"),
+            Complaint.initial_response_date.label("initial_response_date"),
+            Complaint.final_response_date.label("final_response_date"),
             ComplaintSource.id.label("complaint_source_id"),
             ComplaintSource.name.label("complaint_source"),
             ComplaintSourceContact.full_name.label("complaint_source_contact_full_name"),
@@ -208,7 +211,9 @@ def complaints_tab_query_base():
             StaffUser.first_name.label("primary_officer_first_name"),
             StaffUser.last_name.label("primary_officer_last_name"),
             Complaint.status.label("complaint_status"),
+            Complaint.resolution_id.label("complaint_resolution_id"),
             ComplaintResolution.name.label("complaint_resolution"),
+            resolution_agency_alias.name.label("resolution_agency"),
             CaseFile.case_file_number.label("case_file_number"),
             CaseFile.date_created.label("case_file_date_created")
         )
@@ -219,6 +224,7 @@ def complaints_tab_query_base():
         .outerjoin(StaffUser, Complaint.primary_officer_id == StaffUser.id)
         .outerjoin(ComplaintResolution, Complaint.resolution_id == ComplaintResolution.id)
         .outerjoin(Agency, Complaint.source_agency_id == Agency.id)
+        .outerjoin(resolution_agency_alias, Complaint.resolution_agency_id == resolution_agency_alias.id)
         .join(ComplaintSource, Complaint.source_type_id == ComplaintSource.id)
         .outerjoin(ComplaintSourceContact, and_(
             ComplaintSourceContact.complaint_id == Complaint.id,
