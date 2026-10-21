@@ -38,7 +38,7 @@ C. {% else %}A. {% endif %}On
 {% else %}
  {{inspection_details.start_date}} and {{inspection_details.end_date}}
 {% endif %}, Environmental Assessment
- Compliance &amp; Enforcement (EAC&amp;E) conducted a {{inspection_details.inspection_type | lower }}
+ Compliance &amp; Enforcement (EA C&amp;E) conducted a {{inspection_details.inspection_type | lower }}
  inspection of the Project. The inspection found that the {{project_details.proponent_label}} was not compliant
  with {{requirement_details.requirement_numbers}} with respect to {{requirement_details.requirement_summaries}}.
  The inspection findings are documented in Inspection Record {{inspection_details.ir_number}}.</span></p>
@@ -71,6 +71,6 @@ Pursuant to Section {{order_details.section}} of the Act, I order that the {{pro
     <li value="2" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="3" class="editor-listitem"><span style="white-space: pre-wrap;">XX</span></li>
     <li value="4" class="editor-listitem"><span style="white-space: pre-wrap;">Complete the measures in clauses 1, 2
- and 3 above to the satisfaction of, and unless otherwise authorized by, EAC&amp;E.
+ and 3 above to the satisfaction of, and unless otherwise authorized by, EA C&amp;E.
  </span></li>
 </ol>"""
