@@ -44,13 +44,28 @@ const RequirementFormLeftEditSection: FC<
         (enforcementAction) =>
           enforcementAction.id !== EnforcementActionEnum.RESTORATIVE_JUSTICE
       );
-    return inspectionData?.is_history
-      ? filteredEnforcementActions
-      : filteredEnforcementActions?.filter(
-          (enforcementAction) =>
-            enforcementAction.id !== EnforcementActionEnum.ADVISORY &&
-            enforcementAction.id !== EnforcementActionEnum.WARNING
-        );
+    if (inspectionData?.is_history) {
+      return filteredEnforcementActions;
+    }
+    const regularEnforcementActions = filteredEnforcementActions?.filter(
+      (enforcementAction) =>
+        enforcementAction.id !== EnforcementActionEnum.ADVISORY &&
+        enforcementAction.id !== EnforcementActionEnum.WARNING
+    );
+    const advisory = filteredEnforcementActions?.find(
+      (enforcementAction) =>
+        enforcementAction.id === EnforcementActionEnum.ADVISORY
+    );
+    if (!regularEnforcementActions || !advisory) {
+      return regularEnforcementActions;
+    }
+    // Advisory goes right after Not Applicable
+    const notApplicableIndex = regularEnforcementActions.findIndex(
+      (enforcementAction) =>
+        enforcementAction.id === EnforcementActionEnum.NOT_APPLICABLE
+    );
+    regularEnforcementActions.splice(notApplicableIndex + 1, 0, advisory);
+    return regularEnforcementActions;
   }, [enforcementActionsList, inspectionData]);
 
   const inputFocus = (inputRef: HTMLInputElement | null) => {
@@ -143,6 +158,7 @@ const RequirementFormLeftEditSection: FC<
                 ];
 
                 if (
+                  inspectionData?.is_history &&
                   historicalEnforcementActionIds.includes(
                     option.id as EnforcementActionEnum
                   )

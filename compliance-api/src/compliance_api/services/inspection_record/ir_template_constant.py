@@ -80,6 +80,10 @@ ENFORCEMENT_SUMMARY = {
     not compliant with {{ number }} of {{ req_source_name }} of {{ eac }}. {{ regulated_party }} has
     been issued a Notice of Non-Compliance. See Requirement {{ req_sort_order }} for
     further information.</p>""",
+    "ADVISORY": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is
+    not compliant with {{ number }} of {{ req_source_name }} of {{ eac }}. {{ regulated_party }} has
+    been issued an Advisory. See Requirement {{ req_sort_order }} for
+    further information.</p>""",
     "WARNING_LETTER": """<p class="editor-paragraph" dir="ltr">{{ regulated_party }} is not
     compliant with {{ ','.join(condition_lines)}} of {{ eac }}. Warning Letter
     {{ warning_letter_no }} has been issued for the non-compliance. See {{ sort_order_line }} for

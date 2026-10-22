@@ -3,6 +3,8 @@ import copy
 from datetime import datetime
 
 from compliance_api.models import db
+from compliance_api.models.compliance_finding import ComplianceFindingOptionEnum
+from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.administrative_penalty import (
     AdministrativePenalty,
     AdministrativePenaltyInspectionRequirementMap,
@@ -14,6 +16,7 @@ from compliance_api.models.inspection.inspection_req_source_detail import Inspec
 from compliance_api.models.inspection_record import IRStatusEnum
 from compliance_api.models.requirement_source import RequirementSourceEnum
 from compliance_api.services import InspectionService
+from compliance_api.services.service_utils import ServiceUtils
 from compliance_api.services.inspection_record.inspection_record_builder import InspectionRecordDataBuilder
 from tests.utilities.factory_scenario import InspectionScenario
 
@@ -479,3 +482,109 @@ class TestInspectionScopeRequirementSource:
 
         assert "Some Title" not in scope
         assert "with respect to dust control" in scope
+
+
+class TestEnforcementSummaryAdvisory:
+    """Advisory statements in build_enforcement_summary."""
+
+    ADVISORY = EnforcementActionOptionEnum.ADVISORY
+    NOTICE_OF_NON_COMPLIANCE = EnforcementActionOptionEnum.NOTICE_OF_NON_COMPLIANCE
+
+    _PROJECT_DETAILS = {
+        "proponent": "Test Mining Ltd.",
+        "eac_certificate": "M99-01",
+        "name": "Test Mine Project",
+    }
+
+    def _create_requirement(self, inspection_id, enforcement_action_id, condition_number, sort_order):
+        """Create a REQ with an enforcement action and a Schedule B source."""
+        requirement = InspectionRequirement(
+            inspection_id=inspection_id,
+            summary="Requirement summary",
+            topic_id=1,
+            req_type=InspectionRequirementTypeEnum.REQ,
+            compliance_finding_id=1,
+            findings="finding",
+            sort_order=sort_order,
+            is_active=True,
+            is_deleted=False,
+        )
+        db.session.add(requirement)
+        db.session.flush()
+        db.session.add(InspectionReqEnforcementMap(
+            enforcement_action_id=enforcement_action_id,
+            requirement_id=requirement.id,
+        ))
+        db.session.add(InspectionReqSourceDetail(
+            requirement_id=requirement.id,
+            requirement_source_id=RequirementSourceEnum.SCHEDULE_B.value,
+            condition_number=condition_number,
+            source_title="Schedule B - Table of Conditions",
+            description="Source description",
+        ))
+        db.session.commit()
+        return requirement
+
+    def _build_enforcement_summary(self, inspection):
+        builder = InspectionRecordDataBuilder(inspection, IRStatusEnum.FINAL.value)
+        builder.data["project_details"] = self._PROJECT_DETAILS
+        builder.build_enforcement_summary()
+        return " ".join(builder.data.get("enforcement_summary", "").split())
+
+    def test_advisory_generates_statement(self, created_inspection, mocker):
+        """Advisory produces a non-compliance statement."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=1)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "is not compliant with Condition 7" in summary
+        assert "has been issued an Advisory. See Requirement 1 for further information." in summary
+
+    def test_advisory_generates_one_statement_per_requirement(self, created_inspection, mocker):
+        """Each Advisory requirement gets its own statement."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=1)
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "8", sort_order=2)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert summary.count("has been issued an Advisory") == 2
+        assert "See Requirement 1 for further information." in summary
+        assert "See Requirement 2 for further information." in summary
+
+    def test_advisory_generates_statement_for_historical_inspection(self, created_inspection, mocker):
+        """Historical inspections also get the Advisory statement."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+        created_inspection.is_history = True
+        db.session.commit()
+
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=1)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "has been issued an Advisory. See Requirement 1 for further information." in summary
+
+    def test_advisory_alongside_notice_of_non_compliance(self, created_inspection, mocker):
+        """Advisory leaves the Notice of Non-Compliance statement unchanged."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(created_inspection.id, self.NOTICE_OF_NON_COMPLIANCE.value, "5", sort_order=1)
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=2)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert "has been issued a Notice of Non-Compliance. See Requirement 1 for further information." in summary
+        assert "has been issued an Advisory. See Requirement 2 for further information." in summary
+
+    def test_advisory_displayed_as_enforcement_action_in_final_ir(self, created_inspection, mocker):
+        """Final IR displays Advisory as the enforcement action."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        requirement = self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=1)
+        requirement.compliance_finding_id = ComplianceFindingOptionEnum.OUT.value
+        db.session.commit()
+
+        assert ServiceUtils.get_enforcement_action(requirement, IRStatusEnum.FINAL.value) == "Advisory"
