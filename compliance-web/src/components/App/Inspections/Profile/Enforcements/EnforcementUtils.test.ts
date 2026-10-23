@@ -102,4 +102,15 @@ describe("formatRequirementSources ordering (COMP-953)", () => {
     } as unknown as AdministrativePenalty);
     expect(result).toEqual(["Schedule B, #2, #9, #10"]);
   });
+
+  it("shows a condition number once when several requirements cite it", () => {
+    const result = formatRequirementSources([], undefined, undefined, {
+      administrative_penalty_requirement_maps: toMaps([
+        buildRequirement(1, SOURCES.SCHEDULE_B, "5"),
+        buildRequirement(2, SOURCES.SCHEDULE_B, "5"),
+        buildRequirement(3, SOURCES.SCHEDULE_B, " 5 "),
+      ]),
+    } as unknown as AdministrativePenalty);
+    expect(result).toEqual(["Schedule B, #5"]);
+  });
 });
