@@ -27,6 +27,7 @@ from compliance_api.utils.storage_key import is_valid_relative_url
 from .appendix import AppendixSchema
 from .base_schema import AutoSchemaBase, BaseSchema
 from .common import KeyValueSchema
+from .requirement_source import RequirementSourceSchema
 from .staff_user import StaffUserSchema
 
 
@@ -530,7 +531,7 @@ class InspectionReqSourceDetailSchema(
 
     documents = fields.List(fields.Nested(InspectionReqDetailDocSchema))
     images = fields.List(fields.Nested(InspectionReqDetailImageSchema))
-    requirement_source = fields.Nested(KeyValueSchema)
+    requirement_source = fields.Nested(RequirementSourceSchema, only=("id", "name", "sort_order"))
     appendix = fields.Nested(AppendixSchema)
     order = fields.Nested(OrderSchema)
 

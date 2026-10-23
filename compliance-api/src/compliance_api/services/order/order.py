@@ -570,6 +570,7 @@ def _create_where_as_and_now_therefore(
     }
     requirements = InspectionRequirementModel.get_requirement_by_ids(requirement_ids)
     requirement_details = ServiceUtils.get_formatted_requirement_details(requirements)
+    requirement_details.sort(key=ServiceUtils.requirement_source_sort_key)
     requirement_numbers = []
     requirement_summaries = []
     requirement_sources = []
