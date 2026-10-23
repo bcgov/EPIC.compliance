@@ -178,67 +178,43 @@ export const formatRequirementSources = (
     req => req.requirement_source_details && req.requirement_source_details.length > 0
   );
 
-  const result: string[] = [];
+  // Fallback to the old way if no source details are available from API for data safety
+  const requirementIds = allRequirementMaps.map(req => req.id);
+  const requirements = hasSourceDetailsFromAPI
+    ? allRequirementMaps
+    : requirementEnforcements.filter((requirement) =>
+        requirementIds?.includes(requirement.id)
+      );
 
-  if (hasSourceDetailsFromAPI) {
-    allRequirementMaps.forEach((requirement) => {
-      const sourceMap = new Map<number, { name: string; numbers: string[] }>();
+  const sourceMap = new Map<number, { name: string; sortOrder?: number; numbers: Set<string> }>();
+  requirements.forEach((requirement) => {
+    requirement.requirement_source_details?.forEach((source) => {
+      const sourceId = source.requirement_source_id;
+      const number = source.condition_number ?? source.section_number ?? "";
 
-      requirement.requirement_source_details?.forEach((source) => {
-        const sourceId = source.requirement_source_id;
-        const sourceName = source.requirement_source?.name || "";
-        const number = source.condition_number ?? source.section_number ?? "";
+      if (!sourceMap.has(sourceId)) {
+        sourceMap.set(sourceId, {
+          name: source.requirement_source?.name || "",
+          sortOrder: source.requirement_source?.sort_order,
+          numbers: new Set(),
+        });
+      }
 
-        if (!sourceMap.has(sourceId)) {
-          sourceMap.set(sourceId, { name: sourceName, numbers: [] });
-        }
-
-        if (number) {
-          sourceMap.get(sourceId)?.numbers.push(`#${number.trim()}`);
-        }
-      });
-
-      sourceMap.forEach((value) => {
-        if (value.numbers.length > 0) {
-          result.push(`${value.name}, ${value.numbers.join(", ")}`);
-        } else {
-          result.push(value.name);
-        }
-      });
+      if (number.trim()) {
+        sourceMap.get(sourceId)?.numbers.add(number.trim());
+      }
     });
-  } else {
-    // Fallback to the old way if no source details are available from API for data safety
-    const requirementIds = allRequirementMaps.map(req => req.id);
-    const requirements = requirementEnforcements.filter((requirement) =>
-      requirementIds?.includes(requirement.id)
-    );
+  });
 
-    requirements.forEach((requirement) => {
-      const sourceMap = new Map<number, { name: string; numbers: string[] }>();
-
-      requirement.requirement_source_details?.forEach((source) => {
-        const sourceId = source.requirement_source_id;
-        const sourceName = source.requirement_source?.name || "";
-        const number = source.condition_number ?? source.section_number ?? "";
-
-        if (!sourceMap.has(sourceId)) {
-          sourceMap.set(sourceId, { name: sourceName, numbers: [] });
-        }
-
-        if (number) {
-          sourceMap.get(sourceId)?.numbers.push(`#${number.trim()}`);
-        }
-      });
-
-      sourceMap.forEach((value) => {
-        if (value.numbers.length > 0) {
-          result.push(`${value.name}, ${value.numbers.join(", ")}`);
-        } else {
-          result.push(value.name);
-        }
-      });
+  const byNumber = (a: string, b: string) =>
+    a.localeCompare(b, undefined, { numeric: true });
+  const result = [...sourceMap.values()]
+    .sort((a, b) => (a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity))
+    .map(({ name, numbers }) => {
+      if (numbers.size === 0) return name;
+      const sorted = [...numbers].sort(byNumber).map((number) => `#${number}`);
+      return `${name}, ${sorted.join(", ")}`;
     });
-  }
 
   return result;
 };

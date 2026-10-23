@@ -23,3 +23,6 @@ class RequirementSourceSchema(Schema):
     source_title = fields.Str(
         metadata={"description": "The title of the requirement source"}
     )
+    sort_order = fields.Int(
+        metadata={"description": "Position of the requirement source in the dropdown"}
+    )
