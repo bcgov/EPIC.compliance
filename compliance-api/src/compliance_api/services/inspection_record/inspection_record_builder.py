@@ -452,6 +452,7 @@ class InspectionRecordDataBuilder:
             valid_actions_for_individual_requirements = {
                 EnforcementActionOptionEnum.NOTICE_OF_NON_COMPLIANCE,
                 EnforcementActionOptionEnum.REFERRAL_TO_ANOTHER_AGENCY,
+                EnforcementActionOptionEnum.ADVISORY,
             }
             #  Actions that are mapped to multiple requirements
             special_actions = {
@@ -896,6 +897,12 @@ class InspectionRecordDataBuilder:
                 return render_template_with_data(
                     "ENFORCEMENT_SUMMARY.NOTICE_OF_NON_COMPLIANCE",
                     ENFORCEMENT_SUMMARY.get("NOTICE_OF_NON_COMPLIANCE"),
+                    data_to_be_rendered,
+                )
+            if action == EnforcementActionOptionEnum.ADVISORY:
+                return render_template_with_data(
+                    "ENFORCEMENT_SUMMARY.ADVISORY",
+                    ENFORCEMENT_SUMMARY.get("ADVISORY"),
                     data_to_be_rendered,
                 )
             if action == EnforcementActionOptionEnum.REFERRAL_TO_ANOTHER_AGENCY:
