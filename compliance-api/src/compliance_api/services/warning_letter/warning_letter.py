@@ -364,6 +364,7 @@ def _create_content(inspection, requirement_ids, issuing_officer_id):
     ).first()
     requirements = InspectionRequirementModel.get_requirement_by_ids(requirement_ids)
     requirement_details = ServiceUtils.get_formatted_requirement_details(requirements)
+    requirement_details.sort(key=ServiceUtils.requirement_source_sort_key)
     issuing_officer = StaffUserModel.find_by_id(issuing_officer_id)
     requirements = []
     for requirement in requirement_details:

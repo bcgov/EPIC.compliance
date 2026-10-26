@@ -210,6 +210,7 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             source_detail_dict = {
                 "requirement_source_id": detail.requirement_source.id,
                 "requirement_source_name": detail.requirement_source.name,
+                "requirement_source_sort_order": detail.requirement_source.sort_order,
                 "title": detail.title,
                 "requirement_title": ServiceUtils.get_requirement_title(
                     detail, requirement_source_number
@@ -231,6 +232,27 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
                 ServiceUtils._process_requirement_source_images(
                     source_detail_dict, detail.images
                 )
+
+    @staticmethod
+    def requirement_source_sort_key(requirement: dict):
+        """Order requirements by their first source: Requirement Source dropdown order, then number ascending."""
+        if not requirement["requirement_source_details"]:
+            return (True, 0, [])
+        detail = requirement["requirement_source_details"][0]
+        sort_order = detail["requirement_source_sort_order"]
+        return (
+            sort_order is None,
+            sort_order or 0,
+            ServiceUtils.natural_sort_key(detail["requirement_source_number"]),
+        )
+
+    @staticmethod
+    def natural_sort_key(value: str):
+        """Split text into text and number parts so "Condition 2" sorts before "Condition 10"."""
+        return [
+            int(part) if part.isdigit() else part.casefold()
+            for part in re.split(r"(\d+)", value or "")
+        ]
 
     @staticmethod
     def _process_documents(source_detail_dict, documents):
