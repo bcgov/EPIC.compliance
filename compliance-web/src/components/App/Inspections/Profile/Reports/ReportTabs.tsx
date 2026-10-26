@@ -184,6 +184,7 @@ export default function ReportTabs() {
           orientation="vertical"
           variant="scrollable"
           scrollButtons={false}
+          visibleScrollbar
           value={value}
           onChange={handleChange}
           TabIndicatorProps={{
@@ -195,6 +196,9 @@ export default function ReportTabs() {
           sx={{
             width: "30%",
             height: "100%",
+            "& .MuiTabs-scroller": {
+              pr: 1,
+            },
             "& .MuiTabs-flexContainer": {
               gap: 2,
             },
