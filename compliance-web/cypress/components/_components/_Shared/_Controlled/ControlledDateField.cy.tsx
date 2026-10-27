@@ -75,4 +75,43 @@ describe("ControlledDateField Component", () => {
     cy.get("button[type='submit']").click();
     cy.get("p.Mui-error").should("contain", "Date is required");
   });
+
+  it("updates form validity on change in onBlur mode without leaving the field", () => {
+    const TestComponentOnBlur = () => {
+      const methods = useForm({
+        defaultValues: {
+          dateField: null,
+        },
+        mode: "onBlur",
+        resolver: async (data) => ({
+          values: data,
+          errors: !data.dateField
+            ? {
+                dateField: {
+                  type: "required",
+                  message: "Date is required",
+                },
+              }
+            : {},
+        }),
+      });
+
+      return (
+        <FormProvider {...methods}>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <ControlledDateField name="dateField" label="Date Field" />
+            <button type="submit" disabled={!methods.formState.isValid}>
+              Save
+            </button>
+          </LocalizationProvider>
+        </FormProvider>
+      );
+    };
+
+    mount(<TestComponentOnBlur />);
+    cy.contains("button", "Save").should("be.disabled");
+    cy.get('button[aria-label="Choose date"]').click();
+    cy.get(".MuiPickersDay-root").contains("15").click();
+    cy.contains("button", "Save").should("be.enabled");
+  });
 });

@@ -40,6 +40,9 @@ const ControlledDateField: FC<IFormDateInputProps> = ({
           value={field.value ?? null}
           onChange={(date: Dayjs | null) => {
             field.onChange(date);
+            // Picking from the calendar never blurs the input, so forms in
+            // onBlur mode would not recompute isValid until another field blurs
+            field.onBlur();
           }}
           slotProps={{
             ...{
