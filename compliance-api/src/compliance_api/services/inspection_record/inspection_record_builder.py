@@ -930,4 +930,10 @@ class InspectionRecordDataBuilder:
                         grouped_requirements[enforcement_id] = []
                     grouped_requirements[enforcement_id].append(requirement)
 
-        return dict(sorted(grouped_requirements.items()))
+        #  Advisory is listed first; the remaining actions follow in id order
+        return dict(
+            sorted(
+                grouped_requirements.items(),
+                key=lambda item: (item[0] != EnforcementActionOptionEnum.ADVISORY.value, item[0]),
+            )
+        )

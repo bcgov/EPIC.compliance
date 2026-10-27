@@ -579,6 +579,34 @@ class TestEnforcementSummaryAdvisory:
         assert "has been issued a Notice of Non-Compliance. See Requirement 1 for further information." in summary
         assert "has been issued an Advisory. See Requirement 2 for further information." in summary
 
+    def test_advisory_listed_before_other_actions(self, created_inspection, mocker):
+        """Advisory comes first in the summary, ahead of lower action ids."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+
+        self._create_requirement(created_inspection.id, self.NOTICE_OF_NON_COMPLIANCE.value, "5", sort_order=1)
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=2)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert summary.index("has been issued an Advisory") < summary.index(
+            "has been issued a Notice of Non-Compliance"
+        )
+
+    def test_advisory_listed_first_for_historical_inspection(self, created_inspection, mocker):
+        """Historical inspections also list Advisory first."""
+        mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
+        created_inspection.is_history = True
+        db.session.commit()
+
+        self._create_requirement(created_inspection.id, self.NOTICE_OF_NON_COMPLIANCE.value, "5", sort_order=1)
+        self._create_requirement(created_inspection.id, self.ADVISORY.value, "7", sort_order=2)
+
+        summary = self._build_enforcement_summary(created_inspection)
+
+        assert summary.index("has been issued an Advisory") < summary.index(
+            "has been issued a Notice of Non-Compliance"
+        )
+
     def test_advisory_displayed_as_enforcement_action_in_final_ir(self, created_inspection, mocker):
         """Final IR displays Advisory as the enforcement action."""
         mocker.patch("compliance_api.auth.jwt.contains_role", return_value=True)
