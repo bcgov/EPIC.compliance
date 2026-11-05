@@ -305,7 +305,11 @@ function Requirements() {
       columnFilters?: MRT_TableState<InspectionRequirementGrid>["columnFilters"];
     }) => {
       setMyRequirementsChecked(filters.checked);
-      setExternalFilters(filters.externalFilters);
+      setExternalFilters((prev) => {
+        const next = { ...prev };
+        delete next.primary_officer_id;
+        return { ...next, ...filters.externalFilters };
+      });
       setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
       if (filters.columnFilters !== undefined) {
