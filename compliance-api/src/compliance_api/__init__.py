@@ -189,7 +189,7 @@ def build_cache(app):
     """Build cache with appropriate configuration."""
     # Configure cache based on environment
     cache_config = {
-        "CACHE_TYPE": "simple",  # Use simple cache for development
+        "CACHE_TYPE": "SimpleCache",  # In-memory cache for development
         "CACHE_DEFAULT_TIMEOUT": 3600,  # 1 hour default timeout
     }
 
