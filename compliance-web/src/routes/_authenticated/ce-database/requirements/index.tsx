@@ -34,6 +34,7 @@ import type {
 } from "@/models/InspectionRequirementGrid";
 import { cachedFiltersStore } from "@/store/cachedFiltersStore";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
+import { hasActiveFilters } from "@/components/Shared/MasterDataTable/filterUtils";
 import { AppConfig } from "@/utils/config";
 import { STAFF_USER_POSITION } from "@/utils/constants";
 import { MQ } from "@/styles/responsive";
@@ -286,12 +287,16 @@ function Requirements() {
     [isOnlyCurrentStaff]
   );
 
+  const filtersApplied = useMemo(
+    () => hasActiveFilters(columnFilters, externalFilters),
+    [columnFilters, externalFilters]
+  );
+
   const handleClearAllFilters = useCallback(() => {
     setExternalFilters({});
     setColumnFilters([]);
     setGlobalFilter("");
     setMyRequirementsChecked(false);
-    setSorting([{ id: "tpc", desc: false }]);
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
 
     cachedFiltersStore.getState().clearFilters(requirementsColumnFiltersCacheKey);
@@ -438,6 +443,7 @@ function Requirements() {
             <RequirementsExternalFilters
               onFilterChange={handleExternalFilterChange}
               onClearAll={handleClearAllFilters}
+              showClearAll={filtersApplied}
               externalFilters={externalFilters}
             />
           </Box>

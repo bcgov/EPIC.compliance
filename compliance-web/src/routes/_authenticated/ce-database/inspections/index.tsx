@@ -20,6 +20,8 @@ import { Box, CircularProgress, Typography } from "@mui/material";
 import { createFileRoute } from "@tanstack/react-router";
 import { BCDesignTokens } from "epic.theme";
 import Pagination from "@/components/Shared/Pagination";
+import ClearAllFiltersButton from "@/components/Shared/MasterDataTable/ClearAllFiltersButton";
+import { hasActiveFilters } from "@/components/Shared/MasterDataTable/filterUtils";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
@@ -296,6 +298,19 @@ export function Inspections() {
     [columnFilters, isOnlyCurrentStaff]
   );
 
+  const filtersApplied = useMemo(
+    () => hasActiveFilters(columnFilters, externalFilters),
+    [columnFilters, externalFilters]
+  );
+
+  const handleClearAllFilters = useCallback(() => {
+    setColumnFilters([]);
+    setExternalFilters({});
+    setGlobalFilter("");
+    setMyInspectionsChecked(false);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, []);
+
   // Optimize My Inspections switch handler
   const handleMyInspectionsSwitchChange = useCallback(
     (filters: {
@@ -428,6 +443,10 @@ export function Inspections() {
                 canNextPage={table.getCanNextPage()}
               />
             </Box>
+
+            {filtersApplied && (
+              <ClearAllFiltersButton onClick={handleClearAllFilters} />
+            )}
           </Box>
         </Box>
       )}

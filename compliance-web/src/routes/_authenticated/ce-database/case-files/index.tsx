@@ -33,6 +33,8 @@ import CaseFileGridExport from "@/components/App/CaseFiles/CaseFileGrid/CaseFile
 import ShowOnlyMyCaseFilesSwitch from "@/components/App/CaseFiles/CaseFileGrid/ShowOnlyMyCaseFilesSwitch";
 import { AddRounded } from "@mui/icons-material";
 import Pagination from "@/components/Shared/Pagination";
+import ClearAllFiltersButton from "@/components/Shared/MasterDataTable/ClearAllFiltersButton";
+import { hasActiveFilters } from "@/components/Shared/MasterDataTable/filterUtils";
 
 export const Route = createFileRoute("/_authenticated/ce-database/case-files/")(
   {
@@ -284,6 +286,19 @@ export function CaseFiles() {
     [columnFilters, isOnlyCurrentStaff]
   );
 
+  const filtersApplied = useMemo(
+    () => hasActiveFilters(columnFilters, externalFilters),
+    [columnFilters, externalFilters]
+  );
+
+  const handleClearAllFilters = useCallback(() => {
+    setColumnFilters([]);
+    setExternalFilters({});
+    setGlobalFilter("");
+    setMyFilesChecked(false);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, []);
+
   // "My Files" switch handler
   const handleMyFilesSwitchChange = useCallback(
     (filters: {
@@ -443,6 +458,10 @@ export function CaseFiles() {
                 canNextPage={table.getCanNextPage()}
               />
             </Box>
+
+            {filtersApplied && (
+              <ClearAllFiltersButton onClick={handleClearAllFilters} />
+            )}
           </Box>
         </Box>
       )}

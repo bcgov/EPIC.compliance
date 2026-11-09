@@ -19,13 +19,16 @@ const DateFilter = memo(
     const [value, setValue] = useState<Dayjs | null>(null);
     const [open, setOpen] = useState(false);
 
-    // Initialize value from existing filter
+    const filterValue = header.column.getFilterValue() as string | undefined;
     useEffect(() => {
-      const filterValue = header.column.getFilterValue() as string;
-      if (filterValue) {
-        setValue(dayjs(filterValue, DATE_FORMAT));
-      }
-    }, [header.column]);
+      setValue((prev) => {
+        if (!filterValue) return null;
+        // Keep the picker's own value when it already matches, so a date
+        // being typed is not replaced mid-entry.
+        if (prev && prev.format(DATE_FORMAT) === filterValue) return prev;
+        return dayjs(filterValue, DATE_FORMAT);
+      });
+    }, [filterValue]);
 
     const handleDateChange = useCallback(
       (date: Dayjs | null) => {

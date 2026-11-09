@@ -23,6 +23,8 @@ import {
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import Pagination from "@/components/Shared/Pagination";
+import ClearAllFiltersButton from "@/components/Shared/MasterDataTable/ClearAllFiltersButton";
+import { hasActiveFilters } from "@/components/Shared/MasterDataTable/filterUtils";
 import { useTableHandlers } from "@/components/Shared/MasterDataTable/useTableHandlers";
 import {
   useConvertFiltersToQueryParams,
@@ -282,6 +284,19 @@ export function Complaints() {
     [columnFilters, isOnlyCurrentStaff]
   );
 
+  const filtersApplied = useMemo(
+    () => hasActiveFilters(columnFilters, externalFilters),
+    [columnFilters, externalFilters]
+  );
+
+  const handleClearAllFilters = useCallback(() => {
+    setColumnFilters([]);
+    setExternalFilters({});
+    setGlobalFilter("");
+    setMyFilesChecked(false);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  }, []);
+
   const handleMyFilesSwitchChange = useCallback(
     (filters: {
       checked: boolean;
@@ -414,6 +429,10 @@ export function Complaints() {
                 canNextPage={table.getCanNextPage()}
               />
             </Box>
+
+            {filtersApplied && (
+              <ClearAllFiltersButton onClick={handleClearAllFilters} />
+            )}
           </Box>
         </Box>
       )}
