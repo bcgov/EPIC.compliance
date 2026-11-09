@@ -177,7 +177,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
             {
                 "kid": "epic-compliance",
                 "kty": "RSA",
-                "alg": "RSA256",
+                "alg": "RS256",
                 "use": "sig",
                 "n": "3VRgQebxojvZlZv+rySZioGXjK5Ky4YOZ0LxFbQztwY93XaPeutDKAp7wNaYfRrx1Gwu0PpBgj+Lmg3vTqPvjR"
                 "b0Uc23hr1cT68hHxgjIjvk7xXzGv66xwIPOWZXed4LcLbdCf67qvjjFT3ZD7poXnXM5lWlBHrIHQ5s7iUia9eHwoe96d"
@@ -193,7 +193,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
             {
                 "kid": "epic-compliance",
                 "kty": "RSA",
-                "alg": "RSA256",
+                "alg": "RS256",
                 "use": "sig",
                 "n": "3VRgQebxojvZlZv+rySZioGXjK5Ky4YOZ0LxFbQztwY93XaPeutDKAp7wNaYfRrx1Gwu0PpBgj+Lmg3vTqPvjRb0Uc23hr"
                 "1cT68hHxgjIjvk7xXzGv66xwIPOWZXed4LcLbdCf67qvjjFT3ZD7poXnXM5lWlBHrIHQ5s7iUia9eHwoe96dDRzvDGrsoUvs"

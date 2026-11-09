@@ -107,11 +107,10 @@ class ContinuationReportService:
         """Export continuation report as PDF."""
         from .case_file import CaseFileService  # pylint: disable=import-outside-toplevel
 
-        if case_file_number is None:
+        if not case_file_number:
             raise ValueError("Case file number must be provided.")
 
-        if case_file_number:
-            case_file = CaseFileService.get_by_file_number(case_file_number)
+        case_file = CaseFileService.get_by_file_number(case_file_number)
 
         if not case_file:
             raise ResourceNotFoundError("Case file not found.")
