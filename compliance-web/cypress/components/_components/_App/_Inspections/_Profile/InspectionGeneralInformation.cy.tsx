@@ -172,6 +172,16 @@ describe("InspectionGeneralInformation", () => {
     cy.contains(singleDate).should("be.visible");
   });
 
+  it("renders start date only when end date is missing", () => {
+    const noEndDateInspection = { ...mockInspection, end_date: null };
+    mountComponent(noEndDateInspection);
+
+    const startDate = dateUtils.formatDate(noEndDateInspection.start_date);
+    cy.contains("Dates").should("be.visible");
+    cy.contains(startDate).should("be.visible");
+    cy.contains(`${startDate} —`).should("not.exist");
+  });
+
   it("renders in attendance information correctly", () => {
     // The formatInAttendance function should format the attendance data
     // Based on the mock data, it should show "Test Agency 1, Test Agency 2, Test First Nation 1"
