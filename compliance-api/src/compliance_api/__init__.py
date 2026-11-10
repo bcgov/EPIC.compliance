@@ -9,10 +9,10 @@ import os
 # import ssl
 from http import HTTPStatus
 
+import jwt as pyjwt
 import secure
 from flask import Flask, current_app, g, jsonify, request
 from flask_cors import CORS
-from jose import jwt as jose_jwt
 from werkzeug.exceptions import HTTPException, Unauthorized
 
 from compliance_api.auth import jwt
@@ -101,7 +101,10 @@ def create_app(run_mode=os.getenv("FLASK_ENV", "development")):
             raise Unauthorized("Authorization header is required")
 
         token = jwt.get_token_auth_header()
-        token_info = jose_jwt.get_unverified_claims(token)
+        try:
+            token_info = pyjwt.decode(token, options={"verify_signature": False})
+        except pyjwt.PyJWTError as err:
+            raise Unauthorized("Invalid token") from err
         is_compliance_in_groups = any(
             "COMPLIANCE" in group for group in token_info.get("groups", [])
         )
@@ -186,7 +189,7 @@ def build_cache(app):
     """Build cache with appropriate configuration."""
     # Configure cache based on environment
     cache_config = {
-        "CACHE_TYPE": "simple",  # Use simple cache for development
+        "CACHE_TYPE": "SimpleCache",  # In-memory cache for development
         "CACHE_DEFAULT_TIMEOUT": 3600,  # 1 hour default timeout
     }
 

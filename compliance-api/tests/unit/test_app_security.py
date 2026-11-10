@@ -49,6 +49,12 @@ def test_auth_gate_normalizes_trailing_slash(client):
     assert client.get("/api/agencies/").status_code == HTTPStatus.UNAUTHORIZED
 
 
+def test_malformed_token_is_unauthorized(client):
+    """Assert a token that is not a JWT gets a 401, not a 500."""
+    headers = {"Authorization": "Bearer abc.def.ghi"}
+    assert client.get("/api/agencies", headers=headers).status_code == HTTPStatus.UNAUTHORIZED
+
+
 def test_docs_reachable_when_enabled(client):
     """Where the docs are registered (non-production) they stay usable."""
     assert client.get("/api/").status_code != HTTPStatus.UNAUTHORIZED

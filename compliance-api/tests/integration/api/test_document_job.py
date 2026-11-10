@@ -49,6 +49,7 @@ def make_header_claims(staff_user, config):
     """Make JWT header claims for a staff user."""
     return {
         "iss": config.JWT_OIDC_TEST_ISSUER,
+        "aud": config.JWT_OIDC_TEST_AUDIENCE,
         "sub": "f7a4a1d3-73a8-4cbc-a40f-bb1145302065",
         "firstname": staff_user.first_name,
         "lastname": staff_user.last_name,

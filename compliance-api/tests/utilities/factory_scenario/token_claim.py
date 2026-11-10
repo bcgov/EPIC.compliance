@@ -13,6 +13,7 @@ class TokenJWTClaims(dict, Enum):
 
     default = {
         "iss": CONFIG.JWT_OIDC_TEST_ISSUER,
+        "aud": CONFIG.JWT_OIDC_TEST_AUDIENCE,
         "sub": "f7a4a1d3-73a8-4cbc-a40f-bb1145302065",
         "firstname": "Test",
         "lastname": "Viewer",
@@ -23,6 +24,7 @@ class TokenJWTClaims(dict, Enum):
     }
     super_user = {
         "iss": CONFIG.JWT_OIDC_TEST_ISSUER,
+        "aud": CONFIG.JWT_OIDC_TEST_AUDIENCE,
         "sub": "f7a4a1d3-73a8-4cbc-a40f-bb1145302065",
         "firstname": "Test",
         "lastname": "SuperUser",
