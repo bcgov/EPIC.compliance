@@ -1,5 +1,6 @@
-import { Box, Button } from "@mui/material";
+import { Box } from "@mui/material";
 import ExternalTableFilter from "@/components/Shared/FilterSelect/ExternalTableFilter";
+import ClearAllFiltersButton from "@/components/Shared/MasterDataTable/ClearAllFiltersButton";
 import { InspectionStatusEnum } from "@/utils/constants";
 import { useStaffUsersData } from "@/hooks/useStaff";
 import { useProjectsData } from "@/hooks/useProjects";
@@ -8,12 +9,13 @@ import { useMemo } from "react";
 interface RequirementsExternalFiltersProps {
   onFilterChange: (filterId: string, value: string[] | string) => void;
   onClearAll: () => void;
+  showClearAll: boolean;
   externalFilters: Record<string, string[] | string>;
 }
 
 const RequirementsExternalFilters: React.FC<
   RequirementsExternalFiltersProps
-> = ({ onFilterChange, onClearAll, externalFilters }) => {
+> = ({ onFilterChange, onClearAll, showClearAll, externalFilters }) => {
   const { data: staffUsers } = useStaffUsersData();
   const { data: projects } = useProjectsData();
 
@@ -41,16 +43,6 @@ const RequirementsExternalFilters: React.FC<
       })) ?? [],
     [projects]
   );
-
-  // Check if any filters are applied (excluding showOnlyMyRequirements)
-  const hasActiveFilters = useMemo(() => {
-    return Object.entries(externalFilters).some(
-      ([key, value]) =>
-        key !== "showOnlyMyRequirements" &&
-        value &&
-        (Array.isArray(value) ? value.length > 0 : value !== "")
-    );
-  }, [externalFilters]);
 
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -84,10 +76,8 @@ const RequirementsExternalFilters: React.FC<
         name="inspectionStatusFilter"
         currentValue={externalFilters.inspection_status}
       />
-      {hasActiveFilters && (
-        <Button variant="outlined" size="small" onClick={onClearAll}>
-          Clear All
-        </Button>
+      {showClearAll && (
+        <ClearAllFiltersButton onClick={onClearAll} />
       )}
     </Box>
   );
