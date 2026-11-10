@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Inspection Schema Schema."""
-from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, pre_dump, pre_load, validates_schema
+from marshmallow import EXCLUDE, ValidationError, fields, post_dump, post_load, pre_dump, validates_schema
 from marshmallow.validate import Range
 from marshmallow_enum import EnumField
 
@@ -168,15 +168,6 @@ class InspectionUpdateSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         metadata={"description": "A brief description of Project Components / Area Inspected"},
         allow_none=True,
     )
-
-    @pre_load
-    def end_date_populate(
-        self, data, **kwargs
-    ):  # pylint: disable=unused-argument
-        """Populate the end_date if it is not provided."""
-        if data.get("end_date") is None:
-            data["end_date"] = data["start_date"]
-        return data
 
     @validates_schema
     def validate_attendance_other(

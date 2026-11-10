@@ -33,7 +33,7 @@ B. Environmental Assessment Certificate {{project_details.eac_certificate}} held
 <p class="editor-paragraph" dir="ltr" style="text-align: left;"><span style="white-space: pre-wrap;">
 {% if project_details.has_certificate %}
 C. {% else %}A. {% endif %}On
-{% if inspection_details.start_date == inspection_details.end_date %}
+{% if not inspection_details.end_date or inspection_details.start_date == inspection_details.end_date %}
  {{inspection_details.start_date}}
 {% else %}
  {{inspection_details.start_date}} and {{inspection_details.end_date}}

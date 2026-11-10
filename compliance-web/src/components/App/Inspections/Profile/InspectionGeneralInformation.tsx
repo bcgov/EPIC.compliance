@@ -1,11 +1,13 @@
 import FileProfileProperty from "@/components/App/FileProfileProperty";
 import { Inspection } from "@/models/Inspection";
 import { CaseFile } from "@/models/CaseFile";
-import dateUtils from "@/utils/dateUtils";
 import { EditRounded } from "@mui/icons-material";
 import { Box, Button, Typography } from "@mui/material";
 import React, { useMemo } from "react";
-import { formatInAttendance } from "../InspectionFormUtils";
+import {
+  formatInAttendance,
+  formatInspectionDateRange,
+} from "../InspectionFormUtils";
 import DynamicHeightBox from "@/components/Shared/DynamicHeightBox";
 
 interface InspectionGeneralInformationProps {
@@ -23,14 +25,14 @@ const InspectionGeneralInformation: React.FC<
     [inspectionData, caseFileData]
   );
 
-  const dateRange = useMemo(() => {
-    const startDate = dateUtils.formatDate(inspectionData.start_date);
-    const endDate = dateUtils.formatDate(inspectionData.end_date);
-    if (startDate === endDate) {
-      return startDate;
-    }
-    return `${startDate} — ${endDate}`;
-  }, [inspectionData.start_date, inspectionData.end_date]);
+  const dateRange = useMemo(
+    () =>
+      formatInspectionDateRange(
+        inspectionData.start_date,
+        inspectionData.end_date
+      ),
+    [inspectionData.start_date, inspectionData.end_date]
+  );
 
   const properties = [
     { name: "Project", value: inspectionData.case_file?.project?.name },

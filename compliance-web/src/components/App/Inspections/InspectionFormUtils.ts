@@ -189,6 +189,18 @@ export const formatInspectionAPIData = (
   return inspectionData;
 };
 
+export const formatInspectionDateRange = (
+  start_date: string,
+  end_date?: string | null
+) => {
+  const startDate = dateUtils.formatDate(start_date);
+  if (!end_date) {
+    return startDate;
+  }
+  const endDate = dateUtils.formatDate(end_date);
+  return startDate === endDate ? startDate : `${startDate} — ${endDate}`;
+};
+
 export const formatInAttendance = (
   inspectionData?: Inspection,
   caseFileData?: CaseFile,
