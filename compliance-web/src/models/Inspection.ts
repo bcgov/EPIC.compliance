@@ -24,7 +24,7 @@ export interface Inspection {
   ir_status_id: number;
   primary_officer_id: number;
   start_date: string;
-  end_date: string;
+  end_date?: string | null;
   debrief_date: string;
   types: IRType[];
   types_text: string; // TODO: Remove this once the table filter is updated

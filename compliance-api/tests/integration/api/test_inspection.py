@@ -86,6 +86,51 @@ def test_create_inspection(
     assert result.json["inspection_status"] == InspectionStatusEnum.OPEN.value
 
 
+def test_inspection_end_date_optional(
+    client, auth_header_super_user, created_staff, created_case_file, mock_track_service
+):
+    """End date stays blank unless entered; it is not populated from start date."""
+    inspection_data = copy.copy(InspectionScenario.default_value.value)
+    inspection_data.update(
+        {
+            "case_file_id": created_case_file.id,
+            "primary_officer_id": created_staff.id,
+            "initiation_id": 1,
+        }
+    )
+    inspection_data.pop("end_date")
+
+    result = client.post(
+        urljoin(API_BASE_URL, "inspections"),
+        data=json.dumps(inspection_data),
+        headers=auth_header_super_user,
+    )
+    assert result.status_code == HTTPStatus.CREATED
+    assert result.json["end_date"] is None
+
+    url = urljoin(API_BASE_URL, f"inspections/{result.json['id']}")
+    result = client.get(url, headers=auth_header_super_user)
+    assert result.json["end_date"] is None
+
+    # Manually entered end date is saved
+    update_data = copy.copy(inspection_data)
+    update_data.pop("case_file_id")
+    update_data["end_date"] = "2024-08-30T20:18:55.741Z"
+    result = client.patch(
+        url, data=json.dumps(update_data), headers=auth_header_super_user
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["end_date"].startswith("2024-08-30")
+
+    # Clearing end date saves null
+    update_data["end_date"] = None
+    result = client.patch(
+        url, data=json.dumps(update_data), headers=auth_header_super_user
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["end_date"] is None
+
+
 def test_create_inspection_with_invalid_case_file(
     client, auth_header_super_user, created_staff, created_case_file, mock_track_service
 ):

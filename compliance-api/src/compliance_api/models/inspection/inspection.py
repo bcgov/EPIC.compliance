@@ -78,7 +78,7 @@ class Inspection(BaseModelVersioned):
         comment="The inspection start date",
     )
     end_date = Column(
-        DateTime(timezone=True), nullable=False, comment="The inspection end date"
+        DateTime(timezone=True), nullable=True, comment="The inspection end date"
     )
     debrief_date = Column(
         DateTime(timezone=True),
