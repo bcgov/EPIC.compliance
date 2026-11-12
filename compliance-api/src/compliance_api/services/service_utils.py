@@ -523,7 +523,7 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
     @staticmethod
     def get_requirement_grid_source_number_field(
         detail_obj: InspectionReqSourceDetailModel
-    ):  # pylint: disable=too-many-return-statements
+    ):
         """Identify the number field based on the requirement source id for the requirements grid."""
         requirement_source = RequirementSourceEnum(detail_obj.requirement_source_id)
         section_sources = {
@@ -531,19 +531,15 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             RequirementSourceEnum.ACT_2002,
             RequirementSourceEnum.CERTIFIED_PROJECT_DESCRIPTION,
             RequirementSourceEnum.COMPLIANCE_AGREEMENT,
+            RequirementSourceEnum.REGULATION,
         }
         condition_sources = {
             RequirementSourceEnum.EAC_CERTIFICATE,
-            RequirementSourceEnum.SCHEDULE_B,
-        }
-        amendment_sources = {
             RequirementSourceEnum.EAC_AMENDMENT,
+            RequirementSourceEnum.SCHEDULE_B,
         }
         order_sources = {
             RequirementSourceEnum.ORDER,
-        }
-        regulation_sources = {
-            RequirementSourceEnum.REGULATION,
         }
         exemption_sources = {
             RequirementSourceEnum.EXEMPTION_ORDER,
@@ -552,12 +548,8 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             return getattr(detail_obj, "section_number", "")
         if requirement_source in condition_sources:
             return getattr(detail_obj, "condition_number", "")
-        if requirement_source in amendment_sources:
-            return getattr(detail_obj, "amendment_number", "")
         if requirement_source in order_sources:
             return getattr(detail_obj.order, "order_number", "")
-        if requirement_source in regulation_sources:
-            return getattr(detail_obj, "regulation_number", "")
         if requirement_source in exemption_sources:
             return getattr(detail_obj, "clause_number", "")
         return getattr(detail_obj, "section_number", "")
