@@ -119,8 +119,7 @@ def _rendered_item_count(list_tag):
         )
         if has_own_content:
             count += 1
-        nested = item.find(["ul", "ol"], recursive=False)
-        if nested:
+        for nested in item.find_all(["ul", "ol"], recursive=False):
             count += _rendered_item_count(nested)
     return count
 

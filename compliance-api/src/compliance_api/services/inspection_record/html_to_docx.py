@@ -7,7 +7,7 @@ numbering/bullet styles matching the web editor.
 import random
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -18,6 +18,10 @@ from .docx_utils import _add_hyperlink, set_cell_border
 
 # Tags that make a paragraph take the run-by-run formatting path
 STRIKE_TAGS = ['s', 'del', 'strike']
+# Top-level tags the converter renders; anything else has to be brought into one of them
+BLOCK_TAGS = ['p', 'ol', 'ul', 'table']
+WRAPPER_TAGS = ['div', 'blockquote']
+HEADING_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
 INLINE_FORMAT_TAGS = ['i', 'em', 'strong', 'b', 'mark', 'br', 'span', 'a', 'u'] + STRIKE_TAGS
 
 
@@ -40,6 +44,24 @@ def _collapse_whitespace(text):
     return re.sub(r'[ \t\r\n\f]+', ' ', text)
 
 
+def _ends_with_space(para):
+    """Return True when the paragraph's last text ends in a space.
+
+    Reads the XML rather than para.runs, which leaves out text inside hyperlinks.
+    """
+    texts = para._p.xpath('.//w:t')
+    return bool(texts) and (texts[-1].text or '').endswith(' ')
+
+
+def _space_text(para, text, pending_space):
+    """Return text with the single space a browser would show between it and what precedes it."""
+    if _ends_with_space(para):
+        return text.lstrip()
+    if pending_space and not text.startswith(' '):
+        return ' ' + text
+    return text
+
+
 def collapse_html_newlines(html):
     """Fold source line wrapping in HTML into single spaces.
 
@@ -56,19 +78,41 @@ def collapse_html_newlines(html):
 def prepare_html_for_docx(html):
     """Ready template-generated rich text for conversion.
 
-    Folds source line wrapping and lifts content out of <div> wrappers, which
-    the converter would otherwise skip along with everything inside them (the
-    default warning letter keeps its recipient block in one).
+    Folds source line wrapping and brings everything into the paragraphs,
+    lists and tables the converter renders; it skips any other top-level
+    content. Content is lifted out of <div> and <blockquote> wrappers (the
+    default warning letter keeps its recipient block in a <div>), headings
+    become bold paragraphs, and loose text is wrapped in a paragraph.
     """
     if not html:
         return html
-    folded = collapse_html_newlines(html)
+    soup = BeautifulSoup(collapse_html_newlines(html), "html.parser")
+    for wrapper in soup.find_all(WRAPPER_TAGS):
+        wrapper.unwrap()
+    for heading in soup.find_all(HEADING_TAGS):
+        heading.name = 'p'
+        heading['style'] = f"font-weight: bold; {heading.get('style', '')}".strip()
+    _wrap_loose_content(soup)
     # A wrapped line before a closing block tag would otherwise leave a trailing space
-    folded = re.sub(r'\s+(</(?:p|li|td|th)>)', r'\1', folded)
-    soup = BeautifulSoup(folded, "html.parser")
-    for div in soup.find_all("div"):
-        div.unwrap()
-    return str(soup)
+    return re.sub(r'\s+(</(?:p|li|td|th)>)', r'\1', str(soup))
+
+
+def _wrap_loose_content(soup):
+    """Gather each run of top-level text and inline tags into a paragraph of its own."""
+    group = None
+    for node in list(soup.children):
+        if getattr(node, 'name', None) in BLOCK_TAGS:
+            group = None
+            continue
+        if isinstance(node, Comment):
+            continue
+        if group is None:
+            if isinstance(node, str) and not node.strip():
+                # Whitespace between blocks
+                continue
+            group = soup.new_tag('p')
+            node.insert_before(group)
+        group.append(node)
 
 
 def init_list_numbering(document):
@@ -220,10 +264,8 @@ def _add_formatted_text_to_container(  # pylint: disable=too-many-arguments
                     # Whitespace-only node: emit only if more content follows
                     pending_space = True
                     return
-                if pending_space:
-                    pending_space = False
-                    if not text.startswith(' '):
-                        text = ' ' + text
+                text = _space_text(para, text, pending_space)
+                pending_space = False
                 at_para_start = False
                 run = para.add_run(text)
                 if inherited_bold:
@@ -259,30 +301,22 @@ def _add_formatted_text_to_container(  # pylint: disable=too-many-arguments
                 process_node(child, inherited_bold=inherited_bold, inherited_italic=inherited_italic,
                              inherited_highlight=inherited_highlight, inherited_underline=True)
         elif node.name == 'br':
-            # Find remaining siblings to check if we need a new paragraph
-            parent = node.parent
-            if parent:
-                siblings = list(parent.children)
-                try:
-                    idx = siblings.index(node)
-                    remaining = siblings[idx + 1:]
-                    has_more_content = any(
-                        (isinstance(c, str) and c.strip()) or
-                        (hasattr(c, 'get_text') and c.get_text(strip=True))
-                        for c in remaining
-                    )
-                    if has_more_content:
-                        para = container.add_paragraph()
-                        if alignment is not None:
-                            para.alignment = alignment
-                        at_para_start = True
-                        pending_space = False
-                except ValueError:
-                    pass
+            # Only start a new paragraph when content follows this <br>
+            has_more_content = any(
+                (isinstance(c, str) and c.strip()) or
+                (hasattr(c, 'get_text') and c.get_text(strip=True))
+                for c in node.next_siblings
+            )
+            if has_more_content:
+                para = container.add_paragraph()
+                if alignment is not None:
+                    para.alignment = alignment
+                at_para_start = True
+                pending_space = False
         elif _is_marked_link(node):
             text = _collapse_whitespace(node.get_text())
             if text.strip():
-                follows_space = bool(para.runs) and para.runs[-1].text.endswith(' ')
+                follows_space = _ends_with_space(para)
                 if (pending_space or text.startswith(' ')) and not at_para_start and not follows_space:
                     spacer = para.add_run(' ')
                     if font_size:
@@ -520,10 +554,8 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
             # Whitespace-only node: emit only if more content follows
             pending_space = True
             return
-        if pending_space:
-            pending_space = False
-            if not text.startswith(' '):
-                text = ' ' + text
+        text = _space_text(para, text, pending_space)
+        pending_space = False
         at_para_start = False
         run = para.add_run(text)
         if bold:
@@ -543,7 +575,7 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
         text = _collapse_whitespace(node.get_text())
         if not text.strip():
             return
-        follows_space = bool(para.runs) and para.runs[-1].text.endswith(' ')
+        follows_space = _ends_with_space(para)
         if (pending_space or text.startswith(' ')) and not at_para_start and not follows_space:
             para.add_run(' ').font.size = Pt(11)
         _add_hyperlink(para, text.strip(), node['href'])
@@ -897,8 +929,6 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_tag.find_all("li", recursive=False):
-        nested_list = li.find(['ul', 'ol'], recursive=False)
-
         has_direct_content = any(
             (isinstance(child, str) and child.strip()) or
             (hasattr(child, 'name') and child.name not in ['ul', 'ol'] and child.get_text(strip=True))
@@ -935,7 +965,7 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
 
             _add_formatted_list_item_text(para, li, font_size)
 
-        if nested_list:
+        for nested_list in li.find_all(['ul', 'ol'], recursive=False):
             # Pass both numIds so nested lists can switch between bullet/numbered
             _add_list(container, nested_list, font_size, level=level + 1,
                       bullet_num_id=bullet_num_id, number_num_id=number_num_id)
@@ -959,10 +989,8 @@ def _add_formatted_list_item_text(para, li_element, font_size):
             # Whitespace-only node: emit only if more content follows
             pending_space = True
             return
-        if pending_space:
-            pending_space = False
-            if not text.startswith(' '):
-                text = ' ' + text
+        text = _space_text(para, text, pending_space)
+        pending_space = False
         at_line_start = False
         run = para.add_run(text)
         if bold:
@@ -983,7 +1011,7 @@ def _add_formatted_list_item_text(para, li_element, font_size):
         text = _collapse_whitespace(node.get_text())
         if not text.strip():
             return
-        follows_space = bool(para.runs) and para.runs[-1].text.endswith(' ')
+        follows_space = _ends_with_space(para)
         if (pending_space or text.startswith(' ')) and not at_line_start and not follows_space:
             spacer = para.add_run(' ')
             if font_size:
@@ -1071,8 +1099,6 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_element.find_all('li', recursive=False):
-        nested_list = li.find(['ul', 'ol'], recursive=False)
-
         has_direct_content = any(
             (isinstance(child, str) and child.strip()) or
             (hasattr(child, 'name') and child.name not in ['ul', 'ol'] and child.get_text(strip=True))
@@ -1109,7 +1135,7 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
 
             _add_formatted_list_item_text(para, li, Pt(11))
 
-        if nested_list:
+        for nested_list in li.find_all(['ul', 'ol'], recursive=False):
             # Pass both numIds so nested lists can switch between bullet/numbered
             _add_list_to_table_cell(cell, nested_list, level=level + 1,
                                     bullet_num_id=bullet_num_id, number_num_id=number_num_id)
