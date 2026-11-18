@@ -157,65 +157,61 @@ def _apply_letter_base_style(doc, font_size, line_spacing):
     style.paragraph_format.line_spacing = line_spacing
 
 
-def _append_field_char(paragraph, char_type, font_size=None):
+def _append_field_char(paragraph, char_type):
     """Append a run holding a single field character (begin, separate or end)."""
     run = paragraph.add_run()
-    if font_size:
-        run.font.size = font_size
     fld_char = OxmlElement('w:fldChar')
     fld_char.set(qn('w:fldCharType'), char_type)
     run._r.append(fld_char)
 
 
-def _append_field_instruction(paragraph, text, font_size=None):
+def _append_field_instruction(paragraph, text):
     """Append a run holding field instruction text."""
     run = paragraph.add_run()
-    if font_size:
-        run.font.size = font_size
     instr_text = OxmlElement('w:instrText')
     instr_text.set(qn('xml:space'), 'preserve')
     instr_text.text = text
     run._r.append(instr_text)
 
 
-def _append_simple_field(paragraph, instruction, font_size=None):
+def _append_simple_field(paragraph, instruction):
     """Append a complete field with no cached result, e.g. PAGE or NUMPAGES."""
-    _append_field_char(paragraph, 'begin', font_size)
-    _append_field_instruction(paragraph, f' {instruction} ', font_size)
-    _append_field_char(paragraph, 'end', font_size)
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, f' {instruction} ')
+    _append_field_char(paragraph, 'end')
 
 
-def _add_continuation_marker(paragraph, font_size=None):
+def _add_continuation_marker(paragraph):
     """Append a "... N+1" marker that shows on every page except the last.
 
     Built as the nested Word field
     ``{ IF { PAGE } < { NUMPAGES } "... { = { PAGE } + 1 }" "" }`` so Word
     works it out per page when it lays the document out.
     """
-    _append_field_char(paragraph, 'begin', font_size)
-    _append_field_instruction(paragraph, ' IF ', font_size)
-    _append_simple_field(paragraph, 'PAGE', font_size)
-    _append_field_instruction(paragraph, ' < ', font_size)
-    _append_simple_field(paragraph, 'NUMPAGES', font_size)
-    _append_field_instruction(paragraph, ' "... ', font_size)
-    _append_field_char(paragraph, 'begin', font_size)
-    _append_field_instruction(paragraph, ' = ', font_size)
-    _append_simple_field(paragraph, 'PAGE', font_size)
-    _append_field_instruction(paragraph, ' + 1 ', font_size)
-    _append_field_char(paragraph, 'end', font_size)
-    _append_field_instruction(paragraph, '" "" ', font_size)
-    _append_field_char(paragraph, 'separate', font_size)
-    _append_field_char(paragraph, 'end', font_size)
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' IF ')
+    _append_simple_field(paragraph, 'PAGE')
+    _append_field_instruction(paragraph, ' < ')
+    _append_simple_field(paragraph, 'NUMPAGES')
+    _append_field_instruction(paragraph, ' "... ')
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' = ')
+    _append_simple_field(paragraph, 'PAGE')
+    _append_field_instruction(paragraph, ' + 1 ')
+    _append_field_char(paragraph, 'end')
+    _append_field_instruction(paragraph, '" "" ')
+    _append_field_char(paragraph, 'separate')
+    _append_field_char(paragraph, 'end')
 
 
-def _add_first_page_continuation_marker(paragraph, font_size=None):
+def _add_first_page_continuation_marker(paragraph):
     """Append a "...2" marker that shows only when the document runs past its first page.
 
     Built as the Word field ``{ IF { NUMPAGES } > 1 "...2" "" }``.
     """
-    _append_field_char(paragraph, 'begin', font_size)
-    _append_field_instruction(paragraph, ' IF ', font_size)
-    _append_simple_field(paragraph, 'NUMPAGES', font_size)
-    _append_field_instruction(paragraph, ' > 1 "...2" "" ', font_size)
-    _append_field_char(paragraph, 'separate', font_size)
-    _append_field_char(paragraph, 'end', font_size)
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' IF ')
+    _append_simple_field(paragraph, 'NUMPAGES')
+    _append_field_instruction(paragraph, ' > 1 "...2" "" ')
+    _append_field_char(paragraph, 'separate')
+    _append_field_char(paragraph, 'end')
