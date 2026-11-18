@@ -16,6 +16,7 @@ from compliance_api.schemas.warning_letter_approval import (
     CreateWarningLetterApprovalSchema, UpdateWarningLetterApprovalStatusSchema, WarningLetterApprovalSchema)
 from compliance_api.services.warning_letter.warning_letter import WarningLetterService
 from compliance_api.services.warning_letter.warning_letter_approval import WarningLetterApprovalService
+from compliance_api.utils.constant import DOCX_MIMETYPE
 from compliance_api.utils.limiter import limiter
 
 from .apihelper import Api as ApiHelper
@@ -240,7 +241,7 @@ class WarningLetterRescind(Resource):
 
 @API.route("/<int:warning_letter_id>/render", methods=["POST"])
 class WarningLetterPreview(Resource):
-    """Resource for managing warning letter preview and pdf."""
+    """Resource for managing warning letter preview, pdf and docx."""
 
     decorators = [limiter.limit("10 per minute")]
 
@@ -263,6 +264,13 @@ class WarningLetterPreview(Resource):
                 mimetype="application/pdf",
                 as_attachment=True,
                 download_name=f"{warning_letter.warning_letter_number}.pdf",
+            )
+        if output_format == "docx":
+            return send_file(
+                response,
+                mimetype=DOCX_MIMETYPE,
+                as_attachment=True,
+                download_name=f"{warning_letter.warning_letter_number}.docx",
             )
         return response.json(), HTTPStatus.OK
 

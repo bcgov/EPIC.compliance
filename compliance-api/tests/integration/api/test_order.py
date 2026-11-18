@@ -4,8 +4,13 @@ import copy
 import json
 import random
 from http import HTTPStatus
+from io import BytesIO
 from urllib.parse import urljoin
 
+import pytest
+from docx import Document
+
+from compliance_api.exceptions import PermissionDeniedError
 from compliance_api.models.order import Order, OrderStatusEnum
 from tests.utilities.factory_scenario.order_scenario import OrderScenario
 
@@ -822,3 +827,62 @@ def test_concurrent_order_creation_same_requirements(
         in [HTTPStatus.CREATED, HTTPStatus.UNPROCESSABLE_ENTITY, HTTPStatus.BAD_REQUEST]
         for code in status_codes
     )
+
+
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _deny_update_access(mocker):
+    """Make the update-access check refuse, as it does for a non-officer, non-superuser."""
+    return mocker.patch(
+        "compliance_api.services.service_utils.ServiceUtils.access_check_update_for_inspection",
+        side_effect=PermissionDeniedError("Not allowed"),
+    )
+
+
+def test_order_render_docx(
+    client, auth_header_super_user, created_order, mock_doc_gen_service, session
+):
+    """DOCX render returns a Word file named after the order without calling docgen."""
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": "docx"}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.mimetype == DOCX_MIME
+    disposition = result.headers["Content-Disposition"].replace('"', "")
+    assert "attachment" in disposition
+    assert f"filename={created_order.order_number}.docx" in disposition
+    doc = Document(BytesIO(result.data))
+    assert any(
+        f"Order Ref: {created_order.order_number}" in p.text for p in doc.paragraphs
+    )
+    mock_doc_gen_service.assert_not_called()
+
+
+@pytest.mark.parametrize("output_format", ["pdf", "docx"])
+def test_order_download_requires_update_access(
+    client, auth_header_super_user, created_order, mock_doc_gen_service, session, mocker, output_format
+):
+    """A user refused by the update-access check cannot download the order."""
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    _deny_update_access(mocker)
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": output_format}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_order_html_preview_does_not_require_update_access(
+    client, auth_header_super_user, created_order, mock_doc_gen_service, session, mocker
+):
+    """The on-screen preview never consults the update-access check."""
+    url = urljoin(API_BASE_URL, f"{created_order.id}/render")
+    _deny_update_access(mocker)
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": "html"}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.OK

@@ -54,10 +54,10 @@ const warningLetterRender = ({
   format,
 }: {
   inspectionWarningLetterId: number;
-  format: "html" | "pdf";
+  format: "html" | "pdf" | "docx";
 }) => {
-  // If requesting PDF, specify responseType as 'blob'
-  const responseType = format === "pdf" ? "blob" : "json";
+  // PDF and DOCX come back as files, so ask for a blob
+  const responseType = format === "html" ? "json" : "blob";
 
   return request({
     method: "POST",

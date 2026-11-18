@@ -10,6 +10,7 @@ from compliance_api.auth import auth
 from compliance_api.exceptions import ResourceNotFoundError
 from compliance_api.services.order.order import OrderService
 from compliance_api.services.order.order_approval import OrderApprovalService
+from compliance_api.utils.constant import DOCX_MIMETYPE
 from compliance_api.utils.limiter import limiter
 
 from ..schemas import (
@@ -248,7 +249,7 @@ class OrderFieldReset(Resource):
 
 @API.route("/<int:order_id>/render", methods=["POST"])
 class OrderPreview(Resource):
-    """Resource for managing order preview and pdf."""
+    """Resource for managing order preview, pdf and docx."""
 
     decorators = [limiter.limit("10 per minute")]
 
@@ -269,6 +270,13 @@ class OrderPreview(Resource):
                 mimetype="application/pdf",
                 as_attachment=True,
                 download_name=f"{order.order_number}.pdf",
+            )
+        if output_format == "docx":
+            return send_file(
+                response,
+                mimetype=DOCX_MIMETYPE,
+                as_attachment=True,
+                download_name=f"{order.order_number}.docx",
             )
         return response.json(), HTTPStatus.OK
 

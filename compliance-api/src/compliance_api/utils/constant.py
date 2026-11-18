@@ -20,3 +20,6 @@ GROUP_MAP = {
     PermissionEnum.USER: "user",
     PermissionEnum.ADMIN: "admin",
 }
+# Render output formats that hand a document to the user and so need update access
+DOWNLOAD_FORMATS = ("pdf", "docx")
+DOCX_MIMETYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
