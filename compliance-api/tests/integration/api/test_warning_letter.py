@@ -5,8 +5,13 @@ import json
 import random
 from datetime import datetime, timezone
 from http import HTTPStatus
+from io import BytesIO
 from urllib.parse import urljoin
 
+import pytest
+from docx import Document
+
+from compliance_api.exceptions import PermissionDeniedError
 from compliance_api.models import InspectionRequirement, InspectionRequirementTypeEnum, db
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum, IRStatusEnum
 from compliance_api.models.warning_letter import (
@@ -823,3 +828,72 @@ def test_create_multiple_warning_letters_same_inspection(
     assert (
         result_1.json["warning_letter_number"] != result_2.json["warning_letter_number"]
     )
+
+
+DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+
+def _deny_update_access(mocker):
+    """Make the update-access check refuse, as it does for a non-officer, non-superuser."""
+    return mocker.patch(
+        "compliance_api.services.service_utils.ServiceUtils.access_check_update_for_inspection",
+        side_effect=PermissionDeniedError("Not allowed"),
+    )
+
+
+def test_render_warning_letter_docx(
+    client,
+    auth_header_super_user,
+    created_warning_letter_with_content,
+    mock_doc_gen_service,
+):
+    """DOCX render returns a Word file named after the letter without calling docgen."""
+    warning_letter = created_warning_letter_with_content
+    url = urljoin(API_BASE_URL, f"{warning_letter.id}/render")
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": "docx"}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.mimetype == DOCX_MIME
+    disposition = result.headers["Content-Disposition"].replace('"', "")
+    assert "attachment" in disposition
+    assert f"filename={warning_letter.warning_letter_number}.docx" in disposition
+    doc = Document(BytesIO(result.data))
+    assert any(
+        p.text == f"Ref: {warning_letter.warning_letter_number}" for p in doc.paragraphs
+    )
+    assert any(p.text == "Sincerely," for p in doc.paragraphs)
+    mock_doc_gen_service.assert_not_called()
+
+
+@pytest.mark.parametrize("output_format", ["pdf", "docx"])
+def test_warning_letter_download_requires_update_access(
+    client,
+    auth_header_super_user,
+    created_warning_letter_with_content,
+    mock_doc_gen_service,
+    mocker,
+    output_format,
+):
+    """A user refused by the update-access check cannot download the letter."""
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_with_content.id}/render")
+    _deny_update_access(mocker)
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": output_format}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_warning_letter_html_preview_does_not_require_update_access(
+    client, auth_header_super_user, created_warning_letter_with_content, mock_doc_gen_service, mocker
+):
+    """The on-screen preview never consults the update-access check."""
+    url = urljoin(API_BASE_URL, f"{created_warning_letter_with_content.id}/render")
+    _deny_update_access(mocker)
+    headers = {**auth_header_super_user, "Content-Type": "application/json"}
+    result = client.post(
+        url, data=json.dumps({"output_format": "html"}), headers=headers
+    )
+    assert result.status_code == HTTPStatus.OK

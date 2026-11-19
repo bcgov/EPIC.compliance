@@ -7,13 +7,32 @@ numbering/bullet styles matching the web editor.
 import random
 import re
 
-from bs4 import BeautifulSoup
-from docx.enum.text import WD_COLOR_INDEX
+from bs4 import BeautifulSoup, Comment
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_COLOR_INDEX
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
 
-from .docx_utils import set_cell_border
+from .docx_utils import _add_hyperlink, set_cell_border
+
+
+# Tags that make a paragraph take the run-by-run formatting path
+STRIKE_TAGS = ['s', 'del', 'strike']
+# Top-level tags the converter renders; anything else has to be brought into one of them
+BLOCK_TAGS = ['p', 'ol', 'ul', 'table']
+WRAPPER_TAGS = ['div', 'blockquote']
+HEADING_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+INLINE_FORMAT_TAGS = ['i', 'em', 'strong', 'b', 'mark', 'br', 'span', 'a', 'u'] + STRIKE_TAGS
+
+
+def _is_marked_link(node):
+    """Return True for an <a> a caller has opted in to rendering as a real hyperlink."""
+    return node.name == 'a' and bool(node.get('data-docx-link')) and bool(node.get('href'))
+
+
+def _is_struck(node):
+    """Return True when the node sits inside struck-through markup."""
+    return node.find_parent(STRIKE_TAGS) is not None
 
 
 def _collapse_whitespace(text):
@@ -23,6 +42,77 @@ def _collapse_whitespace(text):
     which shows up as extra blank lines in the document.
     """
     return re.sub(r'[ \t\r\n\f]+', ' ', text)
+
+
+def _ends_with_space(para):
+    """Return True when the paragraph's last text ends in a space.
+
+    Reads the XML rather than para.runs, which leaves out text inside hyperlinks.
+    """
+    texts = para._p.xpath('.//w:t')
+    return bool(texts) and (texts[-1].text or '').endswith(' ')
+
+
+def _space_text(para, text, pending_space):
+    """Return text with the single space a browser would show between it and what precedes it."""
+    if _ends_with_space(para):
+        return text.lstrip()
+    if pending_space and not text.startswith(' '):
+        return ' ' + text
+    return text
+
+
+def collapse_html_newlines(html):
+    """Fold source line wrapping in HTML into single spaces.
+
+    Content generated from the default templates is wrapped across lines in
+    its source. A browser ignores that wrapping; python-docx would turn each
+    newline into a line break, so callers that render such content fold it
+    first.
+    """
+    if not html:
+        return html
+    return re.sub(r'\s*[\r\n]+\s*', ' ', html)
+
+
+def prepare_html_for_docx(html):
+    """Ready template-generated rich text for conversion.
+
+    Folds source line wrapping and brings everything into the paragraphs,
+    lists and tables the converter renders; it skips any other top-level
+    content. Content is lifted out of <div> and <blockquote> wrappers (the
+    default warning letter keeps its recipient block in a <div>), headings
+    become bold paragraphs, and loose text is wrapped in a paragraph.
+    """
+    if not html:
+        return html
+    soup = BeautifulSoup(collapse_html_newlines(html), "html.parser")
+    for wrapper in soup.find_all(WRAPPER_TAGS):
+        wrapper.unwrap()
+    for heading in soup.find_all(HEADING_TAGS):
+        heading.name = 'p'
+        heading['style'] = f"font-weight: bold; {heading.get('style', '')}".strip()
+    _wrap_loose_content(soup)
+    # A wrapped line before a closing block tag would otherwise leave a trailing space
+    return re.sub(r'\s+(</(?:p|li|td|th)>)', r'\1', str(soup))
+
+
+def _wrap_loose_content(soup):
+    """Gather each run of top-level text and inline tags into a paragraph of its own."""
+    group = None
+    for node in list(soup.children):
+        if getattr(node, 'name', None) in BLOCK_TAGS:
+            group = None
+            continue
+        if isinstance(node, Comment):
+            continue
+        if group is None:
+            if isinstance(node, str) and not node.strip():
+                # Whitespace between blocks
+                continue
+            group = soup.new_tag('p')
+            node.insert_before(group)
+        group.append(node)
 
 
 def init_list_numbering(document):
@@ -76,15 +166,23 @@ def _add_html_to_container(container, html_text, *, font_size=None, clear_first=
             # Use the first empty paragraph if available
             if not first_para_used and hasattr(container, 'paragraphs') and container.paragraphs:
                 para = container.paragraphs[0]
+                alignment = _get_text_align(element)
+                bold = _is_bold_paragraph(element)
+                if alignment is not None:
+                    para.alignment = alignment
                 # Handle text with inline formatting (italic, bold, or span which may wrap mentions)
-                if element.find(['i', 'em', 'strong', 'b', 'mark', 'br', 'span', 'a']):
-                    _add_formatted_text_to_container(container, element, font_size, first_para=para)
+                if element.find(INLINE_FORMAT_TAGS):
+                    _add_formatted_text_to_container(
+                        container, element, font_size, first_para=para, alignment=alignment, bold=bold
+                    )
                 else:
                     text = element.get_text(strip=True)
                     # Replace 2+ spaces with single space
                     text = re.sub(r' {2,}', ' ', text)
                     if text:
                         run = para.add_run(text)
+                        if bold:
+                            run.bold = True
                         if font_size:
                             run.font.size = font_size
                 # Apply indentation
@@ -113,9 +211,16 @@ def _add_paragraph(container, p_tag, font_size):
     if indent_inches > 0:
         para.paragraph_format.left_indent = Inches(indent_inches)
 
+    alignment = _get_text_align(p_tag)
+    bold = _is_bold_paragraph(p_tag)
+    if alignment is not None:
+        para.alignment = alignment
+
     # Handle text with inline formatting (italic, bold, br, or span which may wrap mentions)
-    if p_tag.find(['i', 'em', 'strong', 'b', 'mark', 'br', 'span', 'a']):
-        _add_formatted_text_to_container(container, p_tag, font_size, first_para=para)
+    if p_tag.find(INLINE_FORMAT_TAGS):
+        _add_formatted_text_to_container(
+            container, p_tag, font_size, first_para=para, alignment=alignment, bold=bold
+        )
     else:
         text = p_tag.get_text(strip=True)
         # Replace 2+ spaces with single space
@@ -123,21 +228,30 @@ def _add_paragraph(container, p_tag, font_size):
         if not text:
             return
         run = para.add_run(text)
+        if bold:
+            run.bold = True
         if font_size:
             run.font.size = font_size
 
 
-def _add_formatted_text_to_container(container, element, font_size, first_para=None):
-    """Add text with inline formatting (bold, italic, highlight) to a container.
+def _add_formatted_text_to_container(  # pylint: disable=too-many-arguments
+    container, element, font_size, first_para=None, *, alignment=None, bold=False
+):
+    """Add text with inline formatting (bold, italic, underline, highlight) to a container.
 
-    Creates new paragraphs for <br> tags.
+    Creates new paragraphs for <br> tags. ``alignment`` is applied to every
+    paragraph created here and ``bold`` is the paragraph-level bold every run
+    starts from.
     """
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else container.add_paragraph()
+    if alignment is not None:
+        para.alignment = alignment
     at_para_start = True
     pending_space = False
 
-    def process_node(node, inherited_bold=False, inherited_italic=False, inherited_highlight=False):
+    def process_node(node, inherited_bold=bold, inherited_italic=False, inherited_highlight=False,
+                     inherited_underline=False):
         """Recursively process nodes, tracking inherited formatting."""
         nonlocal para, at_para_start, pending_space
 
@@ -150,10 +264,8 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
                     # Whitespace-only node: emit only if more content follows
                     pending_space = True
                     return
-                if pending_space:
-                    pending_space = False
-                    if not text.startswith(' '):
-                        text = ' ' + text
+                text = _space_text(para, text, pending_space)
+                pending_space = False
                 at_para_start = False
                 run = para.add_run(text)
                 if inherited_bold:
@@ -162,53 +274,98 @@ def _add_formatted_text_to_container(container, element, font_size, first_para=N
                     run.italic = True
                 if inherited_highlight:
                     run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+                if inherited_underline:
+                    run.underline = True
+                if _is_struck(node):
+                    run.font.strike = True
                 if font_size:
                     run.font.size = font_size
         elif node.name in ['strong', 'b']:
             # Process children with bold inherited
             for child in node.children:
                 process_node(child, inherited_bold=True, inherited_italic=inherited_italic,
-                             inherited_highlight=inherited_highlight)
+                             inherited_highlight=inherited_highlight, inherited_underline=inherited_underline)
         elif node.name in ['em', 'i']:
             # Process children with italic inherited
             for child in node.children:
                 process_node(child, inherited_bold=inherited_bold, inherited_italic=True,
-                             inherited_highlight=inherited_highlight)
+                             inherited_highlight=inherited_highlight, inherited_underline=inherited_underline)
         elif node.name == 'mark':
             # Process children with highlighting inherited
             for child in node.children:
                 process_node(child, inherited_bold=inherited_bold, inherited_italic=inherited_italic,
-                             inherited_highlight=True)
+                             inherited_highlight=True, inherited_underline=inherited_underline)
+        elif node.name == 'u':
+            # Process children with underline inherited
+            for child in node.children:
+                process_node(child, inherited_bold=inherited_bold, inherited_italic=inherited_italic,
+                             inherited_highlight=inherited_highlight, inherited_underline=True)
         elif node.name == 'br':
-            # Find remaining siblings to check if we need a new paragraph
-            parent = node.parent
-            if parent:
-                siblings = list(parent.children)
-                try:
-                    idx = siblings.index(node)
-                    remaining = siblings[idx + 1:]
-                    has_more_content = any(
-                        (isinstance(c, str) and c.strip()) or
-                        (hasattr(c, 'get_text') and c.get_text(strip=True))
-                        for c in remaining
-                    )
-                    if has_more_content:
-                        para = container.add_paragraph()
-                        at_para_start = True
-                        pending_space = False
-                except ValueError:
-                    pass
+            # Only start a new paragraph when content follows this <br>
+            has_more_content = any(
+                (isinstance(c, str) and c.strip()) or
+                (hasattr(c, 'get_text') and c.get_text(strip=True))
+                for c in node.next_siblings
+            )
+            if has_more_content:
+                para = container.add_paragraph()
+                if alignment is not None:
+                    para.alignment = alignment
+                at_para_start = True
+                pending_space = False
+        elif _is_marked_link(node):
+            text = _collapse_whitespace(node.get_text())
+            if text.strip():
+                follows_space = _ends_with_space(para)
+                if (pending_space or text.startswith(' ')) and not at_para_start and not follows_space:
+                    spacer = para.add_run(' ')
+                    if font_size:
+                        spacer.font.size = font_size
+                _add_hyperlink(para, text.strip(), node['href'])
+                at_para_start = False
+                pending_space = text.endswith(' ')
         elif hasattr(node, 'children'):
             # For other elements, process children preserving inherited formatting
             for child in node.children:
                 process_node(child, inherited_bold=inherited_bold, inherited_italic=inherited_italic,
-                             inherited_highlight=inherited_highlight)
+                             inherited_highlight=inherited_highlight, inherited_underline=inherited_underline)
 
     # Convert to list to process all children
     children = list(element.children)
 
     for child in children:
         process_node(child)
+
+
+TEXT_ALIGN_MAP = {
+    "center": WD_ALIGN_PARAGRAPH.CENTER,
+    "right": WD_ALIGN_PARAGRAPH.RIGHT,
+    "end": WD_ALIGN_PARAGRAPH.RIGHT,
+    "justify": WD_ALIGN_PARAGRAPH.JUSTIFY,
+}
+
+
+def _get_text_align(element):
+    """Return the Word alignment for an element's text-align style.
+
+    Left/start (the default) and anything unrecognised return None so the
+    paragraph is left exactly as it was.
+    """
+    match = re.search(r'text-align:\s*([a-z]+)', element.get('style', '') or '', re.IGNORECASE)
+    if not match:
+        return None
+    return TEXT_ALIGN_MAP.get(match.group(1).lower())
+
+
+def _is_bold_paragraph(element):
+    """Return True when the element's own style makes its text bold."""
+    match = re.search(r'font-weight:\s*([a-z0-9]+)', element.get('style', '') or '', re.IGNORECASE)
+    if not match:
+        return False
+    weight = match.group(1).lower()
+    if weight.isdigit():
+        return int(weight) >= 600
+    return weight in ("bold", "bolder")
 
 
 def _get_margin_left_inches(element):
@@ -291,6 +448,11 @@ def add_html_table_to_container(container, table_element, numbering_ids=None):
     if hasattr(container, 'width'):
         parent_width_emu = container.width if isinstance(container.width, int) else container.width.emu
         table_width_emu = parent_width_emu - Inches(0.16).emu
+    elif getattr(container, 'sections', None):
+        # A document: fill the text width between its margins
+        section = container.sections[-1]
+        text_width_emu = section.page_width - section.left_margin - section.right_margin
+        table_width_emu = text_width_emu - Inches(0.16).emu
     else:
         table_width_emu = Inches(7.09).emu
 
@@ -369,14 +531,19 @@ def add_html_table_to_container(container, table_element, numbering_ids=None):
 
 
 def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
-    """Add text with formatting (bold, italic, highlight) to a table cell, creating new paragraphs for <br> tags."""
+    """Add formatted text (bold, italic, highlight, underline, strike) to a table cell.
+
+    A <br> starts a new paragraph in the cell.
+    """
     # Use the provided first paragraph or create a new one
     para = first_para if first_para is not None else cell.add_paragraph()
 
     at_para_start = True
     pending_space = False
 
-    def add_text_run(text, bold=False, italic=False, highlight=False):
+    def add_text_run(  # pylint: disable=too-many-arguments
+        text, bold=False, italic=False, highlight=False, underline=False, strike=False
+    ):
         nonlocal at_para_start, pending_space
         text = _collapse_whitespace(text)
         if at_para_start:
@@ -387,10 +554,8 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
             # Whitespace-only node: emit only if more content follows
             pending_space = True
             return
-        if pending_space:
-            pending_space = False
-            if not text.startswith(' '):
-                text = ' ' + text
+        text = _space_text(para, text, pending_space)
+        pending_space = False
         at_para_start = False
         run = para.add_run(text)
         if bold:
@@ -399,31 +564,43 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
             run.italic = True
         if highlight:
             run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if underline:
+            run.underline = True
+        if strike:
+            run.font.strike = True
         run.font.size = Pt(11)
 
-    def process_inline(node, bold=False, italic=False, highlight=False):
+    def add_link(node):
+        nonlocal at_para_start, pending_space
+        text = _collapse_whitespace(node.get_text())
+        if not text.strip():
+            return
+        follows_space = _ends_with_space(para)
+        if (pending_space or text.startswith(' ')) and not at_para_start and not follows_space:
+            para.add_run(' ').font.size = Pt(11)
+        _add_hyperlink(para, text.strip(), node['href'])
+        at_para_start = False
+        pending_space = text.endswith(' ')
+
+    def process_inline(node, bold=False, italic=False, highlight=False, underline=False):
         """Emit runs for an inline node, carrying formatting down through nesting.
 
         Lexical wraps highlighted text as <mark><strong>...</strong></mark>, so
         the formatting tags have to be walked rather than flattened.
         """
         if isinstance(node, str):
-            add_text_run(node, bold=bold, italic=italic, highlight=highlight)
-        elif node.name in ['strong', 'b']:
-            for child in node.children:
-                process_inline(child, True, italic, highlight)
-        elif node.name in ['em', 'i']:
-            for child in node.children:
-                process_inline(child, bold, True, highlight)
-        elif node.name == 'mark':
-            for child in node.children:
-                process_inline(child, bold, italic, True)
-        elif node.find(['strong', 'b', 'em', 'i', 'mark']):
-            # span/a wrapping further formatting
-            for child in node.children:
-                process_inline(child, bold, italic, highlight)
-        else:
-            add_text_run(node.get_text(), bold=bold, italic=italic, highlight=highlight)
+            add_text_run(node, bold=bold, italic=italic, highlight=highlight, underline=underline,
+                         strike=_is_struck(node))
+            return
+        if _is_marked_link(node):
+            add_link(node)
+            return
+        bold = bold or node.name in ['strong', 'b']
+        italic = italic or node.name in ['em', 'i']
+        highlight = highlight or node.name == 'mark'
+        underline = underline or node.name == 'u'
+        for child in node.children:
+            process_inline(child, bold, italic, highlight, underline)
 
     # Convert to list to check for remaining siblings
     children = list(p_element.children)
@@ -431,8 +608,6 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
     for idx, child in enumerate(children):
         if isinstance(child, str):
             add_text_run(child)
-        elif child.name in ['strong', 'b', 'em', 'i', 'mark', 'span']:
-            process_inline(child)
         elif child.name == 'br':
             # Only create a new paragraph if there's more content after this <br>
             remaining = children[idx + 1:]
@@ -445,6 +620,9 @@ def _add_formatted_text_to_table_cell(cell, p_element, first_para=None):
                 para = cell.add_paragraph()
                 at_para_start = True
                 pending_space = False
+        else:
+            # Any other inline tag (<u>, <s>, <a>, ...) still carries text to keep
+            process_inline(child)
 
 
 def _get_max_num_id(numbering):
@@ -751,8 +929,6 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_tag.find_all("li", recursive=False):
-        nested_list = li.find(['ul', 'ol'], recursive=False)
-
         has_direct_content = any(
             (isinstance(child, str) and child.strip()) or
             (hasattr(child, 'name') and child.name not in ['ul', 'ol'] and child.get_text(strip=True))
@@ -789,7 +965,7 @@ def _add_list(container, list_tag, font_size, level=0, bullet_num_id=None, numbe
 
             _add_formatted_list_item_text(para, li, font_size)
 
-        if nested_list:
+        for nested_list in li.find_all(['ul', 'ol'], recursive=False):
             # Pass both numIds so nested lists can switch between bullet/numbered
             _add_list(container, nested_list, font_size, level=level + 1,
                       bullet_num_id=bullet_num_id, number_num_id=number_num_id)
@@ -800,7 +976,9 @@ def _add_formatted_list_item_text(para, li_element, font_size):
     at_line_start = True
     pending_space = False
 
-    def add_text_run(text, bold=False, italic=False, highlight=False):
+    def add_text_run(  # pylint: disable=too-many-arguments
+        text, bold=False, italic=False, highlight=False, underline=False, strike=False
+    ):
         nonlocal at_line_start, pending_space
         text = _collapse_whitespace(text)
         if at_line_start:
@@ -811,10 +989,8 @@ def _add_formatted_list_item_text(para, li_element, font_size):
             # Whitespace-only node: emit only if more content follows
             pending_space = True
             return
-        if pending_space:
-            pending_space = False
-            if not text.startswith(' '):
-                text = ' ' + text
+        text = _space_text(para, text, pending_space)
+        pending_space = False
         at_line_start = False
         run = para.add_run(text)
         if bold:
@@ -823,32 +999,57 @@ def _add_formatted_list_item_text(para, li_element, font_size):
             run.italic = True
         if highlight:
             run.font.highlight_color = WD_COLOR_INDEX.YELLOW
+        if underline:
+            run.underline = True
+        if strike:
+            run.font.strike = True
         if font_size:
             run.font.size = font_size
 
-    def process_inline(node, bold=False, italic=False, highlight=False):
+    def add_link(node):
+        nonlocal at_line_start, pending_space
+        text = _collapse_whitespace(node.get_text())
+        if not text.strip():
+            return
+        follows_space = _ends_with_space(para)
+        if (pending_space or text.startswith(' ')) and not at_line_start and not follows_space:
+            spacer = para.add_run(' ')
+            if font_size:
+                spacer.font.size = font_size
+        _add_hyperlink(para, text.strip(), node['href'])
+        at_line_start = False
+        pending_space = text.endswith(' ')
+
+    def process_inline(node, bold=False, italic=False, highlight=False, underline=False):
         """Emit runs for an inline node, carrying formatting down through nesting.
 
         Lexical wraps highlighted text as <mark><strong>...</strong></mark>, so
         the formatting tags have to be walked rather than flattened.
         """
         if isinstance(node, str):
-            add_text_run(node, bold=bold, italic=italic, highlight=highlight)
+            add_text_run(node, bold=bold, italic=italic, highlight=highlight, underline=underline,
+                         strike=_is_struck(node))
         elif node.name in ['strong', 'b']:
             for child in node.children:
-                process_inline(child, True, italic, highlight)
+                process_inline(child, True, italic, highlight, underline)
         elif node.name in ['em', 'i']:
             for child in node.children:
-                process_inline(child, bold, True, highlight)
+                process_inline(child, bold, True, highlight, underline)
         elif node.name == 'mark':
             for child in node.children:
-                process_inline(child, bold, italic, True)
-        elif node.find(['strong', 'b', 'em', 'i', 'mark']):
+                process_inline(child, bold, italic, True, underline)
+        elif node.name == 'u':
+            for child in node.children:
+                process_inline(child, bold, italic, highlight, True)
+        elif _is_marked_link(node):
+            add_link(node)
+        elif node.find(['strong', 'b', 'em', 'i', 'mark', 'u'] + STRIKE_TAGS):
             # span/a wrapping further formatting
             for child in node.children:
-                process_inline(child, bold, italic, highlight)
+                process_inline(child, bold, italic, highlight, underline)
         else:
-            add_text_run(node.get_text(), bold=bold, italic=italic, highlight=highlight)
+            add_text_run(node.get_text(), bold=bold, italic=italic, highlight=highlight, underline=underline,
+                         strike=node.name in STRIKE_TAGS or _is_struck(node))
 
     for child in li_element.children:
         # Skip nested lists - they're handled separately
@@ -898,8 +1099,6 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
     current_num_id = number_num_id if is_ordered else bullet_num_id
 
     for li in list_element.find_all('li', recursive=False):
-        nested_list = li.find(['ul', 'ol'], recursive=False)
-
         has_direct_content = any(
             (isinstance(child, str) and child.strip()) or
             (hasattr(child, 'name') and child.name not in ['ul', 'ol'] and child.get_text(strip=True))
@@ -936,7 +1135,7 @@ def _add_list_to_table_cell(cell, list_element, level=0, bullet_num_id=None, num
 
             _add_formatted_list_item_text(para, li, Pt(11))
 
-        if nested_list:
+        for nested_list in li.find_all(['ul', 'ol'], recursive=False):
             # Pass both numIds so nested lists can switch between bullet/numbered
             _add_list_to_table_cell(cell, nested_list, level=level + 1,
                                     bullet_num_id=bullet_num_id, number_num_id=number_num_id)

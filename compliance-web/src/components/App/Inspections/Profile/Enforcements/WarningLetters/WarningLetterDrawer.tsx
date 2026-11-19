@@ -23,7 +23,7 @@ import {
   useResetWarningLetterTemplate,
   useUpdateWarningLetter,
 } from "@/hooks/useInspectionWarningLetters";
-import EnforcementDownloadPDFButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadPDFButton";
+import EnforcementDownloadDocxButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadDocxButton";
 import {
   EnforcementActionEnum,
   IRProgressEnum,
@@ -327,7 +327,7 @@ const WarningLetterDrawer: React.FC<WarningLetterDrawerProps> = ({
                 Rescind Warning Letter
               </Button>
             )}
-            <EnforcementDownloadPDFButton
+            <EnforcementDownloadDocxButton
               enforcementId={warningLetter.id || 0}
               fileNumber={warningLetter.warning_letter_number || ""}
               enforcementType={EnforcementActionEnum.WARNING_LETTER}

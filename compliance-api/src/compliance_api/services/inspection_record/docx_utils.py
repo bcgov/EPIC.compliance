@@ -3,8 +3,10 @@
 Provides helper functions for manipulating Word document XML elements
 including hyperlinks, cell formatting, page numbers, and document settings.
 """
+from docx.enum.text import WD_LINE_SPACING
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Inches, Pt, RGBColor
 
 
 def _add_hyperlink(paragraph, text, url):
@@ -136,3 +138,80 @@ def _has_images(para):
         if run._element.xpath('.//pic:pic'):
             return True
     return False
+
+
+def _apply_letter_base_style(doc, font_size, line_spacing):
+    """Set US Letter pages and a Calibri Normal style with exact line spacing and no paragraph gaps."""
+    for section in doc.sections:
+        section.page_width = Inches(8.5)
+        section.page_height = Inches(11)
+
+    style = doc.styles['Normal']
+    style.font.name = 'Calibri'
+    style.font.size = font_size
+    style.font.color.rgb = RGBColor(0, 0, 0)
+    style._element.get_or_add_rPr().rFonts.set(qn('w:eastAsia'), 'Calibri')
+    style.paragraph_format.space_before = Pt(0)
+    style.paragraph_format.space_after = Pt(0)
+    style.paragraph_format.line_spacing_rule = WD_LINE_SPACING.EXACTLY
+    style.paragraph_format.line_spacing = line_spacing
+
+
+def _append_field_char(paragraph, char_type):
+    """Append a run holding a single field character (begin, separate or end)."""
+    run = paragraph.add_run()
+    fld_char = OxmlElement('w:fldChar')
+    fld_char.set(qn('w:fldCharType'), char_type)
+    run._r.append(fld_char)
+
+
+def _append_field_instruction(paragraph, text):
+    """Append a run holding field instruction text."""
+    run = paragraph.add_run()
+    instr_text = OxmlElement('w:instrText')
+    instr_text.set(qn('xml:space'), 'preserve')
+    instr_text.text = text
+    run._r.append(instr_text)
+
+
+def _append_simple_field(paragraph, instruction):
+    """Append a complete field with no cached result, e.g. PAGE or NUMPAGES."""
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, f' {instruction} ')
+    _append_field_char(paragraph, 'end')
+
+
+def _add_continuation_marker(paragraph):
+    """Append a "... N+1" marker that shows on every page except the last.
+
+    Built as the nested Word field
+    ``{ IF { PAGE } < { NUMPAGES } "... { = { PAGE } + 1 }" "" }`` so Word
+    works it out per page when it lays the document out.
+    """
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' IF ')
+    _append_simple_field(paragraph, 'PAGE')
+    _append_field_instruction(paragraph, ' < ')
+    _append_simple_field(paragraph, 'NUMPAGES')
+    _append_field_instruction(paragraph, ' "... ')
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' = ')
+    _append_simple_field(paragraph, 'PAGE')
+    _append_field_instruction(paragraph, ' + 1 ')
+    _append_field_char(paragraph, 'end')
+    _append_field_instruction(paragraph, '" "" ')
+    _append_field_char(paragraph, 'separate')
+    _append_field_char(paragraph, 'end')
+
+
+def _add_first_page_continuation_marker(paragraph):
+    """Append a "...2" marker that shows only when the document runs past its first page.
+
+    Built as the Word field ``{ IF { NUMPAGES } > 1 "...2" "" }``.
+    """
+    _append_field_char(paragraph, 'begin')
+    _append_field_instruction(paragraph, ' IF ')
+    _append_simple_field(paragraph, 'NUMPAGES')
+    _append_field_instruction(paragraph, ' > 1 "...2" "" ')
+    _append_field_char(paragraph, 'separate')
+    _append_field_char(paragraph, 'end')

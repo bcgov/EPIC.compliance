@@ -24,7 +24,7 @@ import ControlledAutoComplete from "@/components/Shared/Controlled/ControlledAut
 import ControlledDateField from "@/components/Shared/Controlled/ControlledDateField";
 import { useEnforcementSectionsData } from "@/hooks/useEnforcementSections";
 import { BCDesignTokens } from "epic.theme";
-import EnforcementDownloadPDFButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadPDFButton";
+import EnforcementDownloadDocxButton from "@/components/App/Inspections/Profile/Enforcements/EnforcementDownloadDocxButton";
 import {
   EnforcementActionEnum,
   OrderProgressEnum,
@@ -262,7 +262,7 @@ const OrderDrawer: React.FC<OrderDrawerProps> = ({
               openEnforcementOrderDrawer={openEnforcementOrderDrawer}
             />
 
-            <EnforcementDownloadPDFButton
+            <EnforcementDownloadDocxButton
               enforcementId={enforcementOrder.id || 0}
               fileNumber={enforcementOrder.order_number || ""}
               enforcementType={EnforcementActionEnum.ORDER}

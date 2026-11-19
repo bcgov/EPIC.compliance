@@ -1,5 +1,6 @@
 """Warning Letter Service."""
 
+from io import BytesIO
 from typing import List
 
 from flask import current_app
@@ -20,8 +21,9 @@ from compliance_api.models.warning_letter import WarningLetterProgressEnum, Warn
 from compliance_api.models.warning_letter_approval import WarningLetterApproval as WarningLetterApprovalModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.service_utils import ServiceUtils
+from compliance_api.services.warning_letter.warning_letter_doc_generator import generate_warning_letter_docx
 from compliance_api.services.warning_letter.warning_letter_template_constant import WARNING_LETTER_CONTENT
-from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
+from compliance_api.utils.constant import DOWNLOAD_FORMATS, OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
 from compliance_api.utils.datetime import convert_to_full_month_format
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
@@ -272,11 +274,21 @@ class WarningLetterService:
 
     @classmethod
     def render(cls, warning_letter_id, output_format):
-        """Preview warning letter."""
+        """Render a warning letter as an HTML preview, a PDF or a DOCX download.
+
+        DOCX is built in-process and returned as a BytesIO stream; HTML and
+        PDF come back as the docgen service response.
+        """
         warning_letter = ServiceUtils.warning_letter_exist_check(warning_letter_id)
-        if output_format == "pdf":
+        if output_format in DOWNLOAD_FORMATS:
             ServiceUtils.access_check_update_for_inspection(warning_letter.inspection)
         warning_letter_data = _create_warning_letter_data(warning_letter)
+        if output_format == "docx":
+            file_stream = BytesIO()
+            generate_warning_letter_docx(warning_letter_data).save(file_stream)
+            file_stream.seek(0)
+            current_app.logger.info(f"Generated DOCX for warning letter {warning_letter_id}")
+            return file_stream, warning_letter
         response = DocGenService.render_template(
             "WARNING_LETTER_TEMPLATE", warning_letter_data, output_format
         )

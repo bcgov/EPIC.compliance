@@ -1,6 +1,9 @@
 """Order Service."""
 
+from io import BytesIO
 from typing import List
+
+from flask import current_app
 
 from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.case_file import CaseFile as CaseFileModel
@@ -15,8 +18,9 @@ from compliance_api.models.order import OrderProgressEnum, OrderReplaceStatusEnu
 from compliance_api.models.section import Section as SectionModel
 from compliance_api.services.docgen_service.docgen_service import DocGenService
 from compliance_api.services.order.order_approval import OrderApprovalService
+from compliance_api.services.order.order_doc_generator import generate_order_docx
 from compliance_api.services.service_utils import ServiceUtils
-from compliance_api.utils.constant import OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
+from compliance_api.utils.constant import DOWNLOAD_FORMATS, OFFICE_BRANCH, OFFICE_NAME, SIGNATURE_BRANCH
 from compliance_api.utils.datetime import convert_to_full_month_format
 from compliance_api.utils.pdf_style_converter import convert_inline_styles_for_pdf
 from compliance_api.utils.template_renderer import render_template_with_data
@@ -307,11 +311,21 @@ class OrderService:
 
     @classmethod
     def render(cls, order_id, output_format):
-        """Preview order."""
+        """Render an order as an HTML preview, a PDF or a DOCX download.
+
+        DOCX is built in-process and returned as a BytesIO stream; HTML and
+        PDF come back as the docgen service response.
+        """
         order = ServiceUtils.order_exist_check(order_id)
-        if output_format == "pdf":
+        if output_format in DOWNLOAD_FORMATS:
             ServiceUtils.access_check_update_for_inspection(order.inspection)
         order_data = _create_order_data(order.inspection, order)
+        if output_format == "docx":
+            file_stream = BytesIO()
+            generate_order_docx(order_data).save(file_stream)
+            file_stream.seek(0)
+            current_app.logger.info(f"Generated DOCX for order {order_id}")
+            return file_stream, order
         response = DocGenService.render_template(
             "ORDER_TEMPLATE", order_data, output_format
         )
