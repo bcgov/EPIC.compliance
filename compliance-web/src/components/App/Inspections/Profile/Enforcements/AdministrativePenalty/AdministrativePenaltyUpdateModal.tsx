@@ -1,5 +1,15 @@
-import { Box, DialogContent } from "@mui/material";
-import { FC, useCallback, useEffect, useMemo } from "react";
+import {
+  Box,
+  Button,
+  Checkbox,
+  DialogActions,
+  DialogContent,
+  FormControlLabel,
+  Typography,
+} from "@mui/material";
+import { WarningAmberOutlined } from "@mui/icons-material";
+import { BCDesignTokens } from "epic.theme";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -22,13 +32,18 @@ import { Inspection } from "@/models/Inspection";
 import { notify } from "@/store/snackbarStore";
 import { useModal } from "@/store/modalStore";
 import dayjs, { Dayjs } from "dayjs";
-import { APReferralStatus, APDecisionStatus } from "@/utils/constants";
+import {
+  APReferralStatus,
+  APDecisionStatus,
+  APJudicialReviewDecision,
+  APJudicialReviewStatus,
+} from "@/utils/constants";
 import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
 
 const administrativePenaltyUpdateSchema = yup.object().shape({
   referral_status: yup
     .mixed<ReferralStatusOption>()
-    .required("Referral Status is required"),
+    .required("Status is required"),
   date_referred: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   decision_date: yup.mixed<Dayjs>().nullable().typeError("Invalid date"),
   decision: yup.mixed<DecisionOption>().nullable(),
@@ -44,6 +59,21 @@ const administrativePenaltyUpdateSchema = yup.object().shape({
           .min(0, "Penalty Amount must be positive"),
       otherwise: (schema) => schema.optional(),
     }),
+  is_jr: yup.boolean().default(false),
+  jr_decision_date: yup
+    .mixed<Dayjs>()
+    .nullable()
+    .typeError("Invalid date")
+    .when("is_jr", {
+      is: true,
+      then: (schema) => schema.required("Decision Date is required"),
+    }),
+  jr_decision: yup.mixed<DecisionOption>().nullable(),
+  jr_new_penalty_amount: yup
+    .number()
+    .transform((value) => (isNaN(value) ? undefined : value))
+    .optional()
+    .min(0, "New Penalty Amount must be positive"),
 });
 
 type AdministrativePenaltyUpdateFormType = yup.InferType<
@@ -74,6 +104,21 @@ const decisionOptions: DecisionOption[] = Object.values(APDecisionStatus).map(
   })
 );
 
+const jrDecisionOptions: DecisionOption[] = Object.values(
+  APJudicialReviewDecision
+);
+
+// The AP's own fields; during a judicial review only a superuser can change them.
+const AP_FORM_FIELDS = ["date_referred", "decision_date", "decision", "penalty_amount"] as const;
+
+const JR_DISCARD_MESSAGE =
+  "This will delete all Judicial Review information and restore the AP to its previous closed status.";
+const JR_DISCARD_EDITED_MESSAGE =
+  "JR information will be deleted. Changes to other AP fields will remain. Review these values before saving.";
+
+const formatDate = (date?: Dayjs | null) =>
+  date ? date.format("YYYY-MM-DDTHH:mm:ss.SSS[Z]") : undefined;
+
 type AdministrativePenaltyUpdateModalProps = {
   administrativePenalty: AdministrativePenalty;
   inspectionData: Inspection;
@@ -87,21 +132,31 @@ const AdministrativePenaltyUpdateModal: FC<
   const queryClient = useQueryClient();
   const { setClose: setModalClose } = useModal();
   const isSuperUser = useIsRolesAllowed([KC_USER_GROUPS.SUPERUSER]);
-  // Calculate readonly mode based on inspection status and administrative penalty status
-  const isReadonlyMode = useMemo(() => {
-    if (administrativePenalty.is_closed) {
-      return !isSuperUser;
-    }
-    return !isPrimaryOfficerOrSuperUser;
-  }, [administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
+  const savedInJr =
+    administrativePenalty.referral_status?.id === APJudicialReviewStatus.id;
+  // Ticked "subject to a judicial review" but not yet confirmed with Proceed.
+  const [jrPending, setJrPending] = useState(false);
+  // Unticked a saved JR; waiting for Yes, Discard / No, Keep.
+  const [discardPending, setDiscardPending] = useState(false);
+
+  // JR can start on a closed AP Issued AP in an open case file, by the primary officer or a superuser.
+  const canStartJr =
+    !savedInJr &&
+    administrativePenalty.is_closed &&
+    administrativePenalty.referral_status?.id === APReferralStatus.REFERRED_TO_AEO.id &&
+    administrativePenalty.decision?.id === APDecisionStatus.AP_ISSUED.id &&
+    inspectionData.case_file?.case_file_status?.toLowerCase() === "open" &&
+    isPrimaryOfficerOrSuperUser;
+
   const defaultValues = useMemo(() => {
     const currentReferralStatus =
       administrativePenalty.referral_status?.id ||
       APReferralStatus.PREPARING_REFERRAL_FOR_AEO.id;
-    const selectedReferralOption =
-      referralStatusOptions.find(
-        (option) => option.id === currentReferralStatus
-      ) || referralStatusOptions[0];
+    const selectedReferralOption = savedInJr
+      ? APJudicialReviewStatus
+      : referralStatusOptions.find(
+          (option) => option.id === currentReferralStatus
+        ) || referralStatusOptions[0];
 
     const currentDecision = administrativePenalty.decision?.id || "";
     const selectedDecisionOption =
@@ -119,8 +174,20 @@ const AdministrativePenaltyUpdateModal: FC<
       penalty_amount: administrativePenalty.penalty_amount
         ? Number(administrativePenalty.penalty_amount)
         : 0,
+      is_jr: savedInJr,
+      jr_decision_date: administrativePenalty.jr_decision_date
+        ? dayjs(administrativePenalty.jr_decision_date)
+        : (undefined as unknown as Dayjs),
+      jr_decision:
+        jrDecisionOptions.find(
+          (option) => option.id === administrativePenalty.jr_decision?.id
+        ) || null,
+      jr_new_penalty_amount:
+        administrativePenalty.jr_new_penalty_amount != null
+          ? Number(administrativePenalty.jr_new_penalty_amount)
+          : undefined,
     };
-  }, [administrativePenalty]);
+  }, [administrativePenalty, savedInJr]);
 
   const methods = useForm<AdministrativePenaltyUpdateFormType>({
     resolver: yupResolver(administrativePenaltyUpdateSchema),
@@ -128,9 +195,29 @@ const AdministrativePenaltyUpdateModal: FC<
     defaultValues,
   });
 
-  const { reset, handleSubmit, watch } = methods;
+  const { reset, handleSubmit, watch, setValue, getFieldState } = methods;
   const decision = watch("decision");
   const referralStatus = watch("referral_status");
+  const isJr = watch("is_jr");
+  const penaltyAmount = watch("penalty_amount");
+  const jrDecisionDate = watch("jr_decision_date");
+  const jrDecision = watch("jr_decision");
+  const jrNewPenaltyAmount = watch("jr_new_penalty_amount");
+  const jrInProgress = isJr && !jrPending && !administrativePenalty.is_jr_complete;
+
+  // Calculate readonly mode based on inspection status and administrative penalty status
+  const isReadonlyMode = useMemo(() => {
+    if (jrInProgress) {
+      return !isPrimaryOfficerOrSuperUser;
+    }
+    if (administrativePenalty.is_closed) {
+      return !isSuperUser;
+    }
+    return !isPrimaryOfficerOrSuperUser;
+  }, [jrInProgress, administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
+  const apFieldsReadonly = isReadonlyMode || ((savedInJr || isJr) && !isSuperUser);
+  const { dirtyFields } = methods.formState;
+  const apFieldsEdited = AP_FORM_FIELDS.some((field) => dirtyFields[field]);
 
   useEffect(() => {
     reset(defaultValues);
@@ -148,16 +235,68 @@ const AdministrativePenaltyUpdateModal: FC<
     }
   }, [decision, methods]);
 
+  // JR amount rules: Reversed is 0, Upheld keeps the penalty amount, the others default to 0.
+  useEffect(() => {
+    if (!isJr) return;
+    if (jrDecision?.id === APJudicialReviewDecision.REVERSED.id) {
+      setValue("jr_new_penalty_amount", 0);
+    } else if (jrDecision?.id === APJudicialReviewDecision.UPHELD.id) {
+      setValue("jr_new_penalty_amount", Number(penaltyAmount) || 0);
+    } else if (jrDecision && getFieldState("jr_decision").isDirty) {
+      setValue("jr_new_penalty_amount", 0);
+    }
+  }, [isJr, jrDecision, penaltyAmount, setValue, getFieldState]);
+  const jrAmountLocked =
+    jrDecision?.id === APJudicialReviewDecision.REVERSED.id ||
+    jrDecision?.id === APJudicialReviewDecision.UPHELD.id;
+
+  const handleJrCheckbox = (checked: boolean) => {
+    if (checked && savedInJr) {
+      // Re-ticked after a discard: back to the saved JR.
+      reset(defaultValues);
+    } else if (checked) {
+      setValue("is_jr", true);
+      setJrPending(true);
+    } else if (savedInJr) {
+      setDiscardPending(true);
+    } else {
+      reset(defaultValues);
+      setJrPending(false);
+    }
+  };
+
+  const handleJrDiscard = () => {
+    setValue("is_jr", false);
+    setValue("referral_status", APReferralStatus.REFERRED_TO_AEO);
+    setValue("jr_decision_date", undefined as unknown as Dayjs);
+    setValue("jr_decision", null);
+    setValue("jr_new_penalty_amount", undefined);
+    setDiscardPending(false);
+  };
+
+  const handleJrProceed = () => {
+    setValue("referral_status", APJudicialReviewStatus);
+    setJrPending(false);
+  };
+
   // Determine if save confirmation is required
   const requireSaveConfirmation = useMemo(() => {
-    const isCEBNotProceeding =
+    if (isJr) {
+      return (
+        !!jrDecisionDate &&
+        !!jrDecision &&
+        jrNewPenaltyAmount != null &&
+        String(jrNewPenaltyAmount) !== ""
+      );
+    }
+    const isAPNotProceeding =
       referralStatus?.id === APReferralStatus.AP_NOT_PROCEEDING.id;
-    const isReferredToDMWithDecision =
-      referralStatus?.id === APReferralStatus.REFERRED_TO_DM.id &&
+    const isReferredToAEOWithDecision =
+      referralStatus?.id === APReferralStatus.REFERRED_TO_AEO.id &&
       decision !== null;
 
-    return isCEBNotProceeding || isReferredToDMWithDecision;
-  }, [referralStatus, decision]);
+    return isAPNotProceeding || isReferredToAEOWithDecision;
+  }, [isJr, jrDecisionDate, jrDecision, jrNewPenaltyAmount, referralStatus, decision]);
 
   const onUpdateSuccess = (data: AdministrativePenalty) => {
     //  Invalidate all administrative penalties because of the AP can be linked to
@@ -251,12 +390,22 @@ const AdministrativePenaltyUpdateModal: FC<
         }
       }
 
+      if (data.is_jr) {
+        updateData.referral_status = APJudicialReviewStatus.id;
+        updateData.jr_decision_date = formatDate(data.jr_decision_date);
+        updateData.jr_decision = data.jr_decision?.id;
+        if (data.jr_new_penalty_amount != null) {
+          updateData.jr_new_penalty_amount = Number(data.jr_new_penalty_amount);
+        }
+        updateData.jr_ap_fields_edited = apFieldsEdited;
+      }
+
       updateAdministrativePenalty({
         administrativePenaltyId: administrativePenalty.id,
         administrativePenalty: updateData,
       });
     },
-    [updateAdministrativePenalty, inspectionData, administrativePenalty]
+    [updateAdministrativePenalty, inspectionData, administrativePenalty, apFieldsEdited]
   );
 
   const handleCancel = () => {
@@ -278,26 +427,28 @@ const AdministrativePenaltyUpdateModal: FC<
           <Box sx={{ p: "1rem 1.5rem" }}>
             <ControlledAutoComplete
               name="referral_status"
-              label="Referral Status"
-              options={referralStatusOptions}
+              label="Status"
+              options={
+                isJr && !jrPending ? [APJudicialReviewStatus] : referralStatusOptions
+              }
               getOptionLabel={(option) => option.name}
               isOptionEqualToValue={(option, value) => option.id === value.id}
-              placeholder="Select referral status"
+              placeholder="Select status"
               fullWidth
-              disabled={isReadonlyMode}
+              disabled={isReadonlyMode || isJr || savedInJr}
             />
             <Box sx={{ display: "flex", gap: 1 }}>
               <ControlledDateField
                 name="date_referred"
-                label="Date Referred to Decision Maker"
+                label="Date Referred to AEO"
                 sx={{ width: "100%" }}
-                disabled={isReadonlyMode}
+                disabled={apFieldsReadonly}
               />
               <ControlledDateField
                 name="decision_date"
-                label="Decision Date"
+                label="DM Decision Date"
                 sx={{ width: "100%" }}
-                disabled={isReadonlyMode}
+                disabled={apFieldsReadonly}
               />
             </Box>
             <ControlledAutoComplete
@@ -308,28 +459,137 @@ const AdministrativePenaltyUpdateModal: FC<
               isOptionEqualToValue={(option, value) => option.id === value.id}
               placeholder="Select an option..."
               fullWidth
-              disabled={isReadonlyMode}
+              disabled={apFieldsReadonly}
             />
             {decision?.id === "AP_ISSUED" && (
               <ControlledTextField
                 name="penalty_amount"
                 label="Penalty Amount"
                 placeholder="Enter penalty amount"
-                type="number"
+                type={apFieldsReadonly ? "text" : "number"}
+                {...(apFieldsReadonly && { value: formatAmount(penaltyAmount) })}
                 fullWidth
-                disabled={isReadonlyMode}
+                disabled={apFieldsReadonly}
               />
+            )}
+            {(canStartJr || savedInJr) && (
+              <Box
+                sx={{
+                  backgroundColor: BCDesignTokens.surfaceColorBackgroundLightBlue,
+                  borderRadius: "4px",
+                  p: "1rem 1rem 0 1rem",
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={!!isJr}
+                      onChange={(event) => handleJrCheckbox(event.target.checked)}
+                      disabled={savedInJr ? isReadonlyMode : !canStartJr}
+                      sx={{ paddingY: 0 }}
+                      data-testid="jr-checkbox"
+                    />
+                  }
+                  label="This AP was subject to a judicial review"
+                  sx={{
+                    mb: "1rem",
+                    "& .MuiFormControlLabel-label": {
+                      fontWeight: isJr && !jrPending ? "bold" : "normal",
+                    },
+                  }}
+                />
+                {isJr && !jrPending && (
+                  <>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <Box sx={{ flex: "0 0 40%" }}>
+                        <ControlledDateField
+                          name="jr_decision_date"
+                          label="Decision Date"
+                          disabled={isReadonlyMode}
+                        />
+                      </Box>
+                      <ControlledAutoComplete
+                        name="jr_decision"
+                        label="Decision"
+                        options={jrDecisionOptions}
+                        getOptionLabel={(option) => option.name}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        placeholder="Select an option..."
+                        fullWidth
+                        disabled={isReadonlyMode}
+                      />
+                    </Box>
+                    <ControlledTextField
+                      name="jr_new_penalty_amount"
+                      label="New Penalty Amount"
+                      placeholder="0"
+                      type={isReadonlyMode || jrAmountLocked ? "text" : "number"}
+                      {...((isReadonlyMode || jrAmountLocked) && {
+                        value: formatAmount(jrNewPenaltyAmount),
+                      })}
+                      fullWidth
+                      disabled={isReadonlyMode || jrAmountLocked}
+                    />
+                  </>
+                )}
+              </Box>
             )}
           </Box>
         </DialogContent>
-        {!isReadonlyMode && (
+        {jrPending && (
+          <WarningBar
+            message="Note: Checking this reopens the AP to record a judicial review outcome and sets its status to Judicial Review. The original decision is kept; uncheck to cancel before completing the review."
+            secondaryText="Cancel"
+            onSecondary={() => handleJrCheckbox(false)}
+            primaryText="Proceed"
+            onPrimary={handleJrProceed}
+          />
+        )}
+        {discardPending && (
+          <Box
+            sx={{
+              background: BCDesignTokens.supportSurfaceColorDanger,
+              borderTop: `${BCDesignTokens.layoutBorderWidthSmall} solid ${BCDesignTokens.surfaceColorBorderDefault}`,
+              padding: ".5rem 1.5rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+              <Typography variant="body1" fontWeight="bold">
+                Discard Judicial Review?
+              </Typography>
+              <Typography variant="body1">
+                {administrativePenalty.jr_ap_fields_edited || apFieldsEdited
+                  ? JR_DISCARD_EDITED_MESSAGE
+                  : JR_DISCARD_MESSAGE}
+              </Typography>
+            </Box>
+            <Button
+              sx={{ minWidth: 100, height: 40 }}
+              color="secondary"
+              onClick={() => setDiscardPending(false)}
+            >
+              No, Keep
+            </Button>
+            <Button
+              sx={{ minWidth: 100, height: 40 }}
+              color="error"
+              onClick={handleJrDiscard}
+            >
+              Yes, Discard
+            </Button>
+          </Box>
+        )}
+        {!isReadonlyMode && !jrPending && !discardPending && (
           <ModalActions
             onSecondaryAction={handleCancel}
             onPrimaryAction={handleSubmit(handleSubmitForm)}
             isLoading={isPendingUpdate}
             primaryActionButtonText="Save"
             secondaryActionButtonText="Cancel"
-            onDeleteAction={handleDelete}
+            onDeleteAction={isJr || savedInJr ? undefined : handleDelete}
             isDeleteActionLoading={isPendingDelete}
             onDeleteConfirmationText={
               isLinkedToOtherInspections
@@ -343,5 +603,52 @@ const AdministrativePenaltyUpdateModal: FC<
     </FormProvider>
   );
 };
+
+// Disabled amount fields show thousands separators ("1,000"); editable ones stay plain numbers.
+const formatAmount = (value: unknown) =>
+  value === "" || value == null || isNaN(Number(value))
+    ? ""
+    : Number(value).toLocaleString("en-CA", { maximumFractionDigits: 2 });
+
+type WarningBarProps = {
+  message: string;
+  secondaryText: string;
+  onSecondary: () => void;
+  primaryText: string;
+  onPrimary: () => void;
+};
+
+// Yellow note with two buttons, shown in place of the modal actions.
+const WarningBar: FC<WarningBarProps> = ({
+  message,
+  secondaryText,
+  onSecondary,
+  primaryText,
+  onPrimary,
+}) => (
+  <>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        p: "1rem 1.5rem",
+        backgroundColor: BCDesignTokens.supportSurfaceColorWarning,
+        borderTop: `1px solid ${BCDesignTokens.supportBorderColorWarning}`,
+        borderBottom: `1px solid ${BCDesignTokens.supportBorderColorWarning}`,
+      }}
+    >
+      <WarningAmberOutlined sx={{ color: BCDesignTokens.iconsColorWarning }} />
+      <Typography variant="body2">{message}</Typography>
+    </Box>
+    <DialogActions sx={{ padding: "1rem 1.5rem" }}>
+      <Button variant="text" onClick={onSecondary}>
+        {secondaryText}
+      </Button>
+      <Button variant="contained" onClick={onPrimary}>
+        {primaryText}
+      </Button>
+    </DialogActions>
+  </>
+);
 
 export default AdministrativePenaltyUpdateModal;

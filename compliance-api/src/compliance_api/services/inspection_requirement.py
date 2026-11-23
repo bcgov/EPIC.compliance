@@ -31,7 +31,8 @@ from compliance_api.models import WarningLetterProgressEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import \
     AdministrativePenaltyInspectionRequirementMap as AdministrativePenaltyInspectionRequirementMapModel
-from compliance_api.models.administrative_penalty import DecisionEnum, ReferralStatusEnum
+from compliance_api.models.administrative_penalty import (
+    DecisionEnum, JudicialReviewDecisionEnum, ReferralStatusEnum, get_ap_enforcement_status)
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.charge_recommendation import \
     ChargeRecommendationInspectionRequirementMap as ChargeRecommendationInspectionRequirementMapModel
@@ -718,6 +719,7 @@ def _build_inspection_requirements_query(args, enable_pagination=True):
             models["violation_ticket"].status.label("violation_ticket_status"),
             models["admin_penalty"].referral_status.label("admin_penalty_status"),
             models["admin_penalty"].decision.label("admin_penalty_decision"),
+            models["admin_penalty"].jr_decision.label("admin_penalty_jr_decision"),
             models["charge_rec"].status.label("charge_rec_status"),
             models["restorative_justice"].status.label("restorative_justice_status"),
             models["topic"].name.label("topic_name"),
@@ -1029,8 +1031,8 @@ def _get_enforcement_status_filters(enforcement_statuses, **kwargs):
         (RestorativeJusticeStatusEnum, kwargs.get("restorative_justice"), "status"),
     ]
 
-    # Process each enum type. "Referred to DM" is handled separately below because it shares the
-    # Enf. Status column with the two DM decision outcomes.
+    # Process each enum type. "Referred to AEO" and "Judicial Review" are handled separately below
+    # because they share the Enf. Status column with their decision outcomes.
     for enum_class, model, attr_name in enum_mappings:
         matching_values = [
             status
@@ -1038,45 +1040,55 @@ def _get_enforcement_status_filters(enforcement_statuses, **kwargs):
             if any(status == e.name.upper() for e in enum_class)
             and not (
                 enum_class is ReferralStatusEnum
-                and status == ReferralStatusEnum.REFERRED_TO_DM.name
+                and status
+                in (
+                    ReferralStatusEnum.REFERRED_TO_AEO.name,
+                    ReferralStatusEnum.JUDICIAL_REVIEW.name,
+                )
             )
         ]
         if matching_values and model:
             or_conditions.append(getattr(model, attr_name).in_(matching_values))
 
-    referred_to_dm_condition = _get_referred_to_dm_filter(
-        enforcement_statuses, kwargs.get("admin_penalty")
-    )
-    if referred_to_dm_condition is not None:
-        or_conditions.append(referred_to_dm_condition)
+    admin_penalty = kwargs.get("admin_penalty")
+    for status, decision_field, decision_enum in (
+        (ReferralStatusEnum.REFERRED_TO_AEO, "decision", DecisionEnum),
+        (ReferralStatusEnum.JUDICIAL_REVIEW, "jr_decision", JudicialReviewDecisionEnum),
+    ):
+        condition = _get_ap_decision_filter(
+            enforcement_statuses, admin_penalty, status, decision_field, decision_enum
+        )
+        if condition is not None:
+            or_conditions.append(condition)
 
     return or_conditions
 
 
-def _get_referred_to_dm_filter(enforcement_statuses, admin_penalty):
-    """Get the filter condition for the "Referred to DM" Enf. Status values.
+def _get_ap_decision_filter(
+    enforcement_statuses, admin_penalty, status, decision_field, decision_enum
+):
+    """Get the filter condition for an AP status that carries a decision suffix.
 
-    Matches how the grid displays them: "Referred to DM" means referred without a DM decision,
-    while "Referred to DM - AP Issued" / "- AP Not Proceeding" mean referred with that decision.
+    Matches how the grid displays them: "Referred to AEO" means no DM decision yet, while
+    "Referred to AEO - AP Issued" means that decision. Judicial Review works the same way
+    with the JR decision.
     """
     if admin_penalty is None:
         return None
 
+    decision_column = getattr(admin_penalty, decision_field)
     decision_conditions = []
-    if ReferralStatusEnum.REFERRED_TO_DM.name in enforcement_statuses:
-        decision_conditions.append(admin_penalty.decision.is_(None))
+    if status.name in enforcement_statuses:
+        decision_conditions.append(decision_column.is_(None))
     selected_decisions = [
-        decision.name for decision in DecisionEnum if decision.name in enforcement_statuses
+        decision.name for decision in decision_enum if decision.name in enforcement_statuses
     ]
     if selected_decisions:
-        decision_conditions.append(admin_penalty.decision.in_(selected_decisions))
+        decision_conditions.append(decision_column.in_(selected_decisions))
     if not decision_conditions:
         return None
 
-    return and_(
-        admin_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
-        or_(*decision_conditions),
-    )
+    return and_(admin_penalty.referral_status == status, or_(*decision_conditions))
 
 
 def _apply_approval_and_source_filters(query, args, **kwargs):
@@ -1216,6 +1228,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         reference_models["violation_ticket"].status.label("violation_ticket_status"),
         reference_models["admin_penalty"].referral_status.label("admin_penalty_status"),
         reference_models["admin_penalty"].decision.label("admin_penalty_decision"),
+        reference_models["admin_penalty"].jr_decision.label("admin_penalty_jr_decision"),
         reference_models["charge_rec"].status.label("charge_rec_status"),
         reference_models["restorative_justice"].status.label(
             "restorative_justice_status"
@@ -1281,6 +1294,7 @@ def _apply_pagination(query, args, subqueries, **kwargs):
         subq.c.violation_ticket_status.label("violation_ticket_status"),
         subq.c.admin_penalty_status.label("admin_penalty_status"),
         subq.c.admin_penalty_decision.label("admin_penalty_decision"),
+        subq.c.admin_penalty_jr_decision.label("admin_penalty_jr_decision"),
         subq.c.charge_rec_status.label("charge_rec_status"),
         subq.c.restorative_justice_status.label("restorative_justice_status"),
         subq.c.topic_name.label("topic_name"),
@@ -1530,7 +1544,7 @@ def _process_inspection_requirement_query_results(query_results):
 
         # Convert enforcement status to proper object format
         raw_status = ServiceUtils.get_enforcement_status_by_type(result)
-        item["status"] = _get_ap_dm_decision_status(result) or (
+        item["status"] = _get_ap_decision_status(result) or (
             ServiceUtils.convert_enum_to_object(raw_status) if raw_status else None
         )
 
@@ -1548,8 +1562,8 @@ def _process_inspection_requirement_query_results(query_results):
     return processed_requirements
 
 
-def _get_ap_dm_decision_status(result):
-    """Return the Enf. Status object for an AP referred to DM with a recorded DM decision.
+def _get_ap_decision_status(result):
+    """Return the Enf. Status object for an AP whose status carries a decision suffix.
 
     Returns None for every other row, so the shared status helper keeps handling them.
     The decision is only surfaced here; ServiceUtils.get_enforcement_status_by_type is shared
@@ -1558,15 +1572,13 @@ def _get_ap_dm_decision_status(result):
     if (
         result.enforcement_action_id
         != EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value
-        or result.admin_penalty_status != ReferralStatusEnum.REFERRED_TO_DM
-        or not result.admin_penalty_decision
     ):
         return None
-    decision = result.admin_penalty_decision
-    return {
-        "id": decision.name,
-        "name": f"{ReferralStatusEnum.REFERRED_TO_DM.value} - {decision.value}",
-    }
+    return get_ap_enforcement_status(
+        result.admin_penalty_status,
+        result.admin_penalty_decision,
+        result.admin_penalty_jr_decision,
+    )
 
 
 def _make_requirement_detail_object(requirements: list):
@@ -1752,11 +1764,7 @@ def _check_enforcement_action_existennce(
         EnforcementActionOptionEnum.ADMINISTRATIVE_PENALTY_RECOMMENDATION.value: {
             "model": AdministrativePenaltyModel,
             "status_field": "referral_status",
-            # Referred to AEO is treated the same as Preparing Referral for AEO for workflow purposes
-            "allowed_status": (
-                ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
-                ReferralStatusEnum.REFERRED_TO_AEO,
-            ),
+            "allowed_status": ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
             "map_field": "administrative_penalty_requirement_maps",
             "map_model": AdministrativePenaltyInspectionRequirementMapModel,
             "update_method": AdministrativePenaltyModel.update_administrative_penalty,
@@ -2330,8 +2338,8 @@ def _check_administrative_penalties(requirement):
     """Prevent deletion when a linked administrative penalty has progressed beyond the first status.
 
     Only APs in Preparing Referral for AEO can be updated or deleted alongside
-    the requirement; any later status (Referred to AEO, Deputy Review, Deputy
-    Review Complete, AP Not Proceeding, Referred to DM) blocks the deletion
+    the requirement; any later status (Referred to AEO, AP Not Proceeding,
+    Judicial Review) blocks the deletion
     regardless of whether the AP is considered closed.
     """
     enforcement_actions = requirement.enforcement_actions

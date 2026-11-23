@@ -37,6 +37,7 @@ from compliance_api.models import db
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import \
     AdministrativePenaltyInspectionRequirementMap as AdministrativePenaltyInspectionRequirementMapModel
+from compliance_api.models.administrative_penalty import get_ap_enforcement_status
 from compliance_api.models.case_file import CaseFile
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.charge_recommendation import \
@@ -867,13 +868,10 @@ def _set_administrative_penalty_enforcement_action_object(
     administrative_penalty: AdministrativePenaltyModel,
 ):
     """Make administrative penalty detail object."""
-    enforcement_action["status"] = (
-        {
-            "id": administrative_penalty.referral_status.name,
-            "name": administrative_penalty.referral_status.value,
-        }
-        if administrative_penalty.referral_status
-        else None
+    enforcement_action["status"] = get_ap_enforcement_status(
+        administrative_penalty.referral_status,
+        administrative_penalty.decision,
+        administrative_penalty.jr_decision,
     )
     enforcement_action["number"] = administrative_penalty.administrative_penalty_number
     return enforcement_action

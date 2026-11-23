@@ -185,10 +185,8 @@ export enum ViolationTicketStatus {
 export enum AdministrativePenaltyStatus {
   PREPARING_REFERRAL_FOR_AEO = "PREPARING_REFERRAL_FOR_AEO",
   REFERRED_TO_AEO = "REFERRED_TO_AEO",
-  DEPUTY_REVIEW = "DEPUTY_REVIEW",
-  DEPUTY_REVIEW_COMPLETE = "DEPUTY_REVIEW_COMPLETE",
   AP_NOT_PROCEEDING = "AP_NOT_PROCEEDING",
-  REFERRED_TO_DM = "REFERRED_TO_DM"
+  JUDICIAL_REVIEW = "JUDICIAL_REVIEW",
 }
 
 export enum ChargeRecommendationStatus {
@@ -215,11 +213,21 @@ export enum CaseFileStatusEnum {
 export const APReferralStatus = {
   PREPARING_REFERRAL_FOR_AEO: { id: "PREPARING_REFERRAL_FOR_AEO", name: "Preparing Referral for AEO" },
   REFERRED_TO_AEO: { id: "REFERRED_TO_AEO", name: "Referred to AEO" },
-  DEPUTY_REVIEW: { id: "DEPUTY_REVIEW", name: "Deputy Review" },
-  DEPUTY_REVIEW_COMPLETE: { id: "DEPUTY_REVIEW_COMPLETE", name: "Deputy Review Complete" },
   AP_NOT_PROCEEDING: { id: "AP_NOT_PROCEEDING", name: "AP Not Proceeding" },
-  REFERRED_TO_DM: { id: "REFERRED_TO_DM", name: "Referred to DM" },
-}
+};
+
+// Not selectable in the Status dropdown; set by ticking "subject to a judicial review".
+export const APJudicialReviewStatus = {
+  id: "JUDICIAL_REVIEW",
+  name: "Judicial Review",
+};
+
+export const APJudicialReviewDecision = {
+  REVERSED: { id: "REVERSED", name: "Reversed" },
+  QUASHED_AND_REMITTED: { id: "QUASHED_AND_REMITTED", name: "Quashed and Remitted" },
+  SUBSTITUTED: { id: "SUBSTITUTED", name: "Substituted" },
+  UPHELD: { id: "UPHELD", name: "Upheld" },
+};
 
 export const APDecisionStatus = {
   AP_ISSUED: { id: "AP_ISSUED", name: "AP Issued" },

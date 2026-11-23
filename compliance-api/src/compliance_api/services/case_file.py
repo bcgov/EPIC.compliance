@@ -20,7 +20,7 @@ from compliance_api.models import CaseFileOfficer as CaseFileOfficerModel
 from compliance_api.models import CaseFileStatusEnum
 from compliance_api.models import UnapprovedProject as UnapprovedProjectModel
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
-from compliance_api.models.administrative_penalty import ReferralStatusEnum
+from compliance_api.models.administrative_penalty import ReferralStatusEnum, get_ap_enforcement_status
 from compliance_api.models.charge_recommendation import ChargeRecommendation as ChargeRecommendationModel
 from compliance_api.models.complaint import Complaint as ComplaintModel
 from compliance_api.models.complaint import ComplaintStatusEnum
@@ -955,11 +955,12 @@ def _build_enforcement_item(item, item_type):
         base_item.update(
             {
                 "number": item.administrative_penalty_number,
-                "referral_status": (
-                    item.referral_status.value
-                    if item.referral_status
-                    else ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO.value
-                ),
+                "referral_status": get_ap_enforcement_status(
+                    item.referral_status
+                    or ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
+                    item.decision,
+                    item.jr_decision,
+                )["name"],
             }
         )
     elif item_type == "charge_recommendation":
@@ -1148,6 +1149,8 @@ def _build_enforcement_query(inspection_ids: list):
             AdministrativePenaltyModel.referral_status.label(
                 "admin_penalty_referral_status"
             ),
+            AdministrativePenaltyModel.decision.label("admin_penalty_decision"),
+            AdministrativePenaltyModel.jr_decision.label("admin_penalty_jr_decision"),
             AdministrativePenaltyModel.inspection_id.label(
                 "admin_penalty_inspection_id"
             ),
@@ -1327,12 +1330,11 @@ def _build_violation_ticket_item(row) -> dict:
 
 def _build_admin_penalty_item(row) -> dict:
     """Build administrative penalty item following schema."""
-    status_obj = None
-    if row.admin_penalty_referral_status:
-        status_obj = {
-            "id": row.admin_penalty_referral_status.name,
-            "name": row.admin_penalty_referral_status.value,
-        }
+    status_obj = get_ap_enforcement_status(
+        row.admin_penalty_referral_status,
+        row.admin_penalty_decision,
+        row.admin_penalty_jr_decision,
+    )
 
     return {
         "id": row.admin_penalty_id,

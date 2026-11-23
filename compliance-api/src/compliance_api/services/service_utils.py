@@ -53,9 +53,14 @@ class ServiceUtils:  # pylint: disable=too-many-public-methods
             )
 
     @staticmethod
+    def is_super_user():
+        """Return True when the current user is a superuser."""
+        return auth.has_permission([PermissionEnum.SUPERUSER])
+
+    @staticmethod
     def access_check_for_super_user():
         """Access check for super user."""
-        if not auth.has_permission([PermissionEnum.SUPERUSER]):
+        if not ServiceUtils.is_super_user():
             raise PermissionDeniedError(
                 "Only the Superuser can perform this operation."
             )

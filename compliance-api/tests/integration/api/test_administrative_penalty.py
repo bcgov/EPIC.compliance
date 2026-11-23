@@ -7,7 +7,11 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from urllib.parse import urljoin
 
-from compliance_api.models.administrative_penalty import AdministrativePenalty, DecisionEnum, ReferralStatusEnum
+from compliance_api.models.administrative_penalty import (
+    AdministrativePenalty, DecisionEnum, JudicialReviewDecisionEnum, ReferralStatusEnum)
+from compliance_api.exceptions import PermissionDeniedError
+from compliance_api.models.case_file import CaseFileStatusEnum
+from compliance_api.services.service_utils import ServiceUtils
 from tests.utilities.factory_scenario.administrative_penalty_scenario import AdministrativePenaltyScenario
 
 
@@ -282,7 +286,7 @@ def test_update_administrative_penalty_success(
     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
     update_data = {
         "inspection_id": created_administrative_penalty.inspection_id,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW.name,
+        "referral_status": ReferralStatusEnum.REFERRED_TO_AEO.name,
         "penalty_amount": 5000.00,
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
@@ -296,42 +300,8 @@ def test_update_administrative_penalty_success(
         headers=headers,
     )
     assert result.status_code == HTTPStatus.OK
-    assert result.json["referral_status"]["id"] == ReferralStatusEnum.DEPUTY_REVIEW.name
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.REFERRED_TO_AEO.name
     assert result.json["penalty_amount"] == "5000.00"
-
-
-def test_update_administrative_penalty_to_deputy_review_complete(
-    client,
-    auth_header_super_user,
-    created_administrative_penalty,
-    created_administrative_penalty_inspection_requirement,
-):
-    """Test moving an administrative penalty to Deputy Review Complete."""
-    url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
-    update_data = {
-        "inspection_id": created_administrative_penalty.inspection_id,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE.name,
-        "inspection_requirement_ids": [
-            created_administrative_penalty_inspection_requirement.id
-        ],
-    }
-
-    headers = {**auth_header_super_user, "Content-Type": "application/json"}
-    result = client.patch(
-        url,
-        data=json.dumps(update_data),
-        headers=headers,
-    )
-
-    assert result.status_code == HTTPStatus.OK
-    assert (
-        result.json["referral_status"]["id"]
-        == ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE.name
-    )
-    assert result.json["referral_status"]["name"] == "Deputy Review Complete"
-    # Deputy Review Complete is not a closing status, so the AP stays open and
-    # keeps appearing on the Review Board under Review Status.
-    assert result.json["is_closed"] is False
 
 
 def test_update_administrative_penalty_with_invalid_id(
@@ -344,7 +314,7 @@ def test_update_administrative_penalty_with_invalid_id(
     url = urljoin(API_BASE_URL, "9999")
     update_data = {
         "inspection_id": created_inspection.id,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW.name,
+        "referral_status": ReferralStatusEnum.REFERRED_TO_AEO.name,
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
         ],
@@ -369,7 +339,7 @@ def test_update_administrative_penalty_with_invalid_inspection_id(
     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
     update_data = {
         "inspection_id": 9999,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW.name,
+        "referral_status": ReferralStatusEnum.REFERRED_TO_AEO.name,
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
         ],
@@ -676,7 +646,7 @@ def test_update_administrative_penalty_unauthorized(
     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
     update_data = {
         "inspection_id": created_administrative_penalty.inspection_id,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW.name,
+        "referral_status": ReferralStatusEnum.REFERRED_TO_AEO.name,
         "inspection_requirement_ids": [
             created_administrative_penalty_inspection_requirement.id
         ],
@@ -883,11 +853,11 @@ def test_update_administrative_penalty_status_transitions(
     created_administrative_penalty_inspection_requirement,
 ):
     """Test various status transitions for administrative penalty."""
-    # Test transition from DRAFTING to DEPUTY_REVIEW
+    # Test transition from PREPARING_REFERRAL_FOR_AEO to REFERRED_TO_AEO
     url = urljoin(API_BASE_URL, f"{created_administrative_penalty.id}")
     update_data = {
         "inspection_id": created_administrative_penalty.inspection_id,
-        "referral_status": ReferralStatusEnum.DEPUTY_REVIEW.name,
+        "referral_status": ReferralStatusEnum.REFERRED_TO_AEO.name,
         "date_referred": (
             created_administrative_penalty.date_referred.strftime(
                 "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -924,10 +894,10 @@ def test_update_administrative_penalty_status_transitions(
         headers=headers,
     )
     assert result.status_code == HTTPStatus.OK
-    assert result.json["referral_status"]["id"] == ReferralStatusEnum.DEPUTY_REVIEW.name
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.REFERRED_TO_AEO.name
 
-    # Test transition to REFERRED_TO_DM
-    update_data["referral_status"] = ReferralStatusEnum.REFERRED_TO_DM.name
+    # Test transition to AP_NOT_PROCEEDING
+    update_data["referral_status"] = ReferralStatusEnum.AP_NOT_PROCEEDING.name
     result = client.patch(
         url,
         data=json.dumps(update_data),
@@ -935,7 +905,7 @@ def test_update_administrative_penalty_status_transitions(
     )
     assert result.status_code == HTTPStatus.OK
     assert (
-        result.json["referral_status"]["id"] == ReferralStatusEnum.REFERRED_TO_DM.name
+        result.json["referral_status"]["id"] == ReferralStatusEnum.AP_NOT_PROCEEDING.name
     )
 
 
@@ -1019,3 +989,247 @@ def test_update_administrative_penalty_with_penalty_amount_and_decision(
     assert result.status_code == HTTPStatus.OK
     assert result.json["decision"]["id"] == DecisionEnum.AP_ISSUED.name
     assert result.json["penalty_amount"] == "10000.00"
+
+
+JR_DATE = "2026-11-01T00:00:00.000000Z"
+
+
+def _close_as_ap_issued(administrative_penalty):
+    """Put the AP in the state judicial review starts from: closed, AP Issued, open case file."""
+    administrative_penalty.inspection.case_file.case_file_status = CaseFileStatusEnum.OPEN
+    administrative_penalty.referral_status = ReferralStatusEnum.REFERRED_TO_AEO
+    administrative_penalty.decision = DecisionEnum.AP_ISSUED
+    administrative_penalty.penalty_amount = 1000
+    administrative_penalty.save()
+
+
+def _patch_jr(client, headers, administrative_penalty, requirement, **fields):
+    """PATCH the AP with the full form in Judicial Review plus the given fields."""
+    data = {
+        "inspection_id": administrative_penalty.inspection_id,
+        "referral_status": ReferralStatusEnum.JUDICIAL_REVIEW.name,
+        "decision": DecisionEnum.AP_ISSUED.name,
+        "penalty_amount": "1000.00",
+        "jr_decision_date": JR_DATE,
+        "inspection_requirement_ids": [requirement.id],
+        **fields,
+    }
+    return client.patch(
+        urljoin(API_BASE_URL, f"{administrative_penalty.id}"),
+        data=json.dumps(data),
+        headers={**headers, "Content-Type": "application/json"},
+    )
+
+
+def test_judicial_review_incomplete_save_reopens_ap(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Saving a JR with only the decision date reopens the AP."""
+    _close_as_ap_issued(created_administrative_penalty)
+    result = _patch_jr(
+        client,
+        auth_header_super_user,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.JUDICIAL_REVIEW.name
+    assert result.json["is_closed"] is False
+
+
+def test_judicial_review_complete_applies_amount_rules_and_closes(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Reversed forces 0, Upheld copies the penalty amount; a complete JR closes the AP."""
+    _close_as_ap_issued(created_administrative_penalty)
+    for decision, sent_amount, expected_amount in (
+        (JudicialReviewDecisionEnum.REVERSED, "500.00", "0.00"),
+        (JudicialReviewDecisionEnum.UPHELD, "500.00", "1000.00"),
+        (JudicialReviewDecisionEnum.SUBSTITUTED, "500.00", "500.00"),
+    ):
+        result = _patch_jr(
+            client,
+            auth_header_super_user,
+            created_administrative_penalty,
+            created_administrative_penalty_inspection_requirement,
+            jr_decision=decision.name,
+            jr_new_penalty_amount=sent_amount,
+        )
+        assert result.status_code == HTTPStatus.OK
+        assert result.json["jr_new_penalty_amount"] == expected_amount
+        assert result.json["jr_decision"]["id"] == decision.name
+        assert result.json["is_closed"] is True
+
+
+def test_judicial_review_rejections(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """JR rules: eligibility, required date, required amount, no status change, no stray JR fields."""
+    args = (
+        client,
+        auth_header_super_user,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+    )
+    # Not eligible: AP still in Preparing Referral for AEO.
+    assert _patch_jr(*args).status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    _close_as_ap_issued(created_administrative_penalty)
+    # JR fields without the JR status.
+    assert (
+        _patch_jr(*args, referral_status=ReferralStatusEnum.REFERRED_TO_AEO.name)
+        .status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    )
+    # Decision date is required on every JR save.
+    assert _patch_jr(*args, jr_decision_date=None).status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    # Quashed and Remitted needs a new penalty amount.
+    assert (
+        _patch_jr(*args, jr_decision=JudicialReviewDecisionEnum.QUASHED_AND_REMITTED.name)
+        .status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    )
+
+    assert _patch_jr(*args).status_code == HTTPStatus.OK
+    # Once in JR the status can only go back to Referred to AEO (discard).
+    assert (
+        _patch_jr(
+            *args,
+            referral_status=ReferralStatusEnum.AP_NOT_PROCEEDING.name,
+            jr_decision_date=None,
+        ).status_code
+        == HTTPStatus.UNPROCESSABLE_ENTITY
+    )
+    # Discarding must clear the JR fields.
+    assert (
+        _patch_jr(*args, referral_status=ReferralStatusEnum.REFERRED_TO_AEO.name)
+        .status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    )
+
+
+def test_starting_judicial_review_skips_super_user_check(
+    client,
+    auth_header,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    monkeypatch,
+):
+    """Starting JR on a closed AP needs primary officer or superuser, not superuser only.
+
+    The test JWT passes every role check, so the superuser-only check is made to fail here.
+    """
+    def deny():
+        raise PermissionDeniedError("superuser only")
+
+    monkeypatch.setattr(ServiceUtils, "access_check_for_super_user", staticmethod(deny))
+    _close_as_ap_issued(created_administrative_penalty)
+    args = (
+        client,
+        auth_header,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+    )
+    assert _patch_jr(*args).status_code == HTTPStatus.OK
+    # A plain edit of a closed AP still goes through the superuser-only check.
+    _close_as_ap_issued(created_administrative_penalty)
+    created_administrative_penalty.jr_decision_date = None
+    created_administrative_penalty.save()
+    result = _patch_jr(
+        *args, referral_status=ReferralStatusEnum.REFERRED_TO_AEO.name, jr_decision_date=None
+    )
+    assert result.status_code == HTTPStatus.FORBIDDEN
+
+
+def test_discarding_judicial_review_restores_referred_to_aeo(
+    client,
+    auth_header_super_user,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+):
+    """Discard sets the status back to Referred to AEO, clears the JR fields and the edited flag."""
+    _close_as_ap_issued(created_administrative_penalty)
+    args = (
+        client,
+        auth_header_super_user,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+    )
+    result = _patch_jr(*args, penalty_amount="2000.00", jr_ap_fields_edited=True)
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["jr_ap_fields_edited"] is True
+
+    result = _patch_jr(
+        *args,
+        referral_status=ReferralStatusEnum.REFERRED_TO_AEO.name,
+        penalty_amount="2000.00",
+        jr_decision_date=None,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.REFERRED_TO_AEO.name
+    assert result.json["jr_decision_date"] is None
+    assert result.json["jr_ap_fields_edited"] is False
+    # Changes to the other AP fields remain.
+    assert result.json["penalty_amount"] == "2000.00"
+    assert result.json["is_closed"] is True
+
+
+def test_primary_officer_cannot_change_ap_fields_in_judicial_review(
+    client,
+    auth_header,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    monkeypatch,
+):
+    """A primary officer records the JR, but the AP fields keep their stored values.
+
+    The test JWT passes every role check, so the user is made a non-superuser here.
+    """
+    monkeypatch.setattr(ServiceUtils, "is_super_user", staticmethod(lambda: False))
+    monkeypatch.setattr(
+        ServiceUtils, "access_check_update_for_inspection", staticmethod(lambda inspection: None)
+    )
+    _close_as_ap_issued(created_administrative_penalty)
+    result = _patch_jr(
+        client,
+        auth_header,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+        penalty_amount="2000.00",
+        jr_ap_fields_edited=True,
+    )
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["referral_status"]["id"] == ReferralStatusEnum.JUDICIAL_REVIEW.name
+    assert result.json["penalty_amount"] == "1000.00"
+    assert result.json["jr_ap_fields_edited"] is False
+
+
+def test_review_board_shows_only_preparing_referral(
+    client,
+    auth_header,
+    created_administrative_penalty,
+):
+    """Only Preparing Referral for AEO APs appear on the Review Board, open or closed."""
+    url = "/api/review-board/administrative-penalties"
+    for status, decision, shown in (
+        (ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO, None, True),
+        (ReferralStatusEnum.REFERRED_TO_AEO, None, False),
+        (ReferralStatusEnum.REFERRED_TO_AEO, DecisionEnum.AP_ISSUED, False),
+        (ReferralStatusEnum.AP_NOT_PROCEEDING, None, False),
+        (ReferralStatusEnum.JUDICIAL_REVIEW, DecisionEnum.AP_ISSUED, False),
+    ):
+        created_administrative_penalty.referral_status = status
+        created_administrative_penalty.decision = decision
+        created_administrative_penalty.save()
+        result = client.get(url, headers=auth_header)
+        assert result.status_code == HTTPStatus.OK
+        numbers = [item["administrative_penalty_number"] for item in result.json]
+        assert (
+            created_administrative_penalty.administrative_penalty_number in numbers
+        ) is shown, status

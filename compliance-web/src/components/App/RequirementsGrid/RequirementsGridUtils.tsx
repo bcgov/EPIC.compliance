@@ -4,6 +4,8 @@ import {
   APPROVAL_STATUS,
   APDecisionStatus,
   APReferralStatus,
+  APJudicialReviewDecision,
+  APJudicialReviewStatus,
   CRStatus,
   EnforcementActionEnum,
   OrderProgressEnum,
@@ -307,25 +309,25 @@ const enforcementStatusOptions = [
     text: APReferralStatus.REFERRED_TO_AEO.name,
   },
   {
-    value: APReferralStatus.DEPUTY_REVIEW_COMPLETE.id,
-    text: APReferralStatus.DEPUTY_REVIEW_COMPLETE.name,
-  },
-  {
     value: APReferralStatus.AP_NOT_PROCEEDING.id,
     text: APReferralStatus.AP_NOT_PROCEEDING.name,
   },
   {
-    value: APReferralStatus.REFERRED_TO_DM.id,
-    text: APReferralStatus.REFERRED_TO_DM.name,
-  },
-  {
     value: APDecisionStatus.AP_ISSUED.id,
-    text: "Referred to DM - AP Issued",
+    text: `${APReferralStatus.REFERRED_TO_AEO.name} - ${APDecisionStatus.AP_ISSUED.name}`,
   },
   {
     value: APDecisionStatus.AP_NOT_PROCEEDING.id,
-    text: "Referred to DM - AP Not Proceeding",
+    text: `${APReferralStatus.REFERRED_TO_AEO.name} - ${APDecisionStatus.AP_NOT_PROCEEDING.name}`,
   },
+  {
+    value: APJudicialReviewStatus.id,
+    text: APJudicialReviewStatus.name,
+  },
+  ...Object.values(APJudicialReviewDecision).map((decision) => ({
+    value: decision.id,
+    text: `${APJudicialReviewStatus.name} - ${decision.name}`,
+  })),
   // Violation Ticket Statuses that are not in OTHER ENFORCEMENT ACTIONS
   {
     value: ViolationTicketStatus.PAID,

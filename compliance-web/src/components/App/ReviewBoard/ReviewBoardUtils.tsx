@@ -7,7 +7,6 @@ import {
   ReviewBoardSection,
 } from "@/models/ReviewBoard";
 import {
-  AdministrativePenaltyStatus,
   APPROVAL_STATUS,
   IRProgressEnum,
 } from "@/utils/constants";
@@ -157,23 +156,9 @@ const determineItemSection = (
 ): ReviewBoardCardTypeEnum => {
   let sectionIndex = ReviewBoardCardTypeEnum.DRAFTING;
 
+  // APs only reach the board while Preparing Referral for AEO, so they stay in Drafting.
   if (item.card_type.name === "AP") {
-    switch (item.approval_status?.id) {
-      case AdministrativePenaltyStatus.PREPARING_REFERRAL_FOR_AEO:
-      case AdministrativePenaltyStatus.REFERRED_TO_AEO:
-        sectionIndex = ReviewBoardCardTypeEnum.DRAFTING;
-        break;
-      case AdministrativePenaltyStatus.DEPUTY_REVIEW:
-        sectionIndex = ReviewBoardCardTypeEnum.DEPUTY_REVIEW;
-        break;
-      case AdministrativePenaltyStatus.DEPUTY_REVIEW_COMPLETE:
-      case AdministrativePenaltyStatus.AP_NOT_PROCEEDING:
-        sectionIndex = ReviewBoardCardTypeEnum.REVIEW_STATUS;
-        break;
-      case AdministrativePenaltyStatus.REFERRED_TO_DM:
-        sectionIndex = ReviewBoardCardTypeEnum.PENDING_ISSUANCE;
-        break;
-    }
+    sectionIndex = ReviewBoardCardTypeEnum.DRAFTING;
   } else if (
     item.card_type.name !== "AP" &&
     item.approval_status?.id === APPROVAL_STATUS.APPROVED &&
@@ -306,9 +291,7 @@ export const generateDynamicSections = (
   if (deputyDirectorFilter && deputyDirectorFilter.length > 0) {
     allItems = allItems.filter(
       (item) =>
-        (item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING ||
-          item.approval_status?.id ===
-            AdministrativePenaltyStatus.DEPUTY_REVIEW) &&
+        item.approval_status?.id === APPROVAL_STATUS.APPROVAL_PENDING &&
         item.deputy_director &&
         deputyDirectorFilter.includes(item.deputy_director.id.toString())
     );

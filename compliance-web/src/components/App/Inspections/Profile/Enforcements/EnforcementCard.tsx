@@ -177,7 +177,7 @@ const EnforcementCard = ({
           {administrativePenalty && (
             <>
               <GridLabelValuePair
-                label="Date Referred to Decision Maker"
+                label="Date Referred to AEO"
                 value={
                   administrativePenalty.date_referred
                     ? dateUtils.formatDate(administrativePenalty.date_referred)
@@ -186,7 +186,7 @@ const EnforcementCard = ({
                 gridProps={{ xs: 6 }}
               />
               <GridLabelValuePair
-                label="Decision Date"
+                label="DM Decision Date"
                 value={
                   administrativePenalty.decision_date
                     ? dateUtils.formatDate(administrativePenalty.decision_date)

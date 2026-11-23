@@ -140,7 +140,7 @@ def test_create_inspection_with_invalid_case_file(
     # Invalid case file id
     inspection_data.update(
         {
-            "case_file_id": 123,
+            "case_file_id": 999999999,
             "primary_officer_id": created_staff.id,
             "initiation_id": 1,
         }

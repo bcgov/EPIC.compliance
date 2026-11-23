@@ -216,9 +216,7 @@ const RequirementFormLeft: FC<RequirementFormLeftProps> = ({
       );
       const nonDraftAdministrativePenalties = requirementsInAdministrativePenalties.some(
         (penalty) =>
-          penalty.referral_status?.id !== AdministrativePenaltyStatus.PREPARING_REFERRAL_FOR_AEO &&
-          // Referred to AEO is treated the same as Preparing Referral for AEO for workflow purposes
-          penalty.referral_status?.id !== AdministrativePenaltyStatus.REFERRED_TO_AEO
+          penalty.referral_status?.id !== AdministrativePenaltyStatus.PREPARING_REFERRAL_FOR_AEO
       );
       const nonDraftChargeRecommendations = requirementsInChargeRecommendations.some(
         (charge) => charge.status?.id !== ChargeRecommendationStatus.DRAFTING

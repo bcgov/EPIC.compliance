@@ -2,10 +2,10 @@
 
 from typing import List
 
-from sqlalchemy import func, not_
+from sqlalchemy import func
 from sqlalchemy.orm import aliased, joinedload
 
-from compliance_api.models.administrative_penalty import AdministrativePenalty
+from compliance_api.models.administrative_penalty import AdministrativePenalty, ReferralStatusEnum
 from compliance_api.models.inspection.inspection import Inspection
 from compliance_api.models.inspection_record import InspectionRecord, IRProgressEnum
 from compliance_api.models.inspection_record_approval import InspectionRecordApproval
@@ -199,11 +199,9 @@ class ReviewBoardService:
     def get_open_administrative_penalties(
         cls,
     ) -> List[AdministrativePenalty]:
-        """Get all administrative penalties that are not closed.
+        """Get the administrative penalties shown on the Review Board.
 
-        An AP is considered closed if it meets any of the following conditions:
-        - AP referral status is 'AP Not Proceeding'
-        - AP referral status is 'Referred to DM' AND a decision was made.
+        Only APs in Preparing Referral for AEO appear; every later status stays off the board.
         """
         return (
             AdministrativePenalty.query.join(
@@ -222,7 +220,8 @@ class ReviewBoardService:
                 AdministrativePenalty.is_deleted.is_(False),
                 Inspection.is_active.is_(True),
                 Inspection.is_deleted.is_(False),
-                not_(AdministrativePenalty.get_closed_conditions()),
+                AdministrativePenalty.referral_status
+                == ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO,
             )
             .order_by(AdministrativePenalty.created_date.desc())
             .all()
