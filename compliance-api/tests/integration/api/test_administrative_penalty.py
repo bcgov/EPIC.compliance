@@ -1201,6 +1201,39 @@ def test_starting_judicial_review_checks_the_aps_own_inspection(
     assert created_administrative_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_AEO
 
 
+def test_starting_judicial_review_checks_the_request_inspection(
+    client,
+    auth_header,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    monkeypatch,
+):
+    """A primary officer of the AP's inspection cannot write requirement links on another inspection."""
+    other_data = copy.copy(InspectionScenario.default_value.value)
+    other_data["case_file_id"] = created_administrative_penalty.inspection.case_file_id
+    other_inspection = InspectionService.create(other_data)
+
+    def primary_only_on_own(inspection):
+        if inspection.id != created_administrative_penalty.inspection_id:
+            raise PermissionDeniedError("not the primary officer")
+
+    monkeypatch.setattr(
+        ServiceUtils, "access_check_update_for_inspection", staticmethod(primary_only_on_own)
+    )
+    _close_as_ap_issued(created_administrative_penalty)
+    result = _patch_jr(
+        client,
+        auth_header,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+        inspection_id=other_inspection.id,
+        inspection_requirement_ids=[],
+        jr_decision=JudicialReviewDecisionEnum.REVERSED.name,
+    )
+    assert result.status_code == HTTPStatus.FORBIDDEN
+    assert created_administrative_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_AEO
+
+
 def test_discarding_judicial_review_restores_referred_to_aeo(
     client,
     auth_header_super_user,

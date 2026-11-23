@@ -199,8 +199,11 @@ class AdministrativePenaltyService:
         starting_jr = not in_jr and update_data.get("referral_status") == ReferralStatusEnum.JUDICIAL_REVIEW
         #  Primary or super user can record a judicial review; only a super user can change the AP fields in it.
         #  Checked against the AP's own inspection: the request's inspection_id can be any linked inspection.
+        #  The request's inspection is checked too, since the requirement links are written against it.
         if starting_jr or (in_jr and not administrative_penalty.is_closed):
             ServiceUtils.access_check_update_for_inspection(administrative_penalty.inspection)
+            if inspection.id != administrative_penalty.inspection_id:
+                ServiceUtils.access_check_update_for_inspection(inspection)
             if not ServiceUtils.is_super_user():
                 update_data.update({field: getattr(administrative_penalty, field) for field in AP_FIELDS})
                 update_data["jr_ap_fields_edited"] = False
