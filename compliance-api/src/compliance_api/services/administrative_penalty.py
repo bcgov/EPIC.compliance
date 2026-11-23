@@ -197,9 +197,10 @@ class AdministrativePenaltyService:
         )
         in_jr = administrative_penalty.referral_status == ReferralStatusEnum.JUDICIAL_REVIEW
         starting_jr = not in_jr and update_data.get("referral_status") == ReferralStatusEnum.JUDICIAL_REVIEW
-        #  Primary or super user can record a judicial review; only a super user can change the AP fields in it
+        #  Primary or super user can record a judicial review; only a super user can change the AP fields in it.
+        #  Checked against the AP's own inspection: the request's inspection_id can be any linked inspection.
         if starting_jr or (in_jr and not administrative_penalty.is_closed):
-            ServiceUtils.access_check_update_for_inspection(inspection)
+            ServiceUtils.access_check_update_for_inspection(administrative_penalty.inspection)
             if not ServiceUtils.is_super_user():
                 update_data.update({field: getattr(administrative_penalty, field) for field in AP_FIELDS})
                 update_data["jr_ap_fields_edited"] = False
@@ -209,7 +210,7 @@ class AdministrativePenaltyService:
         #  Super user can update ap if it is closed
         else:
             ServiceUtils.access_check_for_super_user()
-        _check_judicial_review(administrative_penalty, update_data, inspection)
+        _check_judicial_review(administrative_penalty, update_data)
         # Remembered for the discard warning; cleared when the AP leaves Judicial Review.
         update_data["jr_ap_fields_edited"] = (
             update_data.get("referral_status") == ReferralStatusEnum.JUDICIAL_REVIEW
@@ -454,7 +455,7 @@ def _extract_ap_data(administrative_penalty_data):
     }
 
 
-def _check_judicial_review(administrative_penalty, update_data, inspection):
+def _check_judicial_review(administrative_penalty, update_data):
     """Validate the judicial review rules for an update and apply the JR amount rules."""
     current_status = administrative_penalty.referral_status
     new_status = update_data.get("referral_status")
@@ -481,7 +482,7 @@ def _check_judicial_review(administrative_penalty, update_data, inspection):
 
     starting_jr = current_status != ReferralStatusEnum.JUDICIAL_REVIEW
     if starting_jr and not (
-        inspection.case_file.case_file_status == CaseFileStatusEnum.OPEN
+        administrative_penalty.inspection.case_file.case_file_status == CaseFileStatusEnum.OPEN
         and administrative_penalty.is_closed
         and current_status == ReferralStatusEnum.REFERRED_TO_AEO
         and administrative_penalty.decision == DecisionEnum.AP_ISSUED

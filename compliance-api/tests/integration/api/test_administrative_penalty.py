@@ -11,8 +11,10 @@ from compliance_api.models.administrative_penalty import (
     AdministrativePenalty, DecisionEnum, JudicialReviewDecisionEnum, ReferralStatusEnum)
 from compliance_api.exceptions import PermissionDeniedError
 from compliance_api.models.case_file import CaseFileStatusEnum
+from compliance_api.services.inspection import InspectionService
 from compliance_api.services.service_utils import ServiceUtils
 from tests.utilities.factory_scenario.administrative_penalty_scenario import AdministrativePenaltyScenario
+from tests.utilities.factory_scenario.inspection_scenario import InspectionScenario
 
 
 API_BASE_URL = "/api/administrative-penalties/"
@@ -1003,6 +1005,17 @@ def _close_as_ap_issued(administrative_penalty):
     administrative_penalty.save()
 
 
+def _closed_in_db(administrative_penalty):
+    """Return whether the SQL closed conditions (get_closed_conditions) match the AP."""
+    return (
+        AdministrativePenalty.query.filter(
+            AdministrativePenalty.id == administrative_penalty.id,
+            AdministrativePenalty.get_closed_conditions(),
+        ).count()
+        == 1
+    )
+
+
 def _patch_jr(client, headers, administrative_penalty, requirement, **fields):
     """PATCH the AP with the full form in Judicial Review plus the given fields."""
     data = {
@@ -1038,6 +1051,7 @@ def test_judicial_review_incomplete_save_reopens_ap(
     assert result.status_code == HTTPStatus.OK
     assert result.json["referral_status"]["id"] == ReferralStatusEnum.JUDICIAL_REVIEW.name
     assert result.json["is_closed"] is False
+    assert _closed_in_db(created_administrative_penalty) is False
 
 
 def test_judicial_review_complete_applies_amount_rules_and_closes(
@@ -1065,6 +1079,7 @@ def test_judicial_review_complete_applies_amount_rules_and_closes(
         assert result.json["jr_new_penalty_amount"] == expected_amount
         assert result.json["jr_decision"]["id"] == decision.name
         assert result.json["is_closed"] is True
+        assert _closed_in_db(created_administrative_penalty) is True
 
 
 def test_judicial_review_rejections(
@@ -1081,6 +1096,12 @@ def test_judicial_review_rejections(
         created_administrative_penalty_inspection_requirement,
     )
     # Not eligible: AP still in Preparing Referral for AEO.
+    assert _patch_jr(*args).status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+    # Not eligible: the case file is closed.
+    _close_as_ap_issued(created_administrative_penalty)
+    created_administrative_penalty.inspection.case_file.case_file_status = CaseFileStatusEnum.CLOSED
+    created_administrative_penalty.save()
     assert _patch_jr(*args).status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
     _close_as_ap_issued(created_administrative_penalty)
@@ -1147,6 +1168,39 @@ def test_starting_judicial_review_skips_super_user_check(
     assert result.status_code == HTTPStatus.FORBIDDEN
 
 
+def test_starting_judicial_review_checks_the_aps_own_inspection(
+    client,
+    auth_header,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    monkeypatch,
+):
+    """A primary officer of another inspection cannot start a JR by sending that inspection's id."""
+    other_data = copy.copy(InspectionScenario.default_value.value)
+    other_data["case_file_id"] = created_administrative_penalty.inspection.case_file_id
+    other_inspection = InspectionService.create(other_data)
+
+    def primary_only_on_other(inspection):
+        if inspection.id != other_inspection.id:
+            raise PermissionDeniedError("not the primary officer")
+
+    monkeypatch.setattr(
+        ServiceUtils, "access_check_update_for_inspection", staticmethod(primary_only_on_other)
+    )
+    _close_as_ap_issued(created_administrative_penalty)
+    result = _patch_jr(
+        client,
+        auth_header,
+        created_administrative_penalty,
+        created_administrative_penalty_inspection_requirement,
+        inspection_id=other_inspection.id,
+        inspection_requirement_ids=[],
+        jr_decision=JudicialReviewDecisionEnum.REVERSED.name,
+    )
+    assert result.status_code == HTTPStatus.FORBIDDEN
+    assert created_administrative_penalty.referral_status == ReferralStatusEnum.REFERRED_TO_AEO
+
+
 def test_discarding_judicial_review_restores_referred_to_aeo(
     client,
     auth_header_super_user,
@@ -1162,6 +1216,10 @@ def test_discarding_judicial_review_restores_referred_to_aeo(
         created_administrative_penalty_inspection_requirement,
     )
     result = _patch_jr(*args, penalty_amount="2000.00", jr_ap_fields_edited=True)
+    assert result.status_code == HTTPStatus.OK
+    assert result.json["jr_ap_fields_edited"] is True
+    # A later JR save without new AP field edits keeps the flag.
+    result = _patch_jr(*args, penalty_amount="2000.00")
     assert result.status_code == HTTPStatus.OK
     assert result.json["jr_ap_fields_edited"] is True
 
