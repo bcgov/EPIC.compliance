@@ -39,6 +39,26 @@ const inspection = (caseFileStatus: string) =>
     case_file: { id: 5, case_file_status: caseFileStatus },
   }) as unknown as Inspection;
 
+// Seeds the OIDC session that useAuth and the API client read.
+const login = (username: string, roles: string[] = []) => {
+  const encode = (value: object) =>
+    btoa(JSON.stringify(value)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const accessToken = [
+    encode({ alg: "none" }),
+    encode({ resource_access: { [OidcConfig.client_id]: { roles } } }),
+    "sig",
+  ].join(".");
+  sessionStorage.setItem(
+    `oidc.user:${OidcConfig.authority}:${OidcConfig.client_id}`,
+    JSON.stringify({
+      access_token: accessToken,
+      token_type: "Bearer",
+      profile: { sub: username, preferred_username: username },
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    })
+  );
+};
+
 const mountModal = (caseFileStatus = "Open", ap = closedApIssued) => {
   mount(
     <QueryClientProvider client={new QueryClient()}>
@@ -61,6 +81,8 @@ const selectJrDecision = (name: string) => {
 };
 
 describe("AdministrativePenaltyUpdateModal judicial review", () => {
+  beforeEach(() => sessionStorage.clear());
+
   it("hides the JR checkbox when the case file is closed", () => {
     mountModal("Closed");
     cy.get('[data-testid="jr-checkbox"]').should("not.exist");
@@ -92,6 +114,57 @@ describe("AdministrativePenaltyUpdateModal judicial review", () => {
 
     selectJrDecision("Substituted");
     cy.get('input[name="jr_new_penalty_amount"]').should("have.value", "0").and("not.be.disabled");
+  });
+
+  it("keeps a typed JR amount when a superuser changes the penalty amount", () => {
+    login("admin", ["super_user"]);
+    mountModal();
+    cy.get('[data-testid="jr-checkbox"] input').check();
+    cy.contains("button", "Proceed").click();
+    selectJrDecision("Substituted");
+    cy.get('input[name="jr_new_penalty_amount"]').clear().type("500");
+    cy.get('input[name="penalty_amount"]').clear().type("2000");
+    cy.get('input[name="jr_new_penalty_amount"]').should("have.value", "500");
+  });
+
+  const mountFromLinkedInspection = (
+    caseFileStatus: string,
+    primaryOfficer: string,
+    ap: AdministrativePenalty = closedApIssued
+  ) => {
+    login("officer");
+    cy.intercept("GET", "**/inspections/20", {
+      id: 20,
+      case_file: { id: 6, case_file_status: caseFileStatus },
+      primary_officer: { id: 2, auth_user_guid: primaryOfficer },
+    }).as("apInspection");
+    mountModal("Open", { ...ap, inspection_id: 20 } as AdministrativePenalty);
+    cy.wait("@apInspection");
+  };
+
+  it("shows the JR checkbox from a linked inspection to the AP's own primary officer", () => {
+    mountFromLinkedInspection("Open", "officer");
+    cy.get('[data-testid="jr-checkbox"]').should("exist");
+  });
+
+  it("hides the JR checkbox from a linked inspection when the AP's own case file is closed", () => {
+    mountFromLinkedInspection("Closed", "officer");
+    cy.get('[data-testid="jr-checkbox"]').should("not.exist");
+  });
+
+  it("hides the JR checkbox from a linked inspection when not the AP's own primary officer", () => {
+    mountFromLinkedInspection("Open", "someone-else");
+    cy.get('[data-testid="jr-checkbox"]').should("not.exist");
+  });
+
+  it("opens an in-progress JR from a linked inspection read-only unless the AP's own primary officer", () => {
+    mountFromLinkedInspection("Open", "someone-else", savedJr());
+    cy.get('[data-testid="jr-checkbox"] input').should("be.disabled");
+    cy.get('input[name="jr_new_penalty_amount"]').should("be.disabled");
+
+    mountFromLinkedInspection("Open", "officer", savedJr());
+    cy.get('[data-testid="jr-checkbox"] input').should("not.be.disabled");
+    cy.get('input[name="jr_new_penalty_amount"]').should("not.be.disabled");
   });
 
   it("resets the form when unchecked before saving", () => {

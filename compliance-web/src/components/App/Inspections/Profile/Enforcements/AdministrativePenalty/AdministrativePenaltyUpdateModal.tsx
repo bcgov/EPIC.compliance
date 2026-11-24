@@ -38,7 +38,8 @@ import {
   APJudicialReviewDecision,
   APJudicialReviewStatus,
 } from "@/utils/constants";
-import { KC_USER_GROUPS, useIsRolesAllowed } from "@/hooks/useAuthorization";
+import { KC_USER_GROUPS, useCurrentLoggedInUser, useIsRolesAllowed } from "@/hooks/useAuthorization";
+import { useInspectionById } from "@/hooks/useInspections";
 
 const administrativePenaltyUpdateSchema = yup.object().shape({
   referral_status: yup
@@ -139,14 +140,29 @@ const AdministrativePenaltyUpdateModal: FC<
   // Unticked a saved JR; waiting for Yes, Discard / No, Keep.
   const [discardPending, setDiscardPending] = useState(false);
 
+  // The API checks the JR against the AP's own inspection, which differs when viewed from a linked inspection.
+  const isOwnInspection = administrativePenalty.inspection_id === inspectionData.id;
+  const { data: fetchedApInspection } = useInspectionById(
+    isOwnInspection ? 0 : administrativePenalty.inspection_id
+  );
+  const apInspection = isOwnInspection ? inspectionData : fetchedApInspection;
+  const currentUser = useCurrentLoggedInUser();
+  // The API also checks the page's inspection, since the requirement links are written against it.
+  const canEditJr =
+    isPrimaryOfficerOrSuperUser &&
+    (isOwnInspection ||
+      isSuperUser ||
+      (!!currentUser?.preferred_username &&
+        apInspection?.primary_officer?.auth_user_guid === currentUser.preferred_username));
+
   // JR can start on a closed AP Issued AP in an open case file, by the primary officer or a superuser.
   const canStartJr =
     !savedInJr &&
     administrativePenalty.is_closed &&
     administrativePenalty.referral_status?.id === APReferralStatus.REFERRED_TO_AEO.id &&
     administrativePenalty.decision?.id === APDecisionStatus.AP_ISSUED.id &&
-    inspectionData.case_file?.case_file_status?.toLowerCase() === "open" &&
-    isPrimaryOfficerOrSuperUser;
+    apInspection?.case_file?.case_file_status?.toLowerCase() === "open" &&
+    canEditJr;
 
   const defaultValues = useMemo(() => {
     const currentReferralStatus =
@@ -208,13 +224,13 @@ const AdministrativePenaltyUpdateModal: FC<
   // Calculate readonly mode based on inspection status and administrative penalty status
   const isReadonlyMode = useMemo(() => {
     if (jrInProgress) {
-      return !isPrimaryOfficerOrSuperUser;
+      return !canEditJr;
     }
     if (administrativePenalty.is_closed) {
       return !isSuperUser;
     }
     return !isPrimaryOfficerOrSuperUser;
-  }, [jrInProgress, administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
+  }, [jrInProgress, canEditJr, administrativePenalty.is_closed, isPrimaryOfficerOrSuperUser, isSuperUser]);
   const apFieldsReadonly = isReadonlyMode || ((savedInJr || isJr) && !isSuperUser);
   const { dirtyFields } = methods.formState;
   const apFieldsEdited = AP_FORM_FIELDS.some((field) => dirtyFields[field]);
@@ -236,16 +252,21 @@ const AdministrativePenaltyUpdateModal: FC<
   }, [decision, methods]);
 
   // JR amount rules: Reversed is 0, Upheld keeps the penalty amount, the others default to 0.
+  // Only Upheld follows the penalty amount; editing it must not reset an amount typed for the others.
   useEffect(() => {
-    if (!isJr) return;
-    if (jrDecision?.id === APJudicialReviewDecision.REVERSED.id) {
-      setValue("jr_new_penalty_amount", 0);
-    } else if (jrDecision?.id === APJudicialReviewDecision.UPHELD.id) {
-      setValue("jr_new_penalty_amount", Number(penaltyAmount) || 0);
-    } else if (jrDecision && getFieldState("jr_decision").isDirty) {
+    if (!isJr || !jrDecision || jrDecision.id === APJudicialReviewDecision.UPHELD.id) return;
+    if (
+      jrDecision.id === APJudicialReviewDecision.REVERSED.id ||
+      getFieldState("jr_decision").isDirty
+    ) {
       setValue("jr_new_penalty_amount", 0);
     }
-  }, [isJr, jrDecision, penaltyAmount, setValue, getFieldState]);
+  }, [isJr, jrDecision, setValue, getFieldState]);
+  useEffect(() => {
+    if (isJr && jrDecision?.id === APJudicialReviewDecision.UPHELD.id) {
+      setValue("jr_new_penalty_amount", Number(penaltyAmount) || 0);
+    }
+  }, [isJr, jrDecision, penaltyAmount, setValue]);
   const jrAmountLocked =
     jrDecision?.id === APJudicialReviewDecision.REVERSED.id ||
     jrDecision?.id === APJudicialReviewDecision.UPHELD.id;
