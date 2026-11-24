@@ -22,10 +22,8 @@ class ReferralStatusEnum(Enum):
 
     PREPARING_REFERRAL_FOR_AEO = "Preparing Referral for AEO"
     REFERRED_TO_AEO = "Referred to AEO"
-    DEPUTY_REVIEW = "Deputy Review"
-    DEPUTY_REVIEW_COMPLETE = "Deputy Review Complete"
     AP_NOT_PROCEEDING = "AP Not Proceeding"
-    REFERRED_TO_DM = "Referred to DM"
+    JUDICIAL_REVIEW = "Judicial Review"
 
 
 class DecisionEnum(Enum):
@@ -33,6 +31,34 @@ class DecisionEnum(Enum):
 
     AP_ISSUED = "AP Issued"
     AP_NOT_PROCEEDING = "AP Not Proceeding"
+
+
+class JudicialReviewDecisionEnum(Enum):
+    """Enum for Administrative Penalty Judicial Review Decision."""
+
+    REVERSED = "Reversed"
+    QUASHED_AND_REMITTED = "Quashed and Remitted"
+    SUBSTITUTED = "Substituted"
+    UPHELD = "Upheld"
+
+
+def get_ap_enforcement_status(referral_status, decision=None, jr_decision=None):
+    """Return the Enforcement Status {id, name} shown for an AP.
+
+    Referred to AEO and Judicial Review carry their decision as a suffix, e.g.
+    "Referred to AEO - AP Issued" or "Judicial Review - Reversed". The id is the
+    decision name, which is also the Enforcement Status filter value.
+    """
+    if referral_status is None:
+        return None
+    suffix = None
+    if referral_status == ReferralStatusEnum.REFERRED_TO_AEO:
+        suffix = decision
+    elif referral_status == ReferralStatusEnum.JUDICIAL_REVIEW:
+        suffix = jr_decision
+    if suffix is None:
+        return {"id": referral_status.name, "name": referral_status.value}
+    return {"id": suffix.name, "name": f"{referral_status.value} - {suffix.value}"}
 
 
 class AdministrativePenaltyInspectionRequirementMap(BaseModelVersioned):
@@ -198,6 +224,28 @@ class AdministrativePenalty(BaseModelVersioned):
         nullable=True,
         comment="Amount of the administrative penalty",
     )
+    jr_decision_date = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Date of the judicial review decision",
+    )
+    jr_decision = Column(
+        SqlEnum(JudicialReviewDecisionEnum),
+        nullable=True,
+        comment="Judicial review decision",
+    )
+    jr_new_penalty_amount = Column(
+        Numeric(precision=10, scale=2),
+        nullable=True,
+        comment="Penalty amount after judicial review",
+    )
+    jr_ap_fields_edited = Column(
+        Boolean,
+        default=False,
+        server_default="f",
+        nullable=False,
+        comment="A superuser changed the AP fields during the judicial review",
+    )
     inspection = relationship("Inspection", foreign_keys=[inspection_id], lazy="joined")
     is_deleted = Column(Boolean, default=False, server_default="f", nullable=False)
     administrative_penalty_requirement_maps = relationship(
@@ -221,31 +269,44 @@ class AdministrativePenalty(BaseModelVersioned):
     )
 
     @property
+    def is_jr_complete(self):
+        """Judicial review is complete once decision date, decision and new amount are all set."""
+        return (
+            self.jr_decision_date is not None
+            and self.jr_decision is not None
+            and self.jr_new_penalty_amount is not None
+        )
+
+    @property
     def is_closed(self):
         """
         Check if the administrative penalty is in a closed state.
 
         An administrative penalty is considered closed if:
         - Referral status is AP_NOT_PROCEEDING
-        - Referral status is REFERRED_TO_DM and a decision has been made
+        - Referral status is REFERRED_TO_AEO and a decision has been made
+        - Referral status is JUDICIAL_REVIEW and the judicial review is complete
 
         Returns:
             bool: True if the administrative penalty is closed, False otherwise
         """
-        return self.referral_status == ReferralStatusEnum.AP_NOT_PROCEEDING or (
-            self.referral_status == ReferralStatusEnum.REFERRED_TO_DM
-            and self.decision is not None
+        return (
+            self.referral_status == ReferralStatusEnum.AP_NOT_PROCEEDING
+            or (
+                self.referral_status == ReferralStatusEnum.REFERRED_TO_AEO
+                and self.decision is not None
+            )
+            or (
+                self.referral_status == ReferralStatusEnum.JUDICIAL_REVIEW
+                and self.is_jr_complete
+            )
         )
 
     @classmethod
     def get_closed_conditions(cls):
         """Get the SQLAlchemy conditions for closed administrative penalties.
 
-        Used for database queries to filter closed administrative penalties.
-
-        An administrative penalty is considered closed if:
-        - AP_NOT_PROCEEDING status
-        - REFERRED_TO_DM status with a decision made
+        Mirrors `is_closed` for database queries.
 
         Returns:
             sqlalchemy.sql.elements.BooleanClauseList: OR conditions for closed state
@@ -253,8 +314,14 @@ class AdministrativePenalty(BaseModelVersioned):
         return or_(
             cls.referral_status == ReferralStatusEnum.AP_NOT_PROCEEDING,
             and_(
-                cls.referral_status == ReferralStatusEnum.REFERRED_TO_DM,
+                cls.referral_status == ReferralStatusEnum.REFERRED_TO_AEO,
                 cls.decision.isnot(None),
+            ),
+            and_(
+                cls.referral_status == ReferralStatusEnum.JUDICIAL_REVIEW,
+                cls.jr_decision_date.isnot(None),
+                cls.jr_decision.isnot(None),
+                cls.jr_new_penalty_amount.isnot(None),
             ),
         )
 

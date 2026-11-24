@@ -2,12 +2,18 @@
 
 from compliance_api.exceptions import ResourceNotFoundError, UnprocessableEntityError
 from compliance_api.models.administrative_penalty import (
-    AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, ReferralStatusEnum)
+    AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, JudicialReviewDecisionEnum,
+    ReferralStatusEnum)
 from compliance_api.models.case_file import CaseFile as CaseFileModel
+from compliance_api.models.case_file import CaseFileStatusEnum
 from compliance_api.models.db import session_scope
 from compliance_api.models.enforcement_action import EnforcementActionOptionEnum
 from compliance_api.models.inspection import InspectionRequirement as InspectionRequirementModel
 from compliance_api.services.service_utils import ServiceUtils
+
+
+# The AP's own fields; during a judicial review only a super user can change them.
+AP_FIELDS = ("date_referred", "decision_date", "decision", "penalty_amount")
 
 
 class AdministrativePenaltyService:
@@ -133,6 +139,13 @@ class AdministrativePenaltyService:
         inspection = ServiceUtils.inspection_exist_check(inspection_id=inspection_id)
         ServiceUtils.access_check_update_for_inspection(inspection)
         ServiceUtils.inspection_status_check(inspection)
+        if (
+            administrative_penalty_data.get("referral_status")
+            == ReferralStatusEnum.JUDICIAL_REVIEW
+        ):
+            raise UnprocessableEntityError(
+                "An administrative penalty cannot be created in Judicial Review."
+            )
 
         requirement_ids = administrative_penalty_data.get(
             "inspection_requirement_ids", []
@@ -182,12 +195,30 @@ class AdministrativePenaltyService:
             inspection_id=update_data.get("inspection_id")
             or administrative_penalty.inspection_id
         )
+        in_jr = administrative_penalty.referral_status == ReferralStatusEnum.JUDICIAL_REVIEW
+        starting_jr = not in_jr and update_data.get("referral_status") == ReferralStatusEnum.JUDICIAL_REVIEW
+        #  Primary or super user can record a judicial review; only a super user can change the AP fields in it.
+        #  Checked against the AP's own inspection: the request's inspection_id can be any linked inspection.
+        #  The request's inspection is checked too, since the requirement links are written against it.
+        if starting_jr or (in_jr and not administrative_penalty.is_closed):
+            ServiceUtils.access_check_update_for_inspection(administrative_penalty.inspection)
+            if inspection.id != administrative_penalty.inspection_id:
+                ServiceUtils.access_check_update_for_inspection(inspection)
+            if not ServiceUtils.is_super_user():
+                update_data.update({field: getattr(administrative_penalty, field) for field in AP_FIELDS})
+                update_data["jr_ap_fields_edited"] = False
         #  Primary or super user can update ap if it is not closed
-        if not administrative_penalty.is_closed:
+        elif not administrative_penalty.is_closed:
             ServiceUtils.access_check_update_for_inspection(inspection)
         #  Super user can update ap if it is closed
-        if administrative_penalty.is_closed:
+        else:
             ServiceUtils.access_check_for_super_user()
+        _check_judicial_review(administrative_penalty, update_data)
+        # Remembered for the discard warning; cleared when the AP leaves Judicial Review.
+        update_data["jr_ap_fields_edited"] = (
+            update_data.get("referral_status") == ReferralStatusEnum.JUDICIAL_REVIEW
+            and (administrative_penalty.jr_ap_fields_edited or bool(update_data.get("jr_ap_fields_edited")))
+        )
 
         requirement_ids = update_data.get("inspection_requirement_ids", [])
         if requirement_ids:
@@ -418,7 +449,68 @@ def _extract_ap_data(administrative_penalty_data):
         "decision_date": administrative_penalty_data.get("decision_date", None),
         "decision": administrative_penalty_data.get("decision", None),
         "penalty_amount": administrative_penalty_data.get("penalty_amount", None),
+        "jr_decision_date": administrative_penalty_data.get("jr_decision_date", None),
+        "jr_decision": administrative_penalty_data.get("jr_decision", None),
+        "jr_new_penalty_amount": administrative_penalty_data.get(
+            "jr_new_penalty_amount", None
+        ),
+        "jr_ap_fields_edited": administrative_penalty_data.get("jr_ap_fields_edited", False),
     }
+
+
+def _check_judicial_review(administrative_penalty, update_data):
+    """Validate the judicial review rules for an update and apply the JR amount rules."""
+    current_status = administrative_penalty.referral_status
+    new_status = update_data.get("referral_status")
+    in_jr = new_status == ReferralStatusEnum.JUDICIAL_REVIEW
+
+    # Leaving Judicial Review means discarding it, which puts the AP back to Referred to AEO.
+    if (
+        current_status == ReferralStatusEnum.JUDICIAL_REVIEW
+        and not in_jr
+        and new_status != ReferralStatusEnum.REFERRED_TO_AEO
+    ):
+        raise UnprocessableEntityError(
+            "A Judicial Review can only be discarded back to Referred to AEO."
+        )
+    if not in_jr:
+        if any(
+            update_data.get(field) is not None
+            for field in ("jr_decision_date", "jr_decision", "jr_new_penalty_amount")
+        ):
+            raise UnprocessableEntityError(
+                "Judicial review fields can only be set in Judicial Review."
+            )
+        return
+
+    starting_jr = current_status != ReferralStatusEnum.JUDICIAL_REVIEW
+    if starting_jr and not (
+        administrative_penalty.inspection.case_file.case_file_status == CaseFileStatusEnum.OPEN
+        and administrative_penalty.is_closed
+        and current_status == ReferralStatusEnum.REFERRED_TO_AEO
+        and administrative_penalty.decision == DecisionEnum.AP_ISSUED
+    ):
+        raise UnprocessableEntityError(
+            "Judicial review can only start on a closed AP Issued administrative penalty "
+            "in an open case file."
+        )
+    if not update_data.get("jr_decision_date"):
+        raise UnprocessableEntityError(
+            "Judicial review decision date is required."
+        )
+
+    jr_decision = update_data.get("jr_decision")
+    if jr_decision == JudicialReviewDecisionEnum.REVERSED:
+        update_data["jr_new_penalty_amount"] = 0
+    elif jr_decision == JudicialReviewDecisionEnum.UPHELD:
+        update_data["jr_new_penalty_amount"] = update_data.get("penalty_amount")
+    elif jr_decision and (
+        update_data.get("jr_new_penalty_amount") is None
+        or update_data["jr_new_penalty_amount"] < 0
+    ):
+        raise UnprocessableEntityError(
+            "New penalty amount of zero or more is required for this judicial review decision."
+        )
 
 
 def _create_ap_object(inspection, administrative_penalty_data):

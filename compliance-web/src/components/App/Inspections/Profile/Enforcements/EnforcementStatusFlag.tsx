@@ -99,26 +99,17 @@ const EnforcementStatusFlag: FC<EnforcementStatusFlagProps> = ({
       status = {
         name: administrativePenaltyStatus?.name || "",
       };
-      if (administrativePenaltyStatus?.id === APReferralStatus.DEPUTY_REVIEW.id) {
-        status.color = "warning";
-      } else if (
-        administrativePenaltyStatus?.id ===
-        APReferralStatus.DEPUTY_REVIEW_COMPLETE.id
-      ) {
-        status.color = "success";
-      } else if (
+      // Preparing Referral for AEO and Judicial Review (any outcome) stay grey.
+      // AP_NOT_PROCEEDING is both a status and a DM decision id; red either way.
+      if (
         administrativePenaltyStatus?.id === APReferralStatus.AP_NOT_PROCEEDING.id
       ) {
         status.color = "error";
       } else if (
-        administrativePenaltyStatus?.id === APReferralStatus.REFERRED_TO_DM.id ||
+        administrativePenaltyStatus?.id === APReferralStatus.REFERRED_TO_AEO.id ||
         administrativePenaltyStatus?.id === APDecisionStatus.AP_ISSUED.id
       ) {
         status.color = "success";
-      } else if (
-        administrativePenaltyStatus?.id === APDecisionStatus.AP_NOT_PROCEEDING.id
-      ) {
-        status.color = "error";
       }
     } else if (
       enforcementActionType === EnforcementActionEnum.CHARGE_RECOMMENDATION

@@ -14,7 +14,12 @@ export interface AdministrativePenalty {
   referral_status: Option;
   decision?: Option;
   penalty_amount?: string;
+  jr_decision_date?: string;
+  jr_decision?: Option;
+  jr_new_penalty_amount?: string;
   is_closed: boolean;
+  is_jr_complete?: boolean;
+  jr_ap_fields_edited?: boolean;
 }
 
 
@@ -36,6 +41,10 @@ export interface AdministrativePenaltyAPIData {
   decision_date?: string;
   decision?: string;
   penalty_amount?: number;
+  jr_decision_date?: string;
+  jr_decision?: string;
+  jr_new_penalty_amount?: number;
+  jr_ap_fields_edited?: boolean;
   inspection_requirement_ids: number[];
   administrative_penalty_number?: string;
 }

@@ -12,7 +12,7 @@ from compliance_api.models import InspectionRequirement as InspectionRequirement
 from compliance_api.models import EnforcementActionOptionEnum, InspectionStatusEnum, RequirementSourceEnum
 from compliance_api.models.administrative_penalty import AdministrativePenalty as AdministrativePenaltyModel
 from compliance_api.models.administrative_penalty import AdministrativePenaltyInspectionRequirementMap
-from compliance_api.models.administrative_penalty import DecisionEnum, ReferralStatusEnum
+from compliance_api.models.administrative_penalty import DecisionEnum, JudicialReviewDecisionEnum, ReferralStatusEnum
 from compliance_api.models.order import Order as OrderModel
 from compliance_api.models.order import OrderInspectionRequirementMap
 from compliance_api.models.warning_letter import WarningLetter as WarningLetterModel
@@ -580,11 +580,9 @@ def test_delete_requirement_keeps_merged_draft_administrative_penalty(
     "referral_status,decision",
     [
         (ReferralStatusEnum.REFERRED_TO_AEO, None),
-        (ReferralStatusEnum.DEPUTY_REVIEW, None),
-        (ReferralStatusEnum.DEPUTY_REVIEW_COMPLETE, None),
         (ReferralStatusEnum.AP_NOT_PROCEEDING, None),
-        (ReferralStatusEnum.REFERRED_TO_DM, None),
-        (ReferralStatusEnum.REFERRED_TO_DM, DecisionEnum.AP_ISSUED),
+        (ReferralStatusEnum.REFERRED_TO_AEO, DecisionEnum.AP_ISSUED),
+        (ReferralStatusEnum.JUDICIAL_REVIEW, DecisionEnum.AP_ISSUED),
     ],
 )
 def test_delete_requirement_blocked_when_administrative_penalty_beyond_drafting(
@@ -1084,19 +1082,28 @@ def _get_grid_enforcement_statuses(client, auth_header, inspection, **filters):
 
 
 @pytest.mark.parametrize(
-    "referral_status,decision,expected_status",
+    "referral_status,decision,jr_decision,expected_status",
     [
-        (ReferralStatusEnum.DEPUTY_REVIEW, None, "Deputy Review"),
-        (ReferralStatusEnum.REFERRED_TO_DM, None, "Referred to DM"),
+        (ReferralStatusEnum.PREPARING_REFERRAL_FOR_AEO, None, None, "Preparing Referral for AEO"),
+        (ReferralStatusEnum.REFERRED_TO_AEO, None, None, "Referred to AEO"),
         (
-            ReferralStatusEnum.REFERRED_TO_DM,
+            ReferralStatusEnum.REFERRED_TO_AEO,
             DecisionEnum.AP_ISSUED,
-            "Referred to DM - AP Issued",
+            None,
+            "Referred to AEO - AP Issued",
         ),
         (
-            ReferralStatusEnum.REFERRED_TO_DM,
+            ReferralStatusEnum.REFERRED_TO_AEO,
             DecisionEnum.AP_NOT_PROCEEDING,
-            "Referred to DM - AP Not Proceeding",
+            None,
+            "Referred to AEO - AP Not Proceeding",
+        ),
+        (ReferralStatusEnum.JUDICIAL_REVIEW, DecisionEnum.AP_ISSUED, None, "Judicial Review"),
+        (
+            ReferralStatusEnum.JUDICIAL_REVIEW,
+            DecisionEnum.AP_ISSUED,
+            JudicialReviewDecisionEnum.REVERSED,
+            "Judicial Review - Reversed",
         ),
     ],
 )
@@ -1108,12 +1115,14 @@ def test_requirement_grid_shows_administrative_penalty_dm_decision(
     created_administrative_penalty_inspection_requirement,
     referral_status,
     decision,
+    jr_decision,
     expected_status,
 ):
-    """The Enf. Status column shows the DM decision once the AP is referred to the DM."""
+    """The Enf. Status column shows the DM or JR decision as a suffix."""
     _add_requirement_source_detail(created_administrative_penalty_inspection_requirement)
     created_administrative_penalty.referral_status = referral_status
     created_administrative_penalty.decision = decision
+    created_administrative_penalty.jr_decision = jr_decision
     created_administrative_penalty.save()
 
     statuses = _get_grid_enforcement_statuses(client, auth_header, created_inspection)
@@ -1123,8 +1132,8 @@ def test_requirement_grid_shows_administrative_penalty_dm_decision(
 @pytest.mark.parametrize(
     "decision,matching_filter,non_matching_filter",
     [
-        (None, "REFERRED_TO_DM", "AP_ISSUED"),
-        (DecisionEnum.AP_ISSUED, "AP_ISSUED", "REFERRED_TO_DM"),
+        (None, "REFERRED_TO_AEO", "AP_ISSUED"),
+        (DecisionEnum.AP_ISSUED, "AP_ISSUED", "REFERRED_TO_AEO"),
         (DecisionEnum.AP_NOT_PROCEEDING, "AP_NOT_PROCEEDING", "AP_ISSUED"),
     ],
 )
@@ -1138,9 +1147,9 @@ def test_requirement_grid_filters_on_administrative_penalty_dm_decision(
     matching_filter,
     non_matching_filter,
 ):
-    """Each Referred to DM filter value returns only the APs the grid shows under that value."""
+    """Each Referred to AEO filter value returns only the APs the grid shows under that value."""
     _add_requirement_source_detail(created_administrative_penalty_inspection_requirement)
-    created_administrative_penalty.referral_status = ReferralStatusEnum.REFERRED_TO_DM
+    created_administrative_penalty.referral_status = ReferralStatusEnum.REFERRED_TO_AEO
     created_administrative_penalty.decision = decision
     created_administrative_penalty.save()
 
@@ -1150,10 +1159,43 @@ def test_requirement_grid_filters_on_administrative_penalty_dm_decision(
     assert not _get_grid_enforcement_statuses(
         client, auth_header, created_inspection, enf_stats=non_matching_filter
     )
-    # Selecting all three Referred to DM values returns the AP regardless of its decision.
+    # Selecting all three Referred to AEO values returns the AP regardless of its decision.
     assert _get_grid_enforcement_statuses(
         client,
         auth_header,
         created_inspection,
-        enf_stats="REFERRED_TO_DM,AP_ISSUED,AP_NOT_PROCEEDING",
+        enf_stats="REFERRED_TO_AEO,AP_ISSUED,AP_NOT_PROCEEDING",
+    )
+
+
+@pytest.mark.parametrize(
+    "jr_decision,matching_filter,non_matching_filter",
+    [
+        (None, "JUDICIAL_REVIEW", "REVERSED"),
+        (JudicialReviewDecisionEnum.REVERSED, "REVERSED", "JUDICIAL_REVIEW"),
+        (JudicialReviewDecisionEnum.UPHELD, "UPHELD", "AP_ISSUED"),
+    ],
+)
+def test_requirement_grid_filters_on_judicial_review_decision(
+    client,
+    auth_header,
+    created_inspection,
+    created_administrative_penalty,
+    created_administrative_penalty_inspection_requirement,
+    jr_decision,
+    matching_filter,
+    non_matching_filter,
+):
+    """Each Judicial Review filter value returns only the APs the grid shows under that value."""
+    _add_requirement_source_detail(created_administrative_penalty_inspection_requirement)
+    created_administrative_penalty.referral_status = ReferralStatusEnum.JUDICIAL_REVIEW
+    created_administrative_penalty.decision = DecisionEnum.AP_ISSUED
+    created_administrative_penalty.jr_decision = jr_decision
+    created_administrative_penalty.save()
+
+    assert _get_grid_enforcement_statuses(
+        client, auth_header, created_inspection, enf_stats=matching_filter
+    )
+    assert not _get_grid_enforcement_statuses(
+        client, auth_header, created_inspection, enf_stats=non_matching_filter
     )

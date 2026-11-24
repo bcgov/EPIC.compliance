@@ -6,7 +6,8 @@ from marshmallow_enum import EnumField
 from compliance_api.utils.constant import INPUT_DATE_TIME_FORMAT
 
 from ..models.administrative_penalty import (
-    AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, ReferralStatusEnum)
+    AdministrativePenalty, AdministrativePenaltyInspectionRequirementMap, DecisionEnum, JudicialReviewDecisionEnum,
+    ReferralStatusEnum)
 from .base_schema import AutoSchemaBase, BaseSchema
 from .inspection_requirement import InspectionRequirementSchema
 
@@ -23,7 +24,7 @@ class AdministrativePenaltyUpdateSchema(
         ReferralStatusEnum,
         by_value=False,
         allow_none=True,
-        metadata={"description": "The referral status of the administrative penalty"},
+        metadata={"description": "The status of the administrative penalty"},
     )
     date_referred = fields.DateTime(
         allow_none=True,
@@ -31,7 +32,7 @@ class AdministrativePenaltyUpdateSchema(
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
-        metadata={"description": "The date referred to decision maker"},
+        metadata={"description": "The date referred to AEO"},
     )
     decision_date = fields.DateTime(
         allow_none=True,
@@ -39,7 +40,7 @@ class AdministrativePenaltyUpdateSchema(
         error_messages={
             "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
         },
-        metadata={"description": "The decision date"},
+        metadata={"description": "The DM decision date"},
     )
     decision = EnumField(
         DecisionEnum,
@@ -52,6 +53,30 @@ class AdministrativePenaltyUpdateSchema(
         allow_none=True,
         as_string=True,
         metadata={"description": "The penalty amount"},
+    )
+    jr_decision_date = fields.DateTime(
+        allow_none=True,
+        format=INPUT_DATE_TIME_FORMAT,
+        error_messages={
+            "invalid": f"Not a valid datetime. Expected format: {INPUT_DATE_TIME_FORMAT}."
+        },
+        metadata={"description": "The judicial review decision date"},
+    )
+    jr_decision = EnumField(
+        JudicialReviewDecisionEnum,
+        by_value=False,
+        allow_none=True,
+        metadata={"description": "The judicial review decision"},
+    )
+    jr_new_penalty_amount = fields.Decimal(
+        places=2,
+        allow_none=True,
+        as_string=True,
+        metadata={"description": "The penalty amount after judicial review"},
+    )
+    jr_ap_fields_edited = fields.Bool(
+        load_default=False,
+        metadata={"description": "The AP fields were changed in this judicial review save"},
     )
     inspection_requirement_ids = fields.List(
         fields.Integer(),
@@ -123,6 +148,12 @@ class AdministrativePenaltySchema(AutoSchemaBase):  # pylint: disable=too-many-a
         as_string=True,
         metadata={"description": "The penalty amount"},
     )
+    jr_new_penalty_amount = fields.Decimal(
+        places=2,
+        allow_none=True,
+        as_string=True,
+        metadata={"description": "The penalty amount after judicial review"},
+    )
 
     administrative_penalty_requirement_maps = fields.Nested(
         AdministrativePenaltyInspectionRequirementMapSchema(),
@@ -130,6 +161,7 @@ class AdministrativePenaltySchema(AutoSchemaBase):  # pylint: disable=too-many-a
         only=("id", "inspection_requirement_id", "inspection_requirement"),
     )
     is_closed = fields.Bool()
+    is_jr_complete = fields.Bool()
 
     @post_dump
     def transform_data(
@@ -147,6 +179,12 @@ class AdministrativePenaltySchema(AutoSchemaBase):  # pylint: disable=too-many-a
             data["decision"] = {
                 "id": DecisionEnum(data["decision"]).name,
                 "name": DecisionEnum(data["decision"]).value,
+            }
+
+        if data.get("jr_decision"):
+            data["jr_decision"] = {
+                "id": JudicialReviewDecisionEnum(data["jr_decision"]).name,
+                "name": JudicialReviewDecisionEnum(data["jr_decision"]).value,
             }
 
         return data
